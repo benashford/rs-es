@@ -1,0 +1,5 @@
+[package]
+name = "rs-es"
+version = "0.1.0"
+authors = ["Ben Ashford"]
+
