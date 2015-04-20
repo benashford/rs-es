@@ -3,3 +3,10 @@ name = "rs-es"
 version = "0.1.0"
 authors = ["Ben Ashford"]
 
+[dependencies]
+hyper = "0.3.14"
+rustc-serialize = "0.3.12"
+log = "0.3"
+
+[dev-dependencies]
+env_logger = "0.3"
