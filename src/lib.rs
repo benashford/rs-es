@@ -249,10 +249,13 @@ impl<'a> IndexOperation<'a> {
 #[cfg(test)]
 mod tests {
     extern crate env_logger;
+    extern crate regex;
 
     use super::Client;
 
     use std::collections::BTreeMap;
+
+    use self::regex::Regex;
 
     use rustc_serialize::json;
     use rustc_serialize::json::{Json, ToJson};
@@ -287,7 +290,10 @@ mod tests {
     #[test]
     fn it_works() {
         let mut client = make_client();
-        assert_eq!(client.version().unwrap(), "1.3.2");
+        let result = client.version().unwrap();
+
+        let expected_regex = Regex::new(r"^\d\.\d\.\d$").unwrap();
+        assert_eq!(expected_regex.is_match(result.as_str()), true);
     }
 
     #[test]
