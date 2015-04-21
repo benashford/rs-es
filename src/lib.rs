@@ -9,16 +9,15 @@ extern crate rustc_serialize;
 
 use std::error::Error;
 use std::io;
-use std::io::Read;
 use std::fmt;
-
-use hyper::client::response;
 
 use rustc_serialize::json;
 use rustc_serialize::json::Json;
 
+// Error handling
+
 #[derive(Debug)]
-enum EsError {
+pub enum EsError {
     EsError(String),
     HttpError(hyper::error::HttpError),
     IoError(io::Error),
@@ -74,14 +73,16 @@ impl fmt::Display for EsError {
     }
 }
 
-struct Client {
+// The client
+
+pub struct Client {
     host:        String,
     port:        u32,
     http_client: hyper::Client
 }
 
 impl Client {
-    fn new(host: String, port: u32) -> Client {
+    pub fn new(host: String, port: u32) -> Client {
         Client {
             host:        host,
             port:        port,
@@ -93,10 +94,18 @@ impl Client {
         format!("http://{}:{}/", self.host, self.port)
     }
 
-    fn version(&mut self) -> Result<String, EsError> {
-        let url = format!("{}", self.get_base_url());
-        let mut result = try!(self.http_client.get(url.as_str()).send());
-        let json = try!(Json::from_reader(&mut result));
+    fn get(&mut self, url: &str, body: Option<&Json>) -> Result<Json, EsError> {
+        let rb = self.http_client.get(url);
+        let mut result = try!(match body {
+            Some(json) => rb.body(json.as_string().unwrap()),
+            None       => rb
+        }.send());
+        Ok(try!(Json::from_reader(&mut result)))
+    }
+
+    pub fn version(&mut self) -> Result<String, EsError> {
+        let url = self.get_base_url();
+        let json = try!(self.get(url.as_str(), None));
         match json.find_path(&["version", "number"]) {
             Some(version) => match version.as_string() {
                 Some(string) => Ok(string.to_string()),
