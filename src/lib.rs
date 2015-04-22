@@ -233,6 +233,14 @@ impl<'a> IndexOperation<'a> {
     }
 
     add_option!(with_ttl, "ttl", IndexOperation);
+    add_option!(with_version, "version", IndexOperation);
+    add_option!(with_version_type, "version_type", IndexOperation);
+    add_option!(with_op_type, "op_type", IndexOperation);
+    add_option!(with_routing, "routing", IndexOperation);
+    add_option!(with_parent, "parent", IndexOperation);
+    add_option!(with_timestamp, "timestamp", IndexOperation);
+    add_option!(with_refresh, "refresh", IndexOperation);
+    add_option!(with_timeout, "timeout", IndexOperation);
 
     pub fn send(&'a mut self) -> Result<Json, EsError> {
         let result = try!(match self.id {
