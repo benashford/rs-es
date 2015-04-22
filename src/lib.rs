@@ -242,7 +242,7 @@ impl<'a> IndexOperation<'a> {
     add_option!(with_refresh, "refresh", IndexOperation);
     add_option!(with_timeout, "timeout", IndexOperation);
 
-    pub fn send(&'a mut self) -> Result<Json, EsError> {
+    pub fn send(&'a mut self) -> Result<IndexResult, EsError> {
         let result = try!(match self.id {
             Some(id) => {
                 let url = format!("{}{}/{}/{}{}",
@@ -268,7 +268,52 @@ impl<'a> IndexOperation<'a> {
                 })
             }
         });
-        Ok(result.unwrap())
+        Ok(IndexResult::from(result.unwrap()))
+    }
+}
+
+macro_rules! get_json_thing {
+    ($r:ident,$f:expr,$t:ident) => {
+        $r.find($f).unwrap().$t().unwrap()
+    }
+}
+
+macro_rules! get_json_string {
+    ($r:ident,$f:expr) => {
+        get_json_thing!($r,$f,as_string).to_string()
+    }
+}
+
+macro_rules! get_json_i64 {
+    ($r:ident,$f:expr) => {
+        get_json_thing!($r,$f,as_i64)
+    }
+}
+
+macro_rules! get_json_bool {
+    ($r:ident,$f:expr) => {
+        get_json_thing!($r,$f,as_boolean)
+    }
+}
+
+#[derive(Debug)]
+pub struct IndexResult {
+    index:    String,
+    doc_type: String,
+    id:       String,
+    version:  i64,
+    created:  bool
+}
+
+impl From<Json> for IndexResult {
+    fn from(r: Json) -> IndexResult {
+        IndexResult {
+            index:    get_json_string!(r, "_index"),
+            doc_type: get_json_string!(r, "_type"),
+            id:       get_json_string!(r, "_id"),
+            version:  get_json_i64!(r, "_version"),
+            created:  get_json_bool!(r, "created")
+        }
     }
 }
 
@@ -283,7 +328,6 @@ mod tests {
 
     use self::regex::Regex;
 
-    use rustc_serialize::json;
     use rustc_serialize::json::{Json, ToJson};
 
     // test setup
@@ -329,8 +373,13 @@ mod tests {
         let mut client = make_client();
         let mut indexer = client.index("test_idx", "test_type");
         let doc = make_doc();
-        let result = indexer.with_doc(&doc).with_ttl(&927500).send();
-        info!("TEST RESULT: {:?}", result);
-        assert_eq!(json::encode(&result.unwrap()).unwrap(), "");
+        let result_wrapped = indexer.with_doc(&doc).with_ttl(&927500).send();
+        info!("TEST RESULT: {:?}", result_wrapped);
+        let result = result_wrapped.unwrap();
+        assert_eq!(result.created, true);
+        assert_eq!(result.index, "test_idx");
+        assert_eq!(result.doc_type, "test_type");
+        assert!(result.id.len() > 0);
+        assert_eq!(result.version, 1);
     }
 }
