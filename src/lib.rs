@@ -138,7 +138,7 @@ pub struct Client {
 macro_rules! es_op {
     ($n:ident) => {
         fn $n(&mut self, url: &str, body: Option<&Json>) -> Result<Option<Json>, EsError> {
-            info!("Doing $n on {} with {:?}", url, body);
+            info!("Doing {} on {} with {:?}", stringify!($n), url, body);
             match body {
                 Some(json) => {
                     let json_string = json::encode(json).unwrap();
