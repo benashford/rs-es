@@ -1,14 +1,13 @@
 #![crate_type = "lib"]
 #![crate_name = "rs_es"]
 
+#![feature(collections)]
 #![feature(convert)]
-#![feature(std_misc)]
 
 #[macro_use] extern crate log;
 extern crate hyper;
 extern crate rustc_serialize;
 
-use std::collections::HashMap;
 use std::error::Error;
 use std::io;
 use std::fmt;
@@ -90,7 +89,7 @@ impl fmt::Display for EsError {
 
 // Utilities
 
-fn format_query_string(options: &mut HashMap<&'static str, String>) -> String {
+fn format_query_string(options: &mut Vec<(&'static str, String)>) -> String {
     let mut st = String::new();
     if options.is_empty() {
         return st;
@@ -191,12 +190,12 @@ impl Client {
 
 // Specific operations
 
-type Options = HashMap<&'static str, String>;
+type Options = Vec<(&'static str, String)>;
 
 macro_rules! add_option {
     ($n:ident, $e:expr, $t:ident) => (
         pub fn $n<T: ToString>(&'a mut self, val: &T) -> &'a mut $t {
-            self.options.insert($e, val.to_string());
+            self.options.push(($e, val.to_string()));
             self
         }
     )
@@ -218,7 +217,7 @@ impl<'a> IndexOperation<'a> {
             index:    index,
             doc_type: doc_type,
             id:       None,
-            options:  HashMap::<&'static str, String>::new(),
+            options:  Options::new(),
             document: None
         }
     }
