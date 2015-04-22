@@ -13,6 +13,9 @@ use std::error::Error;
 use std::io;
 use std::fmt;
 
+use hyper::client::response;
+use hyper::status::StatusCode;
+
 use rustc_serialize::json;
 use rustc_serialize::json::{Json, ToJson};
 
@@ -21,6 +24,7 @@ use rustc_serialize::json::{Json, ToJson};
 #[derive(Debug)]
 pub enum EsError {
     EsError(String),
+    EsServerError(String),
     HttpError(hyper::error::HttpError),
     IoError(io::Error),
     JsonBuilderError(json::BuilderError)
@@ -44,10 +48,17 @@ impl From<json::BuilderError> for EsError {
     }
 }
 
+impl<'a> From<&'a mut response::Response> for EsError {
+    fn from(err: &'a mut response::Response) -> EsError {
+        EsError::EsServerError(format!("{} - {:?}", err.status, err))
+    }
+}
+
 impl Error for EsError {
     fn description(&self) -> &str {
         match *self {
             EsError::EsError(ref err) => err.as_str(),
+            EsError::EsServerError(ref err) => err.as_str(),
             EsError::HttpError(ref err) => err.description(),
             EsError::IoError(ref err) => err.description(),
             EsError::JsonBuilderError(ref err) => err.description()
@@ -56,9 +67,10 @@ impl Error for EsError {
 
     fn cause(&self) -> Option<&Error> {
         match *self {
-            EsError::EsError(_)         => None,
-            EsError::HttpError(ref err) => Some(err as &Error),
-            EsError::IoError(ref err)   => Some(err as &Error),
+            EsError::EsError(_)                => None,
+            EsError::EsServerError(_)          => None,
+            EsError::HttpError(ref err)        => Some(err as &Error),
+            EsError::IoError(ref err)          => Some(err as &Error),
             EsError::JsonBuilderError(ref err) => Some(err as &Error)
         }
     }
@@ -68,6 +80,7 @@ impl fmt::Display for EsError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             EsError::EsError(ref s) => fmt::Display::fmt(s, f),
+            EsError::EsServerError(ref s) => fmt::Display::fmt(s, f),
             EsError::HttpError(ref err) => fmt::Display::fmt(err, f),
             EsError::IoError(ref err) => fmt::Display::fmt(err, f),
             EsError::JsonBuilderError(ref err) => fmt::Display::fmt(err, f)
@@ -96,7 +109,7 @@ fn format_query_string(options: &mut HashMap<&'static str, String>) -> String {
 // The client
 
 fn do_req<'a>(rb:   hyper::client::RequestBuilder<'a, &str>,
-              body: Option<&'a str>) -> Result<Json, EsError> {
+              body: Option<&'a str>) -> Result<Option<Json>, EsError> {
     info!("Params (body={:?})", body.unwrap());
     let mut result = match body {
         Some(json_str) => rb.body(json_str).send(),
@@ -104,9 +117,14 @@ fn do_req<'a>(rb:   hyper::client::RequestBuilder<'a, &str>,
     };
     info!("Result: {:?}", result);
     match result {
-        Ok(ref mut r) => match Json::from_reader(r) {
-            Ok(json) => Ok(json),
-            Err(e)   => Err(EsError::from(e))
+        Ok(ref mut r) => match r.status {
+            StatusCode::Ok |
+            StatusCode::Created  => match Json::from_reader(r) {
+                Ok(json) => Ok(Some(json)),
+                Err(e)   => Err(EsError::from(e))
+            },
+            StatusCode::NotFound => Ok(None),
+            _                    => Err(EsError::from(r))
         },
         Err(e)        => Err(EsError::from(e))
     }
@@ -120,7 +138,7 @@ pub struct Client {
 
 macro_rules! es_op {
     ($n:ident) => {
-        fn $n(&mut self, url: &str, body: Option<&Json>) -> Result<Json, EsError> {
+        fn $n(&mut self, url: &str, body: Option<&Json>) -> Result<Option<Json>, EsError> {
             info!("Doing $n on {} with {:?}", url, body);
             match body {
                 Some(json) => {
@@ -154,7 +172,7 @@ impl Client {
 
     pub fn version(&mut self) -> Result<String, EsError> {
         let url = self.get_base_url();
-        let json = try!(self.get(url.as_str(), None));
+        let json = try!(self.get(url.as_str(), None)).unwrap();
         match json.find_path(&["version", "number"]) {
             Some(version) => match version.as_string() {
                 Some(string) => Ok(string.to_string()),
@@ -218,7 +236,7 @@ impl<'a> IndexOperation<'a> {
     add_option!(with_ttl, "ttl", IndexOperation);
 
     pub fn send(&'a mut self) -> Result<Json, EsError> {
-        match self.id {
+        let result = try!(match self.id {
             Some(id) => {
                 let url = format!("{}{}/{}/{}{}",
                                   self.client.get_base_url(),
@@ -242,7 +260,8 @@ impl<'a> IndexOperation<'a> {
                     None          => None
                 })
             }
-        }
+        });
+        Ok(result.unwrap())
     }
 }
 
