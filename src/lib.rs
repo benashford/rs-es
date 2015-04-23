@@ -118,11 +118,11 @@ fn do_req<'a>(rb:   hyper::client::RequestBuilder<'a, &str>,
     match result {
         Ok(ref mut r) => match r.status {
             StatusCode::Ok |
-            StatusCode::Created  => match Json::from_reader(r) {
+            StatusCode::Created |
+            StatusCode::NotFound => match Json::from_reader(r) {
                 Ok(json) => Ok(Some(json)),
                 Err(e)   => Err(EsError::from(e))
             },
-            StatusCode::NotFound => Ok(None),
             _                    => Err(EsError::from(r))
         },
         Err(e)        => Err(EsError::from(e))
@@ -395,6 +395,7 @@ impl<'a> DeleteOperation<'a> {
                           self.id,
                           format_query_string(&mut self.options));
         let result = try!(self.client.delete_op(url.as_str(), None));
+        info!("DELETE OPERATION RESULT: {:?}", result);
         Ok(DeleteResult::from(&result.unwrap()))
     }
 }
