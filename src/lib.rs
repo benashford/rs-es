@@ -109,7 +109,7 @@ fn format_query_string(options: &mut Vec<(&'static str, String)>) -> String {
 
 fn do_req<'a>(rb:   hyper::client::RequestBuilder<'a, &str>,
               body: Option<&'a str>) -> Result<Option<Json>, EsError> {
-    info!("Params (body={:?})", body.unwrap());
+    info!("Params (body={:?})", body);
     let mut result = match body {
         Some(json_str) => rb.body(json_str).send(),
         None           => rb.send()
@@ -136,16 +136,16 @@ pub struct Client {
 }
 
 macro_rules! es_op {
-    ($n:ident) => {
+    ($n:ident,$cn:ident) => {
         fn $n(&mut self, url: &str, body: Option<&Json>) -> Result<Option<Json>, EsError> {
             info!("Doing {} on {} with {:?}", stringify!($n), url, body);
             match body {
                 Some(json) => {
                     let json_string = json::encode(json).unwrap();
-                    do_req(self.http_client.$n(url), Some(json_string.as_str()))
+                    do_req(self.http_client.$cn(url), Some(json_string.as_str()))
                 },
                 None => {
-                    do_req(self.http_client.$n(url), None)
+                    do_req(self.http_client.$cn(url), None)
                 }
             }
         }
@@ -165,13 +165,14 @@ impl Client {
         format!("http://{}:{}/", self.host, self.port)
     }
 
-    es_op!(get);
-    es_op!(post);
-    es_op!(put);
+    es_op!(get_op, get);
+    es_op!(post_op, post);
+    es_op!(put_op, put);
+    es_op!(delete_op, delete);
 
     pub fn version(&mut self) -> Result<String, EsError> {
         let url = self.get_base_url();
-        let json = try!(self.get(url.as_str(), None)).unwrap();
+        let json = try!(self.get_op(url.as_str(), None)).unwrap();
         match json.find_path(&["version", "number"]) {
             Some(version) => match version.as_string() {
                 Some(string) => Ok(string.to_string()),
@@ -186,11 +187,28 @@ impl Client {
     pub fn index<'a>(&'a mut self, index: &'a str, doc_type: &'a str) -> IndexOperation {
         IndexOperation::new(self, index, doc_type)
     }
+
+    pub fn delete<'a>(&'a mut self,
+                      index:    &'a str,
+                      doc_type: &'a str,
+                      id:       &'a str) -> DeleteOperation {
+        DeleteOperation::new(self, index, doc_type, id)
+    }
 }
 
 // Specific operations
 
 type Options = Vec<(&'static str, String)>;
+
+pub enum OpType {
+    Create
+}
+
+impl ToString for OpType {
+    fn to_string(&self) -> String {
+        "create".to_string()
+    }
+}
 
 macro_rules! add_option {
     ($n:ident, $e:expr, $t:ident) => (
@@ -251,7 +269,7 @@ impl<'a> IndexOperation<'a> {
                                   self.doc_type,
                                   id,
                                   format_query_string(&mut self.options));
-                self.client.put(url.as_str(), match self.document {
+                self.client.put_op(url.as_str(), match self.document {
                     Some(ref doc) => Some(doc),
                     None          => None
                 })
@@ -262,13 +280,54 @@ impl<'a> IndexOperation<'a> {
                                   self.index,
                                   self.doc_type,
                                   format_query_string(&mut self.options));
-                self.client.post(url.as_str(), match self.document {
+                self.client.post_op(url.as_str(), match self.document {
                     Some(ref doc) => Some(doc),
                     None          => None
                 })
             }
         });
-        Ok(IndexResult::from(result.unwrap()))
+        Ok(IndexResult::from(&result.unwrap()))
+    }
+}
+
+pub struct DeleteOperation<'a> {
+    client:   &'a mut Client,
+    index:    &'a str,
+    doc_type: &'a str,
+    id:       &'a str,
+    options:  Options
+}
+
+impl<'a> DeleteOperation<'a> {
+    fn new(client:   &'a mut Client,
+           index:    &'a str,
+           doc_type: &'a str,
+           id:       &'a str) -> DeleteOperation<'a> {
+        DeleteOperation {
+            client:   client,
+            index:    index,
+            doc_type: doc_type,
+            id:       id,
+            options:  Options::new()
+        }
+    }
+
+    add_option!(with_version, "version", DeleteOperation);
+    add_option!(with_routing, "routing", DeleteOperation);
+    add_option!(with_parent, "parent", DeleteOperation);
+    add_option!(with_consistency, "consistency", DeleteOperation);
+    add_option!(with_refresh, "refresh", DeleteOperation);
+    add_option!(with_timeout, "timeout", DeleteOperation);
+
+    pub fn send(&'a mut self) -> Result<DeleteResult, EsError> {
+        let url = format!("{}{}/{}/{}{}",
+                          self.client.get_base_url(),
+                          self.index,
+                          self.doc_type,
+                          self.id,
+                          format_query_string(&mut self.options));
+        let result = try!(self.client.delete_op(url.as_str(), None));
+        Ok(DeleteResult::from(&result.unwrap()))
     }
 }
 
@@ -305,8 +364,8 @@ pub struct IndexResult {
     created:  bool
 }
 
-impl From<Json> for IndexResult {
-    fn from(r: Json) -> IndexResult {
+impl<'a> From<&'a Json> for IndexResult {
+    fn from(r: &'a Json) -> IndexResult {
         IndexResult {
             index:    get_json_string!(r, "_index"),
             doc_type: get_json_string!(r, "_type"),
@@ -317,12 +376,34 @@ impl From<Json> for IndexResult {
     }
 }
 
+#[derive(Debug)]
+pub struct DeleteResult {
+    found:    bool,
+    index:    String,
+    doc_type: String,
+    id:       String,
+    version:  i64
+}
+
+impl<'a> From<&'a Json> for DeleteResult {
+    fn from(r: &'a Json) -> DeleteResult {
+        DeleteResult {
+            found:    get_json_bool!(r, "found"),
+            index:    get_json_string!(r, "_index"),
+            doc_type: get_json_string!(r, "_type"),
+            id:       get_json_string!(r, "_id"),
+            version:  get_json_i64!(r, "_version")
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     extern crate env_logger;
     extern crate regex;
 
     use super::Client;
+    use super::OpType;
 
     use std::collections::BTreeMap;
 
@@ -337,21 +418,24 @@ mod tests {
     }
 
     struct TestDocument {
-        str_field: String
+        str_field: String,
+        int_field: i64
     }
 
     impl ToJson for TestDocument {
         fn to_json(&self) -> Json {
             let mut d = BTreeMap::new();
             d.insert("str_field".to_string(), self.str_field.to_json());
+            d.insert("int_field".to_string(), self.int_field.to_json());
 
             Json::Object(d)
         }
     }
 
-    fn make_doc() -> TestDocument {
+    fn make_doc(int_f: i64) -> TestDocument {
         TestDocument {
-            str_field: "I am a test".to_string()
+            str_field: "I am a test".to_string(),
+            int_field: int_f
         }
     }
 
@@ -371,15 +455,36 @@ mod tests {
         env_logger::init().unwrap();
 
         let mut client = make_client();
-        let mut indexer = client.index("test_idx", "test_type");
-        let doc = make_doc();
-        let result_wrapped = indexer.with_doc(&doc).with_ttl(&927500).send();
-        info!("TEST RESULT: {:?}", result_wrapped);
-        let result = result_wrapped.unwrap();
-        assert_eq!(result.created, true);
-        assert_eq!(result.index, "test_idx");
-        assert_eq!(result.doc_type, "test_type");
-        assert!(result.id.len() > 0);
-        assert_eq!(result.version, 1);
+        {
+            let mut indexer = client.index("test_idx", "test_type");
+            let doc = make_doc(1);
+            let result_wrapped = indexer.with_doc(&doc).with_ttl(&927500).send();
+            info!("TEST RESULT: {:?}", result_wrapped);
+            let result = result_wrapped.unwrap();
+            assert_eq!(result.created, true);
+            assert_eq!(result.index, "test_idx");
+            assert_eq!(result.doc_type, "test_type");
+            assert!(result.id.len() > 0);
+            assert_eq!(result.version, 1);
+        }
+        {
+            let delete_result = client.delete("test_idx", "test_type", "TEST_INDEXING_2").send();
+            info!("DELETE RESULT: {:?}", delete_result);
+
+            let mut indexer = client.index("test_idx", "test_type");
+            let doc = make_doc(2);
+            let result_wrapped = indexer
+                .with_doc(&doc)
+                .with_id("TEST_INDEXING_2")
+                .with_op_type(&OpType::Create)
+                .send();
+            let result = result_wrapped.unwrap();
+
+            assert_eq!(result.created, true);
+            assert_eq!(result.index, "test_idx");
+            assert_eq!(result.doc_type, "test_type");
+            assert_eq!(result.id, "TEST_INDEXING_2");
+            assert!(result.version >= 1);
+        }
     }
 }
