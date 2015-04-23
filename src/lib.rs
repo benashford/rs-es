@@ -188,6 +188,12 @@ impl Client {
         IndexOperation::new(self, index, doc_type)
     }
 
+    pub fn get<'a>(&'a mut self,
+                   index: &'a str,
+                   id:    &'a str) -> GetOperation {
+        GetOperation::new(self, index, id)
+    }
+
     pub fn delete<'a>(&'a mut self,
                       index:    &'a str,
                       doc_type: &'a str,
@@ -290,6 +296,68 @@ impl<'a> IndexOperation<'a> {
     }
 }
 
+pub struct GetOperation<'a> {
+    client:   &'a mut Client,
+    index:    &'a str,
+    doc_type: Option<&'a str>,
+    id:       &'a str,
+    options:  Options
+}
+
+impl<'a> GetOperation<'a> {
+    fn new(client:   &'a mut Client,
+           index:    &'a str,
+           id:       &'a str) -> GetOperation<'a> {
+        GetOperation {
+            client:   client,
+            index:    index,
+            doc_type: None,
+            id:       id,
+            options:  Options::new()
+        }
+    }
+
+    pub fn with_all_types(&'a mut self) -> &'a mut GetOperation {
+        self.doc_type = Some("_all");
+        self
+    }
+
+    pub fn with_doc_type(&'a mut self, doc_type: &'a str) -> &'a mut GetOperation {
+        self.doc_type = Some(doc_type);
+        self
+    }
+
+    pub fn with_fields(&'a mut self, fields: &[&'a str]) -> &'a mut GetOperation {
+        let mut fields_str = String::new();
+        for field in fields {
+            fields_str.push_str(field);
+            fields_str.push_str(",");
+        }
+        fields_str.pop();
+
+        self.options.push(("fields", fields_str));
+        self
+    }
+
+    add_option!(with_realtime, "realtime", GetOperation);
+    add_option!(with_source, "_source", GetOperation);
+    add_option!(with_routing, "routing", GetOperation);
+    add_option!(with_preference, "preference", GetOperation);
+    add_option!(with_refresh, "refresh", GetOperation);
+    add_option!(with_version, "version", GetOperation);
+
+    pub fn send(&'a mut self) -> Result<GetResult, EsError> {
+        let url = format!("{}{}/{}/{}{}",
+                          self.client.get_base_url(),
+                          self.index,
+                          self.doc_type.unwrap(),
+                          self.id,
+                          format_query_string(&mut self.options));
+        let result = try!(self.client.get_op(url.as_str(), None));
+        Ok(GetResult::from(&result.unwrap()))
+    }
+}
+
 pub struct DeleteOperation<'a> {
     client:   &'a mut Client,
     index:    &'a str,
@@ -377,6 +445,38 @@ impl<'a> From<&'a Json> for IndexResult {
 }
 
 #[derive(Debug)]
+pub struct GetResult {
+    index:    String,
+    doc_type: String,
+    id:       String,
+    version:  i64,
+    found:    bool,
+    source:   Option<Json>
+}
+
+impl GetResult {
+    pub fn source<T: From<Json>>(self) -> T {
+        T::from(self.source.unwrap())
+    }
+}
+
+impl<'a> From<&'a Json> for GetResult {
+    fn from(r: &'a Json) -> GetResult {
+        GetResult {
+            index:    get_json_string!(r, "_index"),
+            doc_type: get_json_string!(r, "_type"),
+            id:       get_json_string!(r, "_id"),
+            version:  get_json_i64!(r, "_version"),
+            found:    get_json_bool!(r, "found"),
+            source:   match r.search("_source") {
+                Some(source) => Some(source.clone()),
+                None         => None
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct DeleteResult {
     found:    bool,
     index:    String,
@@ -429,6 +529,15 @@ mod tests {
             d.insert("int_field".to_string(), self.int_field.to_json());
 
             Json::Object(d)
+        }
+    }
+
+    impl From<Json> for TestDocument {
+        fn from(r: Json) -> TestDocument {
+            TestDocument {
+                str_field: get_json_string!(r, "str_field"),
+                int_field: get_json_i64!(r, "int_field")
+            }
         }
     }
 
@@ -485,6 +594,32 @@ mod tests {
             assert_eq!(result.doc_type, "test_type");
             assert_eq!(result.id, "TEST_INDEXING_2");
             assert!(result.version >= 1);
+        }
+    }
+
+    #[test]
+    fn test_get() {
+        let mut client = make_client();
+        {
+            let doc = make_doc(3);
+            client
+                .index("test_idx", "test_type")
+                .with_id("TEST_GETTING")
+                .with_doc(&doc)
+                .send().unwrap();
+        }
+        {
+            let mut getter = client.get("test_idx", "TEST_GETTING");
+            let result_wrapped = getter
+                .with_doc_type("test_type")
+                .send();
+            info!("RESULT: {:?}", result_wrapped);
+            let result = result_wrapped.unwrap();
+            assert_eq!(result.id, "TEST_GETTING");
+
+            let source:TestDocument = result.source();
+            assert_eq!(source.str_field, "I am a test");
+            assert_eq!(source.int_field, 3);
         }
     }
 }

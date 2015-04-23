@@ -1,1 +1,2 @@
 1. Delete-by-query
+2. Get API "_source" (http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-get.html#_source)
