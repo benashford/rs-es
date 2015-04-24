@@ -1,3 +1,3 @@
-1. Delete-by-query
+1. Variations of Match query
 2. Full set of QueryDSL
 3. Get API "_source" (http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-get.html#_source)
