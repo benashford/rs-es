@@ -8,6 +8,10 @@
 extern crate hyper;
 extern crate rustc_serialize;
 
+pub mod query;
+
+use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::error::Error;
 use std::io;
 use std::fmt;
@@ -17,6 +21,8 @@ use hyper::status::StatusCode;
 
 use rustc_serialize::json;
 use rustc_serialize::json::{Json, ToJson};
+
+use query::Query;
 
 // Error handling
 
@@ -102,6 +108,20 @@ fn format_query_string(options: &mut Vec<(&'static str, String)>) -> String {
         st.push_str("&");
     }
     st.pop();
+    st
+}
+
+fn format_multi(parts: &Vec<String>) -> String {
+    let mut st = String::new();
+    if parts.is_empty() {
+        st.push_str("_all");
+    } else {
+        for s in parts {
+            st.push_str(s);
+            st.push_str(",");
+        }
+        st.pop();
+    }
     st
 }
 
@@ -199,6 +219,10 @@ impl Client {
                       doc_type: &'a str,
                       id:       &'a str) -> DeleteOperation {
         DeleteOperation::new(self, index, doc_type, id)
+    }
+
+    pub fn delete_by_query<'a>(&'a mut self) -> DeleteByQueryOperation {
+        DeleteByQueryOperation::new(self)
     }
 }
 
@@ -400,6 +424,95 @@ impl<'a> DeleteOperation<'a> {
     }
 }
 
+struct DeleteByQueryBody {
+    query: query::Query
+}
+
+impl ToJson for DeleteByQueryBody {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("query".to_string(), self.query.to_json());
+        Json::Object(d)
+    }
+}
+
+enum QueryOption {
+    String(String),
+    Document(DeleteByQueryBody)
+}
+
+macro_rules! add_to_vec_option {
+    ($n:ident, $c:ident, $t:ident) => {
+        pub fn $n(&'a mut self, val: String) -> &'a mut $t {
+            self.$c.push(val);
+            self
+        }
+    }
+}
+
+pub struct DeleteByQueryOperation<'a> {
+    client:    &'a mut Client,
+    indexes:   Vec<String>,
+    doc_types: Vec<String>,
+    query:     QueryOption,
+    options:   Options
+}
+
+impl<'a> DeleteByQueryOperation<'a> {
+    fn new(client: &'a mut Client) -> DeleteByQueryOperation<'a> {
+        DeleteByQueryOperation {
+            client:    client,
+            indexes:   Vec::with_capacity(1),
+            doc_types: Vec::with_capacity(1),
+            query:     QueryOption::String("".to_string()),
+            options:   Options::new()
+        }
+    }
+
+    add_to_vec_option!(add_index, indexes, DeleteByQueryOperation);
+    add_to_vec_option!(add_doc_type, doc_types, DeleteByQueryOperation);
+
+    pub fn with_query_string(&'a mut self, qs: String) -> &'a mut DeleteByQueryOperation {
+        self.query = QueryOption::String(qs);
+        self
+    }
+
+    pub fn with_query(&'a mut self, q: Query) -> &'a mut DeleteByQueryOperation {
+        self.query = QueryOption::Document(DeleteByQueryBody { query: q });
+        self
+    }
+
+    add_option!(with_df, "df", DeleteByQueryOperation);
+    add_option!(with_analyzer, "analyzer", DeleteByQueryOperation);
+    add_option!(with_default_operator, "default_operator", DeleteByQueryOperation);
+    add_option!(with_routing, "routing", DeleteByQueryOperation);
+    add_option!(with_consistency, "consistency", DeleteByQueryOperation);
+
+    pub fn send(&'a mut self) -> Result<DeleteByQueryResult, EsError> {
+        let options = match &self.query {
+            &QueryOption::Document(_)   => &mut self.options,
+            &QueryOption::String(ref s) => {
+                let opts = &mut self.options;
+                opts.push(("q", s.clone()));
+                opts
+            }
+        };
+        let url = format!("{}{}/{}/_query{}",
+                          self.client.get_base_url(),
+                          format_multi(&self.indexes),
+                          format_multi(&self.doc_types),
+                          format_query_string(options));
+        let result = try!(match self.query {
+            QueryOption::Document(ref d) => self.client.delete_op(url.as_str(),
+                                                                  Some(&d.to_json())),
+            QueryOption::String(_)       => self.client.delete_op(url.as_str(),
+                                                                  None)
+        });
+        info!("DELETE BY QUERY RESULT: {:?}", result);
+        Ok(DeleteByQueryResult::from(&result.unwrap()))
+    }
+}
+
 macro_rules! get_json_thing {
     ($r:ident,$f:expr,$t:ident) => {
         $r.find($f).unwrap().$t().unwrap()
@@ -498,6 +611,58 @@ impl<'a> From<&'a Json> for DeleteResult {
     }
 }
 
+#[derive(Debug)]
+pub struct DeleteByQueryShardResult {
+    total:   i64,
+    success: i64,
+    failed:  i64
+}
+
+impl<'a> From<&'a Json> for DeleteByQueryShardResult {
+    fn from(r: &'a Json) -> DeleteByQueryShardResult {
+        info!("DeleteByQueryShardResult from: {:?}", r);
+
+        DeleteByQueryShardResult {
+            total:   get_json_i64!(r, "total"),
+            success: get_json_i64!(r, "successful"),
+            failed:  get_json_i64!(r, "failed")
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct DeleteByQueryIndexResult {
+    shards: DeleteByQueryShardResult
+}
+
+impl<'a> From<&'a Json> for DeleteByQueryIndexResult {
+    fn from(r: &'a Json) -> DeleteByQueryIndexResult {
+        DeleteByQueryIndexResult {
+            shards: DeleteByQueryShardResult::from(r.find("_shards").unwrap())
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct DeleteByQueryResult {
+    indices: HashMap<String, DeleteByQueryIndexResult>
+}
+
+impl<'a> From<&'a Json> for DeleteByQueryResult {
+    fn from(r: &'a Json) -> DeleteByQueryResult {
+        info!("DeleteByQueryResult from: {:?}", r);
+
+        let indices = r.find("_indices").unwrap().as_object().unwrap();
+        let mut indices_map = HashMap::new();
+        for (k, v) in indices {
+            indices_map.insert(k.clone(), DeleteByQueryIndexResult::from(v));
+        }
+        DeleteByQueryResult {
+            indices: indices_map
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     extern crate env_logger;
@@ -505,6 +670,8 @@ mod tests {
 
     use super::Client;
     use super::OpType;
+
+    use super::query::Query::{MatchAll};
 
     use std::collections::BTreeMap;
 
@@ -549,6 +716,10 @@ mod tests {
         }
     }
 
+    fn clean_db(client: &mut Client) {
+        client.delete_by_query().with_query(MatchAll).send().unwrap();
+    }
+
     // tests
 
     #[test]
@@ -565,6 +736,7 @@ mod tests {
         env_logger::init().unwrap();
 
         let mut client = make_client();
+        clean_db(&mut client);
         {
             let mut indexer = client.index("test_idx", "test_type");
             let doc = make_doc(1);
@@ -601,6 +773,7 @@ mod tests {
     #[test]
     fn test_get() {
         let mut client = make_client();
+        clean_db(&mut client);
         {
             let doc = make_doc(3);
             client
