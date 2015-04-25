@@ -563,7 +563,7 @@ pub struct GetResult {
     index:    String,
     doc_type: String,
     id:       String,
-    version:  i64,
+    version:  Option<i64>,
     found:    bool,
     source:   Option<Json>
 }
@@ -576,16 +576,14 @@ impl GetResult {
 
 impl<'a> From<&'a Json> for GetResult {
     fn from(r: &'a Json) -> GetResult {
+        info!("GetResult FROM: {:?}", r);
         GetResult {
             index:    get_json_string!(r, "_index"),
             doc_type: get_json_string!(r, "_type"),
             id:       get_json_string!(r, "_id"),
-            version:  get_json_i64!(r, "_version"),
+            version:  r.search("_version").map(|v| v.as_i64().unwrap()),
             found:    get_json_bool!(r, "found"),
-            source:   match r.search("_source") {
-                Some(source) => Some(source.clone()),
-                None         => None
-            }
+            source:   r.search("_source").map(|source| source.clone())
         }
     }
 }
@@ -635,6 +633,12 @@ pub struct DeleteByQueryIndexResult {
     shards: DeleteByQueryShardResult
 }
 
+impl DeleteByQueryIndexResult {
+    fn successful(&self) -> bool {
+        self.shards.failed == 0
+    }
+}
+
 impl<'a> From<&'a Json> for DeleteByQueryIndexResult {
     fn from(r: &'a Json) -> DeleteByQueryIndexResult {
         DeleteByQueryIndexResult {
@@ -646,6 +650,17 @@ impl<'a> From<&'a Json> for DeleteByQueryIndexResult {
 #[derive(Debug)]
 pub struct DeleteByQueryResult {
     indices: HashMap<String, DeleteByQueryIndexResult>
+}
+
+impl DeleteByQueryResult {
+    fn successful(&self) -> bool {
+        for dbqir in self.indices.values() {
+            if !dbqir.successful() {
+                return false
+            }
+        }
+        true
+    }
 }
 
 impl<'a> From<&'a Json> for DeleteByQueryResult {
@@ -671,6 +686,7 @@ mod tests {
     use super::Client;
     use super::OpType;
 
+    use super::query::Query;
     use super::query::Query::{MatchAll};
 
     use std::collections::BTreeMap;
@@ -795,5 +811,39 @@ mod tests {
             assert_eq!(source.str_field, "I am a test");
             assert_eq!(source.int_field, 3);
         }
+    }
+
+    #[test]
+    fn test_delete_by_query() {
+        let mut client = make_client();
+        clean_db(&mut client);
+
+        let td1 = TestDocument {
+            str_field: "TEST DOC 1".to_string(),
+            int_field: 100
+        };
+
+        let td2 = TestDocument {
+            str_field: "TEST DOC 2".to_string(),
+            int_field: 200
+        };
+
+        client.index("test_idx", "test_type").with_id("ABC123").with_doc(&td1).send().unwrap();
+        client.index("test_idx", "test_type").with_id("ABC124").with_doc(&td2).send().unwrap();
+
+        let delete_result = client
+            .delete_by_query()
+            .add_index("test_idx".to_string())
+            .add_doc_type("test_type".to_string())
+            .with_query(Query::build_match("int_field".to_string(), 200.to_json()).build())
+            .send().unwrap();
+
+        assert!(delete_result.successful());
+
+        let doc1 = client.get("test_idx", "ABC123").with_doc_type("test_type").send().unwrap();
+        let doc2 = client.get("test_idx", "ABC124").with_doc_type("test_type").send().unwrap();
+
+        assert!(doc1.found);
+        assert!(!doc2.found);
     }
 }

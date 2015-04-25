@@ -26,7 +26,7 @@ impl ToJson for Query {
 }
 
 impl Query {
-    pub fn build_match(field: String, query: String) -> MatchQuery {
+    pub fn build_match(field: String, query: Json) -> MatchQuery {
         MatchQuery {
             field:            field,
             query:            query,
@@ -39,8 +39,8 @@ impl Query {
 }
 
 macro_rules! with {
-    ($funcn:ident, $sn:ident, $t:ident, $rt:ident) => {
-        pub fn $funcn<'a>(&'a mut self, value: $t) -> &'a mut $rt {
+    ($funcn:ident, $sn:ident, $t:ident) => {
+        pub fn $funcn<'a>(&'a mut self, value: $t) -> &'a mut Self {
             self.$sn = Some(value);
             self
         }
@@ -58,7 +58,7 @@ macro_rules! optional_add {
 
 pub struct MatchQuery {
     field:            String,
-    query:            String,
+    query:            Json,
     operator:         Option<String>,
     zero_terms_query: Option<String>,
     cutoff_frequency: Option<f64>,
@@ -66,10 +66,10 @@ pub struct MatchQuery {
 }
 
 impl MatchQuery {
-    with!(with_operator, operator, String, MatchQuery);
-    with!(with_zero_terms_query, zero_terms_query, String, MatchQuery);
-    with!(with_cutoff_frequency, cutoff_frequency, f64, MatchQuery);
-    with!(with_lenient, lenient, bool, MatchQuery);
+    with!(with_operator, operator, String);
+    with!(with_zero_terms_query, zero_terms_query, String);
+    with!(with_cutoff_frequency, cutoff_frequency, f64);
+    with!(with_lenient, lenient, bool);
 
     pub fn build(self) -> Query {
         Match(self)
