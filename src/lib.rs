@@ -835,7 +835,9 @@ mod tests {
             .delete_by_query()
             .add_index("test_idx".to_string())
             .add_doc_type("test_type".to_string())
-            .with_query(Query::build_match("int_field".to_string(), 200.to_json()).build())
+            .with_query(Query::build_match("int_field".to_string(), 200.to_json())
+                        .with_lenient(false)
+                        .build())
             .send().unwrap();
 
         assert!(delete_result.successful());
