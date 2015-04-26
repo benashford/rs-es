@@ -653,7 +653,7 @@ pub struct DeleteByQueryResult {
 }
 
 impl DeleteByQueryResult {
-    fn successful(&self) -> bool {
+    pub fn successful(&self) -> bool {
         for dbqir in self.indices.values() {
             if !dbqir.successful() {
                 return false
