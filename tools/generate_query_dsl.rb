@@ -36,7 +36,9 @@ class ESDSLGen
                    e('MultiMatch', 'multi_match'),
                    e('Bool', 'bool'),
                    e('Boosting', 'boosting'),
-                   e('Common', 'common')]}
+                   e('Common', 'common'),
+                   e('ConstantScore', 'constant_score')],
+       'Filter' => [e('And', 'and')]}
     end
 
     def last(col, item)
@@ -49,23 +51,24 @@ class ESDSLGen
           #[derive(Clone)]
           pub enum <%= name %> {
              <% fields.each do |field| %>
-               <%= field.name %>(<%= field.name %>Query)<% if !last(fields, field) %>,<% end %>
+               <%= field.name %>(<%= field.name %><%= name %>)
+               <% if !last(fields, field) %>,<% end %>
              <% end %>
           }
 
           use self::<%= name %>::{<%= fields.map(&:name).join(',') %>};
 
-          impl Query {
+          impl <%= name %> {
               <% fields.each do |field| %>
                   pub fn build_<%= field.json_name %>(
-                     <% sfs = get_struct_fields(field.name).reject(&:optional); sfs.each do |sf| %>
+                     <% sfs = get_struct_fields(field.name, name).reject(&:optional); sfs.each do |sf| %>
                          <%= sf.name %>: <%= sf.type %><% if !last(sfs, sf) %>,<% end %>
-                     <% end %>) -> <%= field.name %>Query {
-                     <% if get_struct_fields(field.name).empty? %>
-                         <%= field.name %>Query
+                     <% end %>) -> <%= field.name %><%= name %> {
+                     <% if get_struct_fields(field.name, name).empty? %>
+                         <%= field.name %><%= name %>
                      <% else %>
-                         <%= field.name %>Query {
-                             <% sfs = get_struct_fields(field.name); sfs.each do |sf| %>
+                         <%= field.name %><%= name %> {
+                             <% sfs = get_struct_fields(field.name, name); sfs.each do |sf| %>
                                  <%= sf.name %>: <% if sf.optional %>
                                                      None
                                                  <% else %>
@@ -78,7 +81,7 @@ class ESDSLGen
               <% end %>
           }
 
-          impl ToJson for Query {
+          impl ToJson for <%= name %> {
               fn to_json(&self) -> Json {
                   let mut d = BTreeMap::<String, Json>::new();
                   match self {
@@ -110,48 +113,68 @@ class ESDSLGen
       ]
     end
 
-    def structs
-      {'MatchAllQuery'  => [],
-       'MatchQuery'     => [
-         f('field', 'String'),
-         f('query', 'Json'),
-         f('match_type', 'MatchType', true),
-         f('cutoff_frequency', 'f64', true),
-         f('lenient', 'bool', true)
-       ].concat(common_match_options),
-       'MultiMatchQuery' => [
-         f('fields', 'Vec<String>'),
-         f('query', 'Json'),
-         f('use_dis_max', 'bool', true),
-         f('match_type', 'MatchQueryType', true)
-       ].concat(common_match_options),
-       'BoolQuery' => [
-         f('must', 'Vec<Query>', true),
-         f('must_not', 'Vec<Query>', true),
-         f('should', 'Vec<Query>', true),
-         f('minimum_should_match', 'i64', true),
-         f('boost', 'f64', true)
-       ],
-       'BoostingQuery' => [
-         f('positive', 'Box<Query>', true),
-         f('negative', 'Box<Query>', true),
-         f('negative_boost', 'f64', true)
-       ],
-       'CommonQuery' => [
-         f('query', 'Json'),
-         f('cutoff_frequency', 'f64', true),
-         f('low_freq_operator', 'String', true),
-         f('high_freq_operator', 'String', true),
-         f('minimum_should_match', 'MinimumShouldMatch', true),
-         f('boost', 'f64', true),
-         f('analyzer', 'String', true),
-         f('disable_coord', 'bool', true)
-       ]
-      }
+    def common_filter_options
+      [f('_cache', 'bool', true)]
     end
 
-    def get_struct_fields(struct_name)
-      structs["#{struct_name}Query"]
+    def structs
+      query_structs = {'MatchAllQuery'  => [],
+                       'MatchQuery'     => [
+                         f('field', 'String'),
+                         f('query', 'Json'),
+                         f('match_type', 'MatchType', true),
+                         f('cutoff_frequency', 'f64', true),
+                         f('lenient', 'bool', true)
+                       ].concat(common_match_options),
+                       'MultiMatchQuery' => [
+                         f('fields', 'Vec<String>'),
+                         f('query', 'Json'),
+                         f('use_dis_max', 'bool', true),
+                         f('match_type', 'MatchQueryType', true)
+                       ].concat(common_match_options),
+                       'BoolQuery' => [
+                         f('must', 'Vec<Query>', true),
+                         f('must_not', 'Vec<Query>', true),
+                         f('should', 'Vec<Query>', true),
+                         f('minimum_should_match', 'i64', true),
+                         f('boost', 'f64', true)
+                       ],
+                       'BoostingQuery' => [
+                         f('positive', 'Box<Query>', true),
+                         f('negative', 'Box<Query>', true),
+                         f('negative_boost', 'f64', true)
+                       ],
+                       'CommonQuery' => [
+                         f('query', 'Json'),
+                         f('cutoff_frequency', 'f64', true),
+                         f('low_freq_operator', 'String', true),
+                         f('high_freq_operator', 'String', true),
+                         f('minimum_should_match', 'MinimumShouldMatch', true),
+                         f('boost', 'f64', true),
+                         f('analyzer', 'String', true),
+                         f('disable_coord', 'bool', true)
+                       ],
+                       'ConstantScoreQuery' => [
+                         f('filter', 'Box<Filter>', true),
+                         f('query', 'Box<Query>', true),
+                         f('boost', 'f64', true)
+                       ]
+                      }
+
+      filter_structs = {'AndFilter' => [
+                          f('filters', 'Vec<Filter>', true),
+                        ]
+                       }
+
+      query_structs.tap do |all_structs|
+        filter_structs.each do |name, fields|
+          all_structs[name] = fields.concat(common_filter_options)
+        end
+      end
+    end
+
+    def get_struct_fields(struct_name, type)
+      structs["#{struct_name}#{type}"]
     end
 
     def generate_structs

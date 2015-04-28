@@ -6,6 +6,8 @@ use rustc_serialize::json::{Json, ToJson};
 
 <%= enums['Query'] %>
 
+<%= enums['Filter'] %>
+
 macro_rules! with {
     ($funcn:ident, $sn:ident, $t:ty) => {
         pub fn $funcn<'a>(&'a mut self, value: $t) -> &'a mut Self {
@@ -150,6 +152,30 @@ impl ToJson for CommonQuery {
         inner.insert("query".to_string(), self.query.clone());
         self.add_optionals(&mut inner);
         d.insert("body".to_string(), inner.to_json());
+        Json::Object(d)
+    }
+}
+
+<%= structs['ConstantScoreQuery'] %>
+
+impl ToJson for ConstantScoreQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        self.add_optionals(&mut d);
+
+        Json::Object(d)
+    }
+}
+
+// Filters
+
+<%= structs['AndFilter'] %>
+
+impl ToJson for AndFilter {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        self.add_optionals(&mut d);
+
         Json::Object(d)
     }
 }
