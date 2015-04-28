@@ -33,7 +33,8 @@ class ESDSLGen
     def enums
       {'Query' => [e('MatchAll', 'match_all'),
                    e('Match', 'match'),
-                   e('MultiMatch', 'multi_match')]}
+                   e('MultiMatch', 'multi_match'),
+                   e('Bool', 'bool')]}
     end
 
     def last(col, item)
@@ -43,6 +44,7 @@ class ESDSLGen
     def generate_enums
       enums.reduce({}) do |m, (name, fields)|
         m[name] = ERB.new(<<-END).result(binding)
+          #[derive(Clone)]
           pub enum <%= name %> {
              <% fields.each do |field| %>
                <%= field.name %>(<%= field.name %>Query)<% if !last(fields, field) %>,<% end %>
@@ -120,7 +122,14 @@ class ESDSLGen
          f('query', 'Json'),
          f('use_dis_max', 'bool', true),
          f('match_type', 'MatchQueryType', true)
-       ].concat(common_match_options)
+       ].concat(common_match_options),
+       'BoolQuery' => [
+         f('must', 'Vec<Query>', true),
+         f('must_not', 'Vec<Query>', true),
+         f('should', 'Vec<Query>', true),
+         f('minimum_should_match', 'i64', true),
+         f('boost', 'f64', true)
+       ]
       }
     end
 
