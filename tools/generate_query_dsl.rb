@@ -35,7 +35,8 @@ class ESDSLGen
                    e('Match', 'match'),
                    e('MultiMatch', 'multi_match'),
                    e('Bool', 'bool'),
-                   e('Boosting', 'boosting')]}
+                   e('Boosting', 'boosting'),
+                   e('Common', 'common')]}
     end
 
     def last(col, item)
@@ -135,6 +136,16 @@ class ESDSLGen
          f('positive', 'Box<Query>', true),
          f('negative', 'Box<Query>', true),
          f('negative_boost', 'f64', true)
+       ],
+       'CommonQuery' => [
+         f('query', 'Json'),
+         f('cutoff_frequency', 'f64', true),
+         f('low_freq_operator', 'String', true),
+         f('high_freq_operator', 'String', true),
+         f('minimum_should_match', 'MinimumShouldMatch', true),
+         f('boost', 'f64', true),
+         f('analyzer', 'String', true),
+         f('disable_coord', 'bool', true)
        ]
       }
     end

@@ -120,3 +120,36 @@ impl ToJson for BoostingQuery {
         Json::Object(d)
     }
 }
+
+<%= structs['CommonQuery'] %>
+
+#[derive(Clone)]
+pub enum MinimumShouldMatch {
+    Num(i64),
+    LowHigh(i64, i64)
+}
+
+impl ToJson for MinimumShouldMatch {
+    fn to_json(&self) -> Json {
+        match self {
+            &MinimumShouldMatch::Num(val) => val.to_json(),
+            &MinimumShouldMatch::LowHigh(low, high) => {
+                let mut d = BTreeMap::new();
+                d.insert("low_freq".to_string(), low.to_json());
+                d.insert("high_freq".to_string(), high.to_json());
+                Json::Object(d)
+            }
+        }
+    }
+}
+
+impl ToJson for CommonQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        inner.insert("query".to_string(), self.query.clone());
+        self.add_optionals(&mut inner);
+        d.insert("body".to_string(), inner.to_json());
+        Json::Object(d)
+    }
+}
