@@ -687,7 +687,6 @@ mod tests {
     use super::OpType;
 
     use super::query::Query;
-    use super::query::Query::{MatchAll};
 
     use std::collections::BTreeMap;
 
@@ -733,7 +732,7 @@ mod tests {
     }
 
     fn clean_db(client: &mut Client) {
-        client.delete_by_query().with_query(MatchAll).send().unwrap();
+        client.delete_by_query().with_query(Query::build_match_all().build()).send().unwrap();
     }
 
     // tests
