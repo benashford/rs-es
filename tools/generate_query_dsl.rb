@@ -98,8 +98,14 @@ class ESDSLGen
     end
 
     def generate
-      {enums:   generate_enums,
-       structs: generate_structs,}
+      enums = generate_enums
+      structs = generate_structs
+
+      template = File.read('templates/query.rs.erb')
+      result_file = ERB.new(template).result(binding)
+      File.open('src/query.rb', 'w') do |file|
+        file << result_file
+      end
     end
   end
 end
