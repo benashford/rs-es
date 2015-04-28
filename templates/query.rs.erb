@@ -110,3 +110,13 @@ impl ToJson for BoolQuery {
         Json::Object(d)
     }
 }
+
+<%= structs['BoostingQuery'] %>
+
+impl ToJson for BoostingQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        self.add_optionals(&mut d);
+        Json::Object(d)
+    }
+}

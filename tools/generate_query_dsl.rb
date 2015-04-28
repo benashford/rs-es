@@ -34,7 +34,8 @@ class ESDSLGen
       {'Query' => [e('MatchAll', 'match_all'),
                    e('Match', 'match'),
                    e('MultiMatch', 'multi_match'),
-                   e('Bool', 'bool')]}
+                   e('Bool', 'bool'),
+                   e('Boosting', 'boosting')]}
     end
 
     def last(col, item)
@@ -129,6 +130,11 @@ class ESDSLGen
          f('should', 'Vec<Query>', true),
          f('minimum_should_match', 'i64', true),
          f('boost', 'f64', true)
+       ],
+       'BoostingQuery' => [
+         f('positive', 'Box<Query>', true),
+         f('negative', 'Box<Query>', true),
+         f('negative_boost', 'f64', true)
        ]
       }
     end
