@@ -26,20 +26,7 @@ macro_rules! optional_add {
 
 // Match queries
 
-#[derive(Clone)]
-pub enum ZeroTermsQuery {
-    None,
-    All
-}
-
-impl ToJson for ZeroTermsQuery {
-    fn to_json(&self) -> Json {
-        match self {
-            &ZeroTermsQuery::None => "none".to_json(),
-            &ZeroTermsQuery::All  => "all".to_json()
-        }
-    }
-}
+<%= simple_value_enum('ZeroTermsQuery', ['none', 'all']) %>
 
 #[derive(Clone)]
 pub enum Fuzziness {
@@ -59,21 +46,13 @@ impl ToJson for Fuzziness {
     }
 }
 
-#[derive(Clone)]
-pub enum MatchType {
-    Phrase,
-    PhrasePrefix
-}
+<%= simple_value_enum('MatchType', ['phrase', 'phrase_prefix']) %>
 
-impl ToJson for MatchType {
-    fn to_json(&self) -> Json {
-        use self::MatchType::{Phrase, PhrasePrefix};
-        match self {
-            &Phrase =>       "phrase".to_json(),
-            &PhrasePrefix => "phrase_prefix".to_json()
-        }
-    }
-}
+<%= simple_value_enum('MatchQueryType', ['best_fields',
+                                         'most_fields',
+                                         'cross_fields',
+                                         'phrase',
+                                         'phrase_prefix']) %>
 
 // Option structs for Query(ies)
 
@@ -104,32 +83,6 @@ impl ToJson for MatchQuery {
         d.insert(self.field.clone(), Json::Object(inner));
 
         Json::Object(d)
-    }
-}
-
-#[derive(Clone)]
-pub enum MatchQueryType {
-    BestFields,
-    MostFields,
-    CrossFields,
-    Phrase,
-    PhrasePrefix
-}
-
-impl ToJson for MatchQueryType {
-    fn to_json(&self) -> Json {
-        use self::MatchQueryType::{BestFields,
-                                   MostFields,
-                                   CrossFields,
-                                   Phrase,
-                                   PhrasePrefix};
-        match self {
-            &BestFields   => "best_fields".to_json(),
-            &MostFields   => "most_fields".to_json(),
-            &CrossFields  => "cross_fields".to_json(),
-            &Phrase       => "phrase".to_json(),
-            &PhrasePrefix => "phrase_prefix".to_json()
-        }
     }
 }
 

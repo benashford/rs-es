@@ -165,6 +165,30 @@ class ESDSLGen
       end
     end
 
+    def simple_value_enum(name, fields)
+      ERB.new(<<-END).result(binding)
+        #[derive(Clone)]
+        pub enum <%= name %> {
+            <% fields.each do |field| %>
+                <%= field.split('_').map(&:capitalize).join %>
+                <% if !last(fields, field) %>,<% end %>
+            <% end %>
+        }
+
+        impl ToJson for <%= name %> {
+            fn to_json(&self) -> Json {
+                match self {
+                    <% fields.each do |field| %>
+                        &<%= name %>::<%= field.split('_').map(&:capitalize).join %>
+                        => "<%= field %>".to_json()
+                        <% if !last(fields, field) %>,<% end %>
+                    <% end %>
+                }
+            }
+        }
+      END
+    end
+
     def generate
       enums = generate_enums
       structs = generate_structs
