@@ -29,16 +29,19 @@ class ESDSLGen
     end
 
     def enums
-      {'Query' => [e('MatchAll', 'match_all'),
-                   e('Match', 'match'),
-                   e('MultiMatch', 'multi_match'),
-                   e('Bool', 'bool'),
-                   e('Boosting', 'boosting'),
-                   e('Common', 'common'),
-                   e('ConstantScore', 'constant_score'),
-                   e('DisMax', 'dis_max'),
-                   e('Filtered', 'filtered'),
-                   e('FuzzyLikeThis', 'fuzzy_like_this')],
+      {'Query' => [
+         e('MatchAll', 'match_all'),
+         e('Match', 'match'),
+         e('MultiMatch', 'multi_match'),
+         e('Bool', 'bool'),
+         e('Boosting', 'boosting'),
+         e('Common', 'common'),
+         e('ConstantScore', 'constant_score'),
+         e('DisMax', 'dis_max'),
+         e('Filtered', 'filtered'),
+         e('FuzzyLikeThis', 'fuzzy_like_this'),
+         e('FuzzyLikeThisField', 'fuzzy_like_this_field')
+       ],
        'Filter' => [e('And', 'and')]}
     end
 
@@ -172,6 +175,16 @@ class ESDSLGen
                        ],
                        'FuzzyLikeThisQuery' => [
                          f('fields', 'Vec<String>', true),
+                         f('like_text', 'String'),
+                         f('ignore_tf', 'bool', true),
+                         f('max_query_terms', 'i64', true),
+                         f('fuzziness', 'Fuzziness', true),
+                         f('prefix_length', 'i64', true),
+                         f('boost', 'f64', true),
+                         f('analyzer', 'String', true)
+                       ],
+                       'FuzzyLikeThisFieldQuery' => [
+                         f('field', 'String'),
                          f('like_text', 'String'),
                          f('ignore_tf', 'bool', true),
                          f('max_query_terms', 'i64', true),

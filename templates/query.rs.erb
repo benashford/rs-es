@@ -165,6 +165,19 @@ impl ToJson for Strategy {
 <%= structs['FuzzyLikeThisQuery'] %>
 <%= to_json_impl('FuzzyLikeThisQuery') %>
 
+<%= structs['FuzzyLikeThisFieldQuery'] %>
+
+impl ToJson for FuzzyLikeThisFieldQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        inner.insert("like_text".to_string(), self.like_text.to_json());
+        self.add_optionals(&mut inner);
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
 // Filters
 
 <%= structs['AndFilter'] %>
