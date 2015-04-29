@@ -36,7 +36,8 @@ class ESDSLGen
                    e('Boosting', 'boosting'),
                    e('Common', 'common'),
                    e('ConstantScore', 'constant_score'),
-                   e('DisMax', 'dis_max')],
+                   e('DisMax', 'dis_max'),
+                   e('Filtered', 'filtered')],
        'Filter' => [e('And', 'and')]}
     end
 
@@ -162,6 +163,11 @@ class ESDSLGen
                          f('tie_breaker', 'f64', true),
                          f('boost', 'f64', true),
                          f('queries', 'Vec<Query>')
+                       ],
+                       'FilteredQuery' => [
+                         f('filter', 'Box<Filter>'),
+                         f('query', 'Box<Query>', true),
+                         f('strategy', 'Strategy', true)
                        ]
                       }
 

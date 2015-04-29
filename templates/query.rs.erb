@@ -137,6 +137,31 @@ impl ToJson for CommonQuery {
 <%= structs['DisMaxQuery'] %>
 <%= to_json_impl('DisMaxQuery') %>
 
+<%= structs['FilteredQuery'] %>
+
+#[derive(Clone)]
+pub enum Strategy {
+    LeapFrogQueryFirst,
+    LeapFrogFilterFirst,
+    QueryFirst,
+    RandomAccess(i64),
+    RandomAccessAlways
+}
+
+impl ToJson for Strategy {
+    fn to_json(&self) -> Json {
+        match self {
+            &Strategy::LeapFrogQueryFirst  => "leap_frog_query_first".to_json(),
+            &Strategy::LeapFrogFilterFirst => "leap_frog_filter_first".to_json(),
+            &Strategy::QueryFirst          => "query_first".to_json(),
+            &Strategy::RandomAccess(amt)   => format!("random_access_{}", amt).to_json(),
+            &Strategy::RandomAccessAlways  => "random_access_always".to_json()
+        }
+    }
+}
+
+<%= to_json_impl('FilteredQuery') %>
+
 // Filters
 
 <%= structs['AndFilter'] %>
