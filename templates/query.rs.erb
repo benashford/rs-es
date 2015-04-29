@@ -162,6 +162,9 @@ impl ToJson for Strategy {
 
 <%= to_json_impl('FilteredQuery') %>
 
+<%= structs['FuzzyLikeThisQuery'] %>
+<%= to_json_impl('FuzzyLikeThisQuery') %>
+
 // Filters
 
 <%= structs['AndFilter'] %>

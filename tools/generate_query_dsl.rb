@@ -37,7 +37,8 @@ class ESDSLGen
                    e('Common', 'common'),
                    e('ConstantScore', 'constant_score'),
                    e('DisMax', 'dis_max'),
-                   e('Filtered', 'filtered')],
+                   e('Filtered', 'filtered'),
+                   e('FuzzyLikeThis', 'fuzzy_like_this')],
        'Filter' => [e('And', 'and')]}
     end
 
@@ -168,6 +169,16 @@ class ESDSLGen
                          f('filter', 'Box<Filter>'),
                          f('query', 'Box<Query>', true),
                          f('strategy', 'Strategy', true)
+                       ],
+                       'FuzzyLikeThisQuery' => [
+                         f('fields', 'Vec<String>', true),
+                         f('like_text', 'String'),
+                         f('ignore_tf', 'bool', true),
+                         f('max_query_terms', 'i64', true),
+                         f('fuzziness', 'Fuzziness', true),
+                         f('prefix_length', 'i64', true),
+                         f('boost', 'f64', true),
+                         f('analyzer', 'String', true)
                        ]
                       }
 
