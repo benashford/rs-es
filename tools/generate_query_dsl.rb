@@ -7,16 +7,14 @@ E = Struct.new(:name, :json_name)
 F = Struct.new(:name, :type, :optional)
 
 class F
+  JSON_SUBS = {'match_type' => 'type'}
+
   def json_name
-    if name == 'match_type'
-      'type'
-    else
-      name
-    end
+    JSON_SUBS[name] || name
   end
 
   def with
-    "with_#{json_name}"
+    "with_#{json_name.gsub(/^_/, '')}"
   end
 end
 
