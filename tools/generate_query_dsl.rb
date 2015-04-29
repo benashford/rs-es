@@ -35,7 +35,8 @@ class ESDSLGen
                    e('Bool', 'bool'),
                    e('Boosting', 'boosting'),
                    e('Common', 'common'),
-                   e('ConstantScore', 'constant_score')],
+                   e('ConstantScore', 'constant_score'),
+                   e('DisMax', 'dis_max')],
        'Filter' => [e('And', 'and')]}
     end
 
@@ -156,6 +157,11 @@ class ESDSLGen
                          f('filter', 'Box<Filter>', true),
                          f('query', 'Box<Query>', true),
                          f('boost', 'f64', true)
+                       ],
+                       'DisMaxQuery' => [
+                         f('tie_breaker', 'f64', true),
+                         f('boost', 'f64', true),
+                         f('queries', 'Vec<Query>')
                        ]
                       }
 
@@ -210,6 +216,23 @@ class ESDSLGen
         END
         m
       end
+    end
+
+    def to_json_impl(struct_name)
+      fields = structs[struct_name]
+      ERB.new(<<-END).result(binding)
+        impl ToJson for <%= struct_name %> {
+            fn to_json(&self) -> Json {
+                let mut d = BTreeMap::new();
+                <% fields.reject(&:optional).each do |field| %>
+                  d.insert("<%= field.name %>".to_string(),
+                           self.<%= field.json_name %>.to_json());
+                <% end %>
+                self.add_optionals(&mut d);
+                Json::Object(d)
+            }
+        }
+      END
     end
 
     def simple_value_enum(name, fields)

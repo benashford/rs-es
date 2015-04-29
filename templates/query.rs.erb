@@ -90,38 +90,13 @@ impl ToJson for MatchQuery {
 }
 
 <%= structs['MultiMatchQuery'] %>
-
-impl ToJson for MultiMatchQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("query".to_string(), self.query.clone());
-        d.insert("fields".to_string(), self.fields.to_json());
-
-        self.add_optionals(&mut d);
-
-        Json::Object(d)
-    }
-}
+<%= to_json_impl('MultiMatchQuery') %>
 
 <%= structs['BoolQuery'] %>
-
-impl ToJson for BoolQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        self.add_optionals(&mut d);
-        Json::Object(d)
-    }
-}
+<%= to_json_impl('BoolQuery') %>
 
 <%= structs['BoostingQuery'] %>
-
-impl ToJson for BoostingQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        self.add_optionals(&mut d);
-        Json::Object(d)
-    }
-}
+<%= to_json_impl('BoostingQuery') %>
 
 <%= structs['CommonQuery'] %>
 
@@ -157,25 +132,12 @@ impl ToJson for CommonQuery {
 }
 
 <%= structs['ConstantScoreQuery'] %>
+<%= to_json_impl('ConstantScoreQuery') %>
 
-impl ToJson for ConstantScoreQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        self.add_optionals(&mut d);
-
-        Json::Object(d)
-    }
-}
+<%= structs['DisMaxQuery'] %>
+<%= to_json_impl('DisMaxQuery') %>
 
 // Filters
 
 <%= structs['AndFilter'] %>
-
-impl ToJson for AndFilter {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        self.add_optionals(&mut d);
-
-        Json::Object(d)
-    }
-}
+<%= to_json_impl('AndFilter') %>
