@@ -40,9 +40,16 @@ class ESDSLGen
          e('DisMax', 'dis_max'),
          e('Filtered', 'filtered'),
          e('FuzzyLikeThis', 'fuzzy_like_this'),
-         e('FuzzyLikeThisField', 'fuzzy_like_this_field')
+         e('FuzzyLikeThisField', 'fuzzy_like_this_field'),
+         e('FunctionScore', 'function_score')
        ],
-       'Filter' => [e('And', 'and')]}
+       'Function' => [
+         e('ScriptScore', 'script_score'),
+         e('Weight', 'weight')
+       ],
+       'Filter' => [
+         e('And', 'and')
+       ]}
     end
 
     def last(col, item)
@@ -192,8 +199,27 @@ class ESDSLGen
                          f('prefix_length', 'i64', true),
                          f('boost', 'f64', true),
                          f('analyzer', 'String', true)
+                       ],
+                       'FunctionScoreQuery' => [
+                         f('query', 'Box<Query>', true),
+                         f('filter', 'Box<Filter>', true),
+                         f('boost', 'f64', true),
+                         f('functions', 'Vec<Function>'),
+                         f('max_boost', 'f64', true),
+                         f('score_mode', 'ScoreMode', true),
+                         f('boost_mode', 'BoostMode', true),
+                         f('min_score', 'f64', true)
                        ]
                       }
+
+      function_structs = {'ScriptScoreFunction' => [
+                            f('script', 'String'),
+                            f('lang', 'String', true),
+                            f('params', 'HashMap<String, Json>', true)
+                          ],
+                          'WeightFunction' => [
+                            f('weight', 'f64')
+                          ]}
 
       filter_structs = {'AndFilter' => [
                           f('filters', 'Vec<Filter>', true),
@@ -204,6 +230,7 @@ class ESDSLGen
         filter_structs.each do |name, fields|
           all_structs[name] = fields.concat(common_filter_options)
         end
+        all_structs.merge!(function_structs)
       end
     end
 
@@ -233,6 +260,7 @@ class ESDSLGen
                   with!(<%= op_f.with %>, <%= op_f.name %>, <%= op_f.type %>);
               <% end %>
 
+              #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   <% fields.select(&:optional).each do |op_f| %>
                       optional_add!(m, self.<%= op_f.name %>, "<%= op_f.json_name %>");
