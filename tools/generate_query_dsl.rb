@@ -45,7 +45,8 @@ class ESDSLGen
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
-         e('Weight', 'weight')
+         e('Weight', 'weight'),
+         e('RandomScore', 'random_score')
        ],
        'Filter' => [
          e('And', 'and')
@@ -219,6 +220,9 @@ class ESDSLGen
                           ],
                           'WeightFunction' => [
                             f('weight', 'f64')
+                          ],
+                          'RandomScoreFunction' => [
+                            f('seed', 'i64', true)
                           ]}
 
       filter_structs = {'AndFilter' => [
