@@ -1,9 +1,6 @@
 #![crate_type = "lib"]
 #![crate_name = "rs_es"]
 
-#![feature(collections)]
-#![feature(convert)]
-
 #[macro_use] extern crate log;
 extern crate hyper;
 extern crate rustc_serialize;
@@ -62,8 +59,8 @@ impl<'a> From<&'a mut response::Response> for EsError {
 impl Error for EsError {
     fn description(&self) -> &str {
         match *self {
-            EsError::EsError(ref err) => err.as_str(),
-            EsError::EsServerError(ref err) => err.as_str(),
+            EsError::EsError(ref err) => err,
+            EsError::EsServerError(ref err) => err,
             EsError::HttpError(ref err) => err.description(),
             EsError::IoError(ref err) => err.description(),
             EsError::JsonBuilderError(ref err) => err.description()
@@ -95,16 +92,16 @@ impl fmt::Display for EsError {
 
 // Utilities
 
-fn format_query_string(options: &mut Vec<(&'static str, String)>) -> String {
+fn format_query_string(options: &Vec<(&'static str, String)>) -> String {
     let mut st = String::new();
     if options.is_empty() {
         return st;
     }
     st.push_str("?");
-    for (k, v) in options.drain() {
+    for &(ref k, ref v) in options {
         st.push_str(k);
         st.push_str("=");
-        st.push_str(v.as_str());
+        st.push_str(&v);
         st.push_str("&");
     }
     st.pop();
@@ -162,7 +159,7 @@ macro_rules! es_op {
             match body {
                 Some(json) => {
                     let json_string = json::encode(json).unwrap();
-                    do_req(self.http_client.$cn(url), Some(json_string.as_str()))
+                    do_req(self.http_client.$cn(url), Some(&json_string))
                 },
                 None => {
                     do_req(self.http_client.$cn(url), None)
@@ -192,7 +189,7 @@ impl Client {
 
     pub fn version(&mut self) -> Result<String, EsError> {
         let url = self.get_base_url();
-        let json = try!(self.get_op(url.as_str(), None)).unwrap();
+        let json = try!(self.get_op(&url, None)).unwrap();
         match json.find_path(&["version", "number"]) {
             Some(version) => match version.as_string() {
                 Some(string) => Ok(string.to_string()),
@@ -299,7 +296,7 @@ impl<'a> IndexOperation<'a> {
                                   self.doc_type,
                                   id,
                                   format_query_string(&mut self.options));
-                self.client.put_op(url.as_str(), match self.document {
+                self.client.put_op(&url, match self.document {
                     Some(ref doc) => Some(doc),
                     None          => None
                 })
@@ -310,7 +307,7 @@ impl<'a> IndexOperation<'a> {
                                   self.index,
                                   self.doc_type,
                                   format_query_string(&mut self.options));
-                self.client.post_op(url.as_str(), match self.document {
+                self.client.post_op(&url, match self.document {
                     Some(ref doc) => Some(doc),
                     None          => None
                 })
@@ -377,7 +374,7 @@ impl<'a> GetOperation<'a> {
                           self.doc_type.unwrap(),
                           self.id,
                           format_query_string(&mut self.options));
-        let result = try!(self.client.get_op(url.as_str(), None));
+        let result = try!(self.client.get_op(&url, None));
         Ok(GetResult::from(&result.unwrap()))
     }
 }
@@ -418,7 +415,7 @@ impl<'a> DeleteOperation<'a> {
                           self.doc_type,
                           self.id,
                           format_query_string(&mut self.options));
-        let result = try!(self.client.delete_op(url.as_str(), None));
+        let result = try!(self.client.delete_op(&url, None));
         info!("DELETE OPERATION RESULT: {:?}", result);
         Ok(DeleteResult::from(&result.unwrap()))
     }
@@ -503,9 +500,9 @@ impl<'a> DeleteByQueryOperation<'a> {
                           format_multi(&self.doc_types),
                           format_query_string(options));
         let result = try!(match self.query {
-            QueryOption::Document(ref d) => self.client.delete_op(url.as_str(),
+            QueryOption::Document(ref d) => self.client.delete_op(&url,
                                                                   Some(&d.to_json())),
-            QueryOption::String(_)       => self.client.delete_op(url.as_str(),
+            QueryOption::String(_)       => self.client.delete_op(&url,
                                                                   None)
         });
         info!("DELETE BY QUERY RESULT: {:?}", result);
@@ -689,6 +686,7 @@ mod tests {
     use super::query::Query;
 
     use std::collections::BTreeMap;
+    use std::env;
 
     use self::regex::Regex;
 
@@ -697,7 +695,11 @@ mod tests {
     // test setup
 
     fn make_client() -> Client {
-        Client::new("localhost".to_string(), 9200)
+        let hostname = match env::var("ES_HOST") {
+            Ok(val) => val,
+            Err(_)  => "localhost".to_string()
+        };
+        Client::new(hostname, 9200)
     }
 
     struct TestDocument {
@@ -743,7 +745,7 @@ mod tests {
         let result = client.version().unwrap();
 
         let expected_regex = Regex::new(r"^\d\.\d\.\d$").unwrap();
-        assert_eq!(expected_regex.is_match(result.as_str()), true);
+        assert_eq!(expected_regex.is_match(&result), true);
     }
 
     #[test]
