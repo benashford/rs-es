@@ -1,0 +1,10 @@
+dev:
+  build: devbox/
+  ports:
+    - "2222:4444"
+  volumes:
+    - .:/home/ben/src
+  links:
+    - es
+es:
+  image: elasticsearch
