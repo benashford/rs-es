@@ -5,7 +5,7 @@ authors = ["Ben Ashford"]
 
 [dependencies]
 hyper = "0.3.14"
-rustc-serialize = "0.3.12"
+rustc-serialize = "0.3.14"
 log = "0.3"
 
 [dev-dependencies]
