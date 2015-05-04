@@ -125,7 +125,7 @@ fn format_multi(parts: &Vec<String>) -> String {
 // The client
 
 fn do_req<'a>(rb:   hyper::client::RequestBuilder<'a, &str>,
-              body: Option<&'a str>) -> Result<Option<Json>, EsError> {
+              body: Option<&'a str>) -> Result<(StatusCode, Option<Json>), EsError> {
     info!("Params (body={:?})", body);
     let mut result = match body {
         Some(json_str) => rb.body(json_str).send(),
@@ -137,7 +137,7 @@ fn do_req<'a>(rb:   hyper::client::RequestBuilder<'a, &str>,
             StatusCode::Ok |
             StatusCode::Created |
             StatusCode::NotFound => match Json::from_reader(r) {
-                Ok(json) => Ok(Some(json)),
+                Ok(json) => Ok((r.status, Some(json))),
                 Err(e)   => Err(EsError::from(e))
             },
             _                    => Err(EsError::from(r))
@@ -154,18 +154,19 @@ pub struct Client {
 
 macro_rules! es_op {
     ($n:ident,$cn:ident) => {
-        fn $n(&mut self, url: &str, body: Option<&Json>) -> Result<Option<Json>, EsError> {
-            info!("Doing {} on {} with {:?}", stringify!($n), url, body);
-            match body {
-                Some(json) => {
-                    let json_string = json::encode(json).unwrap();
-                    do_req(self.http_client.$cn(url), Some(&json_string))
-                },
-                None => {
-                    do_req(self.http_client.$cn(url), None)
-                }
-            }
-        }
+        fn $n(&mut self, url: &str, body: Option<&Json>)
+              -> Result<(StatusCode, Option<Json>), EsError> {
+                  info!("Doing {} on {} with {:?}", stringify!($n), url, body);
+                  match body {
+                      Some(json) => {
+                          let json_string = json::encode(json).unwrap();
+                          do_req(self.http_client.$cn(url), Some(&json_string))
+                      },
+                      None => {
+                          do_req(self.http_client.$cn(url), None)
+                      }
+                  }
+              }
     }
 }
 
@@ -189,7 +190,8 @@ impl Client {
 
     pub fn version(&mut self) -> Result<String, EsError> {
         let url = self.get_base_url();
-        let json = try!(self.get_op(&url, None)).unwrap();
+        let (_, result) = try!(self.get_op(&url, None));
+        let json = result.unwrap();
         match json.find_path(&["version", "number"]) {
             Some(version) => match version.as_string() {
                 Some(string) => Ok(string.to_string()),
@@ -288,7 +290,9 @@ impl<'a> IndexOperation<'a> {
     add_option!(with_timeout, "timeout", IndexOperation);
 
     pub fn send(&'a mut self) -> Result<IndexResult, EsError> {
-        let result = try!(match self.id {
+        // Ignoring status_code as everything should return an IndexResult or
+        // already be an error
+        let (_, result) = try!(match self.id {
             Some(id) => {
                 let url = format!("{}{}/{}/{}{}",
                                   self.client.get_base_url(),
@@ -374,7 +378,9 @@ impl<'a> GetOperation<'a> {
                           self.doc_type.unwrap(),
                           self.id,
                           format_query_string(&mut self.options));
-        let result = try!(self.client.get_op(&url, None));
+        // We're ignoring status_code as all valid codes should return a value,
+        // so anything else is an error.
+        let (_, result) = try!(self.client.get_op(&url, None));
         Ok(GetResult::from(&result.unwrap()))
     }
 }
@@ -415,9 +421,14 @@ impl<'a> DeleteOperation<'a> {
                           self.doc_type,
                           self.id,
                           format_query_string(&mut self.options));
-        let result = try!(self.client.delete_op(&url, None));
-        info!("DELETE OPERATION RESULT: {:?}", result);
-        Ok(DeleteResult::from(&result.unwrap()))
+        let (status_code, result) = try!(self.client.delete_op(&url, None));
+        info!("DELETE OPERATION STATUS: {:?} RESULT: {:?}", status_code, result);
+        match status_code {
+            StatusCode::Ok => 
+                Ok(DeleteResult::from(&result.unwrap())),
+            _ =>
+                Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        }
     }
 }
 
@@ -485,7 +496,7 @@ impl<'a> DeleteByQueryOperation<'a> {
     add_option!(with_routing, "routing", DeleteByQueryOperation);
     add_option!(with_consistency, "consistency", DeleteByQueryOperation);
 
-    pub fn send(&'a mut self) -> Result<DeleteByQueryResult, EsError> {
+    pub fn send(&'a mut self) -> Result<Option<DeleteByQueryResult>, EsError> {
         let options = match &self.query {
             &QueryOption::Document(_)   => &mut self.options,
             &QueryOption::String(ref s) => {
@@ -499,14 +510,21 @@ impl<'a> DeleteByQueryOperation<'a> {
                           format_multi(&self.indexes),
                           format_multi(&self.doc_types),
                           format_query_string(options));
-        let result = try!(match self.query {
+        let (status_code, result) = try!(match self.query {
             QueryOption::Document(ref d) => self.client.delete_op(&url,
                                                                   Some(&d.to_json())),
             QueryOption::String(_)       => self.client.delete_op(&url,
                                                                   None)
         });
-        info!("DELETE BY QUERY RESULT: {:?}", result);
-        Ok(DeleteByQueryResult::from(&result.unwrap()))
+        info!("DELETE BY QUERY STATUS: {:?}, RESULT: {:?}", status_code, result);
+        match status_code {
+            StatusCode::Ok =>
+                Ok(Some(DeleteByQueryResult::from(&result.unwrap()))),
+            StatusCode::NotFound =>
+                Ok(None),
+            _  =>
+                Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        }
     }
 }
 
@@ -841,7 +859,7 @@ mod tests {
                         .build())
             .send().unwrap();
 
-        assert!(delete_result.successful());
+        assert!(delete_result.unwrap().successful());
 
         let doc1 = client.get("test_idx", "ABC123").with_doc_type("test_type").send().unwrap();
         let doc2 = client.get("test_idx", "ABC124").with_doc_type("test_type").send().unwrap();
