@@ -4,10 +4,10 @@ version = "0.1.0"
 authors = ["Ben Ashford"]
 
 [dependencies]
-hyper = "0.3.14"
-rustc-serialize = "0.3.14"
-log = "0.3"
+hyper = "*"
+rustc-serialize = "*"
+log = "*"
 
 [dev-dependencies]
-env_logger = "0.3"
-regex = "0.1.8"
+env_logger = "*"
+regex = "*"
