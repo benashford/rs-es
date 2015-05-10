@@ -16,8 +16,8 @@ use std::fmt;
 use hyper::client::response;
 use hyper::status::StatusCode;
 
-use rustc_serialize::json;
-use rustc_serialize::json::{Json, ToJson};
+use rustc_serialize::{Encodable, Decodable};
+use rustc_serialize::json::{self, Decoder, Json, ToJson};
 
 use query::Query;
 
@@ -29,6 +29,7 @@ pub enum EsError {
     EsServerError(String),
     HttpError(hyper::error::HttpError),
     IoError(io::Error),
+    JsonError(json::DecoderError),
     JsonBuilderError(json::BuilderError)
 }
 
@@ -41,6 +42,12 @@ impl From<io::Error> for EsError {
 impl From<hyper::error::HttpError> for EsError {
     fn from(err: hyper::error::HttpError) -> EsError {
         EsError::HttpError(err)
+    }
+}
+
+impl From<json::DecoderError> for EsError {
+    fn from(err: json::DecoderError) -> EsError {
+        EsError::JsonError(err)
     }
 }
 
@@ -63,6 +70,7 @@ impl Error for EsError {
             EsError::EsServerError(ref err) => err,
             EsError::HttpError(ref err) => err.description(),
             EsError::IoError(ref err) => err.description(),
+            EsError::JsonError(ref err) => err.description(),
             EsError::JsonBuilderError(ref err) => err.description()
         }
     }
@@ -73,6 +81,7 @@ impl Error for EsError {
             EsError::EsServerError(_)          => None,
             EsError::HttpError(ref err)        => Some(err as &Error),
             EsError::IoError(ref err)          => Some(err as &Error),
+            EsError::JsonError(ref err)        => Some(err as &Error),
             EsError::JsonBuilderError(ref err) => Some(err as &Error)
         }
     }
@@ -85,6 +94,7 @@ impl fmt::Display for EsError {
             EsError::EsServerError(ref s) => fmt::Display::fmt(s, f),
             EsError::HttpError(ref err) => fmt::Display::fmt(err, f),
             EsError::IoError(ref err) => fmt::Display::fmt(err, f),
+            EsError::JsonError(ref err) => fmt::Display::fmt(err, f),
             EsError::JsonBuilderError(ref err) => fmt::Display::fmt(err, f)
         }
     }
@@ -125,7 +135,8 @@ fn format_multi(parts: &Vec<String>) -> String {
 // The client
 
 fn do_req<'a>(rb:   hyper::client::RequestBuilder<'a, &str>,
-              body: Option<&'a str>) -> Result<(StatusCode, Option<Json>), EsError> {
+              body: Option<&'a str>)
+              -> Result<(StatusCode, Option<Json>), EsError> {
     info!("Params (body={:?})", body);
     let mut result = match body {
         Some(json_str) => rb.body(json_str).send(),
@@ -154,19 +165,25 @@ pub struct Client {
 
 macro_rules! es_op {
     ($n:ident,$cn:ident) => {
-        fn $n(&mut self, url: &str, body: Option<&Json>)
+        fn $n(&mut self, url: &str)
               -> Result<(StatusCode, Option<Json>), EsError> {
-                  info!("Doing {} on {} with {:?}", stringify!($n), url, body);
-                  match body {
-                      Some(json) => {
-                          let json_string = json::encode(json).unwrap();
-                          do_req(self.http_client.$cn(url), Some(&json_string))
-                      },
-                      None => {
-                          do_req(self.http_client.$cn(url), None)
-                      }
-                  }
-              }
+            info!("Doing {} on {}", stringify!($n), url);
+            do_req(self.http_client.$cn(url), None)
+        }
+    }
+}
+
+macro_rules! es_body_op {
+    ($n:ident,$cn:ident) => {
+        fn $n<E>(&mut self, url: &str, body: &E)
+                 -> Result<(StatusCode, Option<Json>), EsError>
+            where E: Encodable {
+                info!("Doing {} on {}", stringify!($n), url);
+
+                let json_string = json::encode(body).unwrap();
+                info!(" -> body: {:?}", json_string);
+                do_req(self.http_client.$cn(url), Some(&json_string))
+            }
     }
 }
 
@@ -184,13 +201,17 @@ impl Client {
     }
 
     es_op!(get_op, get);
+    es_body_op!(get_body_op, get);
     es_op!(post_op, post);
+    es_body_op!(post_body_op, post);
     es_op!(put_op, put);
+    es_body_op!(put_body_op, put);
     es_op!(delete_op, delete);
+    es_body_op!(delete_body_op, delete);
 
     pub fn version(&mut self) -> Result<String, EsError> {
         let url = self.get_base_url();
-        let (_, result) = try!(self.get_op(&url, None));
+        let (_, result) = try!(self.get_op(&url));
         let json = result.unwrap();
         match json.find_path(&["version", "number"]) {
             Some(version) => match version.as_string() {
@@ -203,7 +224,8 @@ impl Client {
         }
     }
 
-    pub fn index<'a>(&'a mut self, index: &'a str, doc_type: &'a str) -> IndexOperation {
+    pub fn index<'a, E: Encodable>(&'a mut self, index: String, doc_type: String)
+                                   -> IndexOperation<'a, E> {
         IndexOperation::new(self, index, doc_type)
     }
 
@@ -241,24 +263,24 @@ impl ToString for OpType {
 
 macro_rules! add_option {
     ($n:ident, $e:expr, $t:ident) => (
-        pub fn $n<T: ToString>(&'a mut self, val: &T) -> &'a mut $t {
+        pub fn $n<T: ToString>(&'a mut self, val: &T) -> &'a mut Self {
             self.options.push(($e, val.to_string()));
             self
         }
     )
 }
 
-pub struct IndexOperation<'a> {
+pub struct IndexOperation<'a, E: Encodable + 'a> {
     client:   &'a mut Client,
-    index:    &'a str,
-    doc_type: &'a str,
-    id:       Option<&'a str>,
+    index:    String,
+    doc_type: String,
+    id:       Option<String>,
     options:  Options,
-    document: Option<Json>
+    document: Option<E>
 }
 
-impl<'a> IndexOperation<'a> {
-    fn new(client: &'a mut Client, index: &'a str, doc_type: &'a str) -> IndexOperation<'a> {
+impl<'a, E: Encodable + 'a> IndexOperation<'a, E> {
+    fn new(client: &'a mut Client, index: String, doc_type: String) -> IndexOperation<'a, E> {
         IndexOperation {
             client:   client,
             index:    index,
@@ -269,12 +291,12 @@ impl<'a> IndexOperation<'a> {
         }
     }
 
-    pub fn with_doc<T: ToJson>(&'a mut self, doc: &T) -> &'a mut IndexOperation {
-        self.document = Some(doc.to_json());
+    pub fn with_doc(&'a mut self, doc: E) -> &'a mut Self {
+        self.document = Some(doc);
         self
     }
 
-    pub fn with_id(&'a mut self, id: &'a str) -> &'a mut IndexOperation {
+    pub fn with_id(&'a mut self, id: String) -> &'a mut Self {
         self.id = Some(id);
         self
     }
@@ -293,17 +315,17 @@ impl<'a> IndexOperation<'a> {
         // Ignoring status_code as everything should return an IndexResult or
         // already be an error
         let (_, result) = try!(match self.id {
-            Some(id) => {
+            Some(ref id) => {
                 let url = format!("{}{}/{}/{}{}",
                                   self.client.get_base_url(),
                                   self.index,
                                   self.doc_type,
                                   id,
                                   format_query_string(&mut self.options));
-                self.client.put_op(&url, match self.document {
-                    Some(ref doc) => Some(doc),
-                    None          => None
-                })
+                match self.document {
+                    Some(ref doc) => self.client.put_body_op(&url, doc),
+                    None          => self.client.put_op(&url)
+                }
             },
             None    => {
                 let url = format!("{}{}/{}{}",
@@ -311,10 +333,10 @@ impl<'a> IndexOperation<'a> {
                                   self.index,
                                   self.doc_type,
                                   format_query_string(&mut self.options));
-                self.client.post_op(&url, match self.document {
-                    Some(ref doc) => Some(doc),
-                    None          => None
-                })
+                match self.document {
+                    Some(ref doc) => self.client.post_body_op(&url, doc),
+                    None          => self.client.post_op(&url)
+                }
             }
         });
         Ok(IndexResult::from(&result.unwrap()))
@@ -380,7 +402,7 @@ impl<'a> GetOperation<'a> {
                           format_query_string(&mut self.options));
         // We're ignoring status_code as all valid codes should return a value,
         // so anything else is an error.
-        let (_, result) = try!(self.client.get_op(&url, None));
+        let (_, result) = try!(self.client.get_op(&url));
         Ok(GetResult::from(&result.unwrap()))
     }
 }
@@ -421,10 +443,10 @@ impl<'a> DeleteOperation<'a> {
                           self.doc_type,
                           self.id,
                           format_query_string(&mut self.options));
-        let (status_code, result) = try!(self.client.delete_op(&url, None));
+        let (status_code, result) = try!(self.client.delete_op(&url));
         info!("DELETE OPERATION STATUS: {:?} RESULT: {:?}", status_code, result);
         match status_code {
-            StatusCode::Ok => 
+            StatusCode::Ok =>
                 Ok(DeleteResult::from(&result.unwrap())),
             _ =>
                 Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
@@ -511,10 +533,9 @@ impl<'a> DeleteByQueryOperation<'a> {
                           format_multi(&self.doc_types),
                           format_query_string(options));
         let (status_code, result) = try!(match self.query {
-            QueryOption::Document(ref d) => self.client.delete_op(&url,
-                                                                  Some(&d.to_json())),
-            QueryOption::String(_)       => self.client.delete_op(&url,
-                                                                  None)
+            QueryOption::Document(ref d) => self.client.delete_body_op(&url,
+                                                                       &d.to_json()),
+            QueryOption::String(_)       => self.client.delete_op(&url)
         });
         info!("DELETE BY QUERY STATUS: {:?}, RESULT: {:?}", status_code, result);
         match status_code {
@@ -584,8 +605,14 @@ pub struct GetResult {
 }
 
 impl GetResult {
-    pub fn source<T: From<Json>>(self) -> T {
-        T::from(self.source.unwrap())
+    pub fn source<T: Decodable>(self) -> Result<T, EsError> {
+        match self.source {
+            Some(doc) => {
+                let mut decoder = Decoder::new(doc);
+                Ok(try!(Decodable::decode(&mut decoder)))
+            },
+            None => Err(EsError::EsError("No source".to_string()))
+        }
     }
 }
 
@@ -703,12 +730,11 @@ mod tests {
 
     use super::query::Query;
 
-    use std::collections::BTreeMap;
     use std::env;
 
     use self::regex::Regex;
 
-    use rustc_serialize::json::{Json, ToJson};
+    use rustc_serialize::json::ToJson;
 
     // test setup
 
@@ -720,28 +746,10 @@ mod tests {
         Client::new(hostname, 9200)
     }
 
+    #[derive(Debug, RustcDecodable, RustcEncodable)]
     struct TestDocument {
         str_field: String,
         int_field: i64
-    }
-
-    impl ToJson for TestDocument {
-        fn to_json(&self) -> Json {
-            let mut d = BTreeMap::new();
-            d.insert("str_field".to_string(), self.str_field.to_json());
-            d.insert("int_field".to_string(), self.int_field.to_json());
-
-            Json::Object(d)
-        }
-    }
-
-    impl From<Json> for TestDocument {
-        fn from(r: Json) -> TestDocument {
-            TestDocument {
-                str_field: get_json_string!(r, "str_field"),
-                int_field: get_json_i64!(r, "int_field")
-            }
-        }
     }
 
     fn make_doc(int_f: i64) -> TestDocument {
@@ -773,9 +781,10 @@ mod tests {
         let mut client = make_client();
         clean_db(&mut client);
         {
-            let mut indexer = client.index("test_idx", "test_type");
+            let mut indexer = client.index("test_idx".to_string(),
+                                           "test_type".to_string());
             let doc = make_doc(1);
-            let result_wrapped = indexer.with_doc(&doc).with_ttl(&927500).send();
+            let result_wrapped = indexer.with_doc(doc).with_ttl(&927500).send();
             info!("TEST RESULT: {:?}", result_wrapped);
             let result = result_wrapped.unwrap();
             assert_eq!(result.created, true);
@@ -788,11 +797,12 @@ mod tests {
             let delete_result = client.delete("test_idx", "test_type", "TEST_INDEXING_2").send();
             info!("DELETE RESULT: {:?}", delete_result);
 
-            let mut indexer = client.index("test_idx", "test_type");
+            let mut indexer = client.index("test_idx".to_string(),
+                                           "test_type".to_string());
             let doc = make_doc(2);
             let result_wrapped = indexer
-                .with_doc(&doc)
-                .with_id("TEST_INDEXING_2")
+                .with_doc(doc)
+                .with_id("TEST_INDEXING_2".to_string())
                 .with_op_type(&OpType::Create)
                 .send();
             let result = result_wrapped.unwrap();
@@ -812,9 +822,9 @@ mod tests {
         {
             let doc = make_doc(3);
             client
-                .index("test_idx", "test_type")
-                .with_id("TEST_GETTING")
-                .with_doc(&doc)
+                .index("test_idx".to_string(), "test_type".to_string())
+                .with_id("TEST_GETTING".to_string())
+                .with_doc(doc)
                 .send().unwrap();
         }
         {
@@ -826,7 +836,7 @@ mod tests {
             let result = result_wrapped.unwrap();
             assert_eq!(result.id, "TEST_GETTING");
 
-            let source:TestDocument = result.source();
+            let source:TestDocument = result.source().unwrap();
             assert_eq!(source.str_field, "I am a test");
             assert_eq!(source.int_field, 3);
         }
@@ -847,8 +857,16 @@ mod tests {
             int_field: 200
         };
 
-        client.index("test_idx", "test_type").with_id("ABC123").with_doc(&td1).send().unwrap();
-        client.index("test_idx", "test_type").with_id("ABC124").with_doc(&td2).send().unwrap();
+        client
+            .index("test_idx".to_string(), "test_type".to_string())
+            .with_id("ABC123".to_string())
+            .with_doc(&td1)
+            .send().unwrap();
+        client
+            .index("test_idx".to_string(), "test_type".to_string())
+            .with_id("ABC124".to_string())
+            .with_doc(&td2)
+            .send().unwrap();
 
         let delete_result = client
             .delete_by_query()
