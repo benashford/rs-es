@@ -1,6 +1,8 @@
 #![crate_type = "lib"]
 #![crate_name = "rs_es"]
 
+//! A client for ElasticSearch's REST API
+
 #[macro_use] extern crate log;
 extern crate hyper;
 extern crate rustc_serialize;
@@ -23,13 +25,26 @@ use query::Query;
 
 // Error handling
 
+/// Error that can occur include IO and parsing errors, as well as specific
+/// errors from the ElasticSearch server and logic errors from this library
 #[derive(Debug)]
 pub enum EsError {
+    /// An internal error from this library
     EsError(String),
+
+    /// An error reported in a JSON response from the ElasticSearch server
     EsServerError(String),
+
+    /// Miscellaneous error from the HTTP library
     HttpError(hyper::error::HttpError),
+
+    /// Miscellaneous IO error
     IoError(io::Error),
+
+    /// Miscellaneous JSON decoding error
     JsonError(json::DecoderError),
+
+    /// Miscllenaeous JSON building error
     JsonBuilderError(json::BuilderError)
 }
 
@@ -102,6 +117,7 @@ impl fmt::Display for EsError {
 
 // Utilities
 
+/// Produces a query string for a URL
 fn format_query_string(options: &Vec<(&'static str, String)>) -> String {
     let mut st = String::new();
     if options.is_empty() {
@@ -118,6 +134,8 @@ fn format_query_string(options: &Vec<(&'static str, String)>) -> String {
     st
 }
 
+/// A repeating convention in the ElasticSearch REST API is parameters that can
+/// take multiple values
 fn format_multi(parts: &Vec<String>) -> String {
     let mut st = String::new();
     if parts.is_empty() {
@@ -134,6 +152,7 @@ fn format_multi(parts: &Vec<String>) -> String {
 
 // The client
 
+/// Perform an HTTP request
 fn do_req<'a>(rb:   hyper::client::RequestBuilder<'a, &str>,
               body: Option<&'a str>)
               -> Result<(StatusCode, Option<Json>), EsError> {
@@ -157,12 +176,14 @@ fn do_req<'a>(rb:   hyper::client::RequestBuilder<'a, &str>,
     }
 }
 
+/// The core of the ElasticSearch client, owns a HTTP connection
 pub struct Client {
     host:        String,
     port:        u32,
     http_client: hyper::Client
 }
 
+/// Create a HTTP function for the given method (GET/PUT/POST/DELETE)
 macro_rules! es_op {
     ($n:ident,$cn:ident) => {
         fn $n(&mut self, url: &str)
@@ -173,6 +194,8 @@ macro_rules! es_op {
     }
 }
 
+/// Create a HTTP function with a request body for the given method
+/// (GET/PUT/POST/DELETE)
 macro_rules! es_body_op {
     ($n:ident,$cn:ident) => {
         fn $n<E>(&mut self, url: &str, body: &E)
@@ -188,6 +211,7 @@ macro_rules! es_body_op {
 }
 
 impl Client {
+    /// Create a new client
     pub fn new(host: String, port: u32) -> Client {
         Client {
             host:        host,
@@ -209,6 +233,7 @@ impl Client {
     es_op!(delete_op, delete);
     es_body_op!(delete_body_op, delete);
 
+    /// Calls the base ES path, returning the version number
     pub fn version(&mut self) -> Result<String, EsError> {
         let url = self.get_base_url();
         let (_, result) = try!(self.get_op(&url));
@@ -224,17 +249,20 @@ impl Client {
         }
     }
 
+    /// An index operation to index a document in the specified index
     pub fn index<'a, E: Encodable>(&'a mut self, index: String, doc_type: String)
                                    -> IndexOperation<'a, E> {
         IndexOperation::new(self, index, doc_type)
     }
 
+    /// Implementation of the ES GET API
     pub fn get<'a>(&'a mut self,
                    index: &'a str,
                    id:    &'a str) -> GetOperation {
         GetOperation::new(self, index, id)
     }
 
+    /// Delete by ID
     pub fn delete<'a>(&'a mut self,
                       index:    &'a str,
                       doc_type: &'a str,
@@ -242,6 +270,7 @@ impl Client {
         DeleteOperation::new(self, index, doc_type, id)
     }
 
+    /// Delete by query
     pub fn delete_by_query<'a>(&'a mut self) -> DeleteByQueryOperation {
         DeleteByQueryOperation::new(self)
     }
@@ -249,8 +278,10 @@ impl Client {
 
 // Specific operations
 
+/// Every ES operation has a set of options
 type Options = Vec<(&'static str, String)>;
 
+/// Values for the op_type option
 pub enum OpType {
     Create
 }
@@ -261,6 +292,8 @@ impl ToString for OpType {
     }
 }
 
+/// Adds a function to an operation to add specific options to that operations
+/// builder interface.
 macro_rules! add_option {
     ($n:ident, $e:expr, $t:ident) => (
         pub fn $n<T: ToString>(&'a mut self, val: &T) -> &'a mut Self {
@@ -270,12 +303,24 @@ macro_rules! add_option {
     )
 }
 
+/// An indexing operation
 pub struct IndexOperation<'a, E: Encodable + 'a> {
+    /// The HTTP client that this operation will use
     client:   &'a mut Client,
+
+    /// The index into which the document will be added
     index:    String,
+
+    /// The type of the document
     doc_type: String,
+
+    /// Optional the ID of the document.
     id:       Option<String>,
+
+    /// The optional options
     options:  Options,
+
+    /// The document to be indexed
     document: Option<E>
 }
 
@@ -343,11 +388,21 @@ impl<'a, E: Encodable + 'a> IndexOperation<'a, E> {
     }
 }
 
+/// An ES GET operation, to get a document by ID
 pub struct GetOperation<'a> {
+    /// The HTTP connection
     client:   &'a mut Client,
+
+    /// The index to load the document.
     index:    &'a str,
+
+    /// Optional type
     doc_type: Option<&'a str>,
+
+    /// The ID of the document.
     id:       &'a str,
+
+    /// Optional options
     options:  Options
 }
 
@@ -407,11 +462,21 @@ impl<'a> GetOperation<'a> {
     }
 }
 
+/// An ES DELETE operation for a specific document
 pub struct DeleteOperation<'a> {
+    /// The HTTP client
     client:   &'a mut Client,
+
+    /// The index
     index:    &'a str,
+
+    /// The type
     doc_type: &'a str,
+
+    /// The ID
     id:       &'a str,
+
+    /// Optional options
     options:  Options
 }
 
@@ -458,6 +523,7 @@ struct DeleteByQueryBody {
     query: query::Query
 }
 
+// TODO: make this unnecessary
 impl ToJson for DeleteByQueryBody {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
@@ -471,6 +537,7 @@ enum QueryOption {
     Document(DeleteByQueryBody)
 }
 
+// TODO: make this usable in other circumstances
 macro_rules! add_to_vec_option {
     ($n:ident, $c:ident, $t:ident) => {
         pub fn $n(&'a mut self, val: String) -> &'a mut $t {
@@ -480,11 +547,24 @@ macro_rules! add_to_vec_option {
     }
 }
 
+/// Delete-by-query API.
+///
+/// The query can be specified either as a String as a query parameter or in the
+/// body using the Query DSL.
 pub struct DeleteByQueryOperation<'a> {
+    /// The HTTP client
     client:    &'a mut Client,
+
+    /// The indexes to which this query apply
     indexes:   Vec<String>,
+
+    /// The types to which this query applies
     doc_types: Vec<String>,
+
+    /// The query itself, either in parameter or Query DSL form.
     query:     QueryOption,
+
+    /// Optional options
     options:   Options
 }
 
@@ -499,6 +579,8 @@ impl<'a> DeleteByQueryOperation<'a> {
         }
     }
 
+    // TODO decide if "add-to-vec" style builder-pattern makes sense or whether
+    // a vector should just be applied.
     add_to_vec_option!(add_index, indexes, DeleteByQueryOperation);
     add_to_vec_option!(add_doc_type, doc_types, DeleteByQueryOperation);
 
@@ -549,6 +631,8 @@ impl<'a> DeleteByQueryOperation<'a> {
     }
 }
 
+// Results
+
 macro_rules! get_json_thing {
     ($r:ident,$f:expr,$t:ident) => {
         $r.find($f).unwrap().$t().unwrap()
@@ -573,6 +657,7 @@ macro_rules! get_json_bool {
     }
 }
 
+/// The result of an index operation
 #[derive(Debug)]
 pub struct IndexResult {
     index:    String,
@@ -582,6 +667,7 @@ pub struct IndexResult {
     created:  bool
 }
 
+// TODO: remove the need for this
 impl<'a> From<&'a Json> for IndexResult {
     fn from(r: &'a Json) -> IndexResult {
         IndexResult {
@@ -594,6 +680,7 @@ impl<'a> From<&'a Json> for IndexResult {
     }
 }
 
+/// The result of a GET request
 #[derive(Debug)]
 pub struct GetResult {
     index:    String,
@@ -605,6 +692,9 @@ pub struct GetResult {
 }
 
 impl GetResult {
+    /// The result is a JSON document, this function will attempt to decode it
+    /// to a struct.  If the raw JSON is required, it can accessed directly from
+    /// the source field of the `GetResult` struct.
     pub fn source<T: Decodable>(self) -> Result<T, EsError> {
         match self.source {
             Some(doc) => {
@@ -630,6 +720,7 @@ impl<'a> From<&'a Json> for GetResult {
     }
 }
 
+/// Result of a DELETE operation
 #[derive(Debug)]
 pub struct DeleteResult {
     found:    bool,
@@ -639,6 +730,7 @@ pub struct DeleteResult {
     version:  i64
 }
 
+// TODO remove the need for this
 impl<'a> From<&'a Json> for DeleteResult {
     fn from(r: &'a Json) -> DeleteResult {
         DeleteResult {
@@ -658,6 +750,7 @@ pub struct DeleteByQueryShardResult {
     failed:  i64
 }
 
+// TODO remove the need for this
 impl<'a> From<&'a Json> for DeleteByQueryShardResult {
     fn from(r: &'a Json) -> DeleteByQueryShardResult {
         info!("DeleteByQueryShardResult from: {:?}", r);
@@ -681,6 +774,7 @@ impl DeleteByQueryIndexResult {
     }
 }
 
+// TODO remove the need for this
 impl<'a> From<&'a Json> for DeleteByQueryIndexResult {
     fn from(r: &'a Json) -> DeleteByQueryIndexResult {
         DeleteByQueryIndexResult {
@@ -689,6 +783,7 @@ impl<'a> From<&'a Json> for DeleteByQueryIndexResult {
     }
 }
 
+/// The result of a Delete-by-query request
 #[derive(Debug)]
 pub struct DeleteByQueryResult {
     indices: HashMap<String, DeleteByQueryIndexResult>
@@ -705,6 +800,7 @@ impl DeleteByQueryResult {
     }
 }
 
+// TODO: remove the need for this
 impl<'a> From<&'a Json> for DeleteByQueryResult {
     fn from(r: &'a Json) -> DeleteByQueryResult {
         info!("DeleteByQueryResult from: {:?}", r);
