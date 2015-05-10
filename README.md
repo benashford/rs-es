@@ -7,3 +7,10 @@ The only existing ElasticSearch client for Rust that I could find required the u
 ## Unstable!
 
 Currently it indexes any structure that implements `ToJson`, and nothing else.  And what it currently does may change.
+
+## TODO
+
+1. Full implementation of the Query DSL.
+2. Implementation of Search API.
+3. Everything else.
+4. Performance (ensure use of persistent HTTP connections, etc.).
