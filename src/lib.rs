@@ -136,7 +136,7 @@ fn format_query_string(options: &[(&str, String)]) -> String {
 
 /// A repeating convention in the ElasticSearch REST API is parameters that can
 /// take multiple values
-fn format_multi(parts: &Vec<String>) -> String {
+fn format_multi(parts: &[&str]) -> String {
     let mut st = String::new();
     if parts.is_empty() {
         st.push_str("_all");
@@ -537,16 +537,6 @@ enum QueryOption {
     Document(DeleteByQueryBody)
 }
 
-// TODO: make this usable in other circumstances
-macro_rules! add_to_vec_option {
-    ($n:ident, $c:ident) => {
-        pub fn $n(&'a mut self, val: String) -> &'a mut Self {
-            self.$c.push(val);
-            self
-        }
-    }
-}
-
 /// Delete-by-query API.
 ///
 /// The query can be specified either as a String as a query parameter or in the
@@ -556,10 +546,10 @@ pub struct DeleteByQueryOperation<'a, 'b> {
     client:    &'a mut Client,
 
     /// The indexes to which this query apply
-    indexes:   Vec<String>,
+    indexes:   &'b [&'b str],
 
     /// The types to which this query applies
-    doc_types: Vec<String>,
+    doc_types: &'b [&'b str],
 
     /// The query itself, either in parameter or Query DSL form.
     query:     QueryOption,
@@ -572,24 +562,29 @@ impl<'a, 'b> DeleteByQueryOperation<'a, 'b> {
     fn new(client: &'a mut Client) -> DeleteByQueryOperation<'a, 'b> {
         DeleteByQueryOperation {
             client:    client,
-            indexes:   Vec::with_capacity(1),
-            doc_types: Vec::with_capacity(1),
+            indexes:   &[],
+            doc_types: &[],
             query:     QueryOption::String("".to_string()),
             options:   Options::new()
         }
     }
 
-    // TODO decide if "add-to-vec" style builder-pattern makes sense or whether
-    // a vector should just be applied.
-    add_to_vec_option!(add_index, indexes);
-    add_to_vec_option!(add_doc_type, doc_types);
+    pub fn with_indexes(&'b mut self, indexes: &'b [&'b str]) -> &'b mut Self {
+        self.indexes = indexes;
+        self
+    }
 
-    pub fn with_query_string(&'a mut self, qs: String) -> &'a mut Self {
+    pub fn with_doc_types(&'b mut self, doc_types: &'b [&'b str]) -> &'b mut Self {
+        self.doc_types = doc_types;
+        self
+    }
+
+    pub fn with_query_string(&'b mut self, qs: String) -> &'b mut Self {
         self.query = QueryOption::String(qs);
         self
     }
 
-    pub fn with_query(&'a mut self, q: Query) -> &'a mut Self {
+    pub fn with_query(&'b mut self, q: Query) -> &'b mut Self {
         self.query = QueryOption::Document(DeleteByQueryBody { query: q });
         self
     }
@@ -966,8 +961,8 @@ mod tests {
 
         let delete_result = client
             .delete_by_query()
-            .add_index("test_idx".to_string())
-            .add_doc_type("test_type".to_string())
+            .with_indexes(&["test_idx"])
+            .with_doc_types(&["test_type"])
             .with_query(Query::build_match("int_field".to_string(), 200.to_json())
                         .with_lenient(false)
                         .build())
