@@ -651,7 +651,7 @@ pub struct IndexResult {
     created:  bool
 }
 
-// TODO: remove the need for this
+/// This is required because the JSON keys do not match the struct
 impl<'a> From<&'a Json> for IndexResult {
     fn from(r: &'a Json) -> IndexResult {
         IndexResult {
@@ -675,21 +675,23 @@ pub struct GetResult {
     source:   Option<Json>
 }
 
+fn decode_json<T: Decodable>(doc: Json) -> Result<T, EsError> {
+    Ok(try!(Decodable::decode(&mut Decoder::new(doc))))
+}
+
 impl GetResult {
     /// The result is a JSON document, this function will attempt to decode it
     /// to a struct.  If the raw JSON is required, it can accessed directly from
     /// the source field of the `GetResult` struct.
     pub fn source<T: Decodable>(self) -> Result<T, EsError> {
         match self.source {
-            Some(doc) => {
-                let mut decoder = Decoder::new(doc);
-                Ok(try!(Decodable::decode(&mut decoder)))
-            },
-            None => Err(EsError::EsError("No source".to_string()))
+            Some(doc) => decode_json(doc),
+            None      => Err(EsError::EsError("No source".to_string()))
         }
     }
 }
 
+/// This is required because the JSON keys do not match the struct
 impl<'a> From<&'a Json> for GetResult {
     fn from(r: &'a Json) -> GetResult {
         info!("GetResult FROM: {:?}", r);
@@ -714,7 +716,7 @@ pub struct DeleteResult {
     version:  i64
 }
 
-// TODO remove the need for this
+/// This is required because the JSON keys do not match the struct
 impl<'a> From<&'a Json> for DeleteResult {
     fn from(r: &'a Json) -> DeleteResult {
         DeleteResult {
@@ -727,24 +729,11 @@ impl<'a> From<&'a Json> for DeleteResult {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug,RustcDecodable)]
 pub struct DeleteByQueryShardResult {
-    total:   i64,
-    success: i64,
-    failed:  i64
-}
-
-// TODO remove the need for this
-impl<'a> From<&'a Json> for DeleteByQueryShardResult {
-    fn from(r: &'a Json) -> DeleteByQueryShardResult {
-        info!("DeleteByQueryShardResult from: {:?}", r);
-
-        DeleteByQueryShardResult {
-            total:   get_json_i64!(r, "total"),
-            success: get_json_i64!(r, "successful"),
-            failed:  get_json_i64!(r, "failed")
-        }
-    }
+    total:      i64,
+    successful: i64,
+    failed:     i64
 }
 
 #[derive(Debug)]
@@ -758,11 +747,12 @@ impl DeleteByQueryIndexResult {
     }
 }
 
-// TODO remove the need for this
+// Required because of change in names of keys
 impl<'a> From<&'a Json> for DeleteByQueryIndexResult {
     fn from(r: &'a Json) -> DeleteByQueryIndexResult {
+        info!("Parsing DeleteByQueryIndexResult: {:?}", r);
         DeleteByQueryIndexResult {
-            shards: DeleteByQueryShardResult::from(r.find("_shards").unwrap())
+            shards: decode_json(r.find("_shards").unwrap().clone()).unwrap()
         }
     }
 }
@@ -784,7 +774,7 @@ impl DeleteByQueryResult {
     }
 }
 
-// TODO: remove the need for this
+// Required because of JSON structure and keys
 impl<'a> From<&'a Json> for DeleteByQueryResult {
     fn from(r: &'a Json) -> DeleteByQueryResult {
         info!("DeleteByQueryResult from: {:?}", r);
