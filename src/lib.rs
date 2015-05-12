@@ -244,7 +244,7 @@ impl Client {
     }
 
     /// An index operation to index a document in the specified index
-    pub fn index<'a, 'b, E: Encodable>(&'a mut self, index: String, doc_type: String)
+    pub fn index<'a, 'b, E: Encodable>(&'a mut self, index: &'b str, doc_type: &'b str)
                                        -> IndexOperation<'a, 'b, E> {
         IndexOperation::new(self, index, doc_type)
     }
@@ -303,23 +303,23 @@ pub struct IndexOperation<'a, 'b, E: Encodable + 'b> {
     client:   &'a mut Client,
 
     /// The index into which the document will be added
-    index:    String,
+    index:    &'b str,
 
     /// The type of the document
-    doc_type: String,
+    doc_type: &'b str,
 
     /// Optional the ID of the document.
-    id:       Option<String>,
+    id:       Option<&'b str>,
 
     /// The optional options
     options:  Options<'b>,
 
     /// The document to be indexed
-    document: Option<E>
+    document: Option<&'b E>
 }
 
 impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
-    fn new(client: &'a mut Client, index: String, doc_type: String) -> IndexOperation<'a, 'b, E> {
+    fn new(client: &'a mut Client, index: &'b str, doc_type: &'b str) -> IndexOperation<'a, 'b, E> {
         IndexOperation {
             client:   client,
             index:    index,
@@ -330,12 +330,12 @@ impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
         }
     }
 
-    pub fn with_doc(&'a mut self, doc: E) -> &'a mut Self {
+    pub fn with_doc(&'b mut self, doc: &'b E) -> &'b mut Self {
         self.document = Some(doc);
         self
     }
 
-    pub fn with_id(&'a mut self, id: String) -> &'a mut Self {
+    pub fn with_id(&'b mut self, id: &'b str) -> &'b mut Self {
         self.id = Some(id);
         self
     }
@@ -350,7 +350,7 @@ impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
     add_option!(with_refresh, "refresh");
     add_option!(with_timeout, "timeout");
 
-    pub fn send(&'a mut self) -> Result<IndexResult, EsError> {
+    pub fn send(&'b mut self) -> Result<IndexResult, EsError> {
         // Ignoring status_code as everything should return an IndexResult or
         // already be an error
         let (_, result) = try!(match self.id {
@@ -861,10 +861,11 @@ mod tests {
         let mut client = make_client();
         clean_db(&mut client);
         {
-            let mut indexer = client.index("test_idx".to_string(),
-                                           "test_type".to_string());
-            let doc = make_doc(1);
-            let result_wrapped = indexer.with_doc(doc).with_ttl(&927500).send();
+            let result_wrapped = client
+                .index("test_idx", "test_type")
+                .with_doc(&make_doc(1))
+                .with_ttl(&927500)
+                .send();
             info!("TEST RESULT: {:?}", result_wrapped);
             let result = result_wrapped.unwrap();
             assert_eq!(result.created, true);
@@ -877,12 +878,10 @@ mod tests {
             let delete_result = client.delete("test_idx", "test_type", "TEST_INDEXING_2").send();
             info!("DELETE RESULT: {:?}", delete_result);
 
-            let mut indexer = client.index("test_idx".to_string(),
-                                           "test_type".to_string());
-            let doc = make_doc(2);
-            let result_wrapped = indexer
-                .with_doc(doc)
-                .with_id("TEST_INDEXING_2".to_string())
+            let result_wrapped = client
+                .index("test_idx", "test_type")
+                .with_doc(&make_doc(2))
+                .with_id("TEST_INDEXING_2")
                 .with_op_type(&OpType::Create)
                 .send();
             let result = result_wrapped.unwrap();
@@ -902,9 +901,9 @@ mod tests {
         {
             let doc = make_doc(3);
             client
-                .index("test_idx".to_string(), "test_type".to_string())
-                .with_id("TEST_GETTING".to_string())
-                .with_doc(doc)
+                .index("test_idx", "test_type")
+                .with_id("TEST_GETTING")
+                .with_doc(&doc)
                 .send().unwrap();
         }
         {
@@ -938,13 +937,13 @@ mod tests {
         };
 
         client
-            .index("test_idx".to_string(), "test_type".to_string())
-            .with_id("ABC123".to_string())
+            .index("test_idx", "test_type")
+            .with_id("ABC123")
             .with_doc(&td1)
             .send().unwrap();
         client
-            .index("test_idx".to_string(), "test_type".to_string())
-            .with_id("ABC124".to_string())
+            .index("test_idx", "test_type")
+            .with_id("ABC124")
             .with_doc(&td2)
             .send().unwrap();
 
