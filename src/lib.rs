@@ -289,7 +289,7 @@ impl ToString for OpType {
 /// Adds a function to an operation to add specific options to that operations
 /// builder interface.
 macro_rules! add_option {
-    ($n:ident, $e:expr, $t:ident) => (
+    ($n:ident, $e:expr) => (
         pub fn $n<T: ToString>(&'a mut self, val: &T) -> &'a mut Self {
             self.options.push(($e, val.to_string()));
             self
@@ -340,15 +340,15 @@ impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
         self
     }
 
-    add_option!(with_ttl, "ttl", IndexOperation);
-    add_option!(with_version, "version", IndexOperation);
-    add_option!(with_version_type, "version_type", IndexOperation);
-    add_option!(with_op_type, "op_type", IndexOperation);
-    add_option!(with_routing, "routing", IndexOperation);
-    add_option!(with_parent, "parent", IndexOperation);
-    add_option!(with_timestamp, "timestamp", IndexOperation);
-    add_option!(with_refresh, "refresh", IndexOperation);
-    add_option!(with_timeout, "timeout", IndexOperation);
+    add_option!(with_ttl, "ttl");
+    add_option!(with_version, "version");
+    add_option!(with_version_type, "version_type");
+    add_option!(with_op_type, "op_type");
+    add_option!(with_routing, "routing");
+    add_option!(with_parent, "parent");
+    add_option!(with_timestamp, "timestamp");
+    add_option!(with_refresh, "refresh");
+    add_option!(with_timeout, "timeout");
 
     pub fn send(&'a mut self) -> Result<IndexResult, EsError> {
         // Ignoring status_code as everything should return an IndexResult or
@@ -433,12 +433,12 @@ impl<'a, 'b> GetOperation<'a, 'b> {
         self
     }
 
-    add_option!(with_realtime, "realtime", GetOperation);
-    add_option!(with_source, "_source", GetOperation);
-    add_option!(with_routing, "routing", GetOperation);
-    add_option!(with_preference, "preference", GetOperation);
-    add_option!(with_refresh, "refresh", GetOperation);
-    add_option!(with_version, "version", GetOperation);
+    add_option!(with_realtime, "realtime");
+    add_option!(with_source, "_source");
+    add_option!(with_routing, "routing");
+    add_option!(with_preference, "preference");
+    add_option!(with_refresh, "refresh");
+    add_option!(with_version, "version");
 
     pub fn send(&'b mut self) -> Result<GetResult, EsError> {
         let url = format!("/{}/{}/{}{}",
@@ -485,12 +485,12 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
         }
     }
 
-    add_option!(with_version, "version", DeleteOperation);
-    add_option!(with_routing, "routing", DeleteOperation);
-    add_option!(with_parent, "parent", DeleteOperation);
-    add_option!(with_consistency, "consistency", DeleteOperation);
-    add_option!(with_refresh, "refresh", DeleteOperation);
-    add_option!(with_timeout, "timeout", DeleteOperation);
+    add_option!(with_version, "version");
+    add_option!(with_routing, "routing");
+    add_option!(with_parent, "parent");
+    add_option!(with_consistency, "consistency");
+    add_option!(with_refresh, "refresh");
+    add_option!(with_timeout, "timeout");
 
     pub fn send(&'a mut self) -> Result<DeleteResult, EsError> {
         let url = format!("/{}/{}/{}{}",
@@ -579,11 +579,11 @@ impl<'a, 'b> DeleteByQueryOperation<'a, 'b> {
         self
     }
 
-    add_option!(with_df, "df", DeleteByQueryOperation);
-    add_option!(with_analyzer, "analyzer", DeleteByQueryOperation);
-    add_option!(with_default_operator, "default_operator", DeleteByQueryOperation);
-    add_option!(with_routing, "routing", DeleteByQueryOperation);
-    add_option!(with_consistency, "consistency", DeleteByQueryOperation);
+    add_option!(with_df, "df");
+    add_option!(with_analyzer, "analyzer");
+    add_option!(with_default_operator, "default_operator");
+    add_option!(with_routing, "routing");
+    add_option!(with_consistency, "consistency");
 
     pub fn send(&'a mut self) -> Result<Option<DeleteByQueryResult>, EsError> {
         let options = match &self.query {
