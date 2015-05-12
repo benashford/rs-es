@@ -250,8 +250,8 @@ impl Client {
     }
 
     /// An index operation to index a document in the specified index
-    pub fn index<'a, E: Encodable>(&'a mut self, index: String, doc_type: String)
-                                   -> IndexOperation<'a, E> {
+    pub fn index<'a, 'b, E: Encodable>(&'a mut self, index: String, doc_type: String)
+                                       -> IndexOperation<'a, 'b, E> {
         IndexOperation::new(self, index, doc_type)
     }
 
@@ -279,7 +279,7 @@ impl Client {
 // Specific operations
 
 /// Every ES operation has a set of options
-type Options = Vec<(&'static str, String)>;
+type Options<'a> = Vec<(&'a str, String)>;
 
 /// Values for the op_type option
 pub enum OpType {
@@ -304,7 +304,7 @@ macro_rules! add_option {
 }
 
 /// An indexing operation
-pub struct IndexOperation<'a, E: Encodable + 'a> {
+pub struct IndexOperation<'a, 'b, E: Encodable + 'b> {
     /// The HTTP client that this operation will use
     client:   &'a mut Client,
 
@@ -318,14 +318,14 @@ pub struct IndexOperation<'a, E: Encodable + 'a> {
     id:       Option<String>,
 
     /// The optional options
-    options:  Options,
+    options:  Options<'b>,
 
     /// The document to be indexed
     document: Option<E>
 }
 
-impl<'a, E: Encodable + 'a> IndexOperation<'a, E> {
-    fn new(client: &'a mut Client, index: String, doc_type: String) -> IndexOperation<'a, E> {
+impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
+    fn new(client: &'a mut Client, index: String, doc_type: String) -> IndexOperation<'a, 'b, E> {
         IndexOperation {
             client:   client,
             index:    index,
@@ -389,27 +389,27 @@ impl<'a, E: Encodable + 'a> IndexOperation<'a, E> {
 }
 
 /// An ES GET operation, to get a document by ID
-pub struct GetOperation<'a> {
+pub struct GetOperation<'a, 'b> {
     /// The HTTP connection
     client:   &'a mut Client,
 
     /// The index to load the document.
-    index:    &'a str,
+    index:    &'b str,
 
     /// Optional type
-    doc_type: Option<&'a str>,
+    doc_type: Option<&'b str>,
 
     /// The ID of the document.
-    id:       &'a str,
+    id:       &'b str,
 
     /// Optional options
-    options:  Options
+    options:  Options<'b>
 }
 
-impl<'a> GetOperation<'a> {
+impl<'a, 'b> GetOperation<'a, 'b> {
     fn new(client:   &'a mut Client,
-           index:    &'a str,
-           id:       &'a str) -> GetOperation<'a> {
+           index:    &'b str,
+           id:       &'b str) -> GetOperation<'a, 'b> {
         GetOperation {
             client:   client,
             index:    index,
@@ -419,17 +419,17 @@ impl<'a> GetOperation<'a> {
         }
     }
 
-    pub fn with_all_types(&'a mut self) -> &'a mut GetOperation {
+    pub fn with_all_types(&'b mut self) -> &'b mut Self {
         self.doc_type = Some("_all");
         self
     }
 
-    pub fn with_doc_type(&'a mut self, doc_type: &'a str) -> &'a mut GetOperation {
+    pub fn with_doc_type(&'b mut self, doc_type: &'b str) -> &'b mut Self {
         self.doc_type = Some(doc_type);
         self
     }
 
-    pub fn with_fields(&'a mut self, fields: &[&'a str]) -> &'a mut GetOperation {
+    pub fn with_fields(&'b mut self, fields: &[&'b str]) -> &'b mut Self {
         let mut fields_str = String::new();
         for field in fields {
             fields_str.push_str(field);
@@ -448,13 +448,13 @@ impl<'a> GetOperation<'a> {
     add_option!(with_refresh, "refresh", GetOperation);
     add_option!(with_version, "version", GetOperation);
 
-    pub fn send(&'a mut self) -> Result<GetResult, EsError> {
+    pub fn send(&'b mut self) -> Result<GetResult, EsError> {
         let url = format!("{}{}/{}/{}{}",
                           self.client.get_base_url(),
                           self.index,
                           self.doc_type.unwrap(),
                           self.id,
-                          format_query_string(&mut self.options));
+                          format_query_string(&self.options));
         // We're ignoring status_code as all valid codes should return a value,
         // so anything else is an error.
         let (_, result) = try!(self.client.get_op(&url));
@@ -463,28 +463,28 @@ impl<'a> GetOperation<'a> {
 }
 
 /// An ES DELETE operation for a specific document
-pub struct DeleteOperation<'a> {
+pub struct DeleteOperation<'a, 'b> {
     /// The HTTP client
     client:   &'a mut Client,
 
     /// The index
-    index:    &'a str,
+    index:    &'b str,
 
     /// The type
-    doc_type: &'a str,
+    doc_type: &'b str,
 
     /// The ID
-    id:       &'a str,
+    id:       &'b str,
 
     /// Optional options
-    options:  Options
+    options:  Options<'b>
 }
 
-impl<'a> DeleteOperation<'a> {
+impl<'a, 'b> DeleteOperation<'a, 'b> {
     fn new(client:   &'a mut Client,
-           index:    &'a str,
-           doc_type: &'a str,
-           id:       &'a str) -> DeleteOperation<'a> {
+           index:    &'b str,
+           doc_type: &'b str,
+           id:       &'b str) -> DeleteOperation<'a, 'b> {
         DeleteOperation {
             client:   client,
             index:    index,
@@ -539,8 +539,8 @@ enum QueryOption {
 
 // TODO: make this usable in other circumstances
 macro_rules! add_to_vec_option {
-    ($n:ident, $c:ident, $t:ident) => {
-        pub fn $n(&'a mut self, val: String) -> &'a mut $t {
+    ($n:ident, $c:ident) => {
+        pub fn $n(&'a mut self, val: String) -> &'a mut Self {
             self.$c.push(val);
             self
         }
@@ -551,7 +551,7 @@ macro_rules! add_to_vec_option {
 ///
 /// The query can be specified either as a String as a query parameter or in the
 /// body using the Query DSL.
-pub struct DeleteByQueryOperation<'a> {
+pub struct DeleteByQueryOperation<'a, 'b> {
     /// The HTTP client
     client:    &'a mut Client,
 
@@ -565,11 +565,11 @@ pub struct DeleteByQueryOperation<'a> {
     query:     QueryOption,
 
     /// Optional options
-    options:   Options
+    options:   Options<'b>
 }
 
-impl<'a> DeleteByQueryOperation<'a> {
-    fn new(client: &'a mut Client) -> DeleteByQueryOperation<'a> {
+impl<'a, 'b> DeleteByQueryOperation<'a, 'b> {
+    fn new(client: &'a mut Client) -> DeleteByQueryOperation<'a, 'b> {
         DeleteByQueryOperation {
             client:    client,
             indexes:   Vec::with_capacity(1),
@@ -581,15 +581,15 @@ impl<'a> DeleteByQueryOperation<'a> {
 
     // TODO decide if "add-to-vec" style builder-pattern makes sense or whether
     // a vector should just be applied.
-    add_to_vec_option!(add_index, indexes, DeleteByQueryOperation);
-    add_to_vec_option!(add_doc_type, doc_types, DeleteByQueryOperation);
+    add_to_vec_option!(add_index, indexes);
+    add_to_vec_option!(add_doc_type, doc_types);
 
-    pub fn with_query_string(&'a mut self, qs: String) -> &'a mut DeleteByQueryOperation {
+    pub fn with_query_string(&'a mut self, qs: String) -> &'a mut Self {
         self.query = QueryOption::String(qs);
         self
     }
 
-    pub fn with_query(&'a mut self, q: Query) -> &'a mut DeleteByQueryOperation {
+    pub fn with_query(&'a mut self, q: Query) -> &'a mut Self {
         self.query = QueryOption::Document(DeleteByQueryBody { query: q });
         self
     }
