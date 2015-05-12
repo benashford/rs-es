@@ -36,7 +36,7 @@ pub enum EsError {
     EsServerError(String),
 
     /// Miscellaneous error from the HTTP library
-    HttpError(hyper::error::HttpError),
+    HttpError(hyper::error::Error),
 
     /// Miscellaneous IO error
     IoError(io::Error),
@@ -54,8 +54,8 @@ impl From<io::Error> for EsError {
     }
 }
 
-impl From<hyper::error::HttpError> for EsError {
-    fn from(err: hyper::error::HttpError) -> EsError {
+impl From<hyper::error::Error> for EsError {
+    fn from(err: hyper::error::Error) -> EsError {
         EsError::HttpError(err)
     }
 }
@@ -225,7 +225,7 @@ impl Client {
     }
 
     es_op!(get_op, get);
-    es_body_op!(get_body_op, get);
+    //TODO: enable this, required for ES Search API es_body_op!(get_body_op, get);
     es_op!(post_op, post);
     es_body_op!(post_body_op, post);
     es_op!(put_op, put);
