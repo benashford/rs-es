@@ -178,8 +178,7 @@ fn do_req<'a>(rb:   hyper::client::RequestBuilder<'a, &str>,
 
 /// The core of the ElasticSearch client, owns a HTTP connection
 pub struct Client {
-    host:        String,
-    port:        u32,
+    base_url:    String,
     http_client: hyper::Client
 }
 
@@ -189,7 +188,7 @@ macro_rules! es_op {
         fn $n(&mut self, url: &str)
               -> Result<(StatusCode, Option<Json>), EsError> {
             info!("Doing {} on {}", stringify!($n), url);
-            do_req(self.http_client.$cn(url), None)
+            do_req(self.http_client.$cn(&format!("{}/{}", self.base_url, url)), None)
         }
     }
 }
@@ -205,23 +204,19 @@ macro_rules! es_body_op {
 
                 let json_string = json::encode(body).unwrap();
                 info!(" -> body: {:?}", json_string);
-                do_req(self.http_client.$cn(url), Some(&json_string))
+                do_req(self.http_client.$cn(&format!("{}/{}", self.base_url, url)),
+                       Some(&json_string))
             }
     }
 }
 
 impl Client {
     /// Create a new client
-    pub fn new(host: String, port: u32) -> Client {
+    pub fn new(host: &str, port: u32) -> Client {
         Client {
-            host:        host,
-            port:        port,
+            base_url:    format!("http://{}:{}", host, port),
             http_client: hyper::Client::new()
         }
-    }
-
-    fn get_base_url(&self) -> String {
-        format!("http://{}:{}/", self.host, self.port)
     }
 
     es_op!(get_op, get);
@@ -235,8 +230,7 @@ impl Client {
 
     /// Calls the base ES path, returning the version number
     pub fn version(&mut self) -> Result<String, EsError> {
-        let url = self.get_base_url();
-        let (_, result) = try!(self.get_op(&url));
+        let (_, result) = try!(self.get_op("/"));
         let json = result.unwrap();
         match json.find_path(&["version", "number"]) {
             Some(version) => match version.as_string() {
@@ -361,8 +355,7 @@ impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
         // already be an error
         let (_, result) = try!(match self.id {
             Some(ref id) => {
-                let url = format!("{}{}/{}/{}{}",
-                                  self.client.get_base_url(),
+                let url = format!("/{}/{}/{}{}",
                                   self.index,
                                   self.doc_type,
                                   id,
@@ -373,8 +366,7 @@ impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
                 }
             },
             None    => {
-                let url = format!("{}{}/{}{}",
-                                  self.client.get_base_url(),
+                let url = format!("/{}/{}{}",
                                   self.index,
                                   self.doc_type,
                                   format_query_string(&mut self.options));
@@ -449,8 +441,7 @@ impl<'a, 'b> GetOperation<'a, 'b> {
     add_option!(with_version, "version", GetOperation);
 
     pub fn send(&'b mut self) -> Result<GetResult, EsError> {
-        let url = format!("{}{}/{}/{}{}",
-                          self.client.get_base_url(),
+        let url = format!("/{}/{}/{}{}",
                           self.index,
                           self.doc_type.unwrap(),
                           self.id,
@@ -502,8 +493,7 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
     add_option!(with_timeout, "timeout", DeleteOperation);
 
     pub fn send(&'a mut self) -> Result<DeleteResult, EsError> {
-        let url = format!("{}{}/{}/{}{}",
-                          self.client.get_base_url(),
+        let url = format!("/{}/{}/{}{}",
                           self.index,
                           self.doc_type,
                           self.id,
@@ -604,8 +594,7 @@ impl<'a, 'b> DeleteByQueryOperation<'a, 'b> {
                 opts
             }
         };
-        let url = format!("{}{}/{}/_query{}",
-                          self.client.get_base_url(),
+        let url = format!("/{}/{}/_query{}",
                           format_multi(&self.indexes),
                           format_multi(&self.doc_types),
                           format_query_string(options));
@@ -834,7 +823,7 @@ mod tests {
             Ok(val) => val,
             Err(_)  => "localhost".to_string()
         };
-        Client::new(hostname, 9200)
+        Client::new(&hostname, 9200)
     }
 
     #[derive(Debug, RustcDecodable, RustcEncodable)]
