@@ -118,7 +118,7 @@ impl fmt::Display for EsError {
 // Utilities
 
 /// Produces a query string for a URL
-fn format_query_string(options: &Vec<(&'static str, String)>) -> String {
+fn format_query_string(options: &[(&str, String)]) -> String {
     let mut st = String::new();
     if options.is_empty() {
         return st;
