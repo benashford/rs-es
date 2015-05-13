@@ -16,3 +16,5 @@ Currently it indexes any structure that implements `ToJson`, and nothing else.  
 4. Everything else.
 5. Performance (ensure use of persistent HTTP connections, etc.).
 6. Documentation, both rustdoc and a suitable high-level write-up in this README
+7. Wire-up to Travis
+8. Publish to Crates.io
