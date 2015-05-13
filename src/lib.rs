@@ -150,6 +150,17 @@ fn format_multi(parts: &[&str]) -> String {
     st
 }
 
+/// Multiple operations require indexes and types to be specified, there are
+/// rules for combining the two however.  E.g. all indexes is specified with
+/// `_all`, but all types are specified by omitting type entirely.
+fn format_indexes_and_types(indexes: &[&str], types: &[&str]) -> String {
+    if types.len() == 0 {
+        format!("{}", format_multi(indexes))
+    } else {
+        format!("{}/{}", format_multi(indexes), format_multi(types))
+    }
+}
+
 // The client
 
 /// Perform an HTTP request
@@ -267,6 +278,16 @@ impl Client {
     /// Delete by query
     pub fn delete_by_query<'a>(&'a mut self) -> DeleteByQueryOperation {
         DeleteByQueryOperation::new(self)
+    }
+
+    /// Refresh
+    pub fn refresh<'a>(&'a mut self) -> RefreshOperation {
+        RefreshOperation::new(self)
+    }
+
+    /// Search
+    pub fn search_uri<'a>(&'a mut self) -> SearchURIOperation {
+        SearchURIOperation::new(self)
     }
 }
 
@@ -594,9 +615,8 @@ impl<'a, 'b> DeleteByQueryOperation<'a, 'b> {
                 opts
             }
         };
-        let url = format!("/{}/{}/_query{}",
-                          format_multi(&self.indexes),
-                          format_multi(&self.doc_types),
+        let url = format!("/{}/_query{}",
+                          format_indexes_and_types(&self.indexes, &self.doc_types),
                           format_query_string(options));
         let (status_code, result) = try!(match self.query {
             QueryOption::Document(ref d) => self.client.delete_body_op(&url,
@@ -615,7 +635,126 @@ impl<'a, 'b> DeleteByQueryOperation<'a, 'b> {
     }
 }
 
+/// Refresh
+pub struct RefreshOperation<'a, 'b> {
+    /// The HTTP client
+    client: &'a mut Client,
+
+    /// The indexes being refreshed
+    indexes: &'b [&'b str]
+}
+
+impl<'a, 'b> RefreshOperation<'a, 'b> {
+    fn new(client: &'a mut Client) -> RefreshOperation {
+        RefreshOperation {
+            client:  client,
+            indexes: &[]
+        }
+    }
+
+    pub fn with_indexes(&'b mut self, indexes: &'b [&'b str]) -> &'b mut Self {
+        self.indexes = indexes;
+        self
+    }
+
+    pub fn send(&mut self) -> Result<RefreshResult, EsError> {
+        let url = format!("/{}/_refresh",
+                          format_multi(&self.indexes));
+        let (status_code, result) = try!(self.client.post_op(&url));
+        match status_code {
+            StatusCode::Ok => Ok(RefreshResult::from(&result.unwrap())),
+            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        }
+    }
+}
+
+/// Search API
+///
+/// The query can be specified either as a String as a query parameter or in the
+/// body using the Query DSL.
+pub struct SearchURIOperation<'a, 'b> {
+    /// The HTTP client
+    client: &'a mut Client,
+
+    /// The indexes to which this query applies
+    indexes: &'b [&'b str],
+
+    /// The types to which this query applies
+    doc_types: &'b [&'b str],
+
+    /// Optional options
+    options: Options<'b>
+}
+
+impl<'a, 'b> SearchURIOperation<'a, 'b> {
+    fn new(client: &'a mut Client) -> SearchURIOperation<'a, 'b> {
+        SearchURIOperation {
+            client:    client,
+            indexes:   &[],
+            doc_types: &[],
+            options:   Options::new()
+        }
+    }
+
+    pub fn with_indexes(&'b mut self, indexes: &'b [&'b str]) -> &'b mut Self {
+        self.indexes = indexes;
+        self
+    }
+
+    pub fn with_doc_types(&'b mut self, doc_types: &'b [&'b str]) -> &'b mut Self {
+        self.doc_types = doc_types;
+        self
+    }
+
+    pub fn with_query(&'b mut self, qs: String) -> &'b mut Self {
+        self.options.push(("q", qs));
+        self
+    }
+
+    add_option!(with_df, "df");
+    add_option!(with_analyzer, "analyzer");
+    add_option!(with_lowercase_expanded_terms, "lowercase_expanded_terms");
+    add_option!(with_analyze_wildcard, "analyze_wildcard");
+    add_option!(with_default_operator, "default_operator");
+    add_option!(with_lenient, "lenient");
+    add_option!(with_explain, "explain");
+    add_option!(with_source, "_source");
+    add_option!(with_sort, "sort");
+    add_option!(with_track_scores, "track_scores");
+    add_option!(with_timeout, "timeout");
+    add_option!(with_terminate_after, "terminate_after");
+    add_option!(with_from, "from");
+    add_option!(with_size, "size");
+    add_option!(with_search_type, "search_type");
+
+    pub fn with_fields(&'b mut self, fields: &[&str]) -> &'b mut Self {
+        let mut s = String::new();
+        for f in fields {
+            s.push_str(f);
+            s.push_str(",");
+        }
+        s.pop();
+        self.options.push(("fields", s));
+        self
+    }
+
+    pub fn send(&'b mut self) -> Result<SearchResult, EsError> {
+        let url = format!("/{}/_search{}",
+                          format_indexes_and_types(&self.indexes, &self.doc_types),
+                          format_query_string(&self.options));
+        info!("Searching with: {}", url);
+        let (status_code, result) = try!(self.client.get_op(&url));
+        info!("Search result (status: {}, result: {:?})", status_code, result);
+        match status_code {
+            StatusCode::Ok => Ok(SearchResult::from(&result.unwrap())),
+            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        }
+    }
+}
+
 // Results
+
+// Result helpers
 
 macro_rules! get_json_thing {
     ($r:ident,$f:expr,$t:ident) => {
@@ -639,6 +778,24 @@ macro_rules! get_json_bool {
     ($r:ident,$f:expr) => {
         get_json_thing!($r,$f,as_boolean)
     }
+}
+
+macro_rules! get_json_f64 {
+    ($r:ident,$f:expr) => {
+        get_json_thing!($r,$f,as_f64)
+    }
+}
+
+fn decode_json<T: Decodable>(doc: Json) -> Result<T, EsError> {
+    Ok(try!(Decodable::decode(&mut Decoder::new(doc))))
+}
+
+/// Shared struct for operations that include counts of success/failed shards
+#[derive(Debug, RustcDecodable)]
+struct ShardCountResult {
+    total:      i64,
+    successful: i64,
+    failed:     i64
 }
 
 /// The result of an index operation
@@ -673,10 +830,6 @@ pub struct GetResult {
     version:  Option<i64>,
     found:    bool,
     source:   Option<Json>
-}
-
-fn decode_json<T: Decodable>(doc: Json) -> Result<T, EsError> {
-    Ok(try!(Decodable::decode(&mut Decoder::new(doc))))
 }
 
 impl GetResult {
@@ -729,16 +882,9 @@ impl<'a> From<&'a Json> for DeleteResult {
     }
 }
 
-#[derive(Debug,RustcDecodable)]
-pub struct DeleteByQueryShardResult {
-    total:      i64,
-    successful: i64,
-    failed:     i64
-}
-
 #[derive(Debug)]
 pub struct DeleteByQueryIndexResult {
-    shards: DeleteByQueryShardResult
+    shards: ShardCountResult
 }
 
 impl DeleteByQueryIndexResult {
@@ -790,6 +936,89 @@ impl<'a> From<&'a Json> for DeleteByQueryResult {
     }
 }
 
+/// Result of a refresh request
+pub struct RefreshResult {
+    shards: ShardCountResult
+}
+
+impl<'a> From<&'a Json> for RefreshResult {
+    fn from(r: &'a Json) -> RefreshResult {
+        RefreshResult {
+            shards: decode_json(r.find("_shards").unwrap().clone()).unwrap()
+        }
+    }
+}
+
+pub struct SearchHitsHitsResult {
+    index:    String,
+    doc_type: String,
+    id:       String,
+    score:    f64,
+    source:   Option<Json>,
+    fields:   Option<Json>
+}
+
+impl SearchHitsHitsResult {
+    /// Get the source document as a struct, the raw JSON version is available
+    /// directly from the source field
+    pub fn source<T: Decodable>(self) -> Result<T, EsError> {
+        match self.source {
+            Some(source) => decode_json(source),
+            None         => Err(EsError::EsError("No source field".to_string()))
+        }
+    }
+}
+
+impl<'a> From<&'a Json> for SearchHitsHitsResult {
+    fn from(r: &'a Json) -> SearchHitsHitsResult {
+        SearchHitsHitsResult {
+            index:    get_json_string!(r, "_index"),
+            doc_type: get_json_string!(r, "_type"),
+            id:       get_json_string!(r, "_id"),
+            score:    get_json_f64!(r, "_score"),
+            source:   r.find("_source").map(|s| s.clone()),
+            fields:   r.find("fields").map(|s| s.clone())
+        }
+    }
+}
+
+pub struct SearchHitsResult {
+    total: i64,
+    hits:  Vec<SearchHitsHitsResult>
+}
+
+impl<'a> From<&'a Json> for SearchHitsResult {
+    fn from(r: &'a Json) -> SearchHitsResult {
+        SearchHitsResult {
+            total: get_json_i64!(r, "total"),
+            hits:  r.find("hits")
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|j| SearchHitsHitsResult::from(j))
+                .collect()
+        }
+    }
+}
+
+pub struct SearchResult {
+    shards: ShardCountResult,
+    hits:   SearchHitsResult
+}
+
+impl<'a> From<&'a Json> for SearchResult {
+    fn from(r: &'a Json) -> SearchResult {
+        SearchResult {
+            shards: decode_json(r.find("_shards")
+                                .unwrap()
+                                .clone()).unwrap(),
+            hits:   SearchHitsResult::from(r.find("hits")
+                                           .unwrap())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     extern crate env_logger;
@@ -822,14 +1051,27 @@ mod tests {
         int_field: i64
     }
 
-    fn make_doc(int_f: i64) -> TestDocument {
-        TestDocument {
-            str_field: "I am a test".to_string(),
-            int_field: int_f
+    impl TestDocument {
+        fn new() -> TestDocument {
+            TestDocument {
+                str_field: "I am a test".to_string(),
+                int_field: 1
+            }
+        }
+
+        fn with_str_field(mut self, s: &str) -> TestDocument {
+            self.str_field = s.to_string();
+            self
+        }
+
+        fn with_int_field(mut self, i: i64) -> TestDocument {
+            self.int_field = i;
+            self
         }
     }
 
     fn clean_db(client: &mut Client) {
+        env_logger::init().unwrap();
         client.delete_by_query().with_query(Query::build_match_all().build()).send().unwrap();
     }
 
@@ -846,14 +1088,12 @@ mod tests {
 
     #[test]
     fn test_indexing() {
-        env_logger::init().unwrap();
-
         let mut client = make_client();
         clean_db(&mut client);
         {
             let result_wrapped = client
                 .index("test_idx", "test_type")
-                .with_doc(&make_doc(1))
+                .with_doc(&TestDocument::new().with_int_field(1))
                 .with_ttl(&927500)
                 .send();
             info!("TEST RESULT: {:?}", result_wrapped);
@@ -870,7 +1110,7 @@ mod tests {
 
             let result_wrapped = client
                 .index("test_idx", "test_type")
-                .with_doc(&make_doc(2))
+                .with_doc(&TestDocument::new().with_int_field(2))
                 .with_id("TEST_INDEXING_2")
                 .with_op_type(&OpType::Create)
                 .send();
@@ -889,7 +1129,7 @@ mod tests {
         let mut client = make_client();
         clean_db(&mut client);
         {
-            let doc = make_doc(3);
+            let doc = TestDocument::new().with_int_field(3);
             client
                 .index("test_idx", "test_type")
                 .with_id("TEST_GETTING")
@@ -916,15 +1156,8 @@ mod tests {
         let mut client = make_client();
         clean_db(&mut client);
 
-        let td1 = TestDocument {
-            str_field: "TEST DOC 1".to_string(),
-            int_field: 100
-        };
-
-        let td2 = TestDocument {
-            str_field: "TEST DOC 2".to_string(),
-            int_field: 200
-        };
+        let td1 = TestDocument::new().with_str_field("TEST DOC 1").with_int_field(100);
+        let td2 = TestDocument::new().with_str_field("TEST DOC 2").with_int_field(200);
 
         client
             .index("test_idx", "test_type")
@@ -953,5 +1186,48 @@ mod tests {
 
         assert!(doc1.found);
         assert!(!doc2.found);
+    }
+
+    fn setup_search_test_data(client: &mut Client) {
+        let documents = vec![
+            TestDocument::new().with_str_field("Document A123").with_int_field(1),
+            TestDocument::new().with_str_field("Document B456").with_int_field(2),
+            TestDocument::new().with_str_field("Document 1ABC").with_int_field(3)
+                ];
+        for ref doc in documents {
+            client.index("test_idx", "test_type")
+                .with_doc(doc)
+                .send()
+                .unwrap();
+        }
+        client.refresh().with_indexes(&["test_idx"]).send().unwrap();
+    }
+
+    #[test]
+    fn test_search_uri() {
+        let mut client = make_client();
+        clean_db(&mut client);
+        setup_search_test_data(&mut client);
+
+        let all_results = client.search_uri().send().unwrap();
+        assert_eq!(3, all_results.hits.total);
+
+        let doc_a = client.search_uri().with_query("A123".to_string()).send().unwrap();
+        assert_eq!(1, doc_a.hits.total);
+
+        let doc_1 = client
+            .search_uri()
+            .with_query("str_field:1ABC".to_string())
+            .send()
+            .unwrap();
+        assert_eq!(1, doc_1.hits.total);
+
+        let limited_fields = client
+            .search_uri()
+            .with_query("str_field:B456".to_string())
+            .with_fields(&["int_field"])
+            .send()
+            .unwrap();
+        assert_eq!(1, limited_fields.hits.total);
     }
 }
