@@ -13,8 +13,9 @@ Currently it indexes any structure that implements `ToJson`, and nothing else.  
 1. Full implementation of the Query DSL.
 2. Implementation of Search API.
 3. Test coverage.
-4. Everything else.
-5. Performance (ensure use of persistent HTTP connections, etc.).
-6. Documentation, both rustdoc and a suitable high-level write-up in this README
-7. Wire-up to Travis
-8. Publish to Crates.io
+4. Aggregations.
+5. Everything else.
+6. Performance (ensure use of persistent HTTP connections, etc.).
+7. Documentation, both rustdoc and a suitable high-level write-up in this README
+8. Wire-up to Travis
+9. Publish to Crates.io
