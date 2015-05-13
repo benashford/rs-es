@@ -7,6 +7,7 @@
 extern crate hyper;
 extern crate rustc_serialize;
 
+#[macro_use]
 pub mod query;
 
 use std::collections::BTreeMap;
@@ -231,7 +232,7 @@ impl Client {
     }
 
     es_op!(get_op, get);
-    //TODO: enable this, required for ES Search API es_body_op!(get_body_op, get);
+    es_body_op!(get_body_op, get);
     es_op!(post_op, post);
     es_body_op!(post_body_op, post);
     es_op!(put_op, put);
@@ -285,9 +286,14 @@ impl Client {
         RefreshOperation::new(self)
     }
 
-    /// Search
+    /// Search via the query parameter
     pub fn search_uri<'a>(&'a mut self) -> SearchURIOperation {
         SearchURIOperation::new(self)
+    }
+
+    /// Search via the query DSL
+    pub fn search_query<'a>(&'a mut self) -> SearchQueryOperation {
+        SearchQueryOperation::new(self)
     }
 }
 
@@ -531,7 +537,7 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
 }
 
 struct DeleteByQueryBody {
-    query: query::Query
+    query: Query
 }
 
 // TODO: make this unnecessary
@@ -668,10 +674,7 @@ impl<'a, 'b> RefreshOperation<'a, 'b> {
     }
 }
 
-/// Search API
-///
-/// The query can be specified either as a String as a query parameter or in the
-/// body using the Query DSL.
+/// Search API using a query string
 pub struct SearchURIOperation<'a, 'b> {
     /// The HTTP client
     client: &'a mut Client,
@@ -684,6 +687,25 @@ pub struct SearchURIOperation<'a, 'b> {
 
     /// Optional options
     options: Options<'b>
+}
+
+/// Options for the various search_type parameters
+pub enum SearchType {
+    DFSQueryThenFetch,
+    DFSQueryAndFetch,
+    QueryThenFetch,
+    QueryAndFetch
+}
+
+impl ToString for SearchType {
+    fn to_string(&self) -> String {
+        match self {
+            &SearchType::DFSQueryThenFetch => "dfs_query_then_fetch",
+            &SearchType::DFSQueryAndFetch  => "dfs_query_and_fetch",
+            &SearchType::QueryThenFetch    => "query_then_fetch",
+            &SearchType::QueryAndFetch     => "query_and_fetch"
+        }.to_string()
+    }
 }
 
 impl<'a, 'b> SearchURIOperation<'a, 'b> {
@@ -701,7 +723,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
         self
     }
 
-    pub fn with_doc_types(&'b mut self, doc_types: &'b [&'b str]) -> &'b mut Self {
+    pub fn with_types(&'b mut self, doc_types: &'b [&'b str]) -> &'b mut Self {
         self.doc_types = doc_types;
         self
     }
@@ -745,6 +767,120 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
         info!("Searching with: {}", url);
         let (status_code, result) = try!(self.client.get_op(&url));
         info!("Search result (status: {}, result: {:?})", status_code, result);
+        match status_code {
+            StatusCode::Ok => Ok(SearchResult::from(&result.unwrap())),
+            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        }
+    }
+}
+
+struct SearchQueryOperationBody<'b> {
+    /// The query
+    query: Option<&'b Query>,
+
+    /// Timeout
+    timeout: Option<&'b str>,
+
+    /// From
+    from: i64,
+
+    /// Size
+    size: i64,
+
+    /// Terminate early (marked as experimental in the ES docs)
+    terminate_after: Option<i64>
+}
+
+impl<'a> ToJson for SearchQueryOperationBody<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("from".to_string(), self.from.to_json());
+        d.insert("size".to_string(), self.size.to_json());
+        optional_add!(d, self.query, "query");
+        optional_add!(d, self.timeout, "timeout");
+        optional_add!(d, self.terminate_after, "terminate_after");
+        Json::Object(d)
+    }
+}
+
+/// Search API using a Query DSL body
+pub struct SearchQueryOperation<'a, 'b> {
+    /// The HTTP client
+    client: &'a mut Client,
+
+    /// The indexes to which this query applies
+    indexes: &'b [&'b str],
+
+    /// The types to which the query applies
+    doc_types: &'b [&'b str],
+
+    /// Optionals
+    options: Options<'b>,
+
+    /// The query body
+    body: SearchQueryOperationBody<'b>
+}
+
+impl <'a, 'b> SearchQueryOperation<'a, 'b> {
+    fn new(client: &'a mut Client) -> SearchQueryOperation<'a, 'b> {
+        SearchQueryOperation {
+            client:    client,
+            indexes:   &[],
+            doc_types: &[],
+            options:   Options::new(),
+            body:      SearchQueryOperationBody {
+                query:           None,
+                timeout:         None,
+                from:            0,
+                size:            0,
+                terminate_after: None
+            }
+        }
+    }
+
+    pub fn with_indexes(&'b mut self, indexes: &'b [&'b str]) -> &'b mut Self {
+        self.indexes = indexes;
+        self
+    }
+
+    pub fn with_types(&'b mut self, doc_types: &'b [&'b str]) -> &'b mut Self {
+        self.doc_types = doc_types;
+        self
+    }
+
+    pub fn with_query(&'b mut self, query: &'b Query) -> &'b mut Self {
+        self.body.query = Some(query);
+        self
+    }
+
+    pub fn with_timeout(&'b mut self, timeout: &'b str) -> &'b mut Self {
+        self.body.timeout = Some(timeout);
+        self
+    }
+
+    pub fn with_from(&'b mut self, from: i64) -> &'b mut Self {
+        self.body.from = from;
+        self
+    }
+
+    pub fn with_size(&'b mut self, size: i64) -> &'b mut Self {
+        self.body.size = size;
+        self
+    }
+
+    pub fn with_terminate_after(&'b mut self, terminate_after: i64) -> &'b mut Self {
+        self.body.terminate_after = Some(terminate_after);
+        self
+    }
+
+    add_option!(with_search_type, "search_type");
+    add_option!(with_query_cache, "query_cache");
+
+    pub fn send(&'b mut self) -> Result<SearchResult, EsError> {
+        let url = format!("/{}/_search{}",
+                          format_indexes_and_types(&self.indexes, &self.doc_types),
+                          format_query_string(&self.options));
+        let (status_code, result) = try!(self.client.get_body_op(&url, &self.body.to_json()));
         match status_code {
             StatusCode::Ok => Ok(SearchResult::from(&result.unwrap())),
             _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
@@ -949,6 +1085,7 @@ impl<'a> From<&'a Json> for RefreshResult {
     }
 }
 
+#[derive(Debug)]
 pub struct SearchHitsHitsResult {
     index:    String,
     doc_type: String,
@@ -1071,7 +1208,6 @@ mod tests {
     }
 
     fn clean_db(client: &mut Client) {
-        env_logger::init().unwrap();
         client.delete_by_query().with_query(Query::build_match_all().build()).send().unwrap();
     }
 
@@ -1079,6 +1215,8 @@ mod tests {
 
     #[test]
     fn it_works() {
+        env_logger::init().unwrap();
+
         let mut client = make_client();
         let result = client.version().unwrap();
 
