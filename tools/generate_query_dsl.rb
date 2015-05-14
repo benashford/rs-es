@@ -45,7 +45,8 @@ class ESDSLGen
          e('FunctionScore', 'function_score'),
          e('Fuzzy', 'fuzzy'),
          e('GeoShape', 'geo_shape'),
-         e('HasChild', 'has_child')
+         e('HasChild', 'has_child'),
+         e('HasParent', 'has_parent')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -234,6 +235,11 @@ class ESDSLGen
                          f('score_mode', 'ScoreMode', true),
                          f('min_children', 'i64', true),
                          f('max_children', 'i64', true)
+                       ],
+                       'HasParentQuery' => [
+                         f('parent_type', 'String'),
+                         f('query', 'Box<Query>'),
+                         f('score_mode', 'ScoreMode', true)
                        ]
                       }
 
