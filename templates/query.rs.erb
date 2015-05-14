@@ -300,6 +300,35 @@ impl<T: ToJson> ToJson for OneOrMany<T> {
 <%= structs['IndicesQuery'] %>
 <%= to_json_impl('IndicesQuery') %>
 
+// A document can be provided as an example
+#[derive(Clone)]
+pub struct Doc {
+    index:    String,
+    doc_type: String,
+    doc:      Option<Json>,
+    id:       Option<String>
+}
+
+impl ToJson for Doc {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("_index".to_string(), self.index.to_json());
+        d.insert("_type".to_string(), self.doc_type.to_json());
+        match self.doc {
+            Some(ref json) => { d.insert("doc".to_string(), json.clone()); },
+            None           => ()
+        }
+        match self.id {
+            Some(ref id) => { d.insert("_id".to_string(), id.to_json()); },
+            None         => ()
+        }
+        Json::Object(d)
+    }
+}
+
+<%= structs['MoreLikeThisQuery'] %>
+<%= to_json_impl('MoreLikeThisQuery') %>
+
 // Filters
 
 <%= structs['AndFilter'] %>

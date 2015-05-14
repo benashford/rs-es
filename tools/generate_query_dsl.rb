@@ -48,7 +48,8 @@ class ESDSLGen
          e('HasChild', 'has_child'),
          e('HasParent', 'has_parent'),
          e('Ids', 'ids'),
-         e('Indices', 'indices')
+         e('Indices', 'indices'),
+         e('MoreLikeThis', 'more_like_this')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -254,6 +255,24 @@ class ESDSLGen
                          f('indices', 'Vec<String>', true),
                          f('query', 'Box<Query>'),
                          f('no_match_query', 'Box<Query>', true)
+                       ],
+                       'MoreLikeThisQuery' => [
+                         f('fields', 'Vec<String>', true),
+                         f('like_text', 'String', true),
+                         f('ids', 'Vec<String>', true),
+                         f('docs', 'Vec<Doc>', true),
+                         f('max_query_terms', 'i64', true),
+                         f('min_term_freq', 'i64', true),
+                         f('min_doc_freq', 'i64', true),
+                         f('max_doc_freq', 'i64', true),
+                         f('min_word_length', 'i64', true),
+                         f('max_word_length', 'i64', true),
+                         f('stop_words', 'Vec<String>', true),
+                         f('analyzer', 'String', true),
+                         f('minimum_should_match', 'MinimumShouldMatch', true),
+                         f('boost_terms', 'f64', true),
+                         f('include', 'bool', true),
+                         f('boost', 'f64', true)
                        ]
                       }
 
