@@ -47,7 +47,8 @@ class ESDSLGen
          e('GeoShape', 'geo_shape'),
          e('HasChild', 'has_child'),
          e('HasParent', 'has_parent'),
-         e('Ids', 'ids')
+         e('Ids', 'ids'),
+         e('Indices', 'indices')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -245,6 +246,12 @@ class ESDSLGen
                        'IdsQuery' => [
                          f('doc_type', 'OneOrMany<String>', true),
                          f('values', 'Vec<String>')
+                       ],
+                       'IndicesQuery' => [
+                         f('index', 'String', true),
+                         f('indices', 'Vec<String>', true),
+                         f('query', 'Box<Query>'),
+                         f('no_match_query', 'Box<Query>', true)
                        ]
                       }
 
