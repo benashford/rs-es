@@ -534,7 +534,6 @@ struct DeleteByQueryBody {
     query: Query
 }
 
-// TODO: make this unnecessary
 impl ToJson for DeleteByQueryBody {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
