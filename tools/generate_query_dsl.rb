@@ -46,7 +46,8 @@ class ESDSLGen
          e('Fuzzy', 'fuzzy'),
          e('GeoShape', 'geo_shape'),
          e('HasChild', 'has_child'),
-         e('HasParent', 'has_parent')
+         e('HasParent', 'has_parent'),
+         e('Ids', 'ids')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -240,6 +241,10 @@ class ESDSLGen
                          f('parent_type', 'String'),
                          f('query', 'Box<Query>'),
                          f('score_mode', 'ScoreMode', true)
+                       ],
+                       'IdsQuery' => [
+                         f('doc_type', 'OneOrMany<String>', true),
+                         f('values', 'Vec<String>')
                        ]
                       }
 

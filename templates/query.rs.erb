@@ -291,6 +291,24 @@ impl ToJson for GeoShapeQuery {
 <%= structs['HasParentQuery'] %>
 <%= to_json_impl('HasParentQuery') %>
 
+#[derive(Clone)]
+pub enum OneOrMany<T: ToJson> {
+    One(T),
+    Many(Vec<T>)
+}
+
+impl<T: ToJson> ToJson for OneOrMany<T> {
+    fn to_json(&self) -> Json {
+        match self {
+            &OneOrMany::One(ref t)  => t.to_json(),
+            &OneOrMany::Many(ref t) => t.to_json()
+        }
+    }
+}
+
+<%= structs['IdsQuery'] %>
+<%= to_json_impl('IdsQuery') %>
+
 // Filters
 
 <%= structs['AndFilter'] %>
