@@ -213,6 +213,19 @@ impl ToJson for WeightFunction {
 
 <%= to_json_impl('FunctionScoreQuery') %>
 
+<%= structs['FuzzyQuery'] %>
+
+impl ToJson for FuzzyQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        inner.insert("value".to_string(), self.value.to_json());
+        self.add_optionals(&mut inner);
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
 // Filters
 
 <%= structs['AndFilter'] %>

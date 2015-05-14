@@ -41,7 +41,8 @@ class ESDSLGen
          e('Filtered', 'filtered'),
          e('FuzzyLikeThis', 'fuzzy_like_this'),
          e('FuzzyLikeThisField', 'fuzzy_like_this_field'),
-         e('FunctionScore', 'function_score')
+         e('FunctionScore', 'function_score'),
+         e('Fuzzy', 'fuzzy')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -210,6 +211,14 @@ class ESDSLGen
                          f('score_mode', 'ScoreMode', true),
                          f('boost_mode', 'BoostMode', true),
                          f('min_score', 'f64', true)
+                       ],
+                       'FuzzyQuery' => [
+                         f('field', 'String'),
+                         f('value', 'String'),
+                         f('boost', 'f64', true),
+                         f('fuzziness', 'Fuzziness', true),
+                         f('prefix_length', 'i64', true),
+                         f('max_expansions', 'i64', true)
                        ]
                       }
 
