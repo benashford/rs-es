@@ -7,7 +7,8 @@ E = Struct.new(:name, :json_name)
 F = Struct.new(:name, :type, :optional)
 
 class F
-  JSON_SUBS = {'match_type' => 'type'}
+  JSON_SUBS = {'match_type' => 'type',
+               'doc_type'   => 'type'}
 
   def json_name
     JSON_SUBS[name] || name
@@ -43,7 +44,8 @@ class ESDSLGen
          e('FuzzyLikeThisField', 'fuzzy_like_this_field'),
          e('FunctionScore', 'function_score'),
          e('Fuzzy', 'fuzzy'),
-         e('GeoShape', 'geo_shape')
+         e('GeoShape', 'geo_shape'),
+         e('HasChild', 'has_child')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -225,6 +227,13 @@ class ESDSLGen
                          f('field', 'String'),
                          f('shape', 'Shape', true),
                          f('indexed_shape', 'IndexedShape', true)
+                       ],
+                       'HasChildQuery' => [
+                         f('doc_type', 'String'),
+                         f('query', 'Box<Query>'),
+                         f('score_mode', 'ScoreMode', true),
+                         f('min_children', 'i64', true),
+                         f('max_children', 'i64', true)
                        ]
                       }
 
@@ -302,8 +311,8 @@ class ESDSLGen
             fn to_json(&self) -> Json {
                 let mut d = BTreeMap::new();
                 <% fields.reject(&:optional).each do |field| %>
-                  d.insert("<%= field.name %>".to_string(),
-                           self.<%= field.json_name %>.to_json());
+                  d.insert("<%= field.json_name %>".to_string(),
+                           self.<%= field.name %>.to_json());
                 <% end %>
                 self.add_optionals(&mut d);
                 Json::Object(d)
