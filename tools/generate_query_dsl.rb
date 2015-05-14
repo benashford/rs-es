@@ -348,7 +348,7 @@ class ESDSLGen
               }
 
               pub fn build(&self) -> <%= enum_type %> {
-                  <%= enum_name %>((*self).clone())
+                  <%= enum_name %>(self.clone())
               }
           }
         END
