@@ -164,27 +164,18 @@ fn format_indexes_and_types(indexes: &[&str], types: &[&str]) -> String {
 
 // The client
 
-/// Perform an HTTP request
-fn do_req<'a>(rb:   hyper::client::RequestBuilder<'a, &str>,
-              body: Option<&'a str>)
-              -> Result<(StatusCode, Option<Json>), EsError> {
-    info!("Params (body={:?})", body);
-    let mut result = match body {
-        Some(json_str) => rb.body(json_str).send(),
-        None           => rb.send()
-    };
-    info!("Result: {:?}", result);
-    match result {
-        Ok(ref mut r) => match r.status {
-            StatusCode::Ok |
-            StatusCode::Created |
-            StatusCode::NotFound => match Json::from_reader(r) {
-                Ok(json) => Ok((r.status, Some(json))),
-                Err(e)   => Err(EsError::from(e))
-            },
-            _                    => Err(EsError::from(r))
+/// Process the result of an HTTP request
+fn do_req(resp: &mut hyper::client::response::Response)
+          -> Result<(StatusCode, Option<Json>), EsError> {
+    info!("Response: {:?}", resp);
+    match resp.status {
+        StatusCode::Ok |
+        StatusCode::Created |
+        StatusCode::NotFound => match Json::from_reader(resp) {
+            Ok(json) => Ok((resp.status, Some(json))),
+            Err(e)   => Err(EsError::from(e))
         },
-        Err(e)        => Err(EsError::from(e))
+        _                    => Err(EsError::from(resp))
     }
 }
 
@@ -200,7 +191,8 @@ macro_rules! es_op {
         fn $n(&mut self, url: &str)
               -> Result<(StatusCode, Option<Json>), EsError> {
             info!("Doing {} on {}", stringify!($n), url);
-            do_req(self.http_client.$cn(&format!("{}/{}", self.base_url, url)), None)
+            let mut result = try!(self.http_client.$cn(&format!("{}/{}", self.base_url, url)).send());
+            do_req(&mut result)
         }
     }
 }
@@ -213,11 +205,13 @@ macro_rules! es_body_op {
                  -> Result<(StatusCode, Option<Json>), EsError>
             where E: Encodable {
                 info!("Doing {} on {}", stringify!($n), url);
-
                 let json_string = json::encode(body).unwrap();
-                info!(" -> body: {:?}", json_string);
-                do_req(self.http_client.$cn(&format!("{}/{}", self.base_url, url)),
-                       Some(&json_string))
+                let mut result = try!(self.http_client
+                                      .$cn(&format!("{}/{}", self.base_url, url))
+                                      .body(&json_string)
+                                      .send());
+
+                do_req(&mut result)
             }
     }
 }
