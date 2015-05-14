@@ -137,7 +137,9 @@ class ESDSLGen
     end
 
     def structs
-      query_structs = {'MatchAllQuery'  => [],
+      query_structs = {'MatchAllQuery'  => [
+                         f('boost', 'f64', true)
+                       ],
                        'MatchQuery'     => [
                          f('field', 'String'),
                          f('query', 'Json'),

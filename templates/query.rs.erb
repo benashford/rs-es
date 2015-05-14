@@ -59,20 +59,8 @@ impl ToJson for Fuzziness {
 
 // Option structs for Query(ies)
 
-#[derive(Clone)]
-pub struct MatchAllQuery;
-
-impl MatchAllQuery {
-    pub fn build(self) -> Query {
-        MatchAll(self)
-    }
-}
-
-impl ToJson for MatchAllQuery {
-    fn to_json(&self) -> Json {
-        Json::Object(BTreeMap::new())
-    }
-}
+<%= structs['MatchAllQuery'] %>
+<%= to_json_impl('MatchAllQuery') %>
 
 <%= structs['MatchQuery'] %>
 
