@@ -226,6 +226,65 @@ impl ToJson for FuzzyQuery {
     }
 }
 
+// Required for GeoShape
+
+#[derive(Clone)]
+pub struct Shape {
+    shape_type: String,
+    coordinates: Vec<(f64, f64)>
+}
+
+impl ToJson for Shape {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+
+        inner.insert("type".to_string(), self.shape_type.to_json());
+
+        let coordinates:Vec<Vec<f64>> = self.coordinates
+            .iter()
+            .map (|&(a, b)| vec![a, b])
+            .collect();
+        inner.insert("coordinates".to_string(), coordinates.to_json());
+
+        d.insert("shape".to_string(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
+#[derive(Clone)]
+pub struct IndexedShape {
+    id: String,
+    doc_type: String,
+    index: String,
+    path: String
+}
+
+impl ToJson for IndexedShape {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        inner.insert("id".to_string(), self.id.to_json());
+        inner.insert("type".to_string(), self.doc_type.to_json());
+        inner.insert("index".to_string(), self.doc_type.to_json());
+        inner.insert("path".to_string(), self.doc_type.to_json());
+        d.insert("indexed_shape".to_string(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
+<%= structs['GeoShapeQuery'] %>
+
+impl ToJson for GeoShapeQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        self.add_optionals(&mut inner);
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
 // Filters
 
 <%= structs['AndFilter'] %>

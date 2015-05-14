@@ -42,7 +42,8 @@ class ESDSLGen
          e('FuzzyLikeThis', 'fuzzy_like_this'),
          e('FuzzyLikeThisField', 'fuzzy_like_this_field'),
          e('FunctionScore', 'function_score'),
-         e('Fuzzy', 'fuzzy')
+         e('Fuzzy', 'fuzzy'),
+         e('GeoShape', 'geo_shape')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -219,6 +220,11 @@ class ESDSLGen
                          f('fuzziness', 'Fuzziness', true),
                          f('prefix_length', 'i64', true),
                          f('max_expansions', 'i64', true)
+                       ],
+                       'GeoShapeQuery' => [
+                         f('field', 'String'),
+                         f('shape', 'Shape', true),
+                         f('indexed_shape', 'IndexedShape', true)
                        ]
                       }
 
