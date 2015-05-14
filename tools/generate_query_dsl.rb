@@ -49,7 +49,8 @@ class ESDSLGen
          e('HasParent', 'has_parent'),
          e('Ids', 'ids'),
          e('Indices', 'indices'),
-         e('MoreLikeThis', 'more_like_this')
+         e('MoreLikeThis', 'more_like_this'),
+         e('Nested', 'nested')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -273,6 +274,11 @@ class ESDSLGen
                          f('boost_terms', 'f64', true),
                          f('include', 'bool', true),
                          f('boost', 'f64', true)
+                       ],
+                       'NestedQuery' => [
+                         f('path', 'String'),
+                         f('score_mode', 'ScoreMode', true),
+                         f('query', 'Box<Query>')
                        ]
                       }
 
