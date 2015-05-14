@@ -1201,8 +1201,13 @@ mod tests {
         }
     }
 
-    fn clean_db(client: &mut Client) {
-        client.delete_by_query().with_query(Query::build_match_all().build()).send().unwrap();
+    fn clean_db(client: &mut Client,
+                test_idx: &str) {
+        client.delete_by_query()
+            .with_indexes(&[test_idx])
+            .with_query(Query::build_match_all().build())
+            .send()
+            .unwrap();
     }
 
     // tests
@@ -1220,28 +1225,29 @@ mod tests {
 
     #[test]
     fn test_indexing() {
+        let index_name = "test_indexing";
         let mut client = make_client();
-        clean_db(&mut client);
+        clean_db(&mut client, index_name);
         {
             let result_wrapped = client
-                .index("test_idx", "test_type")
+                .index(index_name, "test_type")
                 .with_doc(&TestDocument::new().with_int_field(1))
                 .with_ttl(&927500)
                 .send();
             info!("TEST RESULT: {:?}", result_wrapped);
             let result = result_wrapped.unwrap();
             assert_eq!(result.created, true);
-            assert_eq!(result.index, "test_idx");
+            assert_eq!(result.index, index_name);
             assert_eq!(result.doc_type, "test_type");
             assert!(result.id.len() > 0);
             assert_eq!(result.version, 1);
         }
         {
-            let delete_result = client.delete("test_idx", "test_type", "TEST_INDEXING_2").send();
+            let delete_result = client.delete(index_name, "test_type", "TEST_INDEXING_2").send();
             info!("DELETE RESULT: {:?}", delete_result);
 
             let result_wrapped = client
-                .index("test_idx", "test_type")
+                .index(index_name, "test_type")
                 .with_doc(&TestDocument::new().with_int_field(2))
                 .with_id("TEST_INDEXING_2")
                 .with_op_type(&OpType::Create)
@@ -1249,7 +1255,7 @@ mod tests {
             let result = result_wrapped.unwrap();
 
             assert_eq!(result.created, true);
-            assert_eq!(result.index, "test_idx");
+            assert_eq!(result.index, index_name);
             assert_eq!(result.doc_type, "test_type");
             assert_eq!(result.id, "TEST_INDEXING_2");
             assert!(result.version >= 1);
@@ -1258,18 +1264,19 @@ mod tests {
 
     #[test]
     fn test_get() {
+        let index_name = "test_get";
         let mut client = make_client();
-        clean_db(&mut client);
+        clean_db(&mut client, index_name);
         {
             let doc = TestDocument::new().with_int_field(3);
             client
-                .index("test_idx", "test_type")
+                .index(index_name, "test_type")
                 .with_id("TEST_GETTING")
                 .with_doc(&doc)
                 .send().unwrap();
         }
         {
-            let mut getter = client.get("test_idx", "TEST_GETTING");
+            let mut getter = client.get(index_name, "TEST_GETTING");
             let result_wrapped = getter
                 .with_doc_type("test_type")
                 .send();
@@ -1285,26 +1292,27 @@ mod tests {
 
     #[test]
     fn test_delete_by_query() {
+        let index_name = "test_delete_by_query";
         let mut client = make_client();
-        clean_db(&mut client);
+        clean_db(&mut client, index_name);
 
         let td1 = TestDocument::new().with_str_field("TEST DOC 1").with_int_field(100);
         let td2 = TestDocument::new().with_str_field("TEST DOC 2").with_int_field(200);
 
         client
-            .index("test_idx", "test_type")
+            .index(index_name, "test_type")
             .with_id("ABC123")
             .with_doc(&td1)
             .send().unwrap();
         client
-            .index("test_idx", "test_type")
+            .index(index_name, "test_type")
             .with_id("ABC124")
             .with_doc(&td2)
             .send().unwrap();
 
         let delete_result = client
             .delete_by_query()
-            .with_indexes(&["test_idx"])
+            .with_indexes(&[index_name])
             .with_doc_types(&["test_type"])
             .with_query(Query::build_match("int_field".to_string(), 200.to_json())
                         .with_lenient(false)
@@ -1313,42 +1321,49 @@ mod tests {
 
         assert!(delete_result.unwrap().successful());
 
-        let doc1 = client.get("test_idx", "ABC123").with_doc_type("test_type").send().unwrap();
-        let doc2 = client.get("test_idx", "ABC124").with_doc_type("test_type").send().unwrap();
+        let doc1 = client.get(index_name, "ABC123").with_doc_type("test_type").send().unwrap();
+        let doc2 = client.get(index_name, "ABC124").with_doc_type("test_type").send().unwrap();
 
         assert!(doc1.found);
         assert!(!doc2.found);
     }
 
-    fn setup_search_test_data(client: &mut Client) {
+    fn setup_search_test_data(client: &mut Client, index_name: &str) {
         let documents = vec![
             TestDocument::new().with_str_field("Document A123").with_int_field(1),
             TestDocument::new().with_str_field("Document B456").with_int_field(2),
             TestDocument::new().with_str_field("Document 1ABC").with_int_field(3)
                 ];
         for ref doc in documents {
-            client.index("test_idx", "test_type")
+            client.index(index_name, "test_type")
                 .with_doc(doc)
                 .send()
                 .unwrap();
         }
-        client.refresh().with_indexes(&["test_idx"]).send().unwrap();
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
     }
 
     #[test]
     fn test_search_uri() {
+        let index_name = "test_search_uri";
         let mut client = make_client();
-        clean_db(&mut client);
-        setup_search_test_data(&mut client);
+        clean_db(&mut client, index_name);
+        setup_search_test_data(&mut client, index_name);
 
-        let all_results = client.search_uri().send().unwrap();
+        let all_results = client.search_uri().with_indexes(&[index_name]).send().unwrap();
         assert_eq!(3, all_results.hits.total);
 
-        let doc_a = client.search_uri().with_query("A123".to_string()).send().unwrap();
+        let doc_a = client
+            .search_uri()
+            .with_indexes(&[index_name])
+            .with_query("A123".to_string())
+            .send()
+            .unwrap();
         assert_eq!(1, doc_a.hits.total);
 
         let doc_1 = client
             .search_uri()
+            .with_indexes(&[index_name])
             .with_query("str_field:1ABC".to_string())
             .send()
             .unwrap();
@@ -1356,6 +1371,7 @@ mod tests {
 
         let limited_fields = client
             .search_uri()
+            .with_indexes(&[index_name])
             .with_query("str_field:B456".to_string())
             .with_fields(&["int_field"])
             .send()
