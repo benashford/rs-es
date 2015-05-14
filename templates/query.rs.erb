@@ -314,14 +314,10 @@ impl ToJson for Doc {
         let mut d = BTreeMap::new();
         d.insert("_index".to_string(), self.index.to_json());
         d.insert("_type".to_string(), self.doc_type.to_json());
-        match self.doc {
-            Some(ref json) => { d.insert("doc".to_string(), json.clone()); },
-            None           => ()
-        }
-        match self.id {
-            Some(ref id) => { d.insert("_id".to_string(), id.to_json()); },
-            None         => ()
-        }
+
+        optional_add!(d, self.doc, "doc");
+        optional_add!(d, self.id, "_id");
+
         Json::Object(d)
     }
 }
@@ -331,6 +327,46 @@ impl ToJson for Doc {
 
 <%= structs['NestedQuery'] %>
 <%= to_json_impl('NestedQuery') %>
+
+<%= structs['PrefixQuery'] %>
+
+#[derive(Clone)]
+pub enum Rewrite {
+    ConstantScoreAuto,
+    ScoringBoolean,
+    ConstantScoreBoolean,
+    ConstantScoreFilter,
+    TopTerms(i64),
+    TopTermsBoost(i64)
+}
+
+impl ToJson for Rewrite {
+    fn to_json(&self) -> Json {
+        match self {
+            &Rewrite::ConstantScoreAuto    => "constant_score_auto".to_json(),
+            &Rewrite::ScoringBoolean       => "scoring_boolean".to_json(),
+            &Rewrite::ConstantScoreBoolean => "constant_score_boolean".to_json(),
+            &Rewrite::ConstantScoreFilter  => "constant_score_filter".to_json(),
+            &Rewrite::TopTerms(n)          => format!("top_terms_{}", n).to_json(),
+            &Rewrite::TopTermsBoost(n)     => format!("top_terms_boost_{}", n).to_json()
+        }
+    }
+}
+
+impl ToJson for PrefixQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+
+        inner.insert("value".to_string(), self.value.to_json());
+
+        optional_add!(inner, self.boost, "boost");
+        optional_add!(inner, self.rewrite, "rewrite");
+
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
 
 // Filters
 

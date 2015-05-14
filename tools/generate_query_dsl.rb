@@ -50,7 +50,8 @@ class ESDSLGen
          e('Ids', 'ids'),
          e('Indices', 'indices'),
          e('MoreLikeThis', 'more_like_this'),
-         e('Nested', 'nested')
+         e('Nested', 'nested'),
+         e('Prefix', 'prefix')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -279,6 +280,12 @@ class ESDSLGen
                          f('path', 'String'),
                          f('score_mode', 'ScoreMode', true),
                          f('query', 'Box<Query>')
+                       ],
+                       'PrefixQuery' => [
+                         f('field', 'String'),
+                         f('value', 'String'),
+                         f('boost', 'f64', true),
+                         f('rewrite', 'Rewrite', true)
                        ]
                       }
 
