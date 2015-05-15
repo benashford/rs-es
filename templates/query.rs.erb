@@ -89,16 +89,64 @@ impl ToJson for MatchQuery {
 
 <%= structs['CommonQuery'] %>
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+pub struct CombinationMinimumShouldMatch {
+    first: MinimumShouldMatch,
+    second: MinimumShouldMatch
+}
+
+impl ToString for CombinationMinimumShouldMatch {
+    fn to_string(&self) -> String {
+        format!("{}<{}", self.first.to_string(), self.second.to_string())
+    }
+}
+
+impl ToJson for CombinationMinimumShouldMatch {
+    fn to_json(&self) -> Json {
+        self.to_string().to_json()
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum MinimumShouldMatch {
-    Num(i64),
+    Integer(i64),
+    Percentage(f64),
+    Combination(Box<CombinationMinimumShouldMatch>),
+    MultipleCombination(Vec<CombinationMinimumShouldMatch>),
     LowHigh(i64, i64)
+}
+
+impl ToString for MinimumShouldMatch {
+    fn to_string(&self) -> String {
+        match self {
+            &MinimumShouldMatch::Integer(val) => val.to_string(),
+            &MinimumShouldMatch::Percentage(val) => {
+                format!("{}%", val)
+            },
+            _ => panic!("Can't convert {:?} to String", self)
+        }
+    }
 }
 
 impl ToJson for MinimumShouldMatch {
     fn to_json(&self) -> Json {
         match self {
-            &MinimumShouldMatch::Num(val) => val.to_json(),
+            &MinimumShouldMatch::Integer(val) => val.to_json(),
+            &MinimumShouldMatch::Percentage(_) => {
+                self.to_string().to_json()
+            },
+            &MinimumShouldMatch::Combination(ref comb) => {
+                comb.to_json()
+            },
+            &MinimumShouldMatch::MultipleCombination(ref combs) => {
+                let mut s = String::new();
+                for c in combs {
+                    s.push_str(&c.to_string());
+                    s.push_str(" ");
+                }
+                s.pop();
+                Json::String(s)
+            }
             &MinimumShouldMatch::LowHigh(low, high) => {
                 let mut d = BTreeMap::new();
                 d.insert("low_freq".to_string(), low.to_json());
@@ -367,6 +415,9 @@ impl ToJson for PrefixQuery {
         Json::Object(d)
     }
 }
+
+<%= structs['QueryStringQuery'] %>
+<%= to_json_impl('QueryStringQuery') %>
 
 // Filters
 

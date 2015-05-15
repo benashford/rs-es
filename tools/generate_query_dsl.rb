@@ -51,7 +51,8 @@ class ESDSLGen
          e('Indices', 'indices'),
          e('MoreLikeThis', 'more_like_this'),
          e('Nested', 'nested'),
-         e('Prefix', 'prefix')
+         e('Prefix', 'prefix'),
+         e('QueryString', 'query_string')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -126,7 +127,7 @@ class ESDSLGen
         f('analyzer', 'String', true),
         f('boost', 'f64', true),
         f('operator', 'String', true),
-        f('minimum_should_match', 'i64', true),
+        f('minimum_should_match', 'MinimumShouldMatch', true),
         f('fuzziness', 'Fuzziness', true),
         f('prefix_length', 'i64', true),
         f('max_expansions', 'i64', true),
@@ -160,7 +161,7 @@ class ESDSLGen
                          f('must', 'Vec<Query>', true),
                          f('must_not', 'Vec<Query>', true),
                          f('should', 'Vec<Query>', true),
-                         f('minimum_should_match', 'i64', true),
+                         f('minimum_should_match', 'MinimumShouldMatch', true),
                          f('boost', 'f64', true)
                        ],
                        'BoostingQuery' => [
@@ -286,6 +287,27 @@ class ESDSLGen
                          f('value', 'String'),
                          f('boost', 'f64', true),
                          f('rewrite', 'Rewrite', true)
+                       ],
+                       'QueryStringQuery' => [
+                         f('query', 'String'),
+                         f('default_field', 'String', true),
+                         f('default_operator', 'String', true),
+                         f('analyzer', 'String', true),
+                         f('allow_leading_wildcard', 'bool', true),
+                         f('lowercase_expanded_terms', 'bool', true),
+                         f('enable_position_increments', 'bool', true),
+                         f('fuzzy_max_expansions', 'i64', true),
+                         f('fuzziness', 'Fuzziness', true),
+                         f('fuzzy_prefix_length', 'i64', true),
+                         f('phrase_slop', 'i64', true),
+                         f('boost', 'f64', true),
+                         f('analyze_wildcard', 'bool', true),
+                         f('auto_generate_phrase_queries', 'bool', true),
+                         f('max_determined_states', 'i64', true),
+                         f('minimum_should_match', 'MinimumShouldMatch', true),
+                         f('lenient', 'bool', true),
+                         f('locale', 'String', true),
+                         f('time_zone', 'String', true)
                        ]
                       }
 
