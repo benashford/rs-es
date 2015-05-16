@@ -52,7 +52,8 @@ class ESDSLGen
          e('MoreLikeThis', 'more_like_this'),
          e('Nested', 'nested'),
          e('Prefix', 'prefix'),
-         e('QueryString', 'query_string')
+         e('QueryString', 'query_string'),
+         e('SimpleQueryString', 'simple_query_string')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -308,6 +309,17 @@ class ESDSLGen
                          f('lenient', 'bool', true),
                          f('locale', 'String', true),
                          f('time_zone', 'String', true)
+                       ],
+                       'SimpleQueryStringQuery' => [
+                         f('query', 'String'),
+                         f('fields', 'Vec<String>', true),
+                         f('default_operator', 'String', true),
+                         f('analyzer', 'String', true),
+                         f('flags', 'String', true),
+                         f('lowercase_expanded_terms', 'bool', true),
+                         f('locale', 'String', true),
+                         f('lenient', 'bool', true),
+                         f('minimum_should_match', 'MinimumShouldMatch', true)
                        ]
                       }
 
