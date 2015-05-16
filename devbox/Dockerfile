@@ -1,4 +1,4 @@
-FROM devbox-rust-beta
+FROM devbox-rust-stable
 
 RUN apt-get update
 
