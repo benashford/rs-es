@@ -53,7 +53,8 @@ class ESDSLGen
          e('Nested', 'nested'),
          e('Prefix', 'prefix'),
          e('QueryString', 'query_string'),
-         e('SimpleQueryString', 'simple_query_string')
+         e('SimpleQueryString', 'simple_query_string'),
+         e('Range', 'range')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -320,6 +321,16 @@ class ESDSLGen
                          f('locale', 'String', true),
                          f('lenient', 'bool', true),
                          f('minimum_should_match', 'MinimumShouldMatch', true)
+                       ],
+                       'RangeQuery' => [
+                         f('field', 'String'),
+                         f('gte', 'Json', true),
+                         f('gt', 'Json', true),
+                         f('lte', 'Json', true),
+                         f('lt', 'Json', true),
+                         f('boost', 'f64', true),
+                         f('time_zone', 'String', true),
+                         f('format', 'String', true)
                        ]
                       }
 

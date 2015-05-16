@@ -413,6 +413,20 @@ impl ToJson for PrefixQuery {
 <%= structs['SimpleQueryStringQuery'] %>
 <%= to_json_impl('SimpleQueryStringQuery') %>
 
+<%= structs['RangeQuery'] %>
+
+impl ToJson for RangeQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+
+        self.add_optionals(&mut inner);
+
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
 // Filters
 
 <%= structs['AndFilter'] %>
