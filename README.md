@@ -96,11 +96,17 @@ No fields are mandatory, but index, type and a large set of parameters are optio
 
 ```rust
 // Using a query string
-let result = client.delete_by_query().with_indexes(&["index_name"]).with_query_string("field:value").send();
+let result = client.delete_by_query()
+                   .with_indexes(&["index_name"])
+                   .with_query_string("field:value")
+                   .send();
 
 // Using the query DSL
 use rs_es::query::Query;
-let result = client.delete_by_query().with_indexes(&["index_name"]).with_query(Query::build_match("field", "value")).send();
+let result = client.delete_by_query()
+                   .with_indexes(&["index_name"])
+                   .with_query(Query::build_match("field", "value"))
+                   .send();
 ```
 
 #### `refresh`
@@ -122,7 +128,10 @@ An implementation of the [Search API](https://www.elastic.co/guide/en/elasticsea
 Example:
 
 ```rust
-let result = client.search_uri().with_indexes(&["index_name"]).with_query("field:value").send();
+let result = client.search_uri()
+                   .with_indexes(&["index_name"])
+                   .with_query("field:value")
+                   .send();
 ```
 
 #### `search_query`
@@ -131,7 +140,10 @@ An implementation of the [Search API](https://www.elastic.co/guide/en/elasticsea
 
 ```rust
 use rs_es::query::Query;
-let result = client.search_query().with_indexes(&["index_name"]).with_query(Query::build_match("field", "value")).send();
+let result = client.search_query()
+                   .with_indexes(&["index_name"])
+                   .with_query(Query::build_match("field", "value"))
+                   .send();
 ```
 
 WARNING: this doesn't actually work yet, but will do soon.
