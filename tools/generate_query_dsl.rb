@@ -59,7 +59,8 @@ class ESDSLGen
          e('Regexp', 'regexp'),
          e('SpanFirst', 'span_first'),
          e('SpanMulti', 'span_multi'),
-         e('SpanNear', 'span_near')
+         e('SpanNear', 'span_near'),
+         e('SpanNot', 'span_not')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -356,6 +357,13 @@ class ESDSLGen
                          f('slop', 'i64'),
                          f('in_order', 'bool', true),
                          f('collect_payloads', 'bool', true)
+                       ],
+                       'SpanNotQuery' => [
+                         f('include', 'Box<Query>'),
+                         f('exclude', 'Box<Query>'),
+                         f('pre', 'i64', true),
+                         f('post', 'i64', true),
+                         f('dist', 'i64', true)
                        ]
                       }
 
