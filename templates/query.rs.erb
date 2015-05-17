@@ -427,6 +427,75 @@ impl ToJson for RangeQuery {
     }
 }
 
+<%= structs['RegexpQuery'] %>
+
+#[derive(Clone)]
+pub enum Flag {
+    All,
+    AnyString,
+    Complement,
+    Intersection,
+    Interval,
+    None
+}
+
+impl ToString for Flag {
+    fn to_string(&self) -> String {
+        match self {
+            &Flag::All => "ALL",
+            &Flag::AnyString => "ANYSTRING",
+            &Flag::Complement => "COMPLEMENT",
+            &Flag::Intersection => "INTERSECTION",
+            &Flag::Interval => "INTERVAL",
+            &Flag::None => "NONE"
+        }.to_string()
+    }
+}
+
+#[derive(Clone)]
+pub struct Flags {
+    flags: Vec<Flag>
+}
+
+impl Flags {
+    pub fn new() -> Flags {
+        Flags {
+            flags: vec![]
+        }
+    }
+
+    pub fn add_flag(&mut self, flag: Flag) -> &mut Self {
+        self.flags.push(flag);
+        self
+    }
+}
+
+impl ToJson for Flags {
+    fn to_json(&self) -> Json {
+        let mut s = String::new();
+        for f in self.flags.iter() {
+            s.push_str(&f.to_string());
+            s.push_str("|");
+        }
+        s.pop();
+        Json::String(s)
+    }
+}
+
+impl ToJson for RegexpQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+
+        inner.insert("value".to_string(), self.value.to_json());
+
+        self.add_optionals(&mut inner);
+
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
 // Filters
 
 <%= structs['AndFilter'] %>

@@ -54,7 +54,8 @@ class ESDSLGen
          e('Prefix', 'prefix'),
          e('QueryString', 'query_string'),
          e('SimpleQueryString', 'simple_query_string'),
-         e('Range', 'range')
+         e('Range', 'range'),
+         e('Regexp', 'regexp')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -331,6 +332,13 @@ class ESDSLGen
                          f('boost', 'f64', true),
                          f('time_zone', 'String', true),
                          f('format', 'String', true)
+                       ],
+                       'RegexpQuery' => [
+                         f('field', 'String'),
+                         f('value', 'String'),
+                         f('boost', 'f64', true),
+                         f('flags', 'Flags', true),
+                         f('max_determined_states', 'i64', true)
                        ]
                       }
 
