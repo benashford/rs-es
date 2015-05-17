@@ -156,6 +156,8 @@ TODO: complete this bit
 
 ## TODO
 
+0. Refactor query.rs generator to automatically deal with to_json functions that have field-name as key.
+1. Extract all String joinings into appropriate helper function/trait
 1. Full implementation of the Query DSL.
 2. Implementation of Search API.
 3. Implement Update API.
