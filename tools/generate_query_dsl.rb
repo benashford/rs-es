@@ -8,7 +8,8 @@ F = Struct.new(:name, :type, :optional)
 
 class F
   JSON_SUBS = {'match_type' => 'type',
-               'doc_type'   => 'type'}
+               'doc_type'   => 'type',
+               'span_match' => 'match'}
 
   def json_name
     JSON_SUBS[name] || name
@@ -55,7 +56,8 @@ class ESDSLGen
          e('QueryString', 'query_string'),
          e('SimpleQueryString', 'simple_query_string'),
          e('Range', 'range'),
-         e('Regexp', 'regexp')
+         e('Regexp', 'regexp'),
+         e('SpanFirst', 'span_first')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -339,6 +341,10 @@ class ESDSLGen
                          f('boost', 'f64', true),
                          f('flags', 'Flags', true),
                          f('max_determined_states', 'i64', true)
+                       ],
+                       'SpanFirstQuery' => [
+                         f('span_match', 'Box<Query>'),
+                         f('end', 'i64')
                        ]
                       }
 
