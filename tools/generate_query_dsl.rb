@@ -57,7 +57,8 @@ class ESDSLGen
          e('SimpleQueryString', 'simple_query_string'),
          e('Range', 'range'),
          e('Regexp', 'regexp'),
-         e('SpanFirst', 'span_first')
+         e('SpanFirst', 'span_first'),
+         e('SpanMulti', 'span_multi')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -345,6 +346,9 @@ class ESDSLGen
                        'SpanFirstQuery' => [
                          f('span_match', 'Box<Query>'),
                          f('end', 'i64')
+                       ],
+                       'SpanMultiQuery' => [
+                         f('span_match', 'Box<Query>')
                        ]
                       }
 
