@@ -29,6 +29,8 @@ use operations::{IndexOperation,
                  SearchURIOperation,
                  SearchQueryOperation};
 
+use util::StrJoin;
+
 // Utilities
 
 /// Produces a query string for a URL
@@ -38,30 +40,20 @@ fn format_query_string(options: &[(&str, String)]) -> String {
         return st;
     }
     st.push_str("?");
-    for &(ref k, ref v) in options {
-        st.push_str(k);
-        st.push_str("=");
-        st.push_str(&v);
-        st.push_str("&");
-    }
-    st.pop();
+    st.push_str(&options.iter().map(|&(ref k, ref v)| {
+        format!("{}={}", k, v)
+    }).join("&"));
     st
 }
 
 /// A repeating convention in the ElasticSearch REST API is parameters that can
 /// take multiple values
 fn format_multi(parts: &[&str]) -> String {
-    let mut st = String::new();
     if parts.is_empty() {
-        st.push_str("_all");
+        return "_all".to_string()
     } else {
-        for s in parts {
-            st.push_str(s);
-            st.push_str(",");
-        }
-        st.pop();
+        parts.iter().join(",")
     }
-    st
 }
 
 /// Multiple operations require indexes and types to be specified, there are

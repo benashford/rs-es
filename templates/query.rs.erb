@@ -5,6 +5,8 @@ use std::collections::HashMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
+use util::StrJoin;
+
 <%= enums['Query'] %>
 
 <%= enums['Filter'] %>
@@ -117,13 +119,7 @@ impl ToJson for MinimumShouldMatch {
                 comb.to_json()
             },
             &MinimumShouldMatch::MultipleCombination(ref combs) => {
-                let mut s = String::new();
-                for c in combs {
-                    s.push_str(&c.to_string());
-                    s.push_str(" ");
-                }
-                s.pop();
-                Json::String(s)
+                Json::String(combs.iter().map(|c| c.to_string()).join(" "))
             }
             &MinimumShouldMatch::LowHigh(low, high) => {
                 let mut d = BTreeMap::new();
@@ -406,13 +402,7 @@ impl Flags {
 
 impl ToJson for Flags {
     fn to_json(&self) -> Json {
-        let mut s = String::new();
-        for f in self.flags.iter() {
-            s.push_str(&f.to_string());
-            s.push_str("|");
-        }
-        s.pop();
-        Json::String(s)
+        Json::String(self.flags.iter().map(|f| f.to_string()).join("|"))
     }
 }
 

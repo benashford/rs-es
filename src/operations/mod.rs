@@ -6,12 +6,13 @@ use hyper::status::StatusCode;
 use rustc_serialize::{Encodable, Decodable};
 use rustc_serialize::json::{Decoder, Json, ToJson};
 
-use super::Client;
-use super::error::EsError;
-use super::format_indexes_and_types;
-use super::format_multi;
-use super::format_query_string;
-use super::query::Query;
+use Client;
+use error::EsError;
+use format_indexes_and_types;
+use format_multi;
+use format_query_string;
+use query::Query;
+use util::StrJoin;
 
 // Specific operations
 
@@ -165,14 +166,7 @@ impl<'a, 'b> GetOperation<'a, 'b> {
     }
 
     pub fn with_fields(&'b mut self, fields: &[&'b str]) -> &'b mut Self {
-        let mut fields_str = String::new();
-        for field in fields {
-            fields_str.push_str(field);
-            fields_str.push_str(",");
-        }
-        fields_str.pop();
-
-        self.options.push(("fields", fields_str));
+        self.options.push(("fields", fields.iter().join(",")));
         self
     }
 
@@ -465,13 +459,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
     add_option!(with_search_type, "search_type");
 
     pub fn with_fields(&'b mut self, fields: &[&str]) -> &'b mut Self {
-        let mut s = String::new();
-        for f in fields {
-            s.push_str(f);
-            s.push_str(",");
-        }
-        s.pop();
-        self.options.push(("fields", s));
+        self.options.push(("fields", fields.iter().join(",")));
         self
     }
 
