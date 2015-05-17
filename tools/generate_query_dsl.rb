@@ -58,7 +58,8 @@ class ESDSLGen
          e('Range', 'range'),
          e('Regexp', 'regexp'),
          e('SpanFirst', 'span_first'),
-         e('SpanMulti', 'span_multi')
+         e('SpanMulti', 'span_multi'),
+         e('SpanNear', 'span_near')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -349,6 +350,12 @@ class ESDSLGen
                        ],
                        'SpanMultiQuery' => [
                          f('span_match', 'Box<Query>')
+                       ],
+                       'SpanNearQuery' => [
+                         f('clauses', 'Vec<Query>'),
+                         f('slop', 'i64'),
+                         f('in_order', 'bool', true),
+                         f('collect_payloads', 'bool', true)
                        ]
                       }
 
