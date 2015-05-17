@@ -54,20 +54,7 @@ impl ToJson for Fuzziness {
 <%= to_json_impl('MatchAllQuery') %>
 
 <%= structs['MatchQuery'] %>
-
-impl ToJson for MatchQuery {
-    fn to_json(&self) -> Json {
-        let mut inner = BTreeMap::new();
-        inner.insert("query".to_string(), self.query.clone());
-
-        self.add_optionals(&mut inner);
-
-        let mut d = BTreeMap::new();
-        d.insert(self.field.clone(), Json::Object(inner));
-
-        Json::Object(d)
-    }
-}
+<%= to_json_inner_impl('MatchQuery') %>
 
 <%= structs['MultiMatchQuery'] %>
 <%= to_json_impl('MultiMatchQuery') %>
@@ -194,17 +181,7 @@ impl ToJson for Strategy {
 <%= to_json_impl('FuzzyLikeThisQuery') %>
 
 <%= structs['FuzzyLikeThisFieldQuery'] %>
-
-impl ToJson for FuzzyLikeThisFieldQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        inner.insert("like_text".to_string(), self.like_text.to_json());
-        self.add_optionals(&mut inner);
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+<%= to_json_inner_impl('FuzzyLikeThisFieldQuery') %>
 
 <%= structs['FunctionScoreQuery'] %>
 
@@ -241,17 +218,7 @@ impl ToJson for WeightFunction {
 <%= to_json_impl('FunctionScoreQuery') %>
 
 <%= structs['FuzzyQuery'] %>
-
-impl ToJson for FuzzyQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        inner.insert("value".to_string(), self.value.to_json());
-        self.add_optionals(&mut inner);
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+<%= to_json_inner_impl('FuzzyQuery') %>
 
 // Required for GeoShape
 
@@ -301,16 +268,7 @@ impl ToJson for IndexedShape {
 }
 
 <%= structs['GeoShapeQuery'] %>
-
-impl ToJson for GeoShapeQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        self.add_optionals(&mut inner);
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+<%= to_json_inner_impl('GeoShapeQuery') %>
 
 <%= structs['HasChildQuery'] %>
 <%= to_json_impl('HasChildQuery') %>
@@ -392,20 +350,7 @@ impl ToJson for Rewrite {
     }
 }
 
-impl ToJson for PrefixQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-
-        inner.insert("value".to_string(), self.value.to_json());
-
-        optional_add!(inner, self.boost, "boost");
-        optional_add!(inner, self.rewrite, "rewrite");
-
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+<%= to_json_inner_impl('PrefixQuery') %>
 
 <%= structs['QueryStringQuery'] %>
 <%= to_json_impl('QueryStringQuery') %>
@@ -414,18 +359,7 @@ impl ToJson for PrefixQuery {
 <%= to_json_impl('SimpleQueryStringQuery') %>
 
 <%= structs['RangeQuery'] %>
-
-impl ToJson for RangeQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-
-        self.add_optionals(&mut inner);
-
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+<%= to_json_inner_impl('RangeQuery') %>
 
 <%= structs['RegexpQuery'] %>
 
@@ -482,19 +416,7 @@ impl ToJson for Flags {
     }
 }
 
-impl ToJson for RegexpQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-
-        inner.insert("value".to_string(), self.value.to_json());
-
-        self.add_optionals(&mut inner);
-
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+<%= to_json_inner_impl('RegexpQuery') %>
 
 // Filters
 

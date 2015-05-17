@@ -426,6 +426,34 @@ class ESDSLGen
       END
     end
 
+    # Many queries/filters follow a pattern where the field is the key, and all
+    # parameters belong to the inner object
+    def to_json_inner_impl(struct_name)
+      all_fields   = structs[struct_name].group_by {|f| f.name == 'field' }
+      fields       = all_fields[false]
+      field_fields = all_fields[true]
+      raise "No field fields for #{struct_name}" if field_fields.nil?
+      raise "Too many field fields" if field_fields.count > 1
+
+      ERB.new(<<-END).result(binding)
+        impl ToJson for <%= struct_name %> {
+            fn to_json(&self) -> Json {
+                let mut d = BTreeMap::new();
+                let mut inner = BTreeMap::new();
+
+                <% fields.reject(&:optional).each do |field| %>
+                  inner.insert("<%= field.json_name %>".to_string(),
+                               self.<%= field.name %>.to_json());
+                <% end %>
+                self.add_optionals(&mut inner);
+                d.insert(self.field.clone(), Json::Object(inner));
+
+                Json::Object(d)
+            }
+        }
+      END
+    end
+
     def simple_value_enum(name, fields)
       ERB.new(<<-END).result(binding)
         #[derive(Clone)]
