@@ -423,6 +423,9 @@ impl ToJson for Flags {
 <%= structs['SpanOrQuery'] %>
 <%= to_json_impl('SpanOrQuery') %>
 
+<%= structs['SpanTermQuery'] %>
+<%= to_json_inner_impl('SpanTermQuery') %>
+
 // Filters
 
 <%= structs['AndFilter'] %>

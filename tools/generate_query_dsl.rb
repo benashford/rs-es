@@ -61,7 +61,8 @@ class ESDSLGen
          e('SpanMulti', 'span_multi'),
          e('SpanNear', 'span_near'),
          e('SpanNot', 'span_not'),
-         e('SpanOr', 'span_or')
+         e('SpanOr', 'span_or'),
+         e('SpanTerm', 'span_term')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -368,6 +369,11 @@ class ESDSLGen
                        ],
                        'SpanOrQuery' => [
                          f('clauses', 'Vec<Query>')
+                       ],
+                       'SpanTermQuery' => [
+                         f('field', 'String'),
+                         f('value', 'String'),
+                         f('boost', 'f64', true)
                        ]
                       }
 
