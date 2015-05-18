@@ -150,7 +150,10 @@ class ESDSLGen
     end
 
     def common_filter_options
-      [f('_cache', 'bool', true)]
+      [
+        f('_cache', 'bool', true),
+        f('_cache_key', 'String', true)
+      ]
     end
 
     def structs

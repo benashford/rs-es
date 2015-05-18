@@ -158,6 +158,8 @@ TODO: complete this bit
 
 1. Full implementation of the Query DSL.
 2. Implementation of Search API.
+3. Search templates (possibly)
+4. Scan and scroll
 3. Implement Update API.
 4. Implement Multi Get API
 5. Implement Bulk API
