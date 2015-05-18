@@ -429,6 +429,17 @@ impl ToJson for Flags {
 <%= structs['TermQuery'] %>
 <%= to_json_inner_impl('TermQuery') %>
 
+<%= structs['TermsQuery'] %>
+
+impl ToJson for TermsQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert(self.field.clone(), self.values.to_json());
+
+        Json::Object(d)
+    }
+}
+
 // Filters
 
 <%= structs['AndFilter'] %>
