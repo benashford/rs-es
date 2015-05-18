@@ -73,7 +73,8 @@ class ESDSLGen
          e('RandomScore', 'random_score')
        ],
        'Filter' => [
-         e('And', 'and')
+         e('And', 'and'),
+         e('Bool', 'bool')
        ]}
     end
 
@@ -91,8 +92,6 @@ class ESDSLGen
                <% if !last(fields, field) %>,<% end %>
              <% end %>
           }
-
-          use self::<%= name %>::{<%= fields.map(&:name).join(',') %>};
 
           impl <%= name %> {
               <% fields.each do |field| %>
@@ -122,7 +121,7 @@ class ESDSLGen
                   let mut d = BTreeMap::<String, Json>::new();
                   match self {
                       <% fields.each do |field| %>
-                          &<%= field.name %>(ref q) => {
+                          &<%= name %>::<%= field.name %>(ref q) => {
                               d.insert("<%= field.json_name %>".to_string(), q.to_json());
                           }<% if !last(fields, field) %>,<% end %>
                       <% end %>
@@ -412,6 +411,11 @@ class ESDSLGen
 
       filter_structs = {'AndFilter' => [
                           f('filters', 'Vec<Filter>', true),
+                        ],
+                        'BoolFilter' => [
+                          f('must', 'Vec<Filter>', true),
+                          f('must_not', 'Vec<Filter>', true),
+                          f('should', 'Vec<Filter>', true)
                         ]
                        }
 
@@ -457,7 +461,7 @@ class ESDSLGen
               }
 
               pub fn build(&self) -> <%= enum_type %> {
-                  <%= enum_name %>(self.clone())
+                  <%= enum_type %>::<%= enum_name %>(self.clone())
               }
           }
         END
