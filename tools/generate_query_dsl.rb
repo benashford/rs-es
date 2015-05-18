@@ -74,7 +74,8 @@ class ESDSLGen
        ],
        'Filter' => [
          e('And', 'and'),
-         e('Bool', 'bool')
+         e('Bool', 'bool'),
+         e('Exists', 'exists')
        ]}
     end
 
@@ -416,6 +417,9 @@ class ESDSLGen
                           f('must', 'Vec<Filter>', true),
                           f('must_not', 'Vec<Filter>', true),
                           f('should', 'Vec<Filter>', true)
+                        ],
+                        'ExistsFilter' => [
+                          f('field', 'String')
                         ]
                        }
 
