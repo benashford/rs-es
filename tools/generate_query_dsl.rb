@@ -62,7 +62,8 @@ class ESDSLGen
          e('SpanNear', 'span_near'),
          e('SpanNot', 'span_not'),
          e('SpanOr', 'span_or'),
-         e('SpanTerm', 'span_term')
+         e('SpanTerm', 'span_term'),
+         e('Term', 'term')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -372,7 +373,12 @@ class ESDSLGen
                        ],
                        'SpanTermQuery' => [
                          f('field', 'String'),
-                         f('value', 'String'),
+                         f('value', 'Json'),
+                         f('boost', 'f64', true)
+                       ],
+                       'TermQuery' => [
+                         f('field', 'String'),
+                         f('value', 'Json'),
                          f('boost', 'f64', true)
                        ]
                       }
