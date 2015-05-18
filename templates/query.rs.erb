@@ -440,6 +440,9 @@ impl ToJson for TermsQuery {
     }
 }
 
+<%= structs['WildcardQuery'] %>
+<%= to_json_inner_impl('WildcardQuery') %>
+
 // Filters
 
 <%= structs['AndFilter'] %>

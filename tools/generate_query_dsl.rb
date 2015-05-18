@@ -64,7 +64,8 @@ class ESDSLGen
          e('SpanOr', 'span_or'),
          e('SpanTerm', 'span_term'),
          e('Term', 'term'),
-         e('Terms', 'terms')
+         e('Terms', 'terms'),
+         e('Wildcard', 'wildcard')
        ],
        'Function' => [
          e('ScriptScore', 'script_score'),
@@ -386,6 +387,11 @@ class ESDSLGen
                          f('field', 'String'),
                          f('values', 'Vec<Json>'),
                          f('minimum_should_match', 'MinimumShouldMatch', true)
+                       ],
+                       'WildcardQuery' => [
+                         f('field', 'String'),
+                         f('value', 'String'),
+                         f('boost', 'f64', true)
                        ]
                       }
 
