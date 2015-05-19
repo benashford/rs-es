@@ -453,3 +453,58 @@ impl ToJson for TermsQuery {
 
 <%= structs['ExistsFilter'] %>
 <%= to_json_impl('ExistsFilter') %>
+
+<%= structs['GeoBoundingBoxFilter'] %>
+
+#[derive(Clone)]
+pub struct LatLon<T: ToJson> {
+    lat: T,
+    lon: T
+}
+
+impl<T: ToJson> ToJson for LatLon<T> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("lat".to_string(), self.lat.to_json());
+        d.insert("lon".to_string(), self.lon.to_json());
+        Json::Object(d)
+    }
+}
+
+#[derive(Clone)]
+pub enum GeoBox {
+    LatLon(LatLon<f64>, LatLon<f64>),
+    GeoHash(LatLon<String>, LatLon<String>),
+    Vertices(f64, f64, f64, f64)
+}
+
+impl ToJson for GeoBox {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        match self {
+            &GeoBox::LatLon(ref top_left, ref bottom_right) => {
+                d.insert("top_left".to_string(), top_left.to_json());
+                d.insert("bottom_right".to_string(), bottom_right.to_json());
+            },
+            &GeoBox::GeoHash(ref top_left, ref bottom_right) => {
+                d.insert("top_left".to_string(), top_left.to_json());
+                d.insert("bottom_right".to_string(), bottom_right.to_json());
+            },
+            &GeoBox::Vertices(ref top, ref left, ref bottom, ref right) => {
+                d.insert("top".to_string(), top.to_json());
+                d.insert("left".to_string(), left.to_json());
+                d.insert("bottom".to_string(), bottom.to_json());
+                d.insert("right".to_string(), right.to_json());
+            }
+        }
+        Json::Object(d)
+    }
+}
+
+impl ToJson for GeoBoundingBoxFilter {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert(self.field.clone(), self.geo_box.to_json());
+        Json::Object(d)
+    }
+}

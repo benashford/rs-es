@@ -75,7 +75,8 @@ class ESDSLGen
        'Filter' => [
          e('And', 'and'),
          e('Bool', 'bool'),
-         e('Exists', 'exists')
+         e('Exists', 'exists'),
+         e('GeoBoundingBox', 'geo_bounding_box')
        ]}
     end
 
@@ -420,6 +421,10 @@ class ESDSLGen
                         ],
                         'ExistsFilter' => [
                           f('field', 'String')
+                        ],
+                        'GeoBoundingBoxFilter' => [
+                          f('field', 'String'),
+                          f('geo_box', 'GeoBox')
                         ]
                        }
 
