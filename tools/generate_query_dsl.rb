@@ -76,7 +76,8 @@ class ESDSLGen
          e('And', 'and'),
          e('Bool', 'bool'),
          e('Exists', 'exists'),
-         e('GeoBoundingBox', 'geo_bounding_box')
+         e('GeoBoundingBox', 'geo_bounding_box'),
+         e('GeoDistance', 'geo_distance')
        ]}
     end
 
@@ -425,6 +426,13 @@ class ESDSLGen
                         'GeoBoundingBoxFilter' => [
                           f('field', 'String'),
                           f('geo_box', 'GeoBox')
+                        ],
+                        'GeoDistanceFilter' => [
+                          f('field', 'String'),
+                          f('location', 'Location'),
+                          f('distance', 'Distance'),
+                          f('distance_type', 'DistanceType', true),
+                          f('optimize_bbox', 'OptimizeBbox', true)
                         ]
                        }
 

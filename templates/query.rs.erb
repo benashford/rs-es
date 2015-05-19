@@ -457,24 +457,30 @@ impl ToJson for TermsQuery {
 <%= structs['GeoBoundingBoxFilter'] %>
 
 #[derive(Clone)]
-pub struct LatLon {
-    lat: f64,
-    lon: f64
+pub enum Location {
+    LatLon(f64, f64),
+    GeoHash(String)
 }
 
-impl ToJson for LatLon {
+impl ToJson for Location {
     fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("lat".to_string(), Json::F64(self.lat));
-        d.insert("lon".to_string(), Json::F64(self.lon));
-        Json::Object(d)
+        match self {
+            &Location::LatLon(lat, lon) => {
+                let mut d = BTreeMap::new();
+                d.insert("lat".to_string(), Json::F64(lat));
+                d.insert("lon".to_string(), Json::F64(lon));
+                Json::Object(d)
+            },
+            &Location::GeoHash(ref geo_hash) => {
+                Json::String(geo_hash.clone())
+            }
+        }
     }
 }
 
 #[derive(Clone)]
 pub enum GeoBox {
-    LatLon(LatLon, LatLon),
-    GeoHash(String, String),
+    Corners(Location, Location),
     Vertices(f64, f64, f64, f64)
 }
 
@@ -482,11 +488,7 @@ impl ToJson for GeoBox {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         match self {
-            &GeoBox::LatLon(ref top_left, ref bottom_right) => {
-                d.insert("top_left".to_string(), top_left.to_json());
-                d.insert("bottom_right".to_string(), bottom_right.to_json());
-            },
-            &GeoBox::GeoHash(ref top_left, ref bottom_right) => {
+            &GeoBox::Corners(ref top_left, ref bottom_right) => {
                 d.insert("top_left".to_string(), top_left.to_json());
                 d.insert("bottom_right".to_string(), bottom_right.to_json());
             },
@@ -505,6 +507,63 @@ impl ToJson for GeoBoundingBoxFilter {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         d.insert(self.field.clone(), self.geo_box.to_json());
+        self.add_optionals(&mut d);
+        Json::Object(d)
+    }
+}
+
+<%= structs['GeoDistanceFilter'] %>
+
+#[derive(Clone)]
+pub enum DistanceUnit {
+    Mile,
+    Yard,
+    Feet,
+    Inch,
+    Kilometer,
+    Meter,
+    Centimeter,
+    Millimeter,
+    NauticalMile
+}
+
+impl ToString for DistanceUnit {
+    fn to_string(&self) -> String {
+        match *self {
+            DistanceUnit::Mile => "mi",
+            DistanceUnit::Yard => "yd",
+            DistanceUnit::Feet => "ft",
+            DistanceUnit::Inch => "in",
+            DistanceUnit::Kilometer => "km",
+            DistanceUnit::Meter => "m",
+            DistanceUnit::Centimeter => "cm",
+            DistanceUnit::Millimeter => "mm",
+            DistanceUnit::NauticalMile => "NM"
+        }.to_string()
+    }
+}
+
+#[derive(Clone)]
+pub struct Distance {
+    amt: f64,
+    unit: DistanceUnit
+}
+
+impl ToJson for Distance {
+    fn to_json(&self) -> Json {
+        Json::String(format!("{}{}", self.amt, self.unit.to_string()))
+    }
+}
+
+<%= simple_value_enum('DistanceType', ['sloppy_arc', 'arc', 'plane']) %>
+<%= simple_value_enum('OptimizeBbox', ['memory', 'indexed', 'none']) %>
+
+impl ToJson for GeoDistanceFilter {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert(self.field.clone(), self.location.to_json());
+        d.insert("distance".to_string(), self.distance.to_json());
+        self.add_optionals(&mut d);
         Json::Object(d)
     }
 }
