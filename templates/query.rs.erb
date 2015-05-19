@@ -457,24 +457,24 @@ impl ToJson for TermsQuery {
 <%= structs['GeoBoundingBoxFilter'] %>
 
 #[derive(Clone)]
-pub struct LatLon<T: ToJson> {
-    lat: T,
-    lon: T
+pub struct LatLon {
+    lat: f64,
+    lon: f64
 }
 
-impl<T: ToJson> ToJson for LatLon<T> {
+impl ToJson for LatLon {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        d.insert("lat".to_string(), self.lat.to_json());
-        d.insert("lon".to_string(), self.lon.to_json());
+        d.insert("lat".to_string(), Json::F64(self.lat));
+        d.insert("lon".to_string(), Json::F64(self.lon));
         Json::Object(d)
     }
 }
 
 #[derive(Clone)]
 pub enum GeoBox {
-    LatLon(LatLon<f64>, LatLon<f64>),
-    GeoHash(LatLon<String>, LatLon<String>),
+    LatLon(LatLon, LatLon),
+    GeoHash(String, String),
     Vertices(f64, f64, f64, f64)
 }
 
