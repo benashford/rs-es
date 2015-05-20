@@ -477,7 +477,14 @@ class ESDSLGen
 
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-                  <% fields.select(&:optional).each do |op_f| %>
+                  <% fields.select(&:optional).reject {|f| /^_/ =~ f.json_name }.each do |op_f| %>
+                      optional_add!(m, self.<%= op_f.name %>, "<%= op_f.json_name %>");
+                  <% end %>
+              }
+
+              #[allow(dead_code, unused_variables)]
+              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+                  <% fields.select(&:optional).select {|f| /^_/ =~ f.json_name }.each do |op_f| %>
                       optional_add!(m, self.<%= op_f.name %>, "<%= op_f.json_name %>");
                   <% end %>
               }
@@ -502,6 +509,7 @@ class ESDSLGen
                            self.<%= field.name %>.to_json());
                 <% end %>
                 self.add_optionals(&mut d);
+                self.add_core_optionals(&mut d);
                 Json::Object(d)
             }
         }
@@ -529,7 +537,7 @@ class ESDSLGen
                 <% end %>
                 self.add_optionals(&mut inner);
                 d.insert(self.field.clone(), Json::Object(inner));
-
+                self.add_core_optionals(&mut d);
                 Json::Object(d)
             }
         }
