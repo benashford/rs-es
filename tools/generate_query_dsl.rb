@@ -86,7 +86,8 @@ class ESDSLGen
          e('Ids', 'ids'),
          e('Indices', 'indices'),
          e('MatchAll', 'match_all'),
-         e('Missing', 'missing')
+         e('Missing', 'missing'),
+         e('Nested', 'nested')
        ]}
     end
 
@@ -485,6 +486,12 @@ class ESDSLGen
                           f('field', 'String'),
                           f('existence', 'bool', true),
                           f('null_value', 'bool', true)
+                        ],
+                        'NestedFilter' => [
+                          f('path', 'String'),
+                          f('filter', 'Box<Filter>'),
+                          f('score_mode', 'ScoreMode', true),
+                          f('join', 'bool', true)
                         ]
                        }
 
