@@ -671,3 +671,15 @@ impl ToJson for PrefixFilter {
 
 <%= structs['ScriptFilter'] %>
 <%= to_json_impl('ScriptFilter') %>
+
+<%= structs['TermFilter'] %>
+
+impl ToJson for TermFilter {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert(self.field.clone(), self.value.to_json());
+        self.add_optionals(&mut d);
+        self.add_core_optionals(&mut d);
+        Json::Object(d)
+    }
+}

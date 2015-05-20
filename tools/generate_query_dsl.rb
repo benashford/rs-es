@@ -94,7 +94,8 @@ class ESDSLGen
          e('Query', 'query'),
          e('Range', 'range'),
          e('Regexp', 'regexp'),
-         e('Script', 'script')
+         e('Script', 'script'),
+         e('Term', 'term')
        ]}
     end
 
@@ -534,6 +535,10 @@ class ESDSLGen
                         'ScriptFilter' => [
                           f('script', 'String'),
                           f('params', 'BTreeMap<String, Json>', true)
+                        ],
+                        'TermFilter' => [
+                          f('field', 'String'),
+                          f('value', 'Json')
                         ]
                        }
 
