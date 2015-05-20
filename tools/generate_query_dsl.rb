@@ -92,7 +92,8 @@ class ESDSLGen
          e('Or', 'or'),
          e('Prefix', 'prefix'),
          e('Query', 'query'),
-         e('Range', 'range')
+         e('Range', 'range'),
+         e('Regexp', 'regexp')
        ]}
     end
 
@@ -169,7 +170,8 @@ class ESDSLGen
     def common_filter_options
       [
         f('_cache', 'bool', true),
-        f('_cache_key', 'String', true)
+        f('_cache_key', 'String', true),
+        f('_name', 'String', true)
       ]
     end
 
@@ -520,6 +522,13 @@ class ESDSLGen
                           f('boost', 'f64', true),
                           f('time_zone', 'String', true),
                           f('format', 'String', true)
+                        ],
+                        'RegexpFilter' => [
+                          f('field', 'String'),
+                          f('value', 'String'),
+                          f('boost', 'f64', true),
+                          f('flags', 'Flags', true),
+                          f('max_determined_states', 'i64', true)
                         ]
                        }
 
