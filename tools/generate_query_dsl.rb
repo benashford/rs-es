@@ -82,7 +82,8 @@ class ESDSLGen
          e('GeoShape', 'geo_shape'),
          e('GeohashCell', 'geohash_cell'),
          e('HasChild', 'has_child'),
-         e('HasParent', 'has_parent')
+         e('HasParent', 'has_parent'),
+         e('Ids', 'ids')
        ]}
     end
 
@@ -465,6 +466,10 @@ class ESDSLGen
                           f('parent_type', 'String'),
                           f('query', 'Box<Query>', true),
                           f('filter', 'Box<Filter>', true)
+                        ],
+                        'IdsFilter' => [
+                          f('doc_type', 'OneOrMany<String>', true),
+                          f('values', 'Vec<String>')
                         ]
                        }
 
