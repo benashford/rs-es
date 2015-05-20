@@ -1,5 +1,7 @@
 # rs-es
 
+[![Build Status](https://travis-ci.org/benashford/rs-es.svg)](https://travis-ci.org/benashford/rs-es)
+
 An experimental ElasticSearch client for Rust.
 
 ## Background
