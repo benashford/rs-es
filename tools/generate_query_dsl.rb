@@ -91,7 +91,8 @@ class ESDSLGen
          e('Not', 'not'),
          e('Or', 'or'),
          e('Prefix', 'prefix'),
-         e('Query', 'query')
+         e('Query', 'query'),
+         e('Range', 'range')
        ]}
     end
 
@@ -509,6 +510,16 @@ class ESDSLGen
                         ],
                         'QueryFilter' => [
                           f('query', 'Box<Query>')
+                        ],
+                        'RangeFilter' => [
+                          f('field', 'String'),
+                          f('gte', 'Json', true),
+                          f('gt', 'Json', true),
+                          f('lte', 'Json', true),
+                          f('lt', 'Json', true),
+                          f('boost', 'f64', true),
+                          f('time_zone', 'String', true),
+                          f('format', 'String', true)
                         ]
                        }
 
