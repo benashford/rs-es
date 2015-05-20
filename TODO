@@ -1,5 +1,0 @@
-1. Full set of QueryDSL
-2. Documentation
-3. Encapsulate HTTP status code in response objects.
-4. Get API "_source" (http://www.elastic.co/guide/en/elasticsearch/reference/current/docs-get.html#_source)
-5. Persistent HTTP connections

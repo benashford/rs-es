@@ -156,19 +156,18 @@ TODO: complete this bit
 
 ## TODO
 
-1. Full implementation of the Query DSL.
+1. Wire-up to Travis
 2. Implementation of Search API.
-3. Scan and scroll
-3. Aggregations
-3. Search templates (possibly)
-3. Implement Update API.
-4. Implement Multi Get API
-5. Implement Bulk API
-6. Implement Term Vectors and Multi termvectors API
-7. All neuances of geo-searches.
-8. Test coverage.
-10. Everything else.
-11. Performance (ensure use of persistent HTTP connections, etc.).
-12. Documentation, both rustdoc and a suitable high-level write-up in this README
-13. Wire-up to Travis
-14. Publish to Crates.io
+3. Publish to Crates.io
+4. Scan and scroll
+5. Aggregations
+6. Search templates (possibly)
+7. Implement Update API.
+8. Implement Multi Get API
+9. Implement Bulk API
+10. Implement Term Vectors and Multi termvectors API
+11. All neuances of geo-searches.
+12. Test coverage.
+13. Everything else.
+14. Performance (ensure use of persistent HTTP connections, etc.).
+15. Documentation, both rustdoc and a suitable high-level write-up in this README
