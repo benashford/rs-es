@@ -88,7 +88,8 @@ class ESDSLGen
          e('MatchAll', 'match_all'),
          e('Missing', 'missing'),
          e('Nested', 'nested'),
-         e('Not', 'not')
+         e('Not', 'not'),
+         e('Or', 'or')
        ]}
     end
 
@@ -496,6 +497,9 @@ class ESDSLGen
                         ],
                         'NotFilter' => [
                           f('filter', 'Box<Filter>')
+                        ],
+                        'OrFilter' => [
+                          f('filters', 'Vec<Filter>')
                         ]
                        }
 
