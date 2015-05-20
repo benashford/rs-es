@@ -8,9 +8,29 @@ An experimental ElasticSearch client for Rust.
 
 The only existing ElasticSearch client for Rust that I could find required the use of a ZeroMQ plugin.  This project is an ongoing implementation of an ElasticSearch client via the REST API.
 
-## Unstable!
+## Experimental
 
-Development is ongoing, and breaking changes are likely at any time.  Also, large parts of the ElasticSearch API are currently unimplemented.
+Development is ongoing, and is experimental, as such breaking changes are likely at any time.  Also, large parts of the ElasticSearch API are currently unimplemented.
+
+## Building and installation
+
+### [crates.io](http://crates.io)
+
+Not yet available on [crates.io](http://crates.io), it will be as soon as a core minimal feature-set is implemented.
+
+### Building from source
+
+Part of the Rust code is generated automatically (`src/query.rs`), this is the implementation of ElasticSearch's [Query DSL](#the-query-dsl) which contains various conventions that would be otherwise tedious to implement manually.  Rust's macros help here, but there is still a lot of redundancy left-over so a Ruby script is used.
+
+#### Pre-requisites
+
+* Ruby - any relatively recent version should work, but it has been specifically tested with 2.1 and 2.2.
+
+#### Build instructions
+
+* Clean - `make clean`
+* Build - `make`
+* Run tests - `make test`
 
 ## Design goals
 
@@ -152,24 +172,71 @@ WARNING: this doesn't actually work yet, but will do soon.
 
 ### The Query DSL
 
-Currently partially implemented
+ElasticSearch offers a [rich DSL for searches](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl.html).  It is JSON based, and therefore very easy to use and composable if using from a dynamic language (e.g. [Ruby](https://github.com/elastic/elasticsearch-ruby/tree/master/elasticsearch-dsl#features-overview)); but Rust, being a staticly-typed language, things are different.  The `rs_es::query` module defines a set of builder objects which can be similarly composed to the same ends.
 
-TODO: complete this bit
+For example:
+
+```rust
+let query = Query::build_filtered(
+                Filter::build_bool()
+                    .with_must(vec![Filter::build_term("field_a".to_string(),
+                                                       "value".to_json()),
+                                    Filter::build_range("field_b".to_string())
+                                        .with_gte(5.to_json())
+                                        .with_lt(10.to_json())]))
+                .with_query(Query::build_query_string("some value".to_string()));
+```
+
+The resulting `Query` value can be used in the various search/query functions exposed by [the client](#the-client).  It implements [`ToJson`](http://doc.rust-lang.org/rustc-serialize/rustc_serialize/json/index.html), which in the above example would produce JSON like so:
+
+```javascript
+{
+    "filtered": {
+        "query": {
+            "query_string": {
+                "query": "some_value"
+            }
+        },
+        "filter": {
+            "bool": {
+                "must": [
+                    {
+                        "term": {
+                            "field_a": "value"
+                        }
+                    },
+                    {
+                        "range": {
+                            "gte": 5,
+                            "lt": 10
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}
+```
+
+Potential future additions will remove some of the remaining verbosity for happy-path cases.
+
+#### Experimental
+
+This implementation of the query DSL is auto-generated and is done so in such a way to allow the generated code to change when necessary.  The template files are [query.rs.erb](templates/query.rs.erb) and [generate_query_dsl.rb](tools/generate_query_dsl.rb).  The experimental warning is recursive, it's likely that the means of generating the query DSL will change due to lessons-learnt implementing the first version.
 
 ## TODO
 
-1. Wire-up to Travis
-2. Implementation of Search API.
-3. Publish to Crates.io
-4. Scan and scroll
-5. Aggregations
-6. Search templates (possibly)
-7. Implement Update API.
-8. Implement Multi Get API
-9. Implement Bulk API
-10. Implement Term Vectors and Multi termvectors API
-11. All neuances of geo-searches.
-12. Test coverage.
-13. Everything else.
-14. Performance (ensure use of persistent HTTP connections, etc.).
-15. Documentation, both rustdoc and a suitable high-level write-up in this README
+1. Implementation of Search API.
+2. Publish to Crates.io
+3. Scan and scroll
+4. Aggregations
+5. Search templates (possibly)
+6. Implement Update API.
+7. Implement Multi Get API
+8. Implement Bulk API
+9. Implement Term Vectors and Multi termvectors API
+10. All neuances of geo-searches.
+11. Test coverage.
+12. Everything else.
+13. Performance (ensure use of persistent HTTP connections, etc.).
+14. Documentation, both rustdoc and a suitable high-level write-up in this README
