@@ -180,11 +180,13 @@ For example:
 let query = Query::build_filtered(
                 Filter::build_bool()
                     .with_must(vec![Filter::build_term("field_a".to_string(),
-                                                       "value".to_json()),
+                                                       "value".to_json()).build(),
                                     Filter::build_range("field_b".to_string())
                                         .with_gte(5.to_json())
-                                        .with_lt(10.to_json())]))
-                .with_query(Query::build_query_string("some value".to_string()));
+                                        .with_lt(10.to_json())
+                                        .build()]))
+                .with_query(Query::build_query_string("some value".to_string()))
+                .build();
 ```
 
 The resulting `Query` value can be used in the various search/query functions exposed by [the client](#the-client).  It implements [`ToJson`](http://doc.rust-lang.org/rustc-serialize/rustc_serialize/json/index.html), which in the above example would produce JSON like so:
