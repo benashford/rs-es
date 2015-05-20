@@ -83,7 +83,8 @@ class ESDSLGen
          e('GeohashCell', 'geohash_cell'),
          e('HasChild', 'has_child'),
          e('HasParent', 'has_parent'),
-         e('Ids', 'ids')
+         e('Ids', 'ids'),
+         e('Indices', 'indices')
        ]}
     end
 
@@ -470,6 +471,12 @@ class ESDSLGen
                         'IdsFilter' => [
                           f('doc_type', 'OneOrMany<String>', true),
                           f('values', 'Vec<String>')
+                        ],
+                        'IndicesFilter' => [
+                          f('index', 'String', true),
+                          f('indices', 'Vec<String>', true),
+                          f('filter', 'Box<Filter>', true),
+                          f('no_match_filter', 'NoMatchFilter', true)
                         ]
                        }
 

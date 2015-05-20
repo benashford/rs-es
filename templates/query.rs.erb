@@ -611,3 +611,24 @@ impl ToJson for GeohashCellFilter {
 
 <%= structs['IdsFilter'] %>
 <%= to_json_impl('IdsFilter') %>
+
+ <%= structs['IndicesFilter'] %>
+
+#[derive(Clone)]
+pub enum NoMatchFilter {
+    None,
+    All,
+    Filter(Box<Filter>)
+}
+
+impl ToJson for NoMatchFilter {
+    fn to_json(&self) -> Json {
+        match self {
+            &NoMatchFilter::None               => "none".to_json(),
+            &NoMatchFilter::All                => "all".to_json(),
+            &NoMatchFilter::Filter(ref filter) => filter.to_json()
+        }
+    }
+}
+
+<%= to_json_impl('IndicesFilter') %>
