@@ -158,15 +158,15 @@ TODO: complete this bit
 
 1. Full implementation of the Query DSL.
 2. Implementation of Search API.
+3. Scan and scroll
+3. Aggregations
 3. Search templates (possibly)
-4. Scan and scroll
 3. Implement Update API.
 4. Implement Multi Get API
 5. Implement Bulk API
 6. Implement Term Vectors and Multi termvectors API
 7. All neuances of geo-searches.
 8. Test coverage.
-9. Aggregations.
 10. Everything else.
 11. Performance (ensure use of persistent HTTP connections, etc.).
 12. Documentation, both rustdoc and a suitable high-level write-up in this README
