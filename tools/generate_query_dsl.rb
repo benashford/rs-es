@@ -84,7 +84,8 @@ class ESDSLGen
          e('HasChild', 'has_child'),
          e('HasParent', 'has_parent'),
          e('Ids', 'ids'),
-         e('Indices', 'indices')
+         e('Indices', 'indices'),
+         e('MatchAll', 'match_all')
        ]}
     end
 
@@ -477,7 +478,8 @@ class ESDSLGen
                           f('indices', 'Vec<String>', true),
                           f('filter', 'Box<Filter>', true),
                           f('no_match_filter', 'NoMatchFilter', true)
-                        ]
+                        ],
+                        'MatchAllFilter' => []
                        }
 
       query_structs.tap do |all_structs|
