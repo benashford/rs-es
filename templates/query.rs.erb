@@ -508,6 +508,7 @@ impl ToJson for GeoBoundingBoxFilter {
         let mut d = BTreeMap::new();
         d.insert(self.field.clone(), self.geo_box.to_json());
         self.add_optionals(&mut d);
+        self.add_core_optionals(&mut d);
         Json::Object(d)
     }
 }
@@ -564,6 +565,7 @@ impl ToJson for GeoDistanceFilter {
         d.insert(self.field.clone(), self.location.to_json());
         d.insert("distance".to_string(), self.distance.to_json());
         self.add_optionals(&mut d);
+        self.add_core_optionals(&mut d);
         Json::Object(d)
     }
 }
@@ -573,3 +575,30 @@ impl ToJson for GeoDistanceFilter {
 
 <%= structs['GeoShapeFilter'] %>
 <%= to_json_inner_impl('GeoShapeFilter') %>
+
+<%= structs['GeohashCellFilter'] %>
+
+#[derive(Clone)]
+pub enum Precision {
+    Geohash(i64),
+    Distance(Distance)
+}
+
+impl ToJson for Precision {
+    fn to_json(&self) -> Json {
+        match self {
+            &Precision::Geohash(geohash_precision) => Json::I64(geohash_precision),
+            &Precision::Distance(ref distance)     => distance.to_json()
+        }
+    }
+}
+
+impl ToJson for GeohashCellFilter {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert(self.field.clone(), self.location.to_json());
+        self.add_optionals(&mut d);
+        self.add_core_optionals(&mut d);
+        Json::Object(d)
+    }
+}

@@ -80,6 +80,7 @@ class ESDSLGen
          e('GeoDistance', 'geo_distance'),
          e('GeoPolygon', 'geo_polygon'),
          e('GeoShape', 'geo_shape'),
+         e('GeohashCell', 'geohash_cell')
        ]}
     end
 
@@ -444,6 +445,12 @@ class ESDSLGen
                           f('field', 'String'),
                           f('shape', 'Shape', true),
                           f('indexed_shape', 'IndexedShape', true)
+                        ],
+                        'GeohashCellFilter' => [
+                          f('field', 'String'),
+                          f('location', 'Location'),
+                          f('precision', 'Precision', true),
+                          f('neighbors', 'bool', true)
                         ]
                        }
 
