@@ -89,7 +89,8 @@ class ESDSLGen
          e('Missing', 'missing'),
          e('Nested', 'nested'),
          e('Not', 'not'),
-         e('Or', 'or')
+         e('Or', 'or'),
+         e('Prefix', 'prefix')
        ]}
     end
 
@@ -500,6 +501,10 @@ class ESDSLGen
                         ],
                         'OrFilter' => [
                           f('filters', 'Vec<Filter>')
+                        ],
+                        'PrefixFilter' => [
+                          f('field', 'String'),
+                          f('value', 'String')
                         ]
                        }
 
