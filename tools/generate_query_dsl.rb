@@ -85,7 +85,8 @@ class ESDSLGen
          e('HasParent', 'has_parent'),
          e('Ids', 'ids'),
          e('Indices', 'indices'),
-         e('MatchAll', 'match_all')
+         e('MatchAll', 'match_all'),
+         e('Missing', 'missing')
        ]}
     end
 
@@ -479,7 +480,12 @@ class ESDSLGen
                           f('filter', 'Box<Filter>', true),
                           f('no_match_filter', 'NoMatchFilter', true)
                         ],
-                        'MatchAllFilter' => []
+                        'MatchAllFilter' => [],
+                        'MissingFilter' => [
+                          f('field', 'String'),
+                          f('existence', 'bool', true),
+                          f('null_value', 'bool', true)
+                        ]
                        }
 
       query_structs.tap do |all_structs|
