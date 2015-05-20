@@ -96,7 +96,8 @@ class ESDSLGen
          e('Regexp', 'regexp'),
          e('Script', 'script'),
          e('Term', 'term'),
-         e('Terms', 'terms')
+         e('Terms', 'terms'),
+         e('Type', 'type')
        ]}
     end
 
@@ -545,6 +546,9 @@ class ESDSLGen
                           f('field', 'String'),
                           f('values', 'Vec<Json>'),
                           f('execution', 'Execution', true),
+                        ],
+                        'TypeFilter' => [
+                          f('value', 'String')
                         ]
                        }
 
