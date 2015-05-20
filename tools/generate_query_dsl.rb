@@ -77,7 +77,8 @@ class ESDSLGen
          e('Bool', 'bool'),
          e('Exists', 'exists'),
          e('GeoBoundingBox', 'geo_bounding_box'),
-         e('GeoDistance', 'geo_distance')
+         e('GeoDistance', 'geo_distance'),
+         e('GeoPolygon', 'geo_polygon')
        ]}
     end
 
@@ -433,6 +434,10 @@ class ESDSLGen
                           f('distance', 'Distance'),
                           f('distance_type', 'DistanceType', true),
                           f('optimize_bbox', 'OptimizeBbox', true)
+                        ],
+                        'GeoPolygonFilter' => [
+                          f('field', 'String'),
+                          f('points', 'Vec<Location>')
                         ]
                        }
 

@@ -567,3 +567,16 @@ impl ToJson for GeoDistanceFilter {
         Json::Object(d)
     }
 }
+
+<%= structs['GeoPolygonFilter'] %>
+
+impl ToJson for GeoPolygonFilter {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        inner.insert("points".to_string(), self.points.to_json());
+        d.insert(self.field.clone(), Json::Object(inner));
+        self.add_optionals(&mut d);
+        Json::Object(d)
+    }
+}
