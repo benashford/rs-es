@@ -111,6 +111,7 @@ macro_rules! es_body_op {
             where E: Encodable {
                 info!("Doing {} on {}", stringify!($n), url);
                 let json_string = json::encode(body).unwrap();
+                info!("Body: {}", json_string);
                 let mut result = try!(self.http_client
                                       .$cn(&format!("{}/{}", self.base_url, url))
                                       .body(&json_string)
@@ -131,7 +132,7 @@ impl Client {
     }
 
     es_op!(get_op, get);
-    es_body_op!(get_body_op, get);
+
     es_op!(post_op, post);
     es_body_op!(post_body_op, post);
     es_op!(put_op, put);
@@ -204,7 +205,7 @@ mod tests {
     use super::Client;
     use super::operations::OpType;
 
-    use super::query::Query;
+    use super::query::{Filter, Query};
 
     use std::env;
 
@@ -251,7 +252,7 @@ mod tests {
                 test_idx: &str) {
         client.delete_by_query()
             .with_indexes(&[test_idx])
-            .with_query(Query::build_match_all().build())
+            .with_query(&Query::build_match_all().build())
             .send()
             .unwrap();
     }
@@ -360,7 +361,7 @@ mod tests {
             .delete_by_query()
             .with_indexes(&[index_name])
             .with_doc_types(&["test_type"])
-            .with_query(Query::build_match("int_field".to_string(), 200.to_json())
+            .with_query(&Query::build_match("int_field".to_string(), 200.to_json())
                         .with_lenient(false)
                         .build())
             .send().unwrap();
@@ -423,5 +424,31 @@ mod tests {
             .send()
             .unwrap();
         assert_eq!(1, limited_fields.hits.total);
+    }
+
+    #[test]
+    fn test_search_body() {
+        let index_name = "test_search_body";
+        let mut client = make_client();
+        clean_db(&mut client, index_name);
+        setup_search_test_data(&mut client, index_name);
+
+        let all_results = client
+            .search_query()
+            .with_indexes(&[index_name])
+            .with_query(&Query::build_match_all().build())
+            .send().unwrap();
+        assert_eq!(3, all_results.hits.total);
+
+        let within_range = client
+            .search_query()
+            .with_indexes(&[index_name])
+            .with_query(&Query::build_filtered(Box::new(Filter::build_range("int_field".to_string())
+                                                        .with_gte(2.to_json())
+                                                        .with_lte(3.to_json())
+                                                        .build()))
+                        .build())
+            .send().unwrap();
+        assert_eq!(2, within_range.hits.total);
     }
 }

@@ -247,6 +247,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### TODO
 
+0. Remove need for extraneous to_string and to_json's in the Query DSL.
 1. Implementation of Search API.
 2. Publish to Crates.io
 3. Scan and scroll

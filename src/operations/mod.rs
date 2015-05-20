@@ -246,11 +246,11 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
     }
 }
 
-struct DeleteByQueryBody {
-    query: Query
+struct DeleteByQueryBody<'a> {
+    query: &'a Query
 }
 
-impl ToJson for DeleteByQueryBody {
+impl<'a> ToJson for DeleteByQueryBody<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         d.insert("query".to_string(), self.query.to_json());
@@ -258,9 +258,9 @@ impl ToJson for DeleteByQueryBody {
     }
 }
 
-enum QueryOption {
+enum QueryOption<'a> {
     String(String),
-    Document(DeleteByQueryBody)
+    Document(DeleteByQueryBody<'a>)
 }
 
 /// Delete-by-query API.
@@ -278,7 +278,7 @@ pub struct DeleteByQueryOperation<'a, 'b> {
     doc_types: &'b [&'b str],
 
     /// The query itself, either in parameter or Query DSL form.
-    query:     QueryOption,
+    query:     QueryOption<'b>,
 
     /// Optional options
     options:   Options<'b>
@@ -310,7 +310,7 @@ impl<'a, 'b> DeleteByQueryOperation<'a, 'b> {
         self
     }
 
-    pub fn with_query(&'b mut self, q: Query) -> &'b mut Self {
+    pub fn with_query(&'b mut self, q: &'b Query) -> &'b mut Self {
         self.query = QueryOption::Document(DeleteByQueryBody { query: q });
         self
     }
@@ -583,7 +583,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           format_query_string(&self.options));
-        let (status_code, result) = try!(self.client.get_body_op(&url, &self.body.to_json()));
+        let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
         match status_code {
             StatusCode::Ok => Ok(SearchResult::from(&result.unwrap())),
             _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
