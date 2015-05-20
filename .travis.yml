@@ -4,6 +4,10 @@ rust:
   - beta
   - nightly
 script: make test
+services:
+  - elasticsearch
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y ruby
+before_script:
+  - sleep 10
