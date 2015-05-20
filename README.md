@@ -207,8 +207,10 @@ The resulting `Query` value can be used in the various search/query functions ex
                     },
                     {
                         "range": {
-                            "gte": 5,
-                            "lt": 10
+                            "field_b": {
+                                "gte": 5,
+                                "lt": 10
+                            }
                         }
                     }
                 ]
@@ -224,7 +226,26 @@ Potential future additions will remove some of the remaining verbosity for happy
 
 This implementation of the query DSL is auto-generated and is done so in such a way to allow the generated code to change when necessary.  The template files are [query.rs.erb](templates/query.rs.erb) and [generate_query_dsl.rb](tools/generate_query_dsl.rb).  The experimental warning is recursive, it's likely that the means of generating the query DSL will change due to lessons-learnt implementing the first version.
 
-## TODO
+## Unimplemented features
+
+The ElasticSearch API is made-up of a large number of smaller APIs, the vast majority of which are not yet implemented.  So far the document and search APIs are being implemented, but still to do: index management, cluster management.
+
+A non-exhaustive (and non-prioritised) list of unimplemented APIs:
+
+* Search Shards API (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-shards.html)
+* Suggest API
+* Multi-search API
+* Count API
+* Search Exists API
+* Validate API
+* Explain API
+* Percolation
+* More like this API
+* Indices API
+* cat APIs
+* Cluster APIs
+
+### TODO
 
 1. Implementation of Search API.
 2. Publish to Crates.io
@@ -235,8 +256,6 @@ This implementation of the query DSL is auto-generated and is done so in such a 
 7. Implement Multi Get API
 8. Implement Bulk API
 9. Implement Term Vectors and Multi termvectors API
-10. All neuances of geo-searches.
-11. Test coverage.
-12. Everything else.
-13. Performance (ensure use of persistent HTTP connections, etc.).
-14. Documentation, both rustdoc and a suitable high-level write-up in this README
+10. Test coverage.
+11. Performance (ensure use of persistent HTTP connections, etc.).
+12. Documentation, both rustdoc and a suitable high-level write-up in this README
