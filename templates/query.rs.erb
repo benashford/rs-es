@@ -659,3 +659,6 @@ impl ToJson for PrefixFilter {
         Json::Object(d)
     }
 }
+
+<%= structs['QueryFilter'] %>
+<%= to_json_impl('QueryFilter') %>

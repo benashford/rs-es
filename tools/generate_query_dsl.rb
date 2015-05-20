@@ -90,7 +90,8 @@ class ESDSLGen
          e('Nested', 'nested'),
          e('Not', 'not'),
          e('Or', 'or'),
-         e('Prefix', 'prefix')
+         e('Prefix', 'prefix'),
+         e('Query', 'query')
        ]}
     end
 
@@ -505,6 +506,9 @@ class ESDSLGen
                         'PrefixFilter' => [
                           f('field', 'String'),
                           f('value', 'String')
+                        ],
+                        'QueryFilter' => [
+                          f('query', 'Box<Query>')
                         ]
                        }
 
