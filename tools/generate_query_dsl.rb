@@ -78,7 +78,8 @@ class ESDSLGen
          e('Exists', 'exists'),
          e('GeoBoundingBox', 'geo_bounding_box'),
          e('GeoDistance', 'geo_distance'),
-         e('GeoPolygon', 'geo_polygon')
+         e('GeoPolygon', 'geo_polygon'),
+         e('GeoShape', 'geo_shape'),
        ]}
     end
 
@@ -438,6 +439,11 @@ class ESDSLGen
                         'GeoPolygonFilter' => [
                           f('field', 'String'),
                           f('points', 'Vec<Location>')
+                        ],
+                        'GeoShapeFilter' => [
+                          f('field', 'String'),
+                          f('shape', 'Shape', true),
+                          f('indexed_shape', 'IndexedShape', true)
                         ]
                        }
 
