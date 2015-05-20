@@ -80,7 +80,9 @@ class ESDSLGen
          e('GeoDistance', 'geo_distance'),
          e('GeoPolygon', 'geo_polygon'),
          e('GeoShape', 'geo_shape'),
-         e('GeohashCell', 'geohash_cell')
+         e('GeohashCell', 'geohash_cell'),
+         e('HasChild', 'has_child'),
+         e('HasParent', 'has_parent')
        ]}
     end
 
@@ -451,6 +453,18 @@ class ESDSLGen
                           f('location', 'Location'),
                           f('precision', 'Precision', true),
                           f('neighbors', 'bool', true)
+                        ],
+                        'HasChildFilter' => [
+                          f('doc_type', 'String'),
+                          f('query', 'Box<Query>', true),
+                          f('filter', 'Box<Filter>', true),
+                          f('min_children', 'i64', true),
+                          f('max_children', 'i64', true)
+                        ],
+                        'HasParentFilter' => [
+                          f('parent_type', 'String'),
+                          f('query', 'Box<Query>', true),
+                          f('filter', 'Box<Filter>', true)
                         ]
                        }
 

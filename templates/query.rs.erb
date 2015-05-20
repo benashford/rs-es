@@ -602,3 +602,9 @@ impl ToJson for GeohashCellFilter {
         Json::Object(d)
     }
 }
+
+<%= structs['HasChildFilter'] %>
+<%= to_json_impl('HasChildFilter') %>
+
+<%= structs['HasParentFilter'] %>
+<%= to_json_impl('HasParentFilter') %>
