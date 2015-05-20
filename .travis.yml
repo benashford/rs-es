@@ -1,0 +1,9 @@
+language: rust
+rust:
+  - stable
+  - beta
+  - nightly
+script: make test
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y ruby
