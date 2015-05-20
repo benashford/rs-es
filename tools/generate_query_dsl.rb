@@ -93,7 +93,8 @@ class ESDSLGen
          e('Prefix', 'prefix'),
          e('Query', 'query'),
          e('Range', 'range'),
-         e('Regexp', 'regexp')
+         e('Regexp', 'regexp'),
+         e('Script', 'script')
        ]}
     end
 
@@ -529,6 +530,10 @@ class ESDSLGen
                           f('boost', 'f64', true),
                           f('flags', 'Flags', true),
                           f('max_determined_states', 'i64', true)
+                        ],
+                        'ScriptFilter' => [
+                          f('script', 'String'),
+                          f('params', 'BTreeMap<String, Json>', true)
                         ]
                        }
 
