@@ -683,3 +683,24 @@ impl ToJson for TermFilter {
         Json::Object(d)
     }
 }
+
+<%= structs['TermsFilter'] %>
+
+<%= simple_value_enum('Execution', ['plain',
+                                    'fielddata',
+                                    'bool',
+                                    'bool_nocache',
+                                    'and',
+                                    'and_nocache',
+                                    'or',
+                                    'or_nocache']) %>
+
+impl ToJson for TermsFilter {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert(self.field.clone(), self.values.to_json());
+        self.add_optionals(&mut d);
+        self.add_core_optionals(&mut d);
+        Json::Object(d)
+    }
+}

@@ -95,7 +95,8 @@ class ESDSLGen
          e('Range', 'range'),
          e('Regexp', 'regexp'),
          e('Script', 'script'),
-         e('Term', 'term')
+         e('Term', 'term'),
+         e('Terms', 'terms')
        ]}
     end
 
@@ -539,6 +540,11 @@ class ESDSLGen
                         'TermFilter' => [
                           f('field', 'String'),
                           f('value', 'Json')
+                        ],
+                        'TermsFilter' => [
+                          f('field', 'String'),
+                          f('values', 'Vec<Json>'),
+                          f('execution', 'Execution', true),
                         ]
                        }
 
