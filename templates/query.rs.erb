@@ -9,18 +9,58 @@ use rustc_serialize::json::{Json, ToJson};
 
 use util::StrJoin;
 
-<%= enums['Query'] %>
+// A Json value that's not a structural thing
 
-<%= enums['Filter'] %>
+#[derive(Clone)]
+pub enum JsonVal {
+    String(String),
+    I64(i64),
+    F64(f64)
+}
 
-macro_rules! with {
-    ($funcn:ident, $sn:ident, $t:ty) => {
-        pub fn $funcn<'a>(&'a mut self, value: $t) -> &'a mut Self {
-            self.$sn = Some(value);
-            self
+impl ToJson for JsonVal {
+    fn to_json(&self) -> Json {
+        match self {
+            &JsonVal::String(ref str) => str.to_json(),
+            &JsonVal::I64(i)          => Json::I64(i),
+            &JsonVal::F64(f)          => Json::F64(f)
         }
     }
 }
+
+impl From<String> for JsonVal {
+    fn from(from: String) -> JsonVal {
+        JsonVal::String(from)
+    }
+}
+
+impl<'a> From<&'a str> for JsonVal {
+    fn from(from: &'a str) -> JsonVal {
+        JsonVal::String(from.to_string())
+    }
+}
+
+impl From<f64> for JsonVal {
+    fn from(from: f64) -> JsonVal {
+        JsonVal::F64(from)
+    }
+}
+
+impl From<i64> for JsonVal {
+    fn from(from: i64) -> JsonVal {
+        JsonVal::I64(from)
+    }
+}
+
+impl From<Filter> for Box<Filter> {
+    fn from(from: Filter) -> Box<Filter> {
+        Box::new(from)
+    }
+}
+
+<%= enums['Query'] %>
+
+<%= enums['Filter'] %>
 
 // Match queries
 
@@ -137,7 +177,7 @@ impl ToJson for CommonQuery {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
-        inner.insert("query".to_string(), self.query.clone());
+        inner.insert("query".to_string(), self.query.to_json());
         self.add_optionals(&mut inner);
         d.insert("body".to_string(), inner.to_json());
         Json::Object(d)

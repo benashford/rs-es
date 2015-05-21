@@ -25,12 +25,24 @@ class Field
                'doc_type'   => 'type',
                'span_match' => 'match'}
 
-  attr_accessor :name, :type, :optional
+  # Name of the field
+  attr_accessor :name
+
+  # Type of the field in the struct
+  attr_accessor :type
+
+  # Type of the field in parameter form (e.g. type may be 'String', but
+  # parameter will be 'Into<String>')
+  attr_accessor :param_type
+
+  # Optional field
+  attr_accessor :optional
 
   def initialize(name, type, optional)
-    self.name = name
-    self.type = type
-    self.optional = optional
+    self.name       = name
+    self.type       = type
+    self.param_type = "Into<#{type}>"
+    self.optional   = optional
   end
 
   def json_name
@@ -85,9 +97,10 @@ class ESDSLGen
 
           impl <%= name %> {
               <% fields.each do |field| %>
-                  pub fn build_<%= field.json_name %>(
-                     <% sfs = get_struct_fields(field.name, name).reject(&:optional); sfs.each do |sf| %>
-                         <%= sf.name %>: <%= sf.type %><% if !last(sfs, sf) %>,<% end %>
+                  pub fn build_<%= field.json_name %><%= generate_type_params(field.name, name) %>(
+                     <% sfs = get_optional_struct_fields(field.name, name);
+                        sfs.zip(ALPHABET).each do |(sf, letter)| %>
+                         <%= sf.name %>: <%= letter %><% if !last(sfs, sf) %>,<% end %>
                      <% end %>) -> <%= field.name %><%= name %> {
                      <% if get_struct_fields(field.name, name).empty? %>
                          <%= field.name %><%= name %>
@@ -97,7 +110,7 @@ class ESDSLGen
                                  <%= sf.name %>: <% if sf.optional %>
                                                      None
                                                  <% else %>
-                                                     <%= sf.name %>
+                                                     <%= sf.name %>.into()
                                                  <% end %><% if !last(sfs, sf) %>,<% end %>
                              <% end %>
                           }
@@ -152,14 +165,14 @@ class ESDSLGen
                        ],
                        'MatchQuery'     => [
                          f('field', 'String'),
-                         f('query', 'Json'),
+                         f('query', 'JsonVal'),
                          f('match_type', 'MatchType', true),
                          f('cutoff_frequency', 'f64', true),
                          f('lenient', 'bool', true)
                        ].concat(common_match_options),
                        'MultiMatchQuery' => [
                          f('fields', 'Vec<String>'),
-                         f('query', 'Json'),
+                         f('query', 'JsonVal'),
                          f('use_dis_max', 'bool', true),
                          f('match_type', 'MatchQueryType', true)
                        ].concat(common_match_options),
@@ -176,7 +189,7 @@ class ESDSLGen
                          f('negative_boost', 'f64', true)
                        ],
                        'CommonQuery' => [
-                         f('query', 'Json'),
+                         f('query', 'JsonVal'),
                          f('cutoff_frequency', 'f64', true),
                          f('low_freq_operator', 'String', true),
                          f('high_freq_operator', 'String', true),
@@ -328,10 +341,10 @@ class ESDSLGen
                        ],
                        'RangeQuery' => [
                          f('field', 'String'),
-                         f('gte', 'Json', true),
-                         f('gt', 'Json', true),
-                         f('lte', 'Json', true),
-                         f('lt', 'Json', true),
+                         f('gte', 'JsonVal', true),
+                         f('gt', 'JsonVal', true),
+                         f('lte', 'JsonVal', true),
+                         f('lt', 'JsonVal', true),
                          f('boost', 'f64', true),
                          f('time_zone', 'String', true),
                          f('format', 'String', true)
@@ -368,17 +381,17 @@ class ESDSLGen
                        ],
                        'SpanTermQuery' => [
                          f('field', 'String'),
-                         f('value', 'Json'),
+                         f('value', 'JsonVal'),
                          f('boost', 'f64', true)
                        ],
                        'TermQuery' => [
                          f('field', 'String'),
-                         f('value', 'Json'),
+                         f('value', 'JsonVal'),
                          f('boost', 'f64', true)
                        ],
                        'TermsQuery' => [
                          f('field', 'String'),
-                         f('values', 'Vec<Json>'),
+                         f('values', 'Vec<JsonVal>'),
                          f('minimum_should_match', 'MinimumShouldMatch', true)
                        ],
                        'WildcardQuery' => [
@@ -391,7 +404,7 @@ class ESDSLGen
       function_structs = {'ScriptScoreFunction' => [
                             f('script', 'String'),
                             f('lang', 'String', true),
-                            f('params', 'HashMap<String, Json>', true)
+                            f('params', 'HashMap<String, JsonVal>', true)
                           ],
                           'WeightFunction' => [
                             f('weight', 'f64')
@@ -486,10 +499,10 @@ class ESDSLGen
                         ],
                         'RangeFilter' => [
                           f('field', 'String'),
-                          f('gte', 'Json', true),
-                          f('gt', 'Json', true),
-                          f('lte', 'Json', true),
-                          f('lt', 'Json', true),
+                          f('gte', 'JsonVal', true),
+                          f('gt', 'JsonVal', true),
+                          f('lte', 'JsonVal', true),
+                          f('lt', 'JsonVal', true),
                           f('boost', 'f64', true),
                           f('time_zone', 'String', true),
                           f('format', 'String', true)
@@ -503,15 +516,15 @@ class ESDSLGen
                         ],
                         'ScriptFilter' => [
                           f('script', 'String'),
-                          f('params', 'BTreeMap<String, Json>', true)
+                          f('params', 'BTreeMap<String, JsonVal>', true)
                         ],
                         'TermFilter' => [
                           f('field', 'String'),
-                          f('value', 'Json')
+                          f('value', 'JsonVal')
                         ],
                         'TermsFilter' => [
                           f('field', 'String'),
-                          f('values', 'Vec<Json>'),
+                          f('values', 'Vec<JsonVal>'),
                           f('execution', 'Execution', true),
                         ],
                         'TypeFilter' => [
@@ -529,6 +542,24 @@ class ESDSLGen
 
     def get_struct_fields(struct_name, type)
       structs["#{struct_name}#{type}"]
+    end
+
+    def get_optional_struct_fields(struct_name, type)
+      get_struct_fields(struct_name, type).reject(&:optional)
+    end
+
+    ALPHABET = ('A'..'Z').to_a
+
+    def generate_type_params(struct_name, type)
+      optional_fields = get_optional_struct_fields(struct_name, type)
+      if optional_fields.count > 0
+        params = optional_fields.zip(ALPHABET).map do |(field, letter)|
+          "#{letter}: #{field.param_type}"
+        end
+        "<#{params.join(',')}>"
+      else
+        ''
+      end
     end
 
     def generate_structs
@@ -550,7 +581,10 @@ class ESDSLGen
 
           impl <%= name %> {
               <% fields.select(&:optional).each do |op_f| %>
-                  with!(<%= op_f.with %>, <%= op_f.name %>, <%= op_f.type %>);
+                  pub fn <%= op_f.with %><'a, T: <%= op_f.param_type %>>(&'a mut self, value: T) -> &'a mut Self {
+                      self.<%= op_f.name %> = Some(value.into());
+                      self
+                  }
               <% end %>
 
               #[allow(dead_code, unused_variables)]

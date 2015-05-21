@@ -127,7 +127,7 @@ let result = client.delete_by_query()
 use rs_es::query::Query;
 let result = client.delete_by_query()
                    .with_indexes(&["index_name"])
-                   .with_query(Query::build_match("field", "value"))
+                   .with_query(Query::build_match("field", "value").build())
                    .send();
 ```
 
@@ -179,13 +179,13 @@ For example:
 ```rust
 let query = Query::build_filtered(
                 Filter::build_bool()
-                    .with_must(vec![Filter::build_term("field_a".to_string(),
-                                                       "value".to_json()).build(),
-                                    Filter::build_range("field_b".to_string())
-                                        .with_gte(5.to_json())
-                                        .with_lt(10.to_json())
+                    .with_must(vec![Filter::build_term("field_a",
+                                                       "value").build(),
+                                    Filter::build_range("field_b")
+                                        .with_gte(5)
+                                        .with_lt(10)
                                         .build()]))
-                .with_query(Query::build_query_string("some value".to_string()))
+                .with_query(Query::build_query_string("some value"))
                 .build();
 ```
 
@@ -249,7 +249,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### TODO
 
-0. Remove need for extraneous to_string and to_json's in the Query DSL.
 1. Implementation of Search API.
 2. Publish to Crates.io
 3. Scan and scroll

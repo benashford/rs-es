@@ -211,8 +211,6 @@ mod tests {
 
     use self::regex::Regex;
 
-    use rustc_serialize::json::ToJson;
-
     // test setup
 
     fn make_client() -> Client {
@@ -361,7 +359,7 @@ mod tests {
             .delete_by_query()
             .with_indexes(&[index_name])
             .with_doc_types(&["test_type"])
-            .with_query(&Query::build_match("int_field".to_string(), 200.to_json())
+            .with_query(&Query::build_match("int_field", 200)
                         .with_lenient(false)
                         .build())
             .send().unwrap();
@@ -443,10 +441,10 @@ mod tests {
         let within_range = client
             .search_query()
             .with_indexes(&[index_name])
-            .with_query(&Query::build_filtered(Box::new(Filter::build_range("int_field".to_string())
-                                                        .with_gte(2.to_json())
-                                                        .with_lte(3.to_json())
-                                                        .build()))
+            .with_query(&Query::build_filtered(Filter::build_range("int_field")
+                                               .with_gte(2)
+                                               .with_lte(3)
+                                               .build())
                         .build())
             .send().unwrap();
         assert_eq!(2, within_range.hits.total);
