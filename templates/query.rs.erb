@@ -9,8 +9,8 @@ use rustc_serialize::json::{Json, ToJson};
 
 use util::StrJoin;
 
-// A Json value that's not a structural thing
-
+// A Json value that's not a structural thing - i.e. just String, i64 and f64,
+// no array or object
 #[derive(Clone)]
 pub enum JsonVal {
     String(String),
@@ -54,6 +54,12 @@ impl From<i64> for JsonVal {
 
 impl From<Filter> for Box<Filter> {
     fn from(from: Filter) -> Box<Filter> {
+        Box::new(from)
+    }
+}
+
+impl From<Query> for Box<Query> {
+    fn from(from: Query) -> Box<Query> {
         Box::new(from)
     }
 }
