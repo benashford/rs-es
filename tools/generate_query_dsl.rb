@@ -1,15 +1,37 @@
 #!/usr/bin/env ruby
+# coding: utf-8
 
 require 'erb'
 
-E = Struct.new(:name, :json_name)
+# miscellaneous utilities
 
-F = Struct.new(:name, :type, :optional)
+def snake_to_camel(field)
+  field.split('_').map(&:capitalize).join
+end
 
-class F
+# Encapsulates details of an enum value
+class EnumVal
+  attr_accessor :name, :json_name
+
+  def initialize(json_name)
+    self.name = snake_to_camel(json_name)
+    self.json_name = json_name
+  end
+end
+
+# Encapsulates details of a field
+class Field
   JSON_SUBS = {'match_type' => 'type',
                'doc_type'   => 'type',
                'span_match' => 'match'}
+
+  attr_accessor :name, :type, :optional
+
+  def initialize(name, type, optional)
+    self.name = name
+    self.type = type
+    self.optional = optional
+  end
 
   def json_name
     JSON_SUBS[name] || name
@@ -22,83 +44,28 @@ end
 
 class ESDSLGen
   class << self
-    def e(name, json_name)
-      E.new(name, json_name)
+    def f(name, type, optional = false)
+      Field.new(name, type, optional)
     end
 
-    def f(name, type, optional = false)
-      F.new(name, type, optional)
-    end
+    ENUM_NAMES = %w[match_all match multi_match bool boosting common constant_score
+                    dis_max filtered fuzzy_like_this fuzzy_like_this_field function_score
+                    fuzzy geo_shape has_child has_parent ids indices more_like_this nested
+                    prefix query_string simple_query_string range regexp span_first
+                    span_multi span_near span_not span_or span_term term terms wildcard]
+
+    FUNCTION_NAMES = %w[script_score random_score weight]
+
+    FILTER_NAMES = %w[and bool exists geo_bounding_box geo_distance geo_polygon geo_shape
+                      geohash_cell has_child has_parent ids indices match_all missing
+                      nested not or prefix query range regexp script term terms type]
 
     def enums
-      {'Query' => [
-         e('MatchAll', 'match_all'),
-         e('Match', 'match'),
-         e('MultiMatch', 'multi_match'),
-         e('Bool', 'bool'),
-         e('Boosting', 'boosting'),
-         e('Common', 'common'),
-         e('ConstantScore', 'constant_score'),
-         e('DisMax', 'dis_max'),
-         e('Filtered', 'filtered'),
-         e('FuzzyLikeThis', 'fuzzy_like_this'),
-         e('FuzzyLikeThisField', 'fuzzy_like_this_field'),
-         e('FunctionScore', 'function_score'),
-         e('Fuzzy', 'fuzzy'),
-         e('GeoShape', 'geo_shape'),
-         e('HasChild', 'has_child'),
-         e('HasParent', 'has_parent'),
-         e('Ids', 'ids'),
-         e('Indices', 'indices'),
-         e('MoreLikeThis', 'more_like_this'),
-         e('Nested', 'nested'),
-         e('Prefix', 'prefix'),
-         e('QueryString', 'query_string'),
-         e('SimpleQueryString', 'simple_query_string'),
-         e('Range', 'range'),
-         e('Regexp', 'regexp'),
-         e('SpanFirst', 'span_first'),
-         e('SpanMulti', 'span_multi'),
-         e('SpanNear', 'span_near'),
-         e('SpanNot', 'span_not'),
-         e('SpanOr', 'span_or'),
-         e('SpanTerm', 'span_term'),
-         e('Term', 'term'),
-         e('Terms', 'terms'),
-         e('Wildcard', 'wildcard')
-       ],
-       'Function' => [
-         e('ScriptScore', 'script_score'),
-         e('Weight', 'weight'),
-         e('RandomScore', 'random_score')
-       ],
-       'Filter' => [
-         e('And', 'and'),
-         e('Bool', 'bool'),
-         e('Exists', 'exists'),
-         e('GeoBoundingBox', 'geo_bounding_box'),
-         e('GeoDistance', 'geo_distance'),
-         e('GeoPolygon', 'geo_polygon'),
-         e('GeoShape', 'geo_shape'),
-         e('GeohashCell', 'geohash_cell'),
-         e('HasChild', 'has_child'),
-         e('HasParent', 'has_parent'),
-         e('Ids', 'ids'),
-         e('Indices', 'indices'),
-         e('MatchAll', 'match_all'),
-         e('Missing', 'missing'),
-         e('Nested', 'nested'),
-         e('Not', 'not'),
-         e('Or', 'or'),
-         e('Prefix', 'prefix'),
-         e('Query', 'query'),
-         e('Range', 'range'),
-         e('Regexp', 'regexp'),
-         e('Script', 'script'),
-         e('Term', 'term'),
-         e('Terms', 'terms'),
-         e('Type', 'type')
-       ]}
+      {
+        'Query'    => ENUM_NAMES.map {|n| EnumVal.new(n) },
+        'Function' => FUNCTION_NAMES.map {|n| EnumVal.new(n) },
+        'Filter'   => FILTER_NAMES.map {|n| EnumVal.new(n) }
+      }
     end
 
     def last(col, item)
@@ -660,7 +627,7 @@ class ESDSLGen
         #[derive(Clone)]
         pub enum <%= name %> {
             <% fields.each do |field| %>
-                <%= field.split('_').map(&:capitalize).join %>
+                <%= snake_to_camel(field) %>
                 <% if !last(fields, field) %>,<% end %>
             <% end %>
         }
@@ -669,7 +636,7 @@ class ESDSLGen
             fn to_json(&self) -> Json {
                 match self {
                     <% fields.each do |field| %>
-                        &<%= name %>::<%= field.split('_').map(&:capitalize).join %>
+                        &<%= name %>::<%= snake_to_camel(field) %>
                         => "<%= field %>".to_json()
                         <% if !last(fields, field) %>,<% end %>
                     <% end %>
