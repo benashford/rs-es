@@ -1,9 +1,9 @@
 [package]
 name = "rs-es"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Ben Ashford"]
 license = "Apache-2.0"
-repository = "https://githib.com/benashford/rs-es"
+repository = "https://github.com/benashford/rs-es"
 description = "Client for the ElasticSearch REST API"
 readme = "README.md"
 keywords = ["elasticsearch", "elastic"]
