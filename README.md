@@ -166,8 +166,6 @@ let result = client.search_query()
                    .send();
 ```
 
-WARNING: this doesn't actually work yet, but will do soon.
-
 ### The Query DSL
 
 ElasticSearch offers a [rich DSL for searches](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl.html).  It is JSON based, and therefore very easy to use and composable if using from a dynamic language (e.g. [Ruby](https://github.com/elastic/elasticsearch-ruby/tree/master/elasticsearch-dsl#features-overview)); but Rust, being a staticly-typed language, things are different.  The `rs_es::query` module defines a set of builder objects which can be similarly composed to the same ends.
@@ -248,7 +246,8 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 ### TODO
 
 1. Implementation of Search API.
-2. Publish to Crates.io
+1. Implement helper methods on ad-hoc structs in query.rs - to allow them to be setup that are otherwise private.
+2. Run rustdoc and host the documentation somewhere useful
 3. Scan and scroll
 4. Aggregations
 5. Search templates (possibly)
