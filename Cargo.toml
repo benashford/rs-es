@@ -9,7 +9,7 @@ readme = "README.md"
 keywords = ["elasticsearch", "elastic"]
 build = "build.rs"
 
-include = ["src/**/*", "Cargo.toml"]
+exclude = ["devbox", "docker-dev.yml"]
 
 [lib]
 name = "rs_es"
