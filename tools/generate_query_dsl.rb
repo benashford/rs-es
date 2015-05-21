@@ -700,11 +700,13 @@ class ESDSLGen
 
       template = File.read('templates/query.rs.erb')
       result_file = ERB.new(template).result(binding)
-      File.open('src/query.rs', 'w') do |file|
+      File.open("#{ARGV[0]}/src/query.rs", 'w') do |file|
         file << result_file
       end
     end
   end
 end
+
+puts "generate_query_dsl.rb invoked with #{ARGV.inspect}"
 
 puts ESDSLGen.generate
