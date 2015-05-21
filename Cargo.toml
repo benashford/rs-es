@@ -8,6 +8,8 @@ description = "Client for the ElasticSearch REST API"
 readme = "README.md"
 keywords = ["elasticsearch", "elastic"]
 
+include = ["src/**/*", "Cargo.toml"]
+
 [lib]
 name = "rs_es"
 
