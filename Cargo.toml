@@ -2,11 +2,11 @@
 name = "rs-es"
 version = "0.1.0"
 authors = ["Ben Ashford"]
-licence = "Apache-2.0"
+license = "Apache-2.0"
 repository = "https://githib.com/benashford/rs-es"
 description = "Client for the ElasticSearch REST API"
 readme = "README.md"
-keyword = ["elasticsearch", "elastic"]
+keywords = ["elasticsearch", "elastic"]
 
 [lib]
 name = "rs_es"

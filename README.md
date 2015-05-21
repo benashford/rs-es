@@ -261,6 +261,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 10. Test coverage.
 11. Performance (ensure use of persistent HTTP connections, etc.).
 12. Documentation, both rustdoc and a suitable high-level write-up in this README
+13. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
 
 ## Licence
 
