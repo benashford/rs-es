@@ -16,7 +16,7 @@ Development is ongoing, and is experimental, as such breaking changes are likely
 
 ### [crates.io](http://crates.io)
 
-Not yet available on [crates.io](http://crates.io), it will be as soon as a core minimal feature-set is implemented.
+Available from [crates.io](https://crates.io/crates/rs-es).
 
 ### Building from source
 
@@ -28,9 +28,7 @@ Part of the Rust code is generated automatically (`src/query.rs`), this is the i
 
 #### Build instructions
 
-* Clean - `make clean`
-* Build - `make`
-* Run tests - `make test`
+The code-generation is integreated into Cargo, so usual `cargo test` commands will do the right thing.
 
 ## Design goals
 
