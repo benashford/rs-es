@@ -88,12 +88,34 @@ impl From<Query> for Box<Query> {
 
 <%= simple_value_enum('ZeroTermsQuery', ['none', 'all']) %>
 
+macro_rules! from_exp {
+    ($ft:ty, $dt:ident, $pi:ident, $ex:expr) => {
+        impl From<$ft> for $dt {
+            fn from($pi: $ft) -> $dt {
+                $ex
+            }
+        }
+    }
+}
+
+macro_rules! from {
+    ($ft:ty, $dt:ident, $ev:ident, $pi:ident) => {
+        from_exp!($ft, $dt, $pi, $dt::$ev($pi));
+    };
+    ($ft:ty, $dt:ident, $ev:ident) => {
+        from!($ft, $dt, $ev, from);
+    };
+}
+
 #[derive(Clone)]
 pub enum Fuzziness {
     Auto,
     LevenshteinDistance(i64),
     Proportionate(f64)
 }
+
+from!(i64, Fuzziness, LevenshteinDistance);
+from!(f64, Fuzziness, Proportionate);
 
 impl ToJson for Fuzziness {
     fn to_json(&self) -> Json {
@@ -139,6 +161,18 @@ pub struct CombinationMinimumShouldMatch {
     second: MinimumShouldMatch
 }
 
+impl CombinationMinimumShouldMatch {
+    pub fn new<A, B>(first: A, second: B) -> CombinationMinimumShouldMatch
+        where A: Into<MinimumShouldMatch>,
+              B: Into<MinimumShouldMatch>
+    {
+        CombinationMinimumShouldMatch {
+            first:  first.into(),
+            second: second.into()
+        }
+    }
+}
+
 impl ToString for CombinationMinimumShouldMatch {
     fn to_string(&self) -> String {
         format!("{}<{}", self.first.to_string(), self.second.to_string())
@@ -159,6 +193,18 @@ pub enum MinimumShouldMatch {
     MultipleCombination(Vec<CombinationMinimumShouldMatch>),
     LowHigh(i64, i64)
 }
+
+from!(i64, MinimumShouldMatch, Integer);
+from!(f64, MinimumShouldMatch, Percentage);
+from_exp!(CombinationMinimumShouldMatch,
+          MinimumShouldMatch,
+          from,
+          MinimumShouldMatch::Combination(Box::new(from)));
+from!(Vec<CombinationMinimumShouldMatch>, MinimumShouldMatch, MultipleCombination);
+from_exp!((i64, i64),
+          MinimumShouldMatch,
+          from,
+          MinimumShouldMatch::LowHigh(from.0, from.1));
 
 impl ToString for MinimumShouldMatch {
     fn to_string(&self) -> String {
@@ -223,6 +269,8 @@ pub enum Strategy {
     RandomAccessAlways
 }
 
+from!(i64, Strategy, RandomAccess);
+
 impl ToJson for Strategy {
     fn to_json(&self) -> Json {
         match self {
@@ -284,8 +332,18 @@ impl ToJson for WeightFunction {
 
 #[derive(Clone)]
 pub struct Shape {
+    // TODO - replace with an appropriate enum
     shape_type: String,
     coordinates: Vec<(f64, f64)>
+}
+
+impl Shape {
+    pub fn new<A: Into<String>>(shape_type: A, coordinates: Vec<(f64, f64)>) -> Shape {
+        Shape {
+            shape_type:  shape_type.into(),
+            coordinates: coordinates
+        }
+    }
 }
 
 impl ToJson for Shape {
@@ -308,10 +366,26 @@ impl ToJson for Shape {
 
 #[derive(Clone)]
 pub struct IndexedShape {
-    id: String,
+    id:       String,
     doc_type: String,
-    index: String,
-    path: String
+    index:    String,
+    path:     String
+}
+
+impl IndexedShape {
+    pub fn new<A, B, C, D>(id: A, doc_type: B, index: C, path: D) -> IndexedShape
+        where A: Into<String>,
+              B: Into<String>,
+              C: Into<String>,
+              D: Into<String>
+    {
+        IndexedShape {
+            id: id.into(),
+            doc_type: doc_type.into(),
+            index: index.into(),
+            path: path.into()
+        }
+    }
 }
 
 impl ToJson for IndexedShape {
@@ -342,6 +416,18 @@ pub enum OneOrMany<T: ToJson> {
     Many(Vec<T>)
 }
 
+impl<T: ToJson> From<T> for OneOrMany<T> {
+    fn from(from: T) -> OneOrMany<T> {
+        OneOrMany::One(from)
+    }
+}
+
+impl<T: ToJson> From<Vec<T>> for OneOrMany<T> {
+    fn from(from: Vec<T>) -> OneOrMany<T> {
+        OneOrMany::Many(from)
+    }
+}
+
 impl<T: ToJson> ToJson for OneOrMany<T> {
     fn to_json(&self) -> Json {
         match self {
@@ -364,6 +450,30 @@ pub struct Doc {
     doc_type: String,
     doc:      Option<Json>,
     id:       Option<String>
+}
+
+impl Doc {
+    pub fn from_doc<A, B>(index: A, doc_type: B, doc: Json) -> Doc
+        where A: Into<String>, B: Into<String>
+    {
+        Doc {
+            index:    index.into(),
+            doc_type: doc_type.into(),
+            doc:      Some(doc),
+            id:       None
+        }
+    }
+
+    pub fn id<A, B, C>(index: A, doc_type: B, id: C) -> Doc
+        where A: Into<String>, B: Into<String>, C: Into<String>
+    {
+        Doc {
+            index:    index.into(),
+            doc_type: doc_type.into(),
+            doc:      None,
+            id:       Some(id.into())
+        }
+    }
 }
 
 impl ToJson for Doc {
@@ -526,6 +636,9 @@ pub enum Location {
     GeoHash(String)
 }
 
+from_exp!((f64, f64), Location, from, Location::LatLon(from.0, from.1));
+from!(String, Location, GeoHash);
+
 impl ToJson for Location {
     fn to_json(&self) -> Json {
         match self {
@@ -547,6 +660,17 @@ pub enum GeoBox {
     Corners(Location, Location),
     Vertices(f64, f64, f64, f64)
 }
+
+from_exp!((Location, Location), GeoBox, from, GeoBox::Corners(from.0, from.1));
+from_exp!(((f64, f64), (f64, f64)),
+          GeoBox,
+          from,
+          GeoBox::Corners(Location::LatLon({from.0}.0, {from.0}.1),
+                          Location::LatLon({from.1}.0, {from.1}.1)));
+from_exp!((f64, f64, f64, f64),
+          GeoBox,
+          from,
+          GeoBox::Vertices(from.0, from.1, from.2, from.3));
 
 impl ToJson for GeoBox {
     fn to_json(&self) -> Json {
@@ -614,6 +738,15 @@ pub struct Distance {
     unit: DistanceUnit
 }
 
+impl Distance {
+    pub fn new(amt: f64, unit: DistanceUnit) -> Distance {
+        Distance {
+            amt:  amt,
+            unit: unit
+        }
+    }
+}
+
 impl ToJson for Distance {
     fn to_json(&self) -> Json {
         Json::String(format!("{}{}", self.amt, self.unit.to_string()))
@@ -647,6 +780,9 @@ pub enum Precision {
     Geohash(i64),
     Distance(Distance)
 }
+
+from!(i64, Precision, Geohash);
+from!(Distance, Precision, Distance);
 
 impl ToJson for Precision {
     fn to_json(&self) -> Json {
@@ -684,6 +820,8 @@ pub enum NoMatchFilter {
     All,
     Filter(Box<Filter>)
 }
+
+from_exp!(Filter, NoMatchFilter, from, NoMatchFilter::Filter(Box::new(from)));
 
 impl ToJson for NoMatchFilter {
     fn to_json(&self) -> Json {
