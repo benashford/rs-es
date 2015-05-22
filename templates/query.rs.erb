@@ -25,6 +25,26 @@ use rustc_serialize::json::{Json, ToJson};
 
 use util::StrJoin;
 
+// Useful macros for implementing `From` traits
+macro_rules! from_exp {
+    ($ft:ty, $dt:ident, $pi:ident, $ex:expr) => {
+        impl From<$ft> for $dt {
+            fn from($pi: $ft) -> $dt {
+                $ex
+            }
+        }
+    }
+}
+
+macro_rules! from {
+    ($ft:ty, $dt:ident, $ev:ident, $pi:ident) => {
+        from_exp!($ft, $dt, $pi, $dt::$ev($pi));
+    };
+    ($ft:ty, $dt:ident, $ev:ident) => {
+        from!($ft, $dt, $ev, from);
+    };
+}
+
 // A Json value that's not a structural thing - i.e. just String, i64 and f64,
 // no array or object
 #[derive(Clone)]
@@ -44,11 +64,7 @@ impl ToJson for JsonVal {
     }
 }
 
-impl From<String> for JsonVal {
-    fn from(from: String) -> JsonVal {
-        JsonVal::String(from)
-    }
-}
+from!(String, JsonVal, String);
 
 impl<'a> From<&'a str> for JsonVal {
     fn from(from: &'a str) -> JsonVal {
@@ -56,17 +72,8 @@ impl<'a> From<&'a str> for JsonVal {
     }
 }
 
-impl From<f64> for JsonVal {
-    fn from(from: f64) -> JsonVal {
-        JsonVal::F64(from)
-    }
-}
-
-impl From<i64> for JsonVal {
-    fn from(from: i64) -> JsonVal {
-        JsonVal::I64(from)
-    }
-}
+from!(f64, JsonVal, F64);
+from!(i64, JsonVal, I64);
 
 impl From<Filter> for Box<Filter> {
     fn from(from: Filter) -> Box<Filter> {
@@ -87,25 +94,6 @@ impl From<Query> for Box<Query> {
 // Match queries
 
 <%= simple_value_enum('ZeroTermsQuery', ['none', 'all']) %>
-
-macro_rules! from_exp {
-    ($ft:ty, $dt:ident, $pi:ident, $ex:expr) => {
-        impl From<$ft> for $dt {
-            fn from($pi: $ft) -> $dt {
-                $ex
-            }
-        }
-    }
-}
-
-macro_rules! from {
-    ($ft:ty, $dt:ident, $ev:ident, $pi:ident) => {
-        from_exp!($ft, $dt, $pi, $dt::$ev($pi));
-    };
-    ($ft:ty, $dt:ident, $ev:ident) => {
-        from!($ft, $dt, $ev, from);
-    };
-}
 
 #[derive(Clone)]
 pub enum Fuzziness {
@@ -332,7 +320,6 @@ impl ToJson for WeightFunction {
 
 #[derive(Clone)]
 pub struct Shape {
-    // TODO - replace with an appropriate enum
     shape_type: String,
     coordinates: Vec<(f64, f64)>
 }
@@ -812,7 +799,7 @@ impl ToJson for GeohashCellFilter {
 <%= structs['IdsFilter'] %>
 <%= to_json_impl('IdsFilter') %>
 
- <%= structs['IndicesFilter'] %>
+<%= structs['IndicesFilter'] %>
 
 #[derive(Clone)]
 pub enum NoMatchFilter {
