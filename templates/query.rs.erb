@@ -19,7 +19,6 @@
 // script to generate it is generate_query_dsl.rb
 
 use std::collections::BTreeMap;
-use std::collections::HashMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
@@ -293,23 +292,6 @@ impl ToJson for Strategy {
                                     'avg',
                                     'max',
                                     'min']) %>
-
-<%= enums['Function'] %>
-
-<%= structs['ScriptScoreFunction'] %>
-
-<%= to_json_impl('ScriptScoreFunction') %>
-
-<%= structs['WeightFunction'] %>
-
-impl ToJson for WeightFunction {
-    fn to_json(&self) -> Json {
-        self.weight.to_json()
-    }
-}
-
-<%= structs['RandomScoreFunction'] %>
-<%= to_json_impl('RandomScoreFunction') %>
 
 <%= to_json_impl('FunctionScoreQuery') %>
 
@@ -896,3 +878,27 @@ impl ToJson for TermsFilter {
 
 <%= structs['TypeFilter'] %>
 <%= to_json_impl('TypeFilter') %>
+
+// Functions for use in `FunctionScoreQuery`
+
+<%= function_enum('Func', ['script_score']) %>
+
+<%= structs['ScriptScoreFunc'] %>
+<%= to_json_impl('ScriptScoreFunc') %>
+
+#[derive(Clone)]
+struct Function {
+    filter: Option<Filter>,
+    function: Func,
+    weight: Option<f64>
+}
+
+impl ToJson for Function {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        optional_add!(d, self.filter, "filter");
+        optional_add!(d, self.weight, "weight");
+        d.insert(self.function.name(), self.function.to_json());
+        Json::Object(d)
+    }
+}
