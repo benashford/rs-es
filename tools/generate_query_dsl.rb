@@ -551,21 +551,24 @@ class ESDSLGen
           f('field', 'String'),
           f('origin', 'Origin'),
           f('scale', 'Scale', true),
-          f('decay', 'Scale', true),
+          f('offset', 'Scale', true),
+          f('decay', 'f64', true),
           f('multi_value_mode', 'MultiValueMode', true)
         ],
         'ExpFunc' => [
           f('field', 'String'),
           f('origin', 'Origin'),
           f('scale', 'Scale', true),
-          f('decay', 'Scale', true),
+          f('offset', 'Scale', true),
+          f('decay', 'f64', true),
           f('multi_value_mode', 'MultiValueMode', true)
         ],
         'GaussFunc' => [
           f('field', 'String'),
           f('origin', 'Origin'),
           f('scale', 'Scale', true),
-          f('decay', 'Scale', true),
+          f('offset', 'Scale', true),
+          f('decay', 'f64', true),
           f('multi_value_mode', 'MultiValueMode', true)
         ]
       }
