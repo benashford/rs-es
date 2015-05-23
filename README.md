@@ -246,8 +246,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 ### Some, non-exhaustive, specific TODOs
 
 1. Implementation of Search API.
-1. Implement helper methods on ad-hoc structs in query.rs - to allow them to be setup that are otherwise private.
-1. Add missing functions for function_score query (https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-function-score-query.html)
 2. Add bit to README detailing how to read results.
 2. Run rustdoc and host the documentation somewhere useful
 3. Scan and scroll
