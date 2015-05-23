@@ -1007,6 +1007,7 @@ macro_rules! decay_func_json_impl {
                 inner.insert("origin".to_string(), self.origin.to_json());
                 optional_add!(inner, self.scale, "scale");
                 optional_add!(inner, self.decay, "decay");
+                optional_add!(inner, self.offset, "offset");
                 d.insert(self.field.clone(), Json::Object(inner));
                 optional_add!(d, self.multi_value_mode, "multi_value_mode");
                 Json::Object(d)
