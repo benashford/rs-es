@@ -729,6 +729,25 @@ class ESDSLGen
         }
 
         impl <%= enum_name %> {
+            <% elements.each do |element| %>
+                pub fn build_<%= element %><%= generate_type_params(snake_to_camel(element), enum_name) %>(
+                   <% sfs = get_optional_struct_fields(snake_to_camel(element), enum_name);
+                      sfs.zip(ALPHABET).each do |(sf, letter)| %>
+                      <%= sf.name %>: <%= letter %><% if !last(sfs, sf) %>,<% end %>
+                   <% end %>
+                ) -> <%= snake_to_camel(element) %><%= enum_name %> {
+                   <%= snake_to_camel(element) %><%= enum_name %> {
+                      <% sfs = get_struct_fields(snake_to_camel(element), enum_name); sfs.each do |sf| %>
+                          <%= sf.name %>: <% if sf.optional %>
+                                             None
+                                          <% else %>
+                                             <%= sf.name %>.into()
+                                          <% end %><% if !last(sfs, sf) %>,<% end %>
+                      <% end %>
+                   }
+                }
+            <% end %>
+
             fn name(&self) -> String {
                 match self {
                     <% elements.each do |element| %>
