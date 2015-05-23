@@ -998,13 +998,32 @@ impl ToJson for Origin {
     }
 }
 
-<%= to_json_inner_impl('LinearFunc') %>
+macro_rules! decay_func_json_impl {
+    ($df:ident) => {
+        impl ToJson for $df {
+            fn to_json(&self) -> Json {
+                let mut d = BTreeMap::new();
+                let mut inner = BTreeMap::new();
+                inner.insert("origin".to_string(), self.origin.to_json());
+                optional_add!(inner, self.scale, "scale");
+                optional_add!(inner, self.decay, "decay");
+                d.insert(self.field.clone(), Json::Object(inner));
+                optional_add!(d, self.multi_value_mode, "multi_value_mode");
+                Json::Object(d)
+            }
+        }
+    }
+}
+
+<%= simple_value_enum('MultiValueMode', ['min', 'max', 'avg', 'sum']) %>
+
+decay_func_json_impl!(LinearFunc);
 
 <%= structs['ExpFunc'] %>
-<%= to_json_inner_impl('ExpFunc') %>
+decay_func_json_impl!(ExpFunc);
 
 <%= structs['GaussFunc'] %>
-<%= to_json_inner_impl('GaussFunc') %>
+decay_func_json_impl!(GaussFunc);
 
 #[derive(Clone)]
 struct Function {
