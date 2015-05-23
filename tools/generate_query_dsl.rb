@@ -546,6 +546,12 @@ class ESDSLGen
           f('field', 'String'),
           f('factor', 'f64', true),
           f('modifier', 'Modifier', true)
+        ],
+        'LinearFunc' => [
+          f('field', 'String'),
+          f('origin', 'Origin'),
+          f('scale', 'Scale', true),
+          f('decay', 'Scale', true)
         ]
       }
 

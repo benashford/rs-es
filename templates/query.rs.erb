@@ -672,6 +672,24 @@ impl ToJson for GeoBoundingBoxFilter {
 
 <%= structs['GeoDistanceFilter'] %>
 
+// TODO - this list is incomplete
+#[derive(Clone)]
+pub enum DurationUnit {
+    Week,
+    Day,
+    Hour
+}
+
+impl ToString for DurationUnit {
+    fn to_string(&self) -> String {
+        match *self {
+            DurationUnit::Week => "w",
+            DurationUnit::Day  => "d",
+            DurationUnit::Hour => "h"
+        }.to_string()
+    }
+}
+
 #[derive(Clone)]
 pub enum DistanceUnit {
     Mile,
@@ -698,6 +716,27 @@ impl ToString for DistanceUnit {
             DistanceUnit::Millimeter => "mm",
             DistanceUnit::NauticalMile => "NM"
         }.to_string()
+    }
+}
+
+#[derive(Clone)]
+pub struct Duration {
+    amt: i64,
+    unit: DurationUnit
+}
+
+impl Duration {
+    pub fn new(amt: i64, unit: DurationUnit) -> Duration {
+        Duration {
+            amt: amt,
+            unit: unit
+        }
+    }
+}
+
+impl ToJson for Duration {
+    fn to_json(&self) -> Json {
+        Json::String(format!("{}{}", self.amt, self.unit.to_string()))
     }
 }
 
@@ -883,7 +922,8 @@ impl ToJson for TermsFilter {
 
 <%= function_enum('Func', ['script_score',
                            'random_score',
-                           'field_value_factor']) %>
+                           'field_value_factor',
+                           'linear']) %>
 
 <%= structs['ScriptScoreFunc'] %>
 <%= to_json_impl('ScriptScoreFunc') %>
@@ -905,6 +945,34 @@ impl ToJson for TermsFilter {
                                    'reciprocal']) %>
 
 <%= to_json_impl('FieldValueFactorFunc') %>
+
+<%= structs['LinearFunc'] %>
+
+#[derive(Clone)]
+enum Origin {
+    I64(i64),
+    F64(f64),
+    Distance(Distance),
+    Duration(Duration)
+}
+
+from!(i64, Origin, I64);
+from!(f64, Origin, F64);
+from!(Distance, Origin, Distance);
+from!(Duration, Origin, Duration);
+
+impl ToJson for Origin {
+    fn to_json(&self) -> Json {
+        match self {
+            &Origin::I64(orig)          => Json::I64(orig),
+            &Origin::F64(orig)          => Json::F64(orig),
+            &Origin::Distance(ref orig) => orig.to_json(),
+            &Origin::Duration(ref orig) => orig.to_json()
+        }
+    }
+}
+
+<%= to_json_inner_impl('LinearFunc') %>
 
 #[derive(Clone)]
 struct Function {
