@@ -1,6 +1,7 @@
 # rs-es
 
 [![Build Status](https://travis-ci.org/benashford/rs-es.svg)](https://travis-ci.org/benashford/rs-es)
+[![](http://meritbadge.herokuapp.com/rs-es)](https://crates.io/crates/rs-es)
 
 An experimental ElasticSearch client for Rust.
 
