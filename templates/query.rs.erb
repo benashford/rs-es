@@ -949,25 +949,49 @@ impl ToJson for TermsFilter {
 <%= structs['LinearFunc'] %>
 
 #[derive(Clone)]
-enum Origin {
+enum Scale {
     I64(i64),
     F64(f64),
     Distance(Distance),
     Duration(Duration)
 }
 
+from!(i64, Scale, I64);
+from!(f64, Scale, F64);
+from!(Distance, Scale, Distance);
+from!(Duration, Scale, Duration);
+
+impl ToJson for Scale {
+    fn to_json(&self) -> Json {
+        match self {
+            &Scale::I64(s)          => Json::I64(s),
+            &Scale::F64(s)          => Json::F64(s),
+            &Scale::Distance(ref s) => s.to_json(),
+            &Scale::Duration(ref s) => s.to_json()
+        }
+    }
+}
+
+#[derive(Clone)]
+enum Origin {
+    I64(i64),
+    F64(f64),
+    Location(Location),
+    Date(String)
+}
+
 from!(i64, Origin, I64);
 from!(f64, Origin, F64);
-from!(Distance, Origin, Distance);
-from!(Duration, Origin, Duration);
+from!(Location, Origin, Location);
+from!(String, Origin, Date);
 
 impl ToJson for Origin {
     fn to_json(&self) -> Json {
         match self {
             &Origin::I64(orig)          => Json::I64(orig),
             &Origin::F64(orig)          => Json::F64(orig),
-            &Origin::Distance(ref orig) => orig.to_json(),
-            &Origin::Duration(ref orig) => orig.to_json()
+            &Origin::Location(ref orig) => orig.to_json(),
+            &Origin::Date(ref orig)     => Json::String(orig.clone())
         }
     }
 }
