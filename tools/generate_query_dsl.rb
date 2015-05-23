@@ -539,7 +539,7 @@ class ESDSLGen
           f('lang', 'String', true),
           f('params', 'BTreeMap<String, JsonVal>', true)
         ],
-        'RandomFunc' => [
+        'RandomScoreFunc' => [
           f('seed', 'i64')
         ]
       }
