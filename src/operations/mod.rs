@@ -508,7 +508,10 @@ struct SearchQueryOperationBody<'b> {
     size: i64,
 
     /// Terminate early (marked as experimental in the ES docs)
-    terminate_after: Option<i64>
+    terminate_after: Option<i64>,
+
+    /// Stats groups to which the query belongs
+    stats: Option<Vec<String>>
 }
 
 impl<'a> ToJson for SearchQueryOperationBody<'a> {
@@ -519,6 +522,7 @@ impl<'a> ToJson for SearchQueryOperationBody<'a> {
         optional_add!(d, self.query, "query");
         optional_add!(d, self.timeout, "timeout");
         optional_add!(d, self.terminate_after, "terminate_after");
+        optional_add!(d, self.stats, "stats");
         Json::Object(d)
     }
 }
@@ -553,7 +557,8 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
                 timeout:         None,
                 from:            0,
                 size:            0,
-                terminate_after: None
+                terminate_after: None,
+                stats:           None
             }
         }
     }
@@ -590,6 +595,13 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
 
     pub fn with_terminate_after(&'b mut self, terminate_after: i64) -> &'b mut Self {
         self.body.terminate_after = Some(terminate_after);
+        self
+    }
+
+    pub fn with_stats<S>(&'b mut self, stats: &[S]) -> &'b mut Self
+        where S: ToString
+    {
+        self.body.stats = Some(stats.iter().map(|s| s.to_string()).collect());
         self
     }
 

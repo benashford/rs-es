@@ -262,6 +262,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 12. Documentation, both rustdoc and a suitable high-level write-up in this README
 13. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
 14. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
+15. Check type of "timeout" option on Search...
 
 ## Licence
 

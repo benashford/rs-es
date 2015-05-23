@@ -19,12 +19,15 @@
 use std::iter::Iterator;
 
 macro_rules! optional_add {
-    ($map:ident, $sn:expr, $field:expr) => {
+    ($map:ident, $sn:expr, $field:expr, $val: ident, $ex:expr) => {
         match $sn {
-            Some(ref value) => { $map.insert($field.to_string(), value.to_json()); }
-            _               => ()
+            Some(ref $val) => { $map.insert($field.to_string(), $ex); }
+            _              => ()
         }
-    }
+    };
+    ($map:ident, $sn:expr, $field:expr) => {
+        optional_add!($map, $sn, $field, value, value.to_json());
+    };
 }
 
 // A custom String-join trait as the stdlib one is currently marked as unstable.
