@@ -923,7 +923,9 @@ impl ToJson for TermsFilter {
 <%= function_enum('Func', ['script_score',
                            'random_score',
                            'field_value_factor',
-                           'linear']) %>
+                           'linear',
+                           'exp',
+                           'gauss']) %>
 
 <%= structs['ScriptScoreFunc'] %>
 <%= to_json_impl('ScriptScoreFunc') %>
@@ -997,6 +999,12 @@ impl ToJson for Origin {
 }
 
 <%= to_json_inner_impl('LinearFunc') %>
+
+<%= structs['ExpFunc'] %>
+<%= to_json_inner_impl('ExpFunc') %>
+
+<%= structs['GaussFunc'] %>
+<%= to_json_inner_impl('GaussFunc') %>
 
 #[derive(Clone)]
 struct Function {
