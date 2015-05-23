@@ -246,23 +246,36 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-1. Implementation of Search API.
-2. Add bit to README detailing how to read results.
-2. Break up operations/mod.rs 
-2. Run rustdoc and host the documentation somewhere useful
-3. Scan and scroll
-4. Aggregations
-5. Search templates (possibly)
-6. Implement Update API.
-7. Implement Multi Get API
-8. Implement Bulk API
-9. Implement Term Vectors and Multi termvectors API
-10. Test coverage.
-11. Performance (ensure use of persistent HTTP connections, etc.).
-12. Documentation, both rustdoc and a suitable high-level write-up in this README
-13. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
-14. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
-15. Check type of "timeout" option on Search...
+1. Add bit to README detailing how to read results.
+2. Break up operations/mod.rs
+3. Run rustdoc and host the documentation somewhere useful
+4. Scan and scroll
+5. Sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html)
+6. Source-filtering (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-source-filtering.html)
+7. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
+8. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
+9. Aggregations
+10. Field-data fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fielddata-fields.html
+11. Post filter: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-post-filter.html (after aggregations)
+12. Highlighting: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html and Field Highlighting Order: https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-field-order.html
+13. Rescoring: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-rescore.html
+14. Search templates (possibly)
+15. Implement Update API.
+16. Implement Multi Get API
+17. Implement Bulk API
+18. Implement Term Vectors and Multi termvectors API
+19. Test coverage.
+20. Performance (ensure use of persistent HTTP connections, etc.).
+21. Documentation, both rustdoc and a suitable high-level write-up in this README
+22. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
+23. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
+24. Check type of "timeout" option on Search...
+25. Review consistency in Operation objects (e.g. taking ownership of strings, type of parameters, etc.)
+26. Index boost: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-index-boost.html
+27. Shard preference: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
+28. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
+29. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
+30. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
 
 ## Licence
 

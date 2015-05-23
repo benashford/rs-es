@@ -511,7 +511,10 @@ struct SearchQueryOperationBody<'b> {
     terminate_after: Option<i64>,
 
     /// Stats groups to which the query belongs
-    stats: Option<Vec<String>>
+    stats: Option<Vec<String>>,
+
+    /// Minimum score to use
+    min_score: Option<f64>
 }
 
 impl<'a> ToJson for SearchQueryOperationBody<'a> {
@@ -523,6 +526,7 @@ impl<'a> ToJson for SearchQueryOperationBody<'a> {
         optional_add!(d, self.timeout, "timeout");
         optional_add!(d, self.terminate_after, "terminate_after");
         optional_add!(d, self.stats, "stats");
+        optional_add!(d, self.min_score, "min_score");
         Json::Object(d)
     }
 }
@@ -558,7 +562,8 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
                 from:            0,
                 size:            10,
                 terminate_after: None,
-                stats:           None
+                stats:           None,
+                min_score:       None
             }
         }
     }
@@ -602,6 +607,11 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         where S: ToString
     {
         self.body.stats = Some(stats.iter().map(|s| s.to_string()).collect());
+        self
+    }
+
+    pub fn with_min_score(&'b mut self, min_score: f64) -> &'b mut Self {
+        self.body.min_score = Some(min_score);
         self
     }
 
