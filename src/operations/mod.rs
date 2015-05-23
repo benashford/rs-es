@@ -556,7 +556,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
                 query:           None,
                 timeout:         None,
                 from:            0,
-                size:            0,
+                size:            10,
                 terminate_after: None,
                 stats:           None
             }
