@@ -248,6 +248,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 1. Implementation of Search API.
 2. Add bit to README detailing how to read results.
+2. Break up operations/mod.rs 
 2. Run rustdoc and host the documentation somewhere useful
 3. Scan and scroll
 4. Aggregations
