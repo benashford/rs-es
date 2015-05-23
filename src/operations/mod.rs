@@ -467,6 +467,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
     add_option!(with_explain, "explain");
     add_option!(with_source, "_source");
     add_option!(with_sort, "sort");
+    add_option!(with_routing, "routing");
     add_option!(with_track_scores, "track_scores");
     add_option!(with_timeout, "timeout");
     add_option!(with_terminate_after, "terminate_after");
@@ -592,6 +593,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         self
     }
 
+    add_option!(with_routing, "routing");
     add_option!(with_search_type, "search_type");
     add_option!(with_query_cache, "query_cache");
 
