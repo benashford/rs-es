@@ -1026,10 +1026,30 @@ decay_func_json_impl!(ExpFunc);
 decay_func_json_impl!(GaussFunc);
 
 #[derive(Clone)]
-struct Function {
+pub struct Function {
     filter: Option<Filter>,
     function: Func,
     weight: Option<f64>
+}
+
+impl Function {
+    pub fn new(function: Func) -> Function {
+        Function {
+            filter:   None,
+            function: function,
+            weight:   None
+        }
+    }
+
+    pub fn with_filter(mut self, filter: Filter) -> Function {
+        self.filter = Some(filter);
+        self
+    }
+
+    pub fn with_weight(mut self, weight: f64) -> Function {
+        self.weight = Some(weight);
+        self
+    }
 }
 
 impl ToJson for Function {
