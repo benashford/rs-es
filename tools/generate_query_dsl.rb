@@ -541,6 +541,11 @@ class ESDSLGen
         ],
         'RandomScoreFunc' => [
           f('seed', 'i64')
+        ],
+        'FieldValueFactorFunc' => [
+          f('field', 'String'),
+          f('factor', 'f64', true),
+          f('modifier', 'Modifier', true)
         ]
       }
 

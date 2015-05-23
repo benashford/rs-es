@@ -882,13 +882,29 @@ impl ToJson for TermsFilter {
 // Functions for use in `FunctionScoreQuery`
 
 <%= function_enum('Func', ['script_score',
-                           'random_score']) %>
+                           'random_score',
+                           'field_value_factor']) %>
 
 <%= structs['ScriptScoreFunc'] %>
 <%= to_json_impl('ScriptScoreFunc') %>
 
 <%= structs['RandomScoreFunc'] %>
 <%= to_json_impl('RandomScoreFunc') %>
+
+<%= structs['FieldValueFactorFunc'] %>
+
+<%= simple_value_enum('Modifier', ['none',
+                                   'log',
+                                   'log1p',
+                                   'log2p',
+                                   'ln',
+                                   'ln1p',
+                                   'ln2p',
+                                   'square',
+                                   'sqrt',
+                                   'reciprocal']) %>
+
+<%= to_json_impl('FieldValueFactorFunc') %>
 
 #[derive(Clone)]
 struct Function {
