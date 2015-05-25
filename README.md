@@ -167,6 +167,50 @@ let result = client.search_query()
                    .send();
 ```
 
+### Results
+
+Each of the defined operations above returns a result.  Specifically this is a struct that is a direct mapping to the JSON that ElasticSearch returns.
+
+One of the most common return types is that from the search operations, this too mirrors the JSON that ElasticSearch returns.  The top-level contains two fields, `shards` returns counts of successful/failed operations per shard, and `hits` contains the search results.  These results are in the form of another struct that has two fields `total` the total number of matching results; and `hits` which is a vector of individual results.
+
+The individual results contain meta-data for each hit (such as the score) as well as the source document (unless the query set the various options which would disable or alter this).
+
+The type of the source document is [`Json`](http://doc.rust-lang.org/rustc-serialize/rustc_serialize/json/enum.Json.html).  It is up to the caller to transform this into the required format.  This flexibility is desirable because an ElasticSearch search may return many different types of document, it also doesn't (by default) enforce any schema, this together means the structure of a returned document may need to be validated before being deserialised.
+
+However, for cases when the caller is confident that the document matches a known structure (and is willing to handle any errors when that is not the case), a convenience function is available on the individual search hit which will decode the `Json` object into any type that implements [`Decodable`](http://doc.rust-lang.org/rustc-serialize/rustc_serialize/trait.Decodable.html).  See the `rustc-serialize` documentation for more details, but the simplest way of defining such a struct may be to derive [`RustcDecodable'].
+
+##### Examples
+
+First, with Json source documents:
+
+```rust
+let result = client.search_query().with_query(query).send();
+
+// An iterator over the Json source documents
+for hit in result.hits.hits {
+    println!("Json document: {:?}", hits.source.unwrap());
+}
+```
+
+Second, de-serialising to a struct:
+
+```rust
+// Define the struct
+#[derive(Debug, RustcDecodable)]
+struct DocType {
+    example_field: String,
+    other_field:   Vec<i64>
+}
+
+// In a function later...
+let result = client.search_query().with_query(query).send();
+
+for hit in result.hits.hits {
+    let document:DocType = hit.source.unwrap(); // Warning, will panic if document doesn't match type
+    println!("DocType document: {:?}", document);
+}
+```
+
 ### The Query DSL
 
 ElasticSearch offers a [rich DSL for searches](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl.html).  It is JSON based, and therefore very easy to use and composable if using from a dynamic language (e.g. [Ruby](https://github.com/elastic/elasticsearch-ruby/tree/master/elasticsearch-dsl#features-overview)); but Rust, being a staticly-typed language, things are different.  The `rs_es::query` module defines a set of builder objects which can be similarly composed to the same ends.
@@ -246,7 +290,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-1. Add bit to README detailing how to read results.
 2. Break up operations/mod.rs
 3. Run rustdoc and host the documentation somewhere useful
 4. Scan and scroll
