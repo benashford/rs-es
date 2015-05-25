@@ -206,7 +206,7 @@ struct DocType {
 let result = client.search_query().with_query(query).send();
 
 for hit in result.hits.hits {
-    let document:DocType = hit.source.unwrap(); // Warning, will panic if document doesn't match type
+    let document:DocType = hit.source().unwrap(); // Warning, will panic if document doesn't match type
     println!("DocType document: {:?}", document);
 }
 ```
