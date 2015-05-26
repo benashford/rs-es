@@ -37,9 +37,9 @@ use rustc_serialize::Encodable;
 use rustc_serialize::json::{self, Json};
 
 use error::EsError;
+use operations::get::GetOperation;
 use operations::index::IndexOperation;
-use operations::{GetOperation,
-                 DeleteOperation,
+use operations::{DeleteOperation,
                  DeleteByQueryOperation,
                  RefreshOperation,
                  SearchURIOperation,
