@@ -206,7 +206,7 @@ mod tests {
     extern crate regex;
 
     use super::Client;
-    use super::operations::OpType;
+    use super::operations::index::OpType;
 
     use super::query::{Filter, Query};
 

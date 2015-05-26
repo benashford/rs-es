@@ -51,17 +51,6 @@ fn format_query_string(options: &[(&str, String)]) -> String {
     st
 }
 
-/// Values for the op_type option
-pub enum OpType {
-    Create
-}
-
-impl ToString for OpType {
-    fn to_string(&self) -> String {
-        "create".to_string()
-    }
-}
-
 /// An ES GET operation, to get a document by ID
 pub struct GetOperation<'a, 'b> {
     /// The HTTP connection

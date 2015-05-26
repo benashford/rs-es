@@ -6,6 +6,17 @@ use ::error::EsError;
 use super::common::Options;
 use super::format_query_string;
 
+/// Values for the op_type option
+pub enum OpType {
+    Create
+}
+
+impl ToString for OpType {
+    fn to_string(&self) -> String {
+        "create".to_string()
+    }
+}
+
 /// An indexing operation
 pub struct IndexOperation<'a, 'b, E: Encodable + 'b> {
     /// The HTTP client that this operation will use
