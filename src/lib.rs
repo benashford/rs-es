@@ -40,9 +40,8 @@ use error::EsError;
 use operations::delete::{DeleteOperation, DeleteByQueryOperation};
 use operations::get::GetOperation;
 use operations::index::IndexOperation;
-use operations::{RefreshOperation,
-                 SearchURIOperation,
-                 SearchQueryOperation};
+use operations::search::{SearchURIOperation, SearchQueryOperation};
+use operations::RefreshOperation;
 
 // The client
 
