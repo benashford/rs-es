@@ -37,38 +37,12 @@ use rustc_serialize::Encodable;
 use rustc_serialize::json::{self, Json};
 
 use error::EsError;
+use operations::delete::{DeleteOperation, DeleteByQueryOperation};
 use operations::get::GetOperation;
 use operations::index::IndexOperation;
-use operations::{DeleteOperation,
-                 DeleteByQueryOperation,
-                 RefreshOperation,
+use operations::{RefreshOperation,
                  SearchURIOperation,
                  SearchQueryOperation};
-
-use util::StrJoin;
-
-// Utilities
-
-/// A repeating convention in the ElasticSearch REST API is parameters that can
-/// take multiple values
-fn format_multi(parts: &[&str]) -> String {
-    if parts.is_empty() {
-        return "_all".to_string()
-    } else {
-        parts.iter().join(",")
-    }
-}
-
-/// Multiple operations require indexes and types to be specified, there are
-/// rules for combining the two however.  E.g. all indexes is specified with
-/// `_all`, but all types are specified by omitting type entirely.
-fn format_indexes_and_types(indexes: &[&str], types: &[&str]) -> String {
-    if types.len() == 0 {
-        format!("{}", format_multi(indexes))
-    } else {
-        format!("{}/{}", format_multi(indexes), format_multi(types))
-    }
-}
 
 // The client
 
