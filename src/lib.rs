@@ -37,8 +37,8 @@ use rustc_serialize::Encodable;
 use rustc_serialize::json::{self, Json};
 
 use error::EsError;
-use operations::{IndexOperation,
-                 GetOperation,
+use operations::index::IndexOperation;
+use operations::{GetOperation,
                  DeleteOperation,
                  DeleteByQueryOperation,
                  RefreshOperation,
@@ -48,19 +48,6 @@ use operations::{IndexOperation,
 use util::StrJoin;
 
 // Utilities
-
-/// Produces a query string for a URL
-fn format_query_string(options: &[(&str, String)]) -> String {
-    let mut st = String::new();
-    if options.is_empty() {
-        return st;
-    }
-    st.push_str("?");
-    st.push_str(&options.iter().map(|&(ref k, ref v)| {
-        format!("{}={}", k, v)
-    }).join("&"));
-    st
-}
 
 /// A repeating convention in the ElasticSearch REST API is parameters that can
 /// take multiple values

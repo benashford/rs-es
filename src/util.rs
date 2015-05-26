@@ -18,6 +18,7 @@
 
 use std::iter::Iterator;
 
+// Macro to add an Optional to a BTreeMap if it's set
 macro_rules! optional_add {
     ($map:ident, $sn:expr, $field:expr, $val: ident, $ex:expr) => {
         match $sn {
@@ -28,6 +29,37 @@ macro_rules! optional_add {
     ($map:ident, $sn:expr, $field:expr) => {
         optional_add!($map, $sn, $field, value, value.to_json());
     };
+}
+
+// Macros to read values from Json structs
+macro_rules! get_json_thing {
+    ($r:ident,$f:expr,$t:ident) => {
+        $r.find($f).unwrap().$t().unwrap()
+    }
+}
+
+macro_rules! get_json_string {
+    ($r:ident,$f:expr) => {
+        get_json_thing!($r,$f,as_string).to_string()
+    }
+}
+
+macro_rules! get_json_i64 {
+    ($r:ident,$f:expr) => {
+        get_json_thing!($r,$f,as_i64)
+    }
+}
+
+macro_rules! get_json_bool {
+    ($r:ident,$f:expr) => {
+        get_json_thing!($r,$f,as_boolean)
+    }
+}
+
+macro_rules! get_json_f64 {
+    ($r:ident,$f:expr) => {
+        get_json_thing!($r,$f,as_f64)
+    }
 }
 
 // A custom String-join trait as the stdlib one is currently marked as unstable.

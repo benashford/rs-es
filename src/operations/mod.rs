@@ -19,21 +19,37 @@ use std::collections::HashMap;
 
 use hyper::status::StatusCode;
 
-use rustc_serialize::{Encodable, Decodable};
+use rustc_serialize::Decodable;
 use rustc_serialize::json::{Decoder, Json, ToJson};
 
 use Client;
 use error::EsError;
 use format_indexes_and_types;
 use format_multi;
-use format_query_string;
 use query::Query;
 use util::StrJoin;
 
 // Specific operations
+#[macro_use]
+mod common;
+pub mod index;
 
-/// Every ES operation has a set of options
-type Options<'a> = Vec<(&'a str, String)>;
+use self::common::Options;
+
+// Common utility functions
+
+/// Produces a query string for a URL
+fn format_query_string(options: &[(&str, String)]) -> String {
+    let mut st = String::new();
+    if options.is_empty() {
+        return st;
+    }
+    st.push_str("?");
+    st.push_str(&options.iter().map(|&(ref k, ref v)| {
+        format!("{}={}", k, v)
+    }).join("&"));
+    st
+}
 
 /// Values for the op_type option
 pub enum OpType {
@@ -43,100 +59,6 @@ pub enum OpType {
 impl ToString for OpType {
     fn to_string(&self) -> String {
         "create".to_string()
-    }
-}
-
-/// Adds a function to an operation to add specific options to that operations
-/// builder interface.
-macro_rules! add_option {
-    ($n:ident, $e:expr) => (
-        pub fn $n<T: ToString>(&'a mut self, val: &T) -> &'a mut Self {
-            self.options.push(($e, val.to_string()));
-            self
-        }
-    )
-}
-
-/// An indexing operation
-pub struct IndexOperation<'a, 'b, E: Encodable + 'b> {
-    /// The HTTP client that this operation will use
-    client:   &'a mut Client,
-
-    /// The index into which the document will be added
-    index:    &'b str,
-
-    /// The type of the document
-    doc_type: &'b str,
-
-    /// Optional the ID of the document.
-    id:       Option<&'b str>,
-
-    /// The optional options
-    options:  Options<'b>,
-
-    /// The document to be indexed
-    document: Option<&'b E>
-}
-
-impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
-    pub fn new(client: &'a mut Client, index: &'b str, doc_type: &'b str) -> IndexOperation<'a, 'b, E> {
-        IndexOperation {
-            client:   client,
-            index:    index,
-            doc_type: doc_type,
-            id:       None,
-            options:  Options::new(),
-            document: None
-        }
-    }
-
-    pub fn with_doc(&'b mut self, doc: &'b E) -> &'b mut Self {
-        self.document = Some(doc);
-        self
-    }
-
-    pub fn with_id(&'b mut self, id: &'b str) -> &'b mut Self {
-        self.id = Some(id);
-        self
-    }
-
-    add_option!(with_ttl, "ttl");
-    add_option!(with_version, "version");
-    add_option!(with_version_type, "version_type");
-    add_option!(with_op_type, "op_type");
-    add_option!(with_routing, "routing");
-    add_option!(with_parent, "parent");
-    add_option!(with_timestamp, "timestamp");
-    add_option!(with_refresh, "refresh");
-    add_option!(with_timeout, "timeout");
-
-    pub fn send(&'b mut self) -> Result<IndexResult, EsError> {
-        // Ignoring status_code as everything should return an IndexResult or
-        // already be an error
-        let (_, result) = try!(match self.id {
-            Some(ref id) => {
-                let url = format!("/{}/{}/{}{}",
-                                  self.index,
-                                  self.doc_type,
-                                  id,
-                                  format_query_string(&mut self.options));
-                match self.document {
-                    Some(ref doc) => self.client.put_body_op(&url, doc),
-                    None          => self.client.put_op(&url)
-                }
-            },
-            None    => {
-                let url = format!("/{}/{}{}",
-                                  self.index,
-                                  self.doc_type,
-                                  format_query_string(&mut self.options));
-                match self.document {
-                    Some(ref doc) => self.client.post_body_op(&url, doc),
-                    None          => self.client.post_op(&url)
-                }
-            }
-        });
-        Ok(IndexResult::from(&result.unwrap()))
     }
 }
 
@@ -635,36 +557,6 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
 
 // Result helpers
 
-macro_rules! get_json_thing {
-    ($r:ident,$f:expr,$t:ident) => {
-        $r.find($f).unwrap().$t().unwrap()
-    }
-}
-
-macro_rules! get_json_string {
-    ($r:ident,$f:expr) => {
-        get_json_thing!($r,$f,as_string).to_string()
-    }
-}
-
-macro_rules! get_json_i64 {
-    ($r:ident,$f:expr) => {
-        get_json_thing!($r,$f,as_i64)
-    }
-}
-
-macro_rules! get_json_bool {
-    ($r:ident,$f:expr) => {
-        get_json_thing!($r,$f,as_boolean)
-    }
-}
-
-macro_rules! get_json_f64 {
-    ($r:ident,$f:expr) => {
-        get_json_thing!($r,$f,as_f64)
-    }
-}
-
 fn decode_json<T: Decodable>(doc: Json) -> Result<T, EsError> {
     Ok(try!(Decodable::decode(&mut Decoder::new(doc))))
 }
@@ -675,29 +567,6 @@ pub struct ShardCountResult {
     pub total:      i64,
     pub successful: i64,
     pub failed:     i64
-}
-
-/// The result of an index operation
-#[derive(Debug)]
-pub struct IndexResult {
-    pub index:    String,
-    pub doc_type: String,
-    pub id:       String,
-    pub version:  i64,
-    pub created:  bool
-}
-
-/// This is required because the JSON keys do not match the struct
-impl<'a> From<&'a Json> for IndexResult {
-    fn from(r: &'a Json) -> IndexResult {
-        IndexResult {
-            index:    get_json_string!(r, "_index"),
-            doc_type: get_json_string!(r, "_type"),
-            id:       get_json_string!(r, "_id"),
-            version:  get_json_i64!(r, "_version"),
-            created:  get_json_bool!(r, "created")
-        }
-    }
 }
 
 /// The result of a GET request
