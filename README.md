@@ -276,6 +276,7 @@ The ElasticSearch API is made-up of a large number of smaller APIs, the vast maj
 A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 * Search Shards API (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-shards.html)
+* Search Templates (https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-template.html)
 * Suggest API
 * Multi-search API
 * Count API
