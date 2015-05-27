@@ -89,7 +89,7 @@ fn do_req(resp: &mut hyper::client::response::Response)
 ///
 /// ```
 /// let result = client.search_uri()
-///                    .with_indexes(&["index_name])
+///                    .with_indexes(&["index_name"])
 ///                    .with_query("field:value")
 ///                    .send()
 /// ```
