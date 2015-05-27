@@ -291,8 +291,8 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-1. Run rustdoc and host the documentation somewhere useful
-2. Scan and scroll
+1. Scan and scroll
+2. Implement Bulk API
 3. Sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html)
 4. Source-filtering (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-source-filtering.html)
 5. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
@@ -305,7 +305,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 12. Search templates (possibly)
 13. Implement Update API.
 14. Implement Multi Get API
-15. Implement Bulk API
 16. Implement Term Vectors and Multi termvectors API
 17. Test coverage.
 18. Performance (ensure use of persistent HTTP connections, etc.).
@@ -319,6 +318,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 26. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
 27. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
 28. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
+29. Host documentation somewhere sensible.
 
 ## Licence
 
