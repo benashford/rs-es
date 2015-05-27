@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//! Implementation of ElasticSearch Index operation
+
 use rustc_serialize::Encodable;
 use rustc_serialize::json::Json;
 
@@ -126,7 +128,6 @@ pub struct IndexResult {
     pub created:  bool
 }
 
-/// This is required because the JSON keys do not match the struct
 impl<'a> From<&'a Json> for IndexResult {
     fn from(r: &'a Json) -> IndexResult {
         IndexResult {

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//! Implementation of the Get API
+
 use rustc_serialize::Decodable;
 use rustc_serialize::json::Json;
 
@@ -113,7 +115,6 @@ impl GetResult {
     }
 }
 
-/// This is required because the JSON keys do not match the struct
 impl<'a> From<&'a Json> for GetResult {
     fn from(r: &'a Json) -> GetResult {
         info!("GetResult FROM: {:?}", r);

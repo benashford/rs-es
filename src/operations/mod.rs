@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+//! Implementations of specific ElasticSearch operations
+//!
+//! The various methods on [`Client`](../struct.Client.html) are entry points to
+//! ElasticSearch's set of operations.  This module, and it's child modules are
+//! the implementation of those operations.
+
 use hyper::status::StatusCode;
 
 use rustc_serialize::Decodable;
@@ -68,7 +74,6 @@ fn format_indexes_and_types(indexes: &[&str], types: &[&str]) -> String {
     }
 }
 
-/// Refresh
 pub struct RefreshOperation<'a, 'b> {
     /// The HTTP client
     client: &'a mut Client,
@@ -110,7 +115,8 @@ fn decode_json<T: Decodable>(doc: Json) -> Result<T, EsError> {
     Ok(try!(Decodable::decode(&mut Decoder::new(doc))))
 }
 
-/// Shared struct for operations that include counts of success/failed shards
+/// Shared struct for operations that include counts of success/failed shards.
+/// This is returned within various other result structs.
 #[derive(Debug, RustcDecodable)]
 pub struct ShardCountResult {
     pub total:      i64,

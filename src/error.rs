@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//! Errors and error conversion code for the `rs_es` crate
+
 use std::error::Error;
 use std::fmt;
 use std::io;

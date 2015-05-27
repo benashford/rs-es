@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//! Implementation of delete operations, both Delete-By-Query and Delete-By-Id
+
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 
@@ -30,7 +32,6 @@ use super::format_indexes_and_types;
 use super::format_query_string;
 use super::ShardCountResult;
 
-/// An ES DELETE operation for a specific document
 pub struct DeleteOperation<'a, 'b> {
     /// The HTTP client
     client:   &'a mut Client,
@@ -103,10 +104,6 @@ enum QueryOption<'a> {
     Document(DeleteByQueryBody<'a>)
 }
 
-/// Delete-by-query API.
-///
-/// The query can be specified either as a String as a query parameter or in the
-/// body using the Query DSL.
 pub struct DeleteByQueryOperation<'a, 'b> {
     /// The HTTP client
     client:    &'a mut Client,
@@ -200,7 +197,6 @@ pub struct DeleteResult {
     pub version:  i64
 }
 
-/// This is required because the JSON keys do not match the struct
 impl<'a> From<&'a Json> for DeleteResult {
     fn from(r: &'a Json) -> DeleteResult {
         DeleteResult {
@@ -224,7 +220,6 @@ impl DeleteByQueryIndexResult {
     }
 }
 
-// Required because of change in names of keys
 impl<'a> From<&'a Json> for DeleteByQueryIndexResult {
     fn from(r: &'a Json) -> DeleteByQueryIndexResult {
         info!("Parsing DeleteByQueryIndexResult: {:?}", r);
@@ -251,7 +246,6 @@ impl DeleteByQueryResult {
     }
 }
 
-// Required because of JSON structure and keys
 impl<'a> From<&'a Json> for DeleteByQueryResult {
     fn from(r: &'a Json) -> DeleteByQueryResult {
         info!("DeleteByQueryResult from: {:?}", r);

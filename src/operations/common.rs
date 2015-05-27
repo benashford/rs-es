@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//! Features common to all operations
+
 /// Every ES operation has a set of options
 pub type Options<'a> = Vec<(&'a str, String)>;
 

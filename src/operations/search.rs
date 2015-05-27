@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//! Implementations of both Search-by-URI and Search-by-Query operations
+
 use std::collections::BTreeMap;
 
 use hyper::status::StatusCode;
@@ -31,7 +33,6 @@ use super::format_indexes_and_types;
 use super::format_query_string;
 use super::ShardCountResult;
 
-/// Search API using a query string
 pub struct SearchURIOperation<'a, 'b> {
     /// The HTTP client
     client: &'a mut Client,
@@ -163,7 +164,6 @@ impl<'a> ToJson for SearchQueryOperationBody<'a> {
     }
 }
 
-/// Search API using a Query DSL body
 pub struct SearchQueryOperation<'a, 'b> {
     /// The HTTP client
     client: &'a mut Client,

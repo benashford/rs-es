@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Miscellaneous code used in numerous places
+//! Miscellaneous code used in numerous places
 
 use std::iter::Iterator;
 
@@ -62,8 +62,22 @@ macro_rules! get_json_f64 {
     }
 }
 
-// A custom String-join trait as the stdlib one is currently marked as unstable.
+/// A custom String-join trait as the stdlib one is currently marked as unstable.
 pub trait StrJoin {
+    /// Join an iterator of things that can be referenced as strings into a
+    /// single owned-string by the given joining string
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use util::StrJoin;
+    ///
+    /// let data = vec!["a", "b", "c", "d"];
+    /// println!("Joined: {}", data.iter().join("-"));
+    /// ```
+    ///
+    /// This will print: `a-b-c-d`
+    ///
     fn join(self, join: &str) -> String;
 }
 
