@@ -18,6 +18,12 @@
 #![crate_name = "rs_es"]
 
 //! A client for ElasticSearch's REST API
+//!
+//! The `Client` itself is used as the central access point, from which numerous
+//! operations are defined implementing each of the specific ElasticSearch APIs.
+//!
+//! Warning: at the time of writing the majority of such APIs are currently
+//! unimplemented.
 
 #[macro_use]
 extern crate log;
@@ -45,7 +51,9 @@ use operations::RefreshOperation;
 
 // The client
 
-/// Process the result of an HTTP request
+/// Process the result of an HTTP request, returning the status code and the
+/// `Json` result (if the result had a body) or an `EsError` if there were any
+/// errors
 fn do_req(resp: &mut hyper::client::response::Response)
           -> Result<(StatusCode, Option<Json>), EsError> {
     info!("Response: {:?}", resp);
@@ -60,7 +68,33 @@ fn do_req(resp: &mut hyper::client::response::Response)
     }
 }
 
-/// The core of the ElasticSearch client, owns a HTTP connection
+/// The core of the ElasticSearch client, owns a HTTP connection.
+///
+/// Each instance of `Client` is reusable, but only one thread can use each one
+/// at once.  This will be enforced by the borrow-checker as most methods are
+/// defined on `&mut self`.
+///
+/// To create a `Client`, the hostname and port need to be specified:
+///
+/// # Examples
+///
+/// ```
+/// let mut client = Client::new("localhost", 9200);
+/// ```
+///
+/// Each ElasticSearch API operation is defined as a method on `Client`.  Any
+/// compulsory parameters must be given as arguments to this method.  It returns
+/// an operation builder that can be used to add any optional parameters.
+/// Finally `send` is called to submit the operation:
+///
+/// ```
+/// let result = client.search_uri()
+///                    .with_indexes(&["index_name])
+///                    .with_query("field:value")
+///                    .send()
+/// ```
+///
+/// See the specific operations and their builder objects for details.
 pub struct Client {
     base_url:    String,
     http_client: hyper::Client
@@ -131,13 +165,28 @@ impl Client {
         }
     }
 
-    /// An index operation to index a document in the specified index
+    // Indices APIs
+
+    /// Refresh
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/indices-refresh.html
+    pub fn refresh<'a>(&'a mut self) -> RefreshOperation {
+        RefreshOperation::new(self)
+    }
+
+    // Document APIs
+
+    /// An index operation to index a document in the specified index.
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-index_.html
     pub fn index<'a, 'b, E: Encodable>(&'a mut self, index: &'b str, doc_type: &'b str)
                                        -> IndexOperation<'a, 'b, E> {
         IndexOperation::new(self, index, doc_type)
     }
 
     /// Implementation of the ES GET API
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-get.html
     pub fn get<'a>(&'a mut self,
                    index: &'a str,
                    id:    &'a str) -> GetOperation {
@@ -145,6 +194,8 @@ impl Client {
     }
 
     /// Delete by ID
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-delete.html
     pub fn delete<'a>(&'a mut self,
                       index:    &'a str,
                       doc_type: &'a str,
@@ -152,22 +203,29 @@ impl Client {
         DeleteOperation::new(self, index, doc_type, id)
     }
 
+    // Multi-document APIs
+
     /// Delete by query
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-delete-by-query.html
+    ///
+    /// Warning: will be removed in ElasticSearch 2.0
     pub fn delete_by_query<'a>(&'a mut self) -> DeleteByQueryOperation {
         DeleteByQueryOperation::new(self)
     }
 
-    /// Refresh
-    pub fn refresh<'a>(&'a mut self) -> RefreshOperation {
-        RefreshOperation::new(self)
-    }
+    // Search APIs
 
     /// Search via the query parameter
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-uri-request.html
     pub fn search_uri<'a>(&'a mut self) -> SearchURIOperation {
         SearchURIOperation::new(self)
     }
 
     /// Search via the query DSL
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-request-body.html
     pub fn search_query<'a>(&'a mut self) -> SearchQueryOperation {
         SearchQueryOperation::new(self)
     }
