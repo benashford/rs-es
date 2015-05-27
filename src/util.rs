@@ -70,10 +70,10 @@ pub trait StrJoin {
     /// # Example
     ///
     /// ```
-    /// use util::StrJoin;
+    /// use rs_es::util::StrJoin;
     ///
     /// let data = vec!["a", "b", "c", "d"];
-    /// println!("Joined: {}", data.iter().join("-"));
+    /// assert_eq!("a-b-c-d", data.iter().join("-"));
     /// ```
     ///
     /// This will print: `a-b-c-d`

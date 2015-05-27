@@ -74,24 +74,24 @@ fn do_req(resp: &mut hyper::client::response::Response)
 /// at once.  This will be enforced by the borrow-checker as most methods are
 /// defined on `&mut self`.
 ///
-/// To create a `Client`, the hostname and port need to be specified:
-///
-/// # Examples
-///
-/// ```
-/// let mut client = Client::new("localhost", 9200);
-/// ```
+/// To create a `Client`, the hostname and port need to be specified.
 ///
 /// Each ElasticSearch API operation is defined as a method on `Client`.  Any
 /// compulsory parameters must be given as arguments to this method.  It returns
 /// an operation builder that can be used to add any optional parameters.
+///
 /// Finally `send` is called to submit the operation:
 ///
+/// # Examples
+///
 /// ```
+/// use rs_es::Client;
+///
+/// let mut client = Client::new("localhost", 9200);
 /// let result = client.search_uri()
 ///                    .with_indexes(&["index_name"])
 ///                    .with_query("field:value")
-///                    .send()
+///                    .send();
 /// ```
 ///
 /// See the specific operations and their builder objects for details.

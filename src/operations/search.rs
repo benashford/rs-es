@@ -86,8 +86,8 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
         self
     }
 
-    pub fn with_query(&'b mut self, qs: String) -> &'b mut Self {
-        self.options.push(("q", qs));
+    pub fn with_query<S: Into<String>>(&'b mut self, qs: S) -> &'b mut Self {
+        self.options.push(("q", qs.into()));
         self
     }
 
