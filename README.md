@@ -169,8 +169,6 @@ let result = client.search_query()
 
 #### `bulk`
 
-(Currently in development, not yet released)
-
 An implementation of the [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html).  This is the preferred way of indexing (or deleting, when Delete-by-Query is removed) many documents.
 
 ```rust
@@ -305,8 +303,9 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-1. Implement Bulk API
-2. Scan and scroll
+1. Scan and scroll
+2. Check JSON models to use u64 where necessary, not just i64.
+3. Use `expect` instead of `unwrap` on `Option` "unwrappings" to get better error messages.
 3. Implement `version_type` option in all appropriate places where `version` is used.
 3. Implement `format_query_string` as trait (potentially).
 3. Sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html)

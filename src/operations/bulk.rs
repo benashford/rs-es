@@ -93,6 +93,22 @@ pub enum ActionType {
     Update
 }
 
+impl<'a> From<&'a String> for ActionType {
+    fn from(from: &'a String) -> ActionType {
+        if from == "index" {
+            ActionType::Index
+        } else if from == "create" {
+            ActionType::Create
+        } else if from == "delete" {
+            ActionType::Delete
+        } else if from == "update" {
+            ActionType::Update
+        } else {
+            panic!("Unknown action type: {}", from)
+        }
+    }
+}
+
 impl ToString for ActionType {
     fn to_string(&self) -> String {
         match *self {
@@ -343,12 +359,55 @@ impl<'a, 'b> BulkOperation<'a, 'b> {
     }
 }
 
+/// The result of specific actions
+pub struct ActionResult {
+    pub action:   ActionType,
+    pub index:    String,
+    pub doc_type: String,
+    pub version:  u64,
+    pub status:   u64
+}
+
+impl<'a> From<&'a Json> for ActionResult {
+    fn from(from: &'a Json) -> ActionResult {
+        info!("ActionResult from: {:?}", from);
+
+        let d = from.as_object().unwrap();
+        assert_eq!(1, d.len());
+        let (key, inner) = d.iter().next().unwrap();
+
+        ActionResult {
+            action:   ActionType::from(key),
+            index:    get_json_string!(inner, "_index"),
+            doc_type: get_json_string!(inner, "_type"),
+            version:  get_json_u64!(inner, "_version"),
+            status:   get_json_u64!(inner, "status")
+        }
+    }
+}
+
 /// The result of a bulk operation
-pub struct BulkResult;
+pub struct BulkResult {
+    pub errors: bool,
+    pub items:  Vec<ActionResult>,
+    pub took:   u64
+}
 
 impl<'a> From<&'a Json> for BulkResult {
     fn from(from: &'a Json) -> BulkResult {
         info!("Bulk result, result: {:?}", from);
-        BulkResult
+        BulkResult {
+            errors: get_json_bool!(from, "errors"),
+            items:  from.find("items")
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|item| {
+                    ActionResult::from(item)
+                })
+                .collect(),
+            took:   get_json_u64!(from, "took")
+        }
     }
 }

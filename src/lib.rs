@@ -256,12 +256,16 @@ mod tests {
     extern crate env_logger;
     extern crate regex;
 
+    use std::collections::BTreeMap;
+    use std::env;
+
+    use rustc_serialize::json::{Json, ToJson};
+
     use super::Client;
+    use super::operations::bulk::Action;
     use super::operations::index::OpType;
 
     use super::query::{Filter, Query};
-
-    use std::env;
 
     use self::regex::Regex;
 
@@ -297,6 +301,15 @@ mod tests {
         fn with_int_field(mut self, i: i64) -> TestDocument {
             self.int_field = i;
             self
+        }
+    }
+
+    impl ToJson for TestDocument {
+        fn to_json(&self) -> Json {
+            let mut d = BTreeMap::new();
+            d.insert("str_field".to_string(), self.str_field.to_json());
+            d.insert("int_field".to_string(), self.int_field.to_json());
+            Json::Object(d)
         }
     }
 
@@ -502,5 +515,26 @@ mod tests {
                         .build())
             .send().unwrap();
         assert_eq!(2, within_range.hits.total);
+    }
+
+    #[test]
+    fn test_bulk() {
+        let index_name = "test_bulk";
+        let mut client = make_client();
+        clean_db(&mut client, index_name);
+
+        let actions:Vec<Action> = (1..10).map(|i| {
+            let doc = TestDocument::new().with_str_field("bulk_doc").with_int_field(i);
+            Action::index(doc)
+        }).collect();
+
+        let result = client.bulk(&actions)
+            .with_index(index_name)
+            .with_doc_type("bulk_type")
+            .send()
+            .unwrap();
+
+        assert_eq!(false, result.errors);
+        assert_eq!(9, result.items.len());
     }
 }

@@ -50,6 +50,12 @@ macro_rules! get_json_i64 {
     }
 }
 
+macro_rules! get_json_u64 {
+    ($r:ident,$f:expr) => {
+        get_json_thing!($r,$f,as_u64)
+    }
+}
+
 macro_rules! get_json_bool {
     ($r:ident,$f:expr) => {
         get_json_thing!($r,$f,as_boolean)
