@@ -16,11 +16,13 @@
 
 //! Features common to all operations
 
+use rustc_serialize::json::{Json, ToJson};
+
 /// Every ES operation has a set of options
 pub type Options<'a> = Vec<(&'a str, String)>;
 
-/// Adds a function to an operation to add specific options to that operations
-/// builder interface.
+/// Adds a function to an operation to add specific query-string options to that
+/// operations builder interface.
 macro_rules! add_option {
     ($n:ident, $e:expr) => (
         pub fn $n<T: ToString>(&'a mut self, val: &T) -> &'a mut Self {
@@ -28,4 +30,32 @@ macro_rules! add_option {
             self
         }
     )
+}
+
+/// The [`version_type` field](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#index-versioning)
+#[allow(dead_code)]
+pub enum VersionType {
+    Internal,
+    External,
+    ExternalGt,
+    ExternalGte,
+    Force
+}
+
+impl ToString for VersionType {
+    fn to_string(&self) -> String {
+        match *self {
+            VersionType::Internal => "internal",
+            VersionType::External => "external",
+            VersionType::ExternalGt => "external_gt",
+            VersionType::ExternalGte => "external_gte",
+            VersionType::Force => "force"
+        }.to_string()
+    }
+}
+
+impl ToJson for VersionType {
+    fn to_json(&self) -> Json {
+        Json::String(self.to_string())
+    }
 }

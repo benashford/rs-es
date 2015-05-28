@@ -24,6 +24,7 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
+use units::Duration;
 use util::StrJoin;
 
 // Useful macros for implementing `From` traits
@@ -674,24 +675,6 @@ impl ToJson for GeoBoundingBoxFilter {
 
 <%= structs['GeoDistanceFilter'] %>
 
-// TODO - this list is incomplete
-#[derive(Clone)]
-pub enum DurationUnit {
-    Week,
-    Day,
-    Hour
-}
-
-impl ToString for DurationUnit {
-    fn to_string(&self) -> String {
-        match *self {
-            DurationUnit::Week => "w",
-            DurationUnit::Day  => "d",
-            DurationUnit::Hour => "h"
-        }.to_string()
-    }
-}
-
 #[derive(Clone)]
 pub enum DistanceUnit {
     Mile,
@@ -718,27 +701,6 @@ impl ToString for DistanceUnit {
             DistanceUnit::Millimeter => "mm",
             DistanceUnit::NauticalMile => "NM"
         }.to_string()
-    }
-}
-
-#[derive(Clone)]
-pub struct Duration {
-    amt: i64,
-    unit: DurationUnit
-}
-
-impl Duration {
-    pub fn new(amt: i64, unit: DurationUnit) -> Duration {
-        Duration {
-            amt: amt,
-            unit: unit
-        }
-    }
-}
-
-impl ToJson for Duration {
-    fn to_json(&self) -> Json {
-        Json::String(format!("{}{}", self.amt, self.unit.to_string()))
     }
 }
 

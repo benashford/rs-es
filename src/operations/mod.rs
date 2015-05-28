@@ -33,6 +33,7 @@ use util::StrJoin;
 #[macro_use]
 mod common;
 
+pub mod bulk;
 pub mod delete;
 pub mod get;
 pub mod index;
@@ -105,7 +106,6 @@ impl<'a, 'b> RefreshOperation<'a, 'b> {
         }
     }
 }
-
 
 // Results
 

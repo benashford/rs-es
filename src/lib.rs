@@ -36,6 +36,7 @@ pub mod util;
 pub mod error;
 pub mod operations;
 pub mod query;
+pub mod units;
 
 use hyper::status::StatusCode;
 
@@ -43,6 +44,7 @@ use rustc_serialize::Encodable;
 use rustc_serialize::json::{self, Json};
 
 use error::EsError;
+use operations::bulk::{BulkOperation, Action};
 use operations::delete::{DeleteOperation, DeleteByQueryOperation};
 use operations::get::GetOperation;
 use operations::index::IndexOperation;
@@ -54,8 +56,11 @@ use operations::RefreshOperation;
 /// Process the result of an HTTP request, returning the status code and the
 /// `Json` result (if the result had a body) or an `EsError` if there were any
 /// errors
-fn do_req(resp: &mut hyper::client::response::Response)
-          -> Result<(StatusCode, Option<Json>), EsError> {
+///
+/// This function is exposed to allow extensions to certain operations, it is
+/// not expected to be used by consumers of the library
+pub fn do_req(resp: &mut hyper::client::response::Response)
+              -> Result<(StatusCode, Option<Json>), EsError> {
     info!("Response: {:?}", resp);
     match resp.status {
         StatusCode::Ok |
@@ -106,7 +111,8 @@ macro_rules! es_op {
         fn $n(&mut self, url: &str)
               -> Result<(StatusCode, Option<Json>), EsError> {
             info!("Doing {} on {}", stringify!($n), url);
-            let mut result = try!(self.http_client.$cn(&format!("{}/{}", self.base_url, url)).send());
+            let url = self.full_url(url);
+            let mut result = try!(self.http_client.$cn(&url).send());
             do_req(&mut result)
         }
     }
@@ -122,8 +128,9 @@ macro_rules! es_body_op {
                 info!("Doing {} on {}", stringify!($n), url);
                 let json_string = json::encode(body).unwrap();
                 info!("Body: {}", json_string);
+                let url = self.full_url(url);
                 let mut result = try!(self.http_client
-                                      .$cn(&format!("{}/{}", self.base_url, url))
+                                      .$cn(&url)
                                       .body(&json_string)
                                       .send());
 
@@ -139,6 +146,12 @@ impl Client {
             base_url:    format!("http://{}:{}", host, port),
             http_client: hyper::Client::new()
         }
+    }
+
+    /// Take a nearly complete ElasticSearch URL, and stick the host/port part
+    /// on the front.
+    pub fn full_url(&self, suffix: &str) -> String {
+        format!("{}/{}", self.base_url, suffix)
     }
 
     es_op!(get_op, get);
@@ -212,6 +225,13 @@ impl Client {
     /// Warning: will be removed in ElasticSearch 2.0
     pub fn delete_by_query<'a>(&'a mut self) -> DeleteByQueryOperation {
         DeleteByQueryOperation::new(self)
+    }
+
+    /// Bulk
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
+    pub fn bulk<'a, 'b>(&'a mut self, actions: &'b [Action]) -> BulkOperation<'a, 'b> {
+        BulkOperation::new(self, actions)
     }
 
     // Search APIs

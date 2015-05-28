@@ -291,8 +291,10 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-1. Scan and scroll
-2. Implement Bulk API
+1. Implement Bulk API
+2. Scan and scroll
+3. Implement `version_type` option in all appropriate places where `version` is used.
+3. Implement `format_query_string` as trait (potentially).
 3. Sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html)
 4. Source-filtering (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-source-filtering.html)
 5. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html

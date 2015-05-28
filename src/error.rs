@@ -43,7 +43,10 @@ pub enum EsError {
     IoError(io::Error),
 
     /// Miscellaneous JSON decoding error
-    JsonError(json::DecoderError),
+    JsonDecoderError(json::DecoderError),
+
+    /// Miscellaneous JSON encoding error
+    JsonEncoderError(json::EncoderError),
 
     /// Miscllenaeous JSON building error
     JsonBuilderError(json::BuilderError)
@@ -63,7 +66,13 @@ impl From<hyper::error::Error> for EsError {
 
 impl From<json::DecoderError> for EsError {
     fn from(err: json::DecoderError) -> EsError {
-        EsError::JsonError(err)
+        EsError::JsonDecoderError(err)
+    }
+}
+
+impl From<json::EncoderError> for EsError {
+    fn from(err: json::EncoderError) -> EsError {
+        EsError::JsonEncoderError(err)
     }
 }
 
@@ -86,7 +95,8 @@ impl Error for EsError {
             EsError::EsServerError(ref err) => err,
             EsError::HttpError(ref err) => err.description(),
             EsError::IoError(ref err) => err.description(),
-            EsError::JsonError(ref err) => err.description(),
+            EsError::JsonDecoderError(ref err) => err.description(),
+            EsError::JsonEncoderError(ref err) => err.description(),
             EsError::JsonBuilderError(ref err) => err.description()
         }
     }
@@ -97,7 +107,8 @@ impl Error for EsError {
             EsError::EsServerError(_)          => None,
             EsError::HttpError(ref err)        => Some(err as &Error),
             EsError::IoError(ref err)          => Some(err as &Error),
-            EsError::JsonError(ref err)        => Some(err as &Error),
+            EsError::JsonDecoderError(ref err) => Some(err as &Error),
+            EsError::JsonEncoderError(ref err) => Some(err as &Error),
             EsError::JsonBuilderError(ref err) => Some(err as &Error)
         }
     }
@@ -110,7 +121,8 @@ impl fmt::Display for EsError {
             EsError::EsServerError(ref s) => fmt::Display::fmt(s, f),
             EsError::HttpError(ref err) => fmt::Display::fmt(err, f),
             EsError::IoError(ref err) => fmt::Display::fmt(err, f),
-            EsError::JsonError(ref err) => fmt::Display::fmt(err, f),
+            EsError::JsonDecoderError(ref err) => fmt::Display::fmt(err, f),
+            EsError::JsonEncoderError(ref err) => fmt::Display::fmt(err, f),
             EsError::JsonBuilderError(ref err) => fmt::Display::fmt(err, f)
         }
     }
