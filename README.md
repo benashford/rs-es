@@ -167,6 +167,20 @@ let result = client.search_query()
                    .send();
 ```
 
+#### `bulk`
+
+(Currently in development, not yet released)
+
+An implementation of the [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html).  This is the preferred way of indexing (or deleting, when Delete-by-Query is removed) many documents.
+
+```rust
+use rs_es::operations::bulk::Action;
+let result = client.bulk(&vec![Action::index(document1),
+                               Action::index(document2).with_id("id")]);
+```
+
+In this case the document can be anything that implements `ToJson`.
+
 ### Results
 
 Each of the defined operations above returns a result.  Specifically this is a struct that is a direct mapping to the JSON that ElasticSearch returns.
