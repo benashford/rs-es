@@ -275,7 +275,7 @@ The resulting `Query` value can be used in the various search/query functions ex
 }
 ```
 
-Potential future additions will remove some of the remaining verbosity for happy-path cases.
+The implementation makes much use of [conversion traits](http://benashford.github.io/blog/2015/05/24/rust-traits-for-developer-friendly-libraries/) which are used to keep a lid on the verbosity of using such a builder pattern.
 
 #### Experimental
 
