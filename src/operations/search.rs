@@ -391,6 +391,18 @@ impl ScanResult {
             _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
     }
+
+    pub fn close(&self, client: &mut Client) -> Result<(), EsError> {
+        let url = format!("/_search/scroll?scroll_id={}", self.scroll_id);
+        let (status_code, result) = try!(client.delete_op(&url));
+        match status_code {
+            StatusCode::Ok       => Ok(()),
+            StatusCode::NotFound => Ok(()),
+            _                    => Err(EsError::EsError(format!("Unexpected status: {}, {}",
+                                                                 status_code,
+                                                                 result.unwrap())))
+        }
+    }
 }
 
 #[cfg(test)]
@@ -422,6 +434,26 @@ mod tests {
     }
 
     #[test]
+    fn test_close() {
+        let mut client = ::tests::make_client();
+        let index_name = "tests_test_close";
+        ::tests::clean_db(&mut client, index_name);
+        setup_scan_data(&mut client, index_name);
+
+        let indexes = [index_name];
+
+        let mut scan_result = client.search_query()
+            .with_indexes(&indexes)
+            .with_size(100)
+            .scan(Duration::new(1, DurationUnit::Minute))
+            .unwrap();
+
+        scan_result.scroll(&mut client).unwrap();
+
+        scan_result.close(&mut client).unwrap();
+    }
+
+    #[test]
     fn test_scan_and_scroll() {
         let mut client = ::tests::make_client();
         let index_name = "tests_test_scan_and_scroll";
@@ -448,5 +480,7 @@ mod tests {
             }
             assert!(total <= 1000);
         }
+
+        scan_result.close(&mut client).unwrap();
     }
 }
