@@ -303,12 +303,13 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-1. Scan and scroll
+1. Scan and scroll - delete the search context when finished
+2. Sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html)
+2. The various optional options `with_search_scan` are implemented as requiring something that implements `ToString` rather than `Into<String>`, this is causing some issues.
 2. Check JSON models to use u64 where necessary, not just i64.
 3. Use `expect` instead of `unwrap` on `Option` "unwrappings" to get better error messages.
 3. Implement `version_type` option in all appropriate places where `version` is used.
 3. Implement `format_query_string` as trait (potentially).
-3. Sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html)
 4. Source-filtering (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-source-filtering.html)
 5. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
 6. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html

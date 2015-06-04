@@ -26,6 +26,7 @@ use rustc_serialize::json::{Json, ToJson};
 use ::Client;
 use ::error::EsError;
 use ::query::Query;
+use ::units::Duration;
 use ::util::StrJoin;
 use super::common::Options;
 use super::decode_json;
@@ -261,6 +262,19 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
             _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
     }
+
+    pub fn scan(&'b mut self, scroll: Duration) -> Result<ScanResult, EsError> {
+        self.options.push(("search_type", "scan".to_string()));
+        self.options.push(("scroll", scroll.to_string()));
+        let url = format!("/{}/_search{}",
+                          format_indexes_and_types(&self.indexes, &self.doc_types),
+                          format_query_string(&self.options));
+        let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
+        match status_code {
+            StatusCode::Ok => Ok(ScanResult::from(scroll, &result.unwrap())),
+            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -297,6 +311,7 @@ impl<'a> From<&'a Json> for SearchHitsHitsResult {
     }
 }
 
+#[derive(Debug)]
 pub struct SearchHitsResult {
     pub total: i64,
     pub hits:  Vec<SearchHitsHitsResult>
@@ -318,18 +333,120 @@ impl<'a> From<&'a Json> for SearchHitsResult {
 }
 
 pub struct SearchResult {
-    pub shards: ShardCountResult,
-    pub hits:   SearchHitsResult
+    pub took:      i64,
+    pub timed_out: bool,
+    pub shards:    ShardCountResult,
+    pub hits:      SearchHitsResult
 }
 
 impl<'a> From<&'a Json> for SearchResult {
     fn from(r: &'a Json) -> SearchResult {
         SearchResult {
-            shards: decode_json(r.find("_shards")
-                                .unwrap()
-                                .clone()).unwrap(),
-            hits:   SearchHitsResult::from(r.find("hits")
-                                           .unwrap())
+            took:      get_json_i64!(r, "took"),
+            timed_out: get_json_bool!(r, "timed_out"),
+            shards:    decode_json(r.find("_shards")
+                                   .unwrap()
+                                   .clone()).unwrap(),
+            hits:      SearchHitsResult::from(r.find("hits")
+                                              .unwrap())
+        }
+    }
+}
+
+pub struct ScanResult {
+    scroll_id:     String,
+    scroll:        Duration,
+    pub took:      i64,
+    pub timed_out: bool,
+    pub shards:    ShardCountResult,
+    pub hits:      SearchHitsResult
+}
+
+impl ScanResult {
+    fn from<'b>(scroll: Duration, r: &'b Json) -> ScanResult {
+        ScanResult {
+            scroll:    scroll,
+            scroll_id: get_json_string!(r, "_scroll_id"),
+            took:      get_json_i64!(r, "took"),
+            timed_out: get_json_bool!(r, "timed_out"),
+            shards:    decode_json(r.find("_shards")
+                                   .unwrap()
+                                   .clone()).unwrap(),
+            hits:      SearchHitsResult::from(r.find("hits")
+                                              .unwrap())
+        }
+    }
+
+    pub fn scroll(&mut self, client: &mut Client) -> Result<SearchResult, EsError> {
+        let url = format!("/_search/scroll?scroll={}&scroll_id={}",
+                          self.scroll.to_string(),
+                          self.scroll_id);
+        let (status_code, result) = try!(client.get_op(&url));
+        match status_code {
+            StatusCode::Ok => {
+                let r = result.unwrap();
+                self.scroll_id = get_json_string!(r, "_scroll_id");
+                Ok(SearchResult::from(&r))
+            },
+            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ::Client;
+    use ::tests::TestDocument;
+
+    use ::operations::bulk::Action;
+    use ::units::{Duration, DurationUnit};
+
+    fn make_document(idx: i64) -> TestDocument {
+        TestDocument::new()
+            .with_str_field(&format!("BulkDoc: {}", idx))
+            .with_int_field(idx)
+    }
+
+    fn setup_scan_data(client: &mut Client, index_name: &str) {
+        let actions:Vec<Action> = (0..1000).map(|idx| {
+            Action::index(make_document(idx))
+        }).collect();
+
+        client.bulk(&actions)
+            .with_index(index_name)
+            .with_doc_type("doc_type")
+            .send()
+            .unwrap();
+
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
+    }
+
+    #[test]
+    fn test_scan_and_scroll() {
+        let mut client = ::tests::make_client();
+        let index_name = "tests_test_scan_and_scroll";
+        ::tests::clean_db(&mut client, index_name);
+        setup_scan_data(&mut client, index_name);
+
+        let indexes = [index_name];
+
+        let mut scan_result = client.search_query()
+            .with_indexes(&indexes)
+            .with_size(100)
+            .scan(Duration::new(1, DurationUnit::Minute))
+            .unwrap();
+
+        assert_eq!(1000, scan_result.hits.total);
+        let mut total = 0;
+
+        loop {
+            let page = scan_result.scroll(&mut client).unwrap();
+            let page_total = page.hits.hits.len();
+            total += page_total;
+            if page_total == 0 && total == 1000 {
+                break;
+            }
+            assert!(total <= 1000);
         }
     }
 }

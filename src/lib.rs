@@ -252,7 +252,7 @@ impl Client {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     extern crate env_logger;
     extern crate regex;
 
@@ -271,7 +271,7 @@ mod tests {
 
     // test setup
 
-    fn make_client() -> Client {
+    pub fn make_client() -> Client {
         let hostname = match env::var("ES_HOST") {
             Ok(val) => val,
             Err(_)  => "localhost".to_string()
@@ -280,25 +280,25 @@ mod tests {
     }
 
     #[derive(Debug, RustcDecodable, RustcEncodable)]
-    struct TestDocument {
-        str_field: String,
-        int_field: i64
+    pub struct TestDocument {
+        pub str_field: String,
+        pub int_field: i64
     }
 
     impl TestDocument {
-        fn new() -> TestDocument {
+        pub fn new() -> TestDocument {
             TestDocument {
                 str_field: "I am a test".to_string(),
                 int_field: 1
             }
         }
 
-        fn with_str_field(mut self, s: &str) -> TestDocument {
+        pub fn with_str_field(mut self, s: &str) -> TestDocument {
             self.str_field = s.to_string();
             self
         }
 
-        fn with_int_field(mut self, i: i64) -> TestDocument {
+        pub fn with_int_field(mut self, i: i64) -> TestDocument {
             self.int_field = i;
             self
         }
@@ -313,8 +313,8 @@ mod tests {
         }
     }
 
-    fn clean_db(client: &mut Client,
-                test_idx: &str) {
+    pub fn clean_db(client: &mut Client,
+                    test_idx: &str) {
         client.delete_by_query()
             .with_indexes(&[test_idx])
             .with_query(&Query::build_match_all().build())

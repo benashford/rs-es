@@ -23,19 +23,21 @@ use rustc_serialize::json::{Json, ToJson};
 /// The units by which duration is measured.
 ///
 /// TODO - this list is incomplete
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum DurationUnit {
     Week,
     Day,
-    Hour
+    Hour,
+    Minute
 }
 
 impl ToString for DurationUnit {
     fn to_string(&self) -> String {
         match *self {
-            DurationUnit::Week => "w",
-            DurationUnit::Day  => "d",
-            DurationUnit::Hour => "h"
+            DurationUnit::Week   => "w",
+            DurationUnit::Day    => "d",
+            DurationUnit::Hour   => "h",
+            DurationUnit::Minute => "m"
         }.to_string()
     }
 }
@@ -49,7 +51,7 @@ impl ToString for DurationUnit {
 ///
 /// assert_eq!("100d", Duration::new(100, DurationUnit::Day).to_string());
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Duration {
     amt: i64,
     unit: DurationUnit
