@@ -353,6 +353,46 @@ impl<'a> From<&'a Json> for SearchResult {
     }
 }
 
+pub struct ScanIterator<'a> {
+    scan_result: ScanResult,
+    client:      &'a mut Client,
+    page:        Vec<SearchHitsHitsResult>
+}
+
+impl<'a> ScanIterator<'a> {
+    fn next_page(&mut self) -> Option<Result<SearchHitsHitsResult, EsError>> {
+        match self.scan_result.scroll(self.client) {
+            Ok(scroll_page) => {
+                self.page = scroll_page.hits.hits;
+                if self.page.len() > 0 {
+                    Some(Ok(self.page.remove(0)))
+                } else {
+                    None
+                }
+            },
+            Err(err)        => Some(Err(EsError::from(err)))
+        }
+    }
+}
+
+impl<'a> Drop for ScanIterator<'a> {
+    fn drop(&mut self) {
+        self.scan_result.close(self.client).unwrap();
+    }
+}
+
+impl<'a> Iterator for ScanIterator<'a> {
+    type Item = Result<SearchHitsHitsResult, EsError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.page.len() > 0 {
+            Some(Ok(self.page.remove(0)))
+        } else {
+            self.next_page()
+        }
+    }
+}
+
 pub struct ScanResult {
     scroll_id:     String,
     scroll:        Duration,
@@ -374,6 +414,14 @@ impl ScanResult {
                                    .clone()).unwrap(),
             hits:      SearchHitsResult::from(r.find("hits")
                                               .unwrap())
+        }
+    }
+
+    pub fn iter(self, client: &mut Client) -> ScanIterator {
+        ScanIterator {
+            scan_result: self,
+            client:      client,
+            page:        vec![],
         }
     }
 
@@ -412,6 +460,8 @@ mod tests {
 
     use ::operations::bulk::Action;
     use ::units::{Duration, DurationUnit};
+
+    use super::SearchHitsHitsResult;
 
     fn make_document(idx: i64) -> TestDocument {
         TestDocument::new()
@@ -482,5 +532,28 @@ mod tests {
         }
 
         scan_result.close(&mut client).unwrap();
+    }
+
+    #[test]
+    fn test_scan_and_iterate() {
+        let mut client = ::tests::make_client();
+        let index_name = "tests_test_scan_and_iterate";
+        ::tests::clean_db(&mut client, index_name);
+        setup_scan_data(&mut client, index_name);
+
+        let indexes = [index_name];
+
+        let scan_result = client.search_query()
+            .with_indexes(&indexes)
+            .with_size(10)
+            .scan(Duration::new(1, DurationUnit::Minute))
+            .unwrap();
+
+        assert_eq!(1000, scan_result.hits.total);
+
+        let hits:Vec<SearchHitsHitsResult> = scan_result.iter(&mut client)
+            .take(200)
+            .map(|hit| hit.unwrap())
+            .collect();
     }
 }
