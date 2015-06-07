@@ -281,6 +281,44 @@ The implementation makes much use of [conversion traits](http://benashford.githu
 
 This implementation of the query DSL is auto-generated and is done so in such a way to allow the generated code to change when necessary.  The template files are [query.rs.erb](templates/query.rs.erb) and [generate_query_dsl.rb](tools/generate_query_dsl.rb).  The experimental warning is recursive, it's likely that the means of generating the query DSL will change due to lessons-learnt implementing the first version.
 
+### Scan and scroll
+
+In development, not yet released.
+
+When working with large result sets that need to be loaded from an ElasticSearch query, the most efficient way is to use [scan and scroll](https://www.elastic.co/guide/en/elasticsearch/guide/current/scan-scroll.html).  This is preferred to simple pagination by setting the `from` option in a search as it will keep resources open server-side allowing the next page to literally carry-on from where it was, rather than having to execute additional queries.  The downside to this is that it does require more memory/open file-handles on the server, which could go wrong if there were many un-finished scrolls; for this reason, ElasticSearch recommends a short time-out for such operations, after which it will close all resources whether the client has finished or not, the client is responsible to fetch the next page within the time-out.
+
+To use scan and scroll, begin with a (search query)[#search_query] request, but instead of calling `send` call `scan`:
+
+```rust
+let scan = client.search_query()
+                 .with_indexes(&["index_name"])
+                 .with_query(Query::build_match("field", "value").build())
+                 .scan(Duration::new(1, DurationUnit::Minute))
+                 .unwrap();
+```
+
+(Disclaimer: any use of `unwrap` in this or other example is for the purposes of brevity, obviously real code should handle errors in accordance to the needs of the application.)
+
+Then `scroll` can be called multiple times to fetch each page.  Finally `close` will tell ElasticSearch the scan has finished and it can close any open resources.
+
+```rust
+let first_page = scan.scroll(&mut client);
+// omitted - calls of subsequent pages
+scan.close(&mut client).unwrap();
+```
+
+The result of the call to `scan` does not include a reference to the client, hence the need to pass in a reference to the client in subsequent calls.  The advantage of this is that that same client could be used for actions based on each `scroll`.
+
+#### Scan and scroll with an iterator
+
+Also supported is an iterator which will scroll through a scan.
+
+```rust
+let scan_iter = scan.iter(&mut client)
+```
+
+The iterator will include a mutable reference to the client, so the same client cannot be used concurrently.  However the iterator will automatically call `close` when it is dropped, this is so the consumer of such an iterator can use iterator functions like `take` or `take_while` without having to decide when to call `close`.
+
 ## Unimplemented features
 
 The ElasticSearch API is made-up of a large number of smaller APIs, the vast majority of which are not yet implemented.  So far the document and search APIs are being implemented, but still to do: index management, cluster management.
