@@ -314,7 +314,7 @@ The result of the call to `scan` does not include a reference to the client, hen
 Also supported is an iterator which will scroll through a scan.
 
 ```rust
-let scan_iter = scan.iter(&mut client)
+let scan_iter = scan.iter(&mut client);
 ```
 
 The iterator will include a mutable reference to the client, so the same client cannot be used concurrently.  However the iterator will automatically call `close` when it is dropped, this is so the consumer of such an iterator can use iterator functions like `take` or `take_while` without having to decide when to call `close`.
