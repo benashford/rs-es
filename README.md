@@ -319,6 +319,8 @@ let scan_iter = scan.iter(&mut client);
 
 The iterator will include a mutable reference to the client, so the same client cannot be used concurrently.  However the iterator will automatically call `close` when it is dropped, this is so the consumer of such an iterator can use iterator functions like `take` or `take_while` without having to decide when to call `close`.
 
+The type of each value returned from the iterator is `Result<SearchHitsHitsResult, EsError>`.  If an error is returned than it must be assumed the iterator is closed.  The type `SearchHitsHitsResult` is the same as returned in a normal search (the verbose name is intended to mirror the structure of JSON returned by ElasticSearch), as such the function [`source` is available to load the Json payload into an appropriately implemented struct](#results).
+
 ## Unimplemented features
 
 The ElasticSearch API is made-up of a large number of smaller APIs, the vast majority of which are not yet implemented.  So far the document and search APIs are being implemented, but still to do: index management, cluster management.
@@ -343,6 +345,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 1. Scan and scroll - delete the search context when finished
 2. Sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html)
+2. Documentation, both rustdoc and a suitable high-level write-up in this README
 2. The various optional options `with_search_scan` are implemented as requiring something that implements `ToString` rather than `Into<String>`, this is causing some issues.
 2. Check JSON models to use u64 where necessary, not just i64.
 3. Use `expect` instead of `unwrap` on `Option` "unwrappings" to get better error messages.
@@ -362,7 +365,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 16. Implement Term Vectors and Multi termvectors API
 17. Test coverage.
 18. Performance (ensure use of persistent HTTP connections, etc.).
-19. Documentation, both rustdoc and a suitable high-level write-up in this README
 20. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
 21. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
 22. Check type of "timeout" option on Search...

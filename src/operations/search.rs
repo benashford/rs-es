@@ -360,6 +360,7 @@ pub struct ScanIterator<'a> {
 }
 
 impl<'a> ScanIterator<'a> {
+    /// Fetch the next page and return the first hit, or None if there are no hits
     fn next_page(&mut self) -> Option<Result<SearchHitsHitsResult, EsError>> {
         match self.scan_result.scroll(self.client) {
             Ok(scroll_page) => {
@@ -377,7 +378,12 @@ impl<'a> ScanIterator<'a> {
 
 impl<'a> Drop for ScanIterator<'a> {
     fn drop(&mut self) {
-        self.scan_result.close(self.client).unwrap();
+        match self.scan_result.close(self.client) {
+            Ok(_)  => (),
+            Err(e) => {
+                error!("Cannot close scroll: {}", e);
+            }
+        }
     }
 }
 
@@ -436,7 +442,9 @@ impl ScanResult {
                 self.scroll_id = get_json_string!(r, "_scroll_id");
                 Ok(SearchResult::from(&r))
             },
-            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+            _              => {
+                Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+            }
         }
     }
 
@@ -444,8 +452,8 @@ impl ScanResult {
         let url = format!("/_search/scroll?scroll_id={}", self.scroll_id);
         let (status_code, result) = try!(client.delete_op(&url));
         match status_code {
-            StatusCode::Ok       => Ok(()),
-            StatusCode::NotFound => Ok(()),
+            StatusCode::Ok       => Ok(()), // closed
+            StatusCode::NotFound => Ok(()), // previously closed
             _                    => Err(EsError::EsError(format!("Unexpected status: {}, {}",
                                                                  status_code,
                                                                  result.unwrap())))
@@ -555,5 +563,7 @@ mod tests {
             .take(200)
             .map(|hit| hit.unwrap())
             .collect();
+
+        assert_eq!(200, hits.len());
     }
 }
