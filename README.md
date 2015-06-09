@@ -343,38 +343,37 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-1. Scan and scroll - delete the search context when finished
-2. Sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html)
+1. Sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html)
 2. Documentation, both rustdoc and a suitable high-level write-up in this README
-2. The various optional options `with_search_scan` are implemented as requiring something that implements `ToString` rather than `Into<String>`, this is causing some issues.
-2. Check JSON models to use u64 where necessary, not just i64.
-3. Use `expect` instead of `unwrap` on `Option` "unwrappings" to get better error messages.
-3. Implement `version_type` option in all appropriate places where `version` is used.
-3. Implement `format_query_string` as trait (potentially).
-4. Source-filtering (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-source-filtering.html)
-5. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
-6. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
-7. Aggregations
-8. Field-data fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fielddata-fields.html
-9. Post filter: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-post-filter.html (after aggregations)
-10. Highlighting: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html and Field Highlighting Order: https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-field-order.html
-11. Rescoring: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-rescore.html
-12. Search templates (possibly)
-13. Implement Update API.
-14. Implement Multi Get API
-16. Implement Term Vectors and Multi termvectors API
-17. Test coverage.
-18. Performance (ensure use of persistent HTTP connections, etc.).
-20. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
-21. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
-22. Check type of "timeout" option on Search...
-23. Review consistency in Operation objects (e.g. taking ownership of strings, type of parameters, etc.)
-24. Index boost: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-index-boost.html
-25. Shard preference: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
-26. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
-27. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
-28. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
-29. Host documentation somewhere sensible.
+3. The various optional options `with_search_scan` are implemented as requiring something that implements `ToString` rather than `Into<String>`, this is causing some issues.
+4. Check JSON models to use u64 where necessary, not just i64.
+5. Use `expect` instead of `unwrap` on `Option` "unwrappings" to get better error messages.
+6. Implement `version_type` option in all appropriate places where `version` is used.
+7. Implement `format_query_string` as trait (potentially).
+8. Source-filtering (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-source-filtering.html)
+9. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
+10. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
+11. Aggregations
+12. Field-data fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fielddata-fields.html
+13. Post filter: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-post-filter.html (after aggregations)
+14. Highlighting: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html and Field Highlighting Order: https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-field-order.html
+15. Rescoring: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-rescore.html
+16. Search templates (possibly)
+17. Implement Update API.
+18. Implement Multi Get API
+19. Implement Term Vectors and Multi termvectors API
+20. Test coverage.
+21. Performance (ensure use of persistent HTTP connections, etc.).
+22. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
+23. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
+24. Check type of "timeout" option on Search...
+25. Review consistency in Operation objects (e.g. taking ownership of strings, type of parameters, etc.)
+26. Index boost: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-index-boost.html
+27. Shard preference: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
+28. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
+29. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
+30. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
+31. Host documentation somewhere sensible.
 
 ## Licence
 
