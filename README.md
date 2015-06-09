@@ -283,8 +283,6 @@ This implementation of the query DSL is auto-generated and is done so in such a 
 
 ### Scan and scroll
 
-In development, not yet released.
-
 When working with large result sets that need to be loaded from an ElasticSearch query, the most efficient way is to use [scan and scroll](https://www.elastic.co/guide/en/elasticsearch/guide/current/scan-scroll.html).  This is preferred to simple pagination by setting the `from` option in a search as it will keep resources open server-side allowing the next page to literally carry-on from where it was, rather than having to execute additional queries.  The downside to this is that it does require more memory/open file-handles on the server, which could go wrong if there were many un-finished scrolls; for this reason, ElasticSearch recommends a short time-out for such operations, after which it will close all resources whether the client has finished or not, the client is responsible to fetch the next page within the time-out.
 
 To use scan and scroll, begin with a [search query](#search_query) request, but instead of calling `send` call `scan`:
