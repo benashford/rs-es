@@ -335,8 +335,11 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
+0. Geo distance sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_geo_distance_sorting)
+0. Script Based sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_script_based_sorting)
 1. Sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html)
 2. Documentation, both rustdoc and a suitable high-level write-up in this README
+3. Consistent use of builder pattern.
 3. The various optional options `with_search_scan` are implemented as requiring something that implements `ToString` rather than `Into<String>`, this is causing some issues.
 4. Check JSON models to use u64 where necessary, not just i64.
 5. Use `expect` instead of `unwrap` on `Option` "unwrappings" to get better error messages.

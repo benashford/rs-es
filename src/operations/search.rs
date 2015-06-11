@@ -25,7 +25,7 @@ use rustc_serialize::json::{Json, ToJson};
 
 use ::Client;
 use ::error::EsError;
-use ::query::Query;
+use ::query::{Filter, Query};
 use ::units::Duration;
 use ::util::StrJoin;
 use super::common::Options;
@@ -82,14 +82,104 @@ impl ToString for Order {
     }
 }
 
-/// Representing sort options for a specific field, can be combined with others
-/// to produce the full sort clause
-pub struct SortField {
-    field: String,
-    order: Option<Order>
+impl ToJson for Order {
+    fn to_json(&self) -> Json {
+        Json::String(self.to_string())
+    }
 }
 
-impl ToString for SortField {
+pub enum Mode {
+    Min,
+    Max,
+    Sum,
+    Avg
+}
+
+impl ToJson for Mode {
+    fn to_json(&self) -> Json {
+        Json::String(match self {
+            &Mode::Min => "min",
+            &Mode::Max => "max",
+            &Mode::Sum => "sum",
+            &Mode::Avg => "avg"
+        }.to_string())
+    }
+}
+
+pub enum Missing {
+    First,
+    Last,
+    Custom(String)
+}
+
+impl ToJson for Missing {
+    fn to_json(&self) -> Json {
+        Json::String(match self {
+            &Missing::First         => "_first".to_string(),
+            &Missing::Last          => "_last".to_string(),
+            &Missing::Custom(ref s) => s.clone()
+        })
+    }
+}
+
+impl<S: Into<String>> From<S> for Missing {
+    fn from(from: S) -> Missing {
+        Missing::Custom(from.into())
+    }
+}
+
+/// Representing sort options for a specific field, can be combined with others
+/// to produce the full sort clause
+pub struct SortField<'a> {
+    field:         String,
+    order:         Option<Order>,
+    mode:          Option<Mode>,
+    nested_path:   Option<String>,
+    nested_filter: Option<&'a Filter>,
+    missing:       Option<Missing>,
+    unmapped_type: Option<String>
+}
+
+impl<'a> SortField<'a> {
+    pub fn new(field: String, order: Option<Order>) -> SortField<'a> {
+        SortField {
+            field:         field,
+            order:         order,
+            mode:          None,
+            nested_path:   None,
+            nested_filter: None,
+            missing:       None,
+            unmapped_type: None
+        }
+    }
+
+    pub fn with_mode<M: Into<Mode>>(mut self, mode: M) -> SortField<'a> {
+        self.mode = Some(mode.into());
+        self
+    }
+
+    pub fn with_nested_path<S: Into<String>>(mut self, nested_path: S) -> SortField<'a> {
+        self.nested_path = Some(nested_path.into());
+        self
+    }
+
+    pub fn with_nested_filter(mut self, filter: &'a Filter) -> SortField<'a> {
+        self.nested_filter = Some(filter);
+        self
+    }
+
+    pub fn with_missing<M: Into<Missing>>(mut self, missing: M) -> SortField<'a> {
+        self.missing = Some(missing.into());
+        self
+    }
+
+    pub fn with_unmapped_type<S: Into<String>>(mut self, unmapped_type: S) -> SortField<'a> {
+        self.unmapped_type = Some(unmapped_type.into());
+        self
+    }
+}
+
+impl<'a> ToString for SortField<'a> {
     fn to_string(&self) -> String {
         let mut s = String::new();
         s.push_str(&self.field);
@@ -104,57 +194,74 @@ impl ToString for SortField {
     }
 }
 
-/// A full sort clause
-pub struct Sort {
-    fields: Vec<SortField>
+impl<'a> ToJson for SortField<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+
+        optional_add!(inner, self.order, "order");
+        optional_add!(inner, self.mode, "mode");
+        optional_add!(inner, self.nested_path, "nested_path");
+        optional_add!(inner, self.nested_filter, "nested_filter");
+        optional_add!(inner, self.missing, "missing");
+        optional_add!(inner, self.unmapped_type, "unmapped_type");
+
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
 }
 
-impl Sort {
+/// A full sort clause
+pub struct Sort<'a> {
+    fields: Vec<SortField<'a>>
+}
+
+impl<'a> Sort<'a> {
+    pub fn new<'b>(fields: Vec<SortField<'b>>) -> Sort<'b> {
+        Sort {
+            fields: fields
+        }
+    }
+
     /// Convenience function for a single field default
-    pub fn field<S: Into<String>>(fieldname: S) -> Sort {
+    pub fn field<S: Into<String>>(fieldname: S) -> Sort<'a> {
         Sort {
-            fields: vec![SortField {
-                field: fieldname.into(),
-                order: None
-            }]
+            fields: vec![SortField::new(fieldname.into(), None)]
         }
     }
 
-    pub fn field_order<S: Into<String>>(fieldname: S, order: Order) -> Sort {
+    pub fn field_order<S: Into<String>>(fieldname: S, order: Order) -> Sort<'a> {
         Sort {
-            fields: vec![SortField {
-                field: fieldname.into(),
-                order: Some(order)
-            }]
+            fields: vec![SortField::new(fieldname.into(), Some(order))]
         }
     }
 
-    pub fn fields<S: Into<String>>(fieldnames: Vec<S>) -> Sort {
+    pub fn fields<S: Into<String>>(fieldnames: Vec<S>) -> Sort<'a> {
         Sort {
             fields: fieldnames.into_iter().map(|fieldname| {
-                SortField {
-                    field: fieldname.into(),
-                    order: None
-                }
+                SortField::new(fieldname.into(), None)
             }).collect()
         }
     }
 
-    pub fn field_orders<S: Into<String>>(fields: Vec<(S, Order)>) -> Sort {
+    pub fn field_orders<S: Into<String>>(fields: Vec<(S, Order)>) -> Sort<'a> {
         Sort {
             fields: fields.into_iter().map(|(fieldname, order)| {
-                SortField {
-                    field: fieldname.into(),
-                    order: Some(order)
-                }
+                SortField::new(fieldname.into(), Some(order))
             }).collect()
         }
     }
 }
 
-impl ToString for Sort {
+impl<'a> ToString for Sort<'a> {
     fn to_string(&self) -> String {
         self.fields.iter().map(|f| f.to_string()).join(",")
+    }
+}
+
+impl<'a> ToJson for Sort<'a> {
+    fn to_json(&self) -> Json {
+        self.fields.to_json()
     }
 }
 
@@ -239,7 +346,13 @@ struct SearchQueryOperationBody<'b> {
     stats: Option<Vec<String>>,
 
     /// Minimum score to use
-    min_score: Option<f64>
+    min_score: Option<f64>,
+
+    /// Sort fields
+    sort: Option<&'b Sort<'b>>,
+
+    /// Track scores
+    track_scores: Option<bool>
 }
 
 impl<'a> ToJson for SearchQueryOperationBody<'a> {
@@ -252,6 +365,8 @@ impl<'a> ToJson for SearchQueryOperationBody<'a> {
         optional_add!(d, self.terminate_after, "terminate_after");
         optional_add!(d, self.stats, "stats");
         optional_add!(d, self.min_score, "min_score");
+        optional_add!(d, self.sort, "sort");
+        optional_add!(d, self.track_scores, "track_scores");
         Json::Object(d)
     }
 }
@@ -287,7 +402,9 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
                 size:            10,
                 terminate_after: None,
                 stats:           None,
-                min_score:       None
+                min_score:       None,
+                sort:            None,
+                track_scores:    None
             }
         }
     }
@@ -336,6 +453,16 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
 
     pub fn with_min_score(&'b mut self, min_score: f64) -> &'b mut Self {
         self.body.min_score = Some(min_score);
+        self
+    }
+
+    pub fn with_sort(&'b mut self, sort: &'b Sort) -> &'b mut Self {
+        self.body.sort = Some(sort);
+        self
+    }
+
+    pub fn with_track_scores(&'b mut self, track_scores: bool) -> &'b mut Self {
+        self.body.track_scores = Some(track_scores);
         self
     }
 
