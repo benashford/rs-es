@@ -3,13 +3,7 @@
 [![Build Status](https://travis-ci.org/benashford/rs-es.svg)](https://travis-ci.org/benashford/rs-es)
 [![](http://meritbadge.herokuapp.com/rs-es)](https://crates.io/crates/rs-es)
 
-An experimental ElasticSearch client for Rust.
-
-## Background
-
-The only existing ElasticSearch client for Rust that I could find required the use of a ZeroMQ plugin.  This project is an ongoing implementation of an ElasticSearch client via the REST API.
-
-## Experimental
+An experimental ElasticSearch client for Rust via the REST API.
 
 Development is ongoing, and is experimental, as such breaking changes are likely at any time.  Also, large parts of the ElasticSearch API are currently unimplemented.
 
