@@ -67,6 +67,97 @@ impl ToString for SearchType {
     }
 }
 
+/// Order of a sort
+pub enum Order {
+    Asc,
+    Desc
+}
+
+impl ToString for Order {
+    fn to_string(&self) -> String {
+        match self {
+            &Order::Asc => "asc".to_string(),
+            &Order::Desc => "desc".to_string()
+        }
+    }
+}
+
+/// Representing sort options for a specific field, can be combined with others
+/// to produce the full sort clause
+pub struct SortField {
+    field: String,
+    order: Option<Order>
+}
+
+impl ToString for SortField {
+    fn to_string(&self) -> String {
+        let mut s = String::new();
+        s.push_str(&self.field);
+        match self.order {
+            Some(ref order) => {
+                s.push_str(":");
+                s.push_str(&order.to_string());
+            },
+            None            => ()
+        }
+        s
+    }
+}
+
+/// A full sort clause
+pub struct Sort {
+    fields: Vec<SortField>
+}
+
+impl Sort {
+    /// Convenience function for a single field default
+    pub fn field<S: Into<String>>(fieldname: S) -> Sort {
+        Sort {
+            fields: vec![SortField {
+                field: fieldname.into(),
+                order: None
+            }]
+        }
+    }
+
+    pub fn field_order<S: Into<String>>(fieldname: S, order: Order) -> Sort {
+        Sort {
+            fields: vec![SortField {
+                field: fieldname.into(),
+                order: Some(order)
+            }]
+        }
+    }
+
+    pub fn fields<S: Into<String>>(fieldnames: Vec<S>) -> Sort {
+        Sort {
+            fields: fieldnames.into_iter().map(|fieldname| {
+                SortField {
+                    field: fieldname.into(),
+                    order: None
+                }
+            }).collect()
+        }
+    }
+
+    pub fn field_orders<S: Into<String>>(fields: Vec<(S, Order)>) -> Sort {
+        Sort {
+            fields: fields.into_iter().map(|(fieldname, order)| {
+                SortField {
+                    field: fieldname.into(),
+                    order: Some(order)
+                }
+            }).collect()
+        }
+    }
+}
+
+impl ToString for Sort {
+    fn to_string(&self) -> String {
+        self.fields.iter().map(|f| f.to_string()).join(",")
+    }
+}
+
 impl<'a, 'b> SearchURIOperation<'a, 'b> {
     pub fn new(client: &'a mut Client) -> SearchURIOperation<'a, 'b> {
         SearchURIOperation {
