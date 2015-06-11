@@ -335,6 +335,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
+0. Move "Location" and "GeoDistance" to `units.rs` out of `query.rs` - these are also used for sorting, not just the query DSL.
 0. Geo distance sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_geo_distance_sorting)
 0. Script Based sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_script_based_sorting)
 1. Sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html)
