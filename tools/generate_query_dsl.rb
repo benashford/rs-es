@@ -620,7 +620,7 @@ class ESDSLGen
 
           impl <%= name %> {
               <% fields.select(&:optional).each do |op_f| %>
-                  pub fn <%= op_f.with %><'a, T: <%= op_f.param_type %>>(mut self, value: T) -> Self {
+                  pub fn <%= op_f.with %><T: <%= op_f.param_type %>>(mut self, value: T) -> Self {
                       self.<%= op_f.name %> = Some(value.into());
                       self
                   }

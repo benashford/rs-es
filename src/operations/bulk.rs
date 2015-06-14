@@ -31,17 +31,6 @@ use ::units::Duration;
 use super::common::{Options, VersionType};
 use super::format_query_string;
 
-/// Broadly similar to the `add_option` macro for query-string options, but for
-/// specifying fields in the Bulk request
-macro_rules! add_field {
-    ($n:ident, $f:ident, $t:ty) => (
-        pub fn $n<T: Into<$t>>(mut self, val: T) -> Self {
-            self.$f = Some(val.into());
-            self
-        }
-    )
-}
-
 pub struct ActionSource {
     doc:           Option<Json>,
     upsert:        Option<Json>,

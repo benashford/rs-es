@@ -153,30 +153,11 @@ impl<'a> SortField<'a> {
         }
     }
 
-    pub fn with_mode<M: Into<Mode>>(mut self, mode: M) -> SortField<'a> {
-        self.mode = Some(mode.into());
-        self
-    }
-
-    pub fn with_nested_path<S: Into<String>>(mut self, nested_path: S) -> SortField<'a> {
-        self.nested_path = Some(nested_path.into());
-        self
-    }
-
-    pub fn with_nested_filter(mut self, filter: &'a Filter) -> SortField<'a> {
-        self.nested_filter = Some(filter);
-        self
-    }
-
-    pub fn with_missing<M: Into<Missing>>(mut self, missing: M) -> SortField<'a> {
-        self.missing = Some(missing.into());
-        self
-    }
-
-    pub fn with_unmapped_type<S: Into<String>>(mut self, unmapped_type: S) -> SortField<'a> {
-        self.unmapped_type = Some(unmapped_type.into());
-        self
-    }
+    add_field!(with_mode, mode, Mode);
+    add_field!(with_nested_path, nested_path, String);
+    add_field!(with_nested_filter, nested_filter, &'a Filter);
+    add_field!(with_missing, missing, Missing);
+    add_field!(with_unmapped_type, unmapped_type, String);
 }
 
 impl<'a> ToString for SortField<'a> {
