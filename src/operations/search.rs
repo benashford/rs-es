@@ -130,18 +130,18 @@ impl<S: Into<String>> From<S> for Missing {
 
 /// Representing sort options for a specific field, can be combined with others
 /// to produce the full sort clause
-pub struct SortField<'a> {
+pub struct SortField {
     field:         String,
     order:         Option<Order>,
     mode:          Option<Mode>,
     nested_path:   Option<String>,
-    nested_filter: Option<&'a Filter>,
+    nested_filter: Option<Filter>,
     missing:       Option<Missing>,
     unmapped_type: Option<String>
 }
 
-impl<'a> SortField<'a> {
-    pub fn new(field: String, order: Option<Order>) -> SortField<'a> {
+impl SortField {
+    pub fn new(field: String, order: Option<Order>) -> SortField {
         SortField {
             field:         field,
             order:         order,
@@ -155,12 +155,16 @@ impl<'a> SortField<'a> {
 
     add_field!(with_mode, mode, Mode);
     add_field!(with_nested_path, nested_path, String);
-    add_field!(with_nested_filter, nested_filter, &'a Filter);
+    add_field!(with_nested_filter, nested_filter, Filter);
     add_field!(with_missing, missing, Missing);
     add_field!(with_unmapped_type, unmapped_type, String);
+
+    pub fn build(self) -> SortBy {
+        SortBy::Field(self)
+    }
 }
 
-impl<'a> ToString for SortField<'a> {
+impl ToString for SortField {
     fn to_string(&self) -> String {
         let mut s = String::new();
         s.push_str(&self.field);
@@ -175,7 +179,7 @@ impl<'a> ToString for SortField<'a> {
     }
 }
 
-impl<'a> ToJson for SortField<'a> {
+impl ToJson for SortField {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
@@ -192,55 +196,76 @@ impl<'a> ToJson for SortField<'a> {
     }
 }
 
-/// A full sort clause
-pub struct Sort<'a> {
-    fields: Vec<SortField<'a>>
+pub enum SortBy {
+    Field(SortField)
 }
 
-impl<'a> Sort<'a> {
-    pub fn new<'b>(fields: Vec<SortField<'b>>) -> Sort<'b> {
+impl ToString for SortBy {
+    fn to_string(&self) -> String {
+        match self {
+            &SortBy::Field(ref field) => field.to_string()//,
+            //_                 => panic!("Can only convert field sorting ToString")
+        }
+    }
+}
+
+impl ToJson for SortBy {
+    fn to_json(&self) -> Json {
+        match self {
+            &SortBy::Field(ref field) => field.to_json()
+        }
+    }
+}
+
+/// A full sort clause
+pub struct Sort {
+    fields: Vec<SortBy>
+}
+
+impl Sort {
+    pub fn new(fields: Vec<SortBy>) -> Sort {
         Sort {
             fields: fields
         }
     }
 
     /// Convenience function for a single field default
-    pub fn field<S: Into<String>>(fieldname: S) -> Sort<'a> {
+    pub fn field<S: Into<String>>(fieldname: S) -> Sort {
         Sort {
-            fields: vec![SortField::new(fieldname.into(), None)]
+            fields: vec![SortField::new(fieldname.into(), None).build()]
         }
     }
 
-    pub fn field_order<S: Into<String>>(fieldname: S, order: Order) -> Sort<'a> {
+    pub fn field_order<S: Into<String>>(fieldname: S, order: Order) -> Sort {
         Sort {
-            fields: vec![SortField::new(fieldname.into(), Some(order))]
+            fields: vec![SortField::new(fieldname.into(), Some(order)).build()]
         }
     }
 
-    pub fn fields<S: Into<String>>(fieldnames: Vec<S>) -> Sort<'a> {
+    pub fn fields<S: Into<String>>(fieldnames: Vec<S>) -> Sort {
         Sort {
             fields: fieldnames.into_iter().map(|fieldname| {
-                SortField::new(fieldname.into(), None)
+                SortField::new(fieldname.into(), None).build()
             }).collect()
         }
     }
 
-    pub fn field_orders<S: Into<String>>(fields: Vec<(S, Order)>) -> Sort<'a> {
+    pub fn field_orders<S: Into<String>>(fields: Vec<(S, Order)>) -> Sort {
         Sort {
             fields: fields.into_iter().map(|(fieldname, order)| {
-                SortField::new(fieldname.into(), Some(order))
+                SortField::new(fieldname.into(), Some(order)).build()
             }).collect()
         }
     }
 }
 
-impl<'a> ToString for Sort<'a> {
+impl ToString for Sort {
     fn to_string(&self) -> String {
         self.fields.iter().map(|f| f.to_string()).join(",")
     }
 }
 
-impl<'a> ToJson for Sort<'a> {
+impl ToJson for Sort {
     fn to_json(&self) -> Json {
         self.fields.to_json()
     }
@@ -330,7 +355,7 @@ struct SearchQueryOperationBody<'b> {
     min_score: Option<f64>,
 
     /// Sort fields
-    sort: Option<&'b Sort<'b>>,
+    sort: Option<&'b Sort>,
 
     /// Track scores
     track_scores: Option<bool>
