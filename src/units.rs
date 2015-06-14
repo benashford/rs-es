@@ -17,13 +17,18 @@
 //! Various re-occuring types that are used by the ElasticSearch API.
 //!
 //! E.g. `Duration`
+//!
+//! This isn't all types. Types that are specific to one API are defined in the
+//! appropriate place, e.g. types only used by the Query DSL are in `query.rs`
+
+use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
 /// The units by which duration is measured.
 ///
 /// TODO - this list is incomplete
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum DurationUnit {
     Week,
     Day,
@@ -51,7 +56,7 @@ impl ToString for DurationUnit {
 ///
 /// assert_eq!("100d", Duration::new(100, DurationUnit::Day).to_string());
 /// ```
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Duration {
     amt: i64,
     unit: DurationUnit
@@ -75,5 +80,30 @@ impl ToString for Duration {
 impl ToJson for Duration {
     fn to_json(&self) -> Json {
         Json::String(self.to_string())
+    }
+}
+
+/// Representing a geographic location
+pub enum Location {
+    LatLon(f64, f64),
+    GeoHash(String)
+}
+
+from_exp!((f64, f64), Location, from, Location::LatLon(from.0, from.1));
+from!(String, Location, GeoHash);
+
+impl ToJson for Location {
+    fn to_json(&self) -> Json {
+        match self {
+            &Location::LatLon(lat, lon) => {
+                let mut d = BTreeMap::new();
+                d.insert("lat".to_string(), Json::F64(lat));
+                d.insert("lon".to_string(), Json::F64(lon));
+                Json::Object(d)
+            },
+            &Location::GeoHash(ref geo_hash) => {
+                Json::String(geo_hash.clone())
+            }
+        }
     }
 }

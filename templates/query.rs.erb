@@ -24,28 +24,8 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
-use units::Duration;
+use units::{Duration, Location};
 use util::StrJoin;
-
-// Useful macros for implementing `From` traits
-macro_rules! from_exp {
-    ($ft:ty, $dt:ident, $pi:ident, $ex:expr) => {
-        impl From<$ft> for $dt {
-            fn from($pi: $ft) -> $dt {
-                $ex
-            }
-        }
-    }
-}
-
-macro_rules! from {
-    ($ft:ty, $dt:ident, $ev:ident, $pi:ident) => {
-        from_exp!($ft, $dt, $pi, $dt::$ev($pi));
-    };
-    ($ft:ty, $dt:ident, $ev:ident) => {
-        from!($ft, $dt, $ev, from);
-    };
-}
 
 // A Json value that's not a structural thing - i.e. just String, i64 and f64,
 // no array or object
@@ -591,30 +571,6 @@ impl ToJson for TermsQuery {
 <%= to_json_impl('ExistsFilter') %>
 
 <%= structs['GeoBoundingBoxFilter'] %>
-
-pub enum Location {
-    LatLon(f64, f64),
-    GeoHash(String)
-}
-
-from_exp!((f64, f64), Location, from, Location::LatLon(from.0, from.1));
-from!(String, Location, GeoHash);
-
-impl ToJson for Location {
-    fn to_json(&self) -> Json {
-        match self {
-            &Location::LatLon(lat, lon) => {
-                let mut d = BTreeMap::new();
-                d.insert("lat".to_string(), Json::F64(lat));
-                d.insert("lon".to_string(), Json::F64(lon));
-                Json::Object(d)
-            },
-            &Location::GeoHash(ref geo_hash) => {
-                Json::String(geo_hash.clone())
-            }
-        }
-    }
-}
 
 pub enum GeoBox {
     Corners(Location, Location),

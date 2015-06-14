@@ -18,7 +18,9 @@
 
 use std::iter::Iterator;
 
-// Macro to add an Optional to a BTreeMap if it's set
+// Macro to add an Optional from a struct to a BTreeMap if it's set.
+//
+// This is a recurring pattern when creating JSON.
 macro_rules! optional_add {
     ($map:ident, $sn:expr, $field:expr, $val: ident, $ex:expr) => {
         match $sn {
@@ -99,4 +101,24 @@ impl<I, S> StrJoin for I where
         s.pop();
         s
     }
+}
+
+/// Useful macros for implementing `From` traits
+macro_rules! from_exp {
+    ($ft:ty, $dt:ident, $pi:ident, $ex:expr) => {
+        impl From<$ft> for $dt {
+            fn from($pi: $ft) -> $dt {
+                $ex
+            }
+        }
+    }
+}
+
+macro_rules! from {
+    ($ft:ty, $dt:ident, $ev:ident, $pi:ident) => {
+        from_exp!($ft, $dt, $pi, $dt::$ev($pi));
+    };
+    ($ft:ty, $dt:ident, $ev:ident) => {
+        from!($ft, $dt, $ev, from);
+    };
 }
