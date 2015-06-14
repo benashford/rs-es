@@ -24,7 +24,11 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
-use units::{Duration, Location};
+use units::{DistanceType,
+            DistanceUnit,
+            Duration,
+            Location,
+            OneOrMany};
 use util::StrJoin;
 
 // A Json value that's not a structural thing - i.e. just String, i64 and f64,
@@ -357,32 +361,6 @@ impl ToJson for IndexedShape {
 <%= structs['HasParentQuery'] %>
 <%= to_json_impl('HasParentQuery') %>
 
-pub enum OneOrMany<T: ToJson> {
-    One(T),
-    Many(Vec<T>)
-}
-
-impl<T: ToJson> From<T> for OneOrMany<T> {
-    fn from(from: T) -> OneOrMany<T> {
-        OneOrMany::One(from)
-    }
-}
-
-impl<T: ToJson> From<Vec<T>> for OneOrMany<T> {
-    fn from(from: Vec<T>) -> OneOrMany<T> {
-        OneOrMany::Many(from)
-    }
-}
-
-impl<T: ToJson> ToJson for OneOrMany<T> {
-    fn to_json(&self) -> Json {
-        match self {
-            &OneOrMany::One(ref t)  => t.to_json(),
-            &OneOrMany::Many(ref t) => t.to_json()
-        }
-    }
-}
-
 <%= structs['IdsQuery'] %>
 <%= to_json_impl('IdsQuery') %>
 
@@ -619,34 +597,6 @@ impl ToJson for GeoBoundingBoxFilter {
 
 <%= structs['GeoDistanceFilter'] %>
 
-pub enum DistanceUnit {
-    Mile,
-    Yard,
-    Feet,
-    Inch,
-    Kilometer,
-    Meter,
-    Centimeter,
-    Millimeter,
-    NauticalMile
-}
-
-impl ToString for DistanceUnit {
-    fn to_string(&self) -> String {
-        match *self {
-            DistanceUnit::Mile => "mi",
-            DistanceUnit::Yard => "yd",
-            DistanceUnit::Feet => "ft",
-            DistanceUnit::Inch => "in",
-            DistanceUnit::Kilometer => "km",
-            DistanceUnit::Meter => "m",
-            DistanceUnit::Centimeter => "cm",
-            DistanceUnit::Millimeter => "mm",
-            DistanceUnit::NauticalMile => "NM"
-        }.to_string()
-    }
-}
-
 pub struct Distance {
     amt: f64,
     unit: DistanceUnit
@@ -667,7 +617,6 @@ impl ToJson for Distance {
     }
 }
 
-<%= simple_value_enum('DistanceType', ['sloppy_arc', 'arc', 'plane']) %>
 <%= simple_value_enum('OptimizeBbox', ['memory', 'indexed', 'none']) %>
 
 impl ToJson for GeoDistanceFilter {

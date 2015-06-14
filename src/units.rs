@@ -107,3 +107,83 @@ impl ToJson for Location {
         }
     }
 }
+
+/// A non-specific holder for an option which can either be a single thing, or
+/// multiple instances of that thing.
+pub enum OneOrMany<T: ToJson> {
+    One(T),
+    Many(Vec<T>)
+}
+
+impl<T: ToJson> From<T> for OneOrMany<T> {
+    fn from(from: T) -> OneOrMany<T> {
+        OneOrMany::One(from)
+    }
+}
+
+impl<T: ToJson> From<Vec<T>> for OneOrMany<T> {
+    fn from(from: Vec<T>) -> OneOrMany<T> {
+        OneOrMany::Many(from)
+    }
+}
+
+impl<T: ToJson> ToJson for OneOrMany<T> {
+    fn to_json(&self) -> Json {
+        match self {
+            &OneOrMany::One(ref t)  => t.to_json(),
+            &OneOrMany::Many(ref t) => t.to_json()
+        }
+    }
+}
+
+/// DistanceType
+pub enum DistanceType {
+    SloppyArc,
+    Arc,
+    Plane
+}
+
+impl ToJson for DistanceType {
+    fn to_json(&self) -> Json {
+        Json::String(match self {
+            &DistanceType::SloppyArc => "sloppy_arc",
+            &DistanceType::Arc       => "arc",
+            &DistanceType::Plane     => "plane"
+        }.to_string())
+    }
+}
+
+/// DistanceUnit
+pub enum DistanceUnit {
+    Mile,
+    Yard,
+    Feet,
+    Inch,
+    Kilometer,
+    Meter,
+    Centimeter,
+    Millimeter,
+    NauticalMile
+}
+
+impl ToString for DistanceUnit {
+    fn to_string(&self) -> String {
+        match *self {
+            DistanceUnit::Mile => "mi",
+            DistanceUnit::Yard => "yd",
+            DistanceUnit::Feet => "ft",
+            DistanceUnit::Inch => "in",
+            DistanceUnit::Kilometer => "km",
+            DistanceUnit::Meter => "m",
+            DistanceUnit::Centimeter => "cm",
+            DistanceUnit::Millimeter => "mm",
+            DistanceUnit::NauticalMile => "NM"
+        }.to_string()
+    }
+}
+
+impl ToJson for DistanceUnit {
+    fn to_json(&self) -> Json {
+        Json::String(self.to_string())
+    }
+}

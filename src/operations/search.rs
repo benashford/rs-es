@@ -26,7 +26,7 @@ use rustc_serialize::json::{Json, ToJson};
 use ::Client;
 use ::error::EsError;
 use ::query::{Filter, Query};
-use ::units::Duration;
+use ::units::{DistanceType, DistanceUnit, Duration, Location, OneOrMany};
 use ::util::StrJoin;
 use super::common::Options;
 use super::decode_json;
@@ -196,15 +196,77 @@ impl ToJson for SortField {
     }
 }
 
+/// Representing sort options for sort by geodistance
+pub struct GeoDistance {
+    field:         String,
+    location:      OneOrMany<Location>,
+    order:         Option<Order>,
+    unit:          Option<DistanceUnit>,
+    mode:          Option<Mode>,
+    distance_type: Option<DistanceType>,
+}
+
+impl GeoDistance {
+    pub fn new<S>(field: S) -> GeoDistance
+        where S: Into<String>
+    {
+        GeoDistance {
+            field: field.into(),
+            location: OneOrMany::Many(vec![]),
+            order: None,
+            unit: None,
+            mode: None,
+            distance_type: None
+        }
+    }
+
+    pub fn with_location<L: Into<Location>>(mut self, location: L) -> Self {
+        self.location = OneOrMany::One(location.into());
+        self
+    }
+
+    pub fn with_locations<L: Into<Location>>(mut self, location: Vec<L>) -> Self {
+        self.location = OneOrMany::Many(location.into_iter().map(|l| l.into()).collect());
+        self
+    }
+
+    add_field!(with_order, order, Order);
+    add_field!(with_unit, unit, DistanceUnit);
+    add_field!(with_mode, mode, Mode);
+    add_field!(with_distance_type, distance_type, DistanceType);
+
+    pub fn build(self) -> SortBy {
+        SortBy::Distance(self)
+    }
+}
+
+impl ToJson for GeoDistance {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+
+        inner.insert(self.field.clone(), self.location.to_json());
+
+        optional_add!(inner, self.order, "order");
+        optional_add!(inner, self.unit, "unit");
+        optional_add!(inner, self.mode, "mode");
+        optional_add!(inner, self.distance_type, "distance_type");
+
+        d.insert("_geo_distance".to_string(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
 pub enum SortBy {
-    Field(SortField)
+    Field(SortField),
+    Distance(GeoDistance)
 }
 
 impl ToString for SortBy {
     fn to_string(&self) -> String {
         match self {
-            &SortBy::Field(ref field) => field.to_string()//,
-            //_                 => panic!("Can only convert field sorting ToString")
+            &SortBy::Field(ref field) => field.to_string(),
+            _                         => panic!("Can only convert field sorting ToString")
         }
     }
 }
@@ -212,7 +274,8 @@ impl ToString for SortBy {
 impl ToJson for SortBy {
     fn to_json(&self) -> Json {
         match self {
-            &SortBy::Field(ref field) => field.to_json()
+            &SortBy::Field(ref field)   => field.to_json(),
+            &SortBy::Distance(ref dist) => dist.to_json()
         }
     }
 }
