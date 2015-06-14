@@ -232,7 +232,7 @@ let query = Query::build_filtered(
                                         .with_gte(5)
                                         .with_lt(10)
                                         .build()]))
-                .with_query(Query::build_query_string("some value"))
+                .with_query(Query::build_query_string("some value").build())
                 .build();
 ```
 

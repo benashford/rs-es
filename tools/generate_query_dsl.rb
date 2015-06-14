@@ -98,7 +98,6 @@ class ESDSLGen
     def generate_enums
       enums.reduce({}) do |m, (name, fields)|
         m[name] = ERB.new(<<-END).result(binding)
-          #[derive(Clone)]
           pub enum <%= name %> {
              <% fields.each do |field| %>
                <%= field.name %>(<%= field.name %><%= name %>)
@@ -609,7 +608,6 @@ class ESDSLGen
         enum_type = parts.pop
         enum_name = parts.join('')
         m[name] = ERB.new(<<-END).result(binding)
-          #[derive(Clone)]
           pub struct <%= name %> {
               <% fields.each do |field| %>
                   <%= field.name %>: <% if field.optional %>
@@ -622,7 +620,7 @@ class ESDSLGen
 
           impl <%= name %> {
               <% fields.select(&:optional).each do |op_f| %>
-                  pub fn <%= op_f.with %><'a, T: <%= op_f.param_type %>>(&'a mut self, value: T) -> &'a mut Self {
+                  pub fn <%= op_f.with %><'a, T: <%= op_f.param_type %>>(mut self, value: T) -> Self {
                       self.<%= op_f.name %> = Some(value.into());
                       self
                   }
@@ -642,8 +640,8 @@ class ESDSLGen
                   <% end %>
               }
 
-              pub fn build(&self) -> <%= enum_type %> {
-                  <%= enum_type %>::<%= enum_name %>(self.clone())
+              pub fn build(self) -> <%= enum_type %> {
+                  <%= enum_type %>::<%= enum_name %>(self)
               }
           }
         END
@@ -723,7 +721,6 @@ class ESDSLGen
 
     def function_enum(enum_name, elements)
       ERB.new(<<-END).result(binding)
-        #[derive(Clone)]
         pub enum <%= enum_name %> {
             <% elements.each do |element| %>
                 <%= snake_to_camel(element) %>(<%= snake_to_camel(element) %>Func)

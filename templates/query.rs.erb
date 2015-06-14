@@ -49,7 +49,6 @@ macro_rules! from {
 
 // A Json value that's not a structural thing - i.e. just String, i64 and f64,
 // no array or object
-#[derive(Clone)]
 pub enum JsonVal {
     String(String),
     I64(i64),
@@ -97,7 +96,6 @@ impl From<Query> for Box<Query> {
 
 <%= simple_value_enum('ZeroTermsQuery', ['none', 'all']) %>
 
-#[derive(Clone)]
 pub enum Fuzziness {
     Auto,
     LevenshteinDistance(i64),
@@ -145,7 +143,7 @@ impl ToJson for Fuzziness {
 
 <%= structs['CommonQuery'] %>
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct CombinationMinimumShouldMatch {
     first: MinimumShouldMatch,
     second: MinimumShouldMatch
@@ -175,7 +173,7 @@ impl ToJson for CombinationMinimumShouldMatch {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum MinimumShouldMatch {
     Integer(i64),
     Percentage(f64),
@@ -250,7 +248,6 @@ impl ToJson for CommonQuery {
 
 <%= structs['FilteredQuery'] %>
 
-#[derive(Clone)]
 pub enum Strategy {
     LeapFrogQueryFirst,
     LeapFrogFilterFirst,
@@ -303,7 +300,6 @@ impl ToJson for Strategy {
 
 // Required for GeoShape
 
-#[derive(Clone)]
 pub struct Shape {
     shape_type: String,
     coordinates: Vec<(f64, f64)>
@@ -336,7 +332,6 @@ impl ToJson for Shape {
     }
 }
 
-#[derive(Clone)]
 pub struct IndexedShape {
     id:       String,
     doc_type: String,
@@ -366,8 +361,8 @@ impl ToJson for IndexedShape {
         let mut inner = BTreeMap::new();
         inner.insert("id".to_string(), self.id.to_json());
         inner.insert("type".to_string(), self.doc_type.to_json());
-        inner.insert("index".to_string(), self.doc_type.to_json());
-        inner.insert("path".to_string(), self.doc_type.to_json());
+        inner.insert("index".to_string(), self.index.to_json());
+        inner.insert("path".to_string(), self.path.to_json());
         d.insert("indexed_shape".to_string(), Json::Object(inner));
         Json::Object(d)
     }
@@ -382,7 +377,6 @@ impl ToJson for IndexedShape {
 <%= structs['HasParentQuery'] %>
 <%= to_json_impl('HasParentQuery') %>
 
-#[derive(Clone)]
 pub enum OneOrMany<T: ToJson> {
     One(T),
     Many(Vec<T>)
@@ -416,7 +410,6 @@ impl<T: ToJson> ToJson for OneOrMany<T> {
 <%= to_json_impl('IndicesQuery') %>
 
 // A document can be provided as an example
-#[derive(Clone)]
 pub struct Doc {
     index:    String,
     doc_type: String,
@@ -469,7 +462,6 @@ impl ToJson for Doc {
 
 <%= structs['PrefixQuery'] %>
 
-#[derive(Clone)]
 pub enum Rewrite {
     ConstantScoreAuto,
     ScoringBoolean,
@@ -505,7 +497,6 @@ impl ToJson for Rewrite {
 
 <%= structs['RegexpQuery'] %>
 
-#[derive(Clone)]
 pub enum Flag {
     All,
     AnyString,
@@ -528,7 +519,6 @@ impl ToString for Flag {
     }
 }
 
-#[derive(Clone)]
 pub struct Flags {
     flags: Vec<Flag>
 }
@@ -540,7 +530,7 @@ impl Flags {
         }
     }
 
-    pub fn add_flag(&mut self, flag: Flag) -> &mut Self {
+    pub fn add_flag(mut self, flag: Flag) -> Self {
         self.flags.push(flag);
         self
     }
@@ -602,7 +592,6 @@ impl ToJson for TermsQuery {
 
 <%= structs['GeoBoundingBoxFilter'] %>
 
-#[derive(Clone)]
 pub enum Location {
     LatLon(f64, f64),
     GeoHash(String)
@@ -627,7 +616,6 @@ impl ToJson for Location {
     }
 }
 
-#[derive(Clone)]
 pub enum GeoBox {
     Corners(Location, Location),
     Vertices(f64, f64, f64, f64)
@@ -675,7 +663,6 @@ impl ToJson for GeoBoundingBoxFilter {
 
 <%= structs['GeoDistanceFilter'] %>
 
-#[derive(Clone)]
 pub enum DistanceUnit {
     Mile,
     Yard,
@@ -704,7 +691,6 @@ impl ToString for DistanceUnit {
     }
 }
 
-#[derive(Clone)]
 pub struct Distance {
     amt: f64,
     unit: DistanceUnit
@@ -747,7 +733,6 @@ impl ToJson for GeoDistanceFilter {
 
 <%= structs['GeohashCellFilter'] %>
 
-#[derive(Clone)]
 pub enum Precision {
     Geohash(i64),
     Distance(Distance)
@@ -786,7 +771,6 @@ impl ToJson for GeohashCellFilter {
 
 <%= structs['IndicesFilter'] %>
 
-#[derive(Clone)]
 pub enum NoMatchFilter {
     None,
     All,
@@ -914,7 +898,6 @@ impl ToJson for TermsFilter {
 
 <%= structs['LinearFunc'] %>
 
-#[derive(Clone)]
 enum Scale {
     I64(i64),
     F64(f64),
@@ -938,7 +921,6 @@ impl ToJson for Scale {
     }
 }
 
-#[derive(Clone)]
 enum Origin {
     I64(i64),
     F64(f64),
@@ -990,7 +972,6 @@ decay_func_json_impl!(ExpFunc);
 <%= structs['GaussFunc'] %>
 decay_func_json_impl!(GaussFunc);
 
-#[derive(Clone)]
 pub struct Function {
     filter: Option<Filter>,
     function: Func,
