@@ -187,3 +187,32 @@ impl ToJson for DistanceUnit {
         Json::String(self.to_string())
     }
 }
+
+// A Json value that's not a structural thing - i.e. just String, i64 and f64,
+// no array or object
+pub enum JsonVal {
+    String(String),
+    I64(i64),
+    F64(f64)
+}
+
+impl ToJson for JsonVal {
+    fn to_json(&self) -> Json {
+        match self {
+            &JsonVal::String(ref str) => str.to_json(),
+            &JsonVal::I64(i)          => Json::I64(i),
+            &JsonVal::F64(f)          => Json::F64(f)
+        }
+    }
+}
+
+from!(String, JsonVal, String);
+
+impl<'a> From<&'a str> for JsonVal {
+    fn from(from: &'a str) -> JsonVal {
+        JsonVal::String(from.to_string())
+    }
+}
+
+from!(f64, JsonVal, F64);
+from!(i64, JsonVal, I64);

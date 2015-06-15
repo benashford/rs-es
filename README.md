@@ -335,7 +335,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-1. Script Based sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_script_based_sorting)
 2. Sorting (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html)
 3. Documentation, both rustdoc and a suitable high-level write-up in this README
 4. Consistent use of builder pattern.

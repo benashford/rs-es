@@ -16,7 +16,7 @@
 
 //! Implementations of both Search-by-URI and Search-by-Query operations
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use hyper::status::StatusCode;
 
@@ -26,7 +26,7 @@ use rustc_serialize::json::{Json, ToJson};
 use ::Client;
 use ::error::EsError;
 use ::query::{Filter, Query};
-use ::units::{DistanceType, DistanceUnit, Duration, Location, OneOrMany};
+use ::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
 use ::util::StrJoin;
 use super::common::Options;
 use super::decode_json;
@@ -257,9 +257,60 @@ impl ToJson for GeoDistance {
     }
 }
 
+/// Representing options for sort by script
+pub struct Script {
+    script:      String,
+    script_type: String,
+    params:      HashMap<String, JsonVal>,
+    order:       Option<Order>
+}
+
+impl Script {
+    pub fn new<S, ST>(script: S, script_type: ST) -> Script
+        where S: Into<String>,
+              ST: Into<String>
+    {
+        Script {
+            script: script.into(),
+            script_type: script_type.into(),
+            params: HashMap::new(),
+            order: None
+        }
+    }
+
+    add_field!(with_order, order, Order);
+
+    pub fn add_param<K, V>(mut self, key: K, value: V) -> Self
+        where K: Into<String>,
+              V: Into<JsonVal>
+    {
+        self.params.insert(key.into(), value.into());
+        self
+    }
+
+    pub fn build(self) -> SortBy {
+        SortBy::Script(self)
+    }
+}
+
+impl ToJson for Script {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+
+        inner.insert("script".to_string(), self.script.to_json());
+        inner.insert("type".to_string(), self.script_type.to_json());
+        inner.insert("params".to_string(), self.params.to_json());
+
+        d.insert("_script".to_string(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
 pub enum SortBy {
     Field(SortField),
-    Distance(GeoDistance)
+    Distance(GeoDistance),
+    Script(Script)
 }
 
 impl ToString for SortBy {
@@ -275,7 +326,8 @@ impl ToJson for SortBy {
     fn to_json(&self) -> Json {
         match self {
             &SortBy::Field(ref field)   => field.to_json(),
-            &SortBy::Distance(ref dist) => dist.to_json()
+            &SortBy::Distance(ref dist) => dist.to_json(),
+            &SortBy::Script(ref scr)    => scr.to_json()
         }
     }
 }
