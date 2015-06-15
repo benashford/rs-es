@@ -639,7 +639,6 @@ impl SearchHitsHitsResult {
 
 impl<'a> From<&'a Json> for SearchHitsHitsResult {
     fn from(r: &'a Json) -> SearchHitsHitsResult {
-        println!("FROM: {:?}", r);
         SearchHitsHitsResult {
             index:    get_json_string!(r, "_index"),
             doc_type: get_json_string!(r, "_type"),
