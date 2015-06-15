@@ -621,7 +621,7 @@ pub struct SearchHitsHitsResult {
     pub index:    String,
     pub doc_type: String,
     pub id:       String,
-    pub score:    f64,
+    pub score:    Option<f64>,
     pub source:   Option<Json>,
     pub fields:   Option<Json>
 }
@@ -639,11 +639,19 @@ impl SearchHitsHitsResult {
 
 impl<'a> From<&'a Json> for SearchHitsHitsResult {
     fn from(r: &'a Json) -> SearchHitsHitsResult {
+        println!("FROM: {:?}", r);
         SearchHitsHitsResult {
             index:    get_json_string!(r, "_index"),
             doc_type: get_json_string!(r, "_type"),
             id:       get_json_string!(r, "_id"),
-            score:    get_json_f64!(r, "_score"),
+            score:    {
+                let s = r.find("_score").unwrap();
+                if s.is_f64() {
+                    s.as_f64()
+                } else {
+                    None
+                }
+            },
             source:   r.find("_source").map(|s| s.clone()),
             fields:   r.find("fields").map(|s| s.clone())
         }
@@ -809,6 +817,7 @@ mod tests {
     use ::units::{Duration, DurationUnit};
 
     use super::SearchHitsHitsResult;
+    use super::Sort;
 
     fn make_document(idx: i64) -> TestDocument {
         TestDocument::new()
@@ -904,5 +913,61 @@ mod tests {
             .collect();
 
         assert_eq!(200, hits.len());
+    }
+
+    #[test]
+    fn test_sort() {
+        let mut client = ::tests::make_client();
+        let index_name = "test_sort";
+        ::tests::clean_db(&mut client, index_name);
+
+        client.bulk(&[Action::index(TestDocument::new().with_str_field("B").with_int_field(10)),
+                      Action::index(TestDocument::new().with_str_field("C").with_int_field(4)),
+                      Action::index(TestDocument::new().with_str_field("A").with_int_field(99))])
+            .with_index(index_name)
+            .with_doc_type("doc_type")
+            .send()
+            .unwrap();
+
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
+
+        {
+            let result = client.search_query()
+                .with_indexes(&[index_name])
+                .with_sort(&Sort::field("str_field"))
+                .send()
+                .unwrap();
+
+            let result_str:Vec<String> = result.hits.hits.into_iter().map(|hit| {
+                let doc:TestDocument = hit.source().unwrap();
+                doc.str_field
+            }).collect();
+
+            let expected_result_str:Vec<String> = ["A", "B", "C"].iter()
+                .map(|x| x.to_string())
+                .collect();
+
+            assert_eq!(expected_result_str,
+                       result_str);
+        }
+        {
+            let result = client.search_query()
+                .with_indexes(&[index_name])
+                .with_sort(&Sort::field("int_field"))
+                .send()
+                .unwrap();
+
+            let result_str:Vec<String> = result.hits.hits.into_iter().map(|hit| {
+                let doc:TestDocument = hit.source().unwrap();
+                doc.str_field
+            }).collect();
+
+            let expected_result_str:Vec<String> = ["C", "B", "A"].iter()
+                .map(|x| x.to_string())
+                .collect();
+
+            assert_eq!(expected_result_str,
+                       result_str);
+        }
     }
 }
