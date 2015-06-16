@@ -663,6 +663,16 @@ pub struct SearchHitsResult {
     pub hits:  Vec<SearchHitsHitsResult>
 }
 
+impl SearchHitsResult {
+    pub fn hits<T: Decodable>(self) -> Result<Vec<T>, EsError> {
+        let mut r = Vec::with_capacity(self.hits.len());
+        for hit in self.hits {
+            r.push(try!(hit.source()));
+        }
+        Ok(r)
+    }
+}
+
 impl<'a> From<&'a Json> for SearchHitsResult {
     fn from(r: &'a Json) -> SearchHitsResult {
         SearchHitsResult {
@@ -937,10 +947,11 @@ mod tests {
                 .send()
                 .unwrap();
 
-            let result_str:Vec<String> = result.hits.hits.into_iter().map(|hit| {
-                let doc:TestDocument = hit.source().unwrap();
-                doc.str_field
-            }).collect();
+            let result_str:Vec<String> = result.hits.hits()
+                .unwrap()
+                .into_iter()
+                .map(|doc:TestDocument| doc.str_field)
+                .collect();
 
             let expected_result_str:Vec<String> = ["A", "B", "C"].iter()
                 .map(|x| x.to_string())
@@ -956,10 +967,11 @@ mod tests {
                 .send()
                 .unwrap();
 
-            let result_str:Vec<String> = result.hits.hits.into_iter().map(|hit| {
-                let doc:TestDocument = hit.source().unwrap();
-                doc.str_field
-            }).collect();
+            let result_str:Vec<String> = result.hits.hits()
+                .unwrap()
+                .into_iter()
+                .map(|doc:TestDocument| doc.str_field)
+                .collect();
 
             let expected_result_str:Vec<String> = ["C", "B", "A"].iter()
                 .map(|x| x.to_string())
