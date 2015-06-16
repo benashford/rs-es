@@ -185,6 +185,8 @@ The type of the source document is [`Json`](http://doc.rust-lang.org/rustc-seria
 
 However, for cases when the caller is confident that the document matches a known structure (and is willing to handle any errors when that is not the case), a convenience function is available on the individual search hit which will decode the `Json` object into any type that implements [`Decodable`](http://doc.rust-lang.org/rustc-serialize/rustc_serialize/trait.Decodable.html).  See the `rustc-serialize` documentation for more details, but the simplest way of defining such a struct may be to derive [`RustcDecodable'].
 
+Finally, there is a method to decode a full set of hits.
+
 ##### Examples
 
 First, with Json source documents:
@@ -215,6 +217,14 @@ for hit in result.hits.hits {
     let document:DocType = hit.source().unwrap(); // Warning, will panic if document doesn't match type
     println!("DocType document: {:?}", document);
 }
+```
+
+Or alternatively:
+
+```rust
+let result = client.search_query().with_query(query).send();
+
+let hits:Vec<DocType> = result.hits.hits().unwrap();
 ```
 
 ### The Query DSL
