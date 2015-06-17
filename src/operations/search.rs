@@ -34,17 +34,11 @@ use super::format_indexes_and_types;
 use super::format_query_string;
 use super::ShardCountResult;
 
+/// Representing a search-by-uri option
 pub struct SearchURIOperation<'a, 'b> {
-    /// The HTTP client
     client: &'a mut Client,
-
-    /// The indexes to which this query applies
     indexes: &'b [&'b str],
-
-    /// The types to which this query applies
     doc_types: &'b [&'b str],
-
-    /// Optional options
     options: Options<'b>
 }
 
@@ -88,6 +82,7 @@ impl ToJson for Order {
     }
 }
 
+/// The (Sort mode option)[https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_sort_mode_option].
 pub enum Mode {
     Min,
     Max,
@@ -106,6 +101,7 @@ impl ToJson for Mode {
     }
 }
 
+/// Options for handling (missing values)[https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_missing_values]
 pub enum Missing {
     First,
     Last,
@@ -122,6 +118,8 @@ impl ToJson for Missing {
     }
 }
 
+/// Convert anything that can be converted into a `String` into a
+/// `Missing::Custom` value
 impl<S: Into<String>> From<S> for Missing {
     fn from(from: S) -> Missing {
         Missing::Custom(from.into())
@@ -141,6 +139,7 @@ pub struct SortField {
 }
 
 impl SortField {
+    /// Create a `SortField` for a given `field` and `order`
     pub fn new<S: Into<String>>(field: S, order: Option<Order>) -> SortField {
         SortField {
             field:         field.into(),
