@@ -7,6 +7,10 @@ An experimental ElasticSearch client for Rust via the REST API.
 
 Development is ongoing, and is experimental, as such breaking changes are likely at any time.  Also, large parts of the ElasticSearch API are currently unimplemented.
 
+## Documentation
+
+[Full documentation for `rs-es`](http://benashford.github.io/rs-es/rs_es/index.html).  The rest of this document consists of an introduction.
+
 ## Building and installation
 
 ### [crates.io](http://crates.io)
@@ -364,8 +368,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-1. Documentation, both rustdoc and a suitable high-level write-up in this README
-2. Consistent use of builder pattern.
 3. The various optional options `with_search_scan` are implemented as requiring something that implements `ToString` rather than `Into<String>`, this is causing some issues.
 4. Check JSON models to use u64 where necessary, not just i64.
 5. Use `expect` instead of `unwrap` on `Option` "unwrappings" to get better error messages.
@@ -394,7 +396,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 28. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
 29. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
 30. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
-31. Host documentation somewhere sensible.
+1. Documentation, both rustdoc and a suitable high-level write-up in this README
 
 ## Licence
 
