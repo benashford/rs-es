@@ -173,6 +173,25 @@ let result = client.bulk(&vec![Action::index(document1),
 
 In this case the document can be anything that implements `ToJson`.
 
+### Sorting
+
+Sorting is supported on all forms of search (by query or by URI), and related operations (e.g. scan and scroll).
+
+```rust
+use rs_es::query::Query;
+let result = client.search_query()
+                   .with_query(Query::match_all().build())
+                   .with_sort(&Sort::new(vec![SortField::new("fieldname", Order::Desc)]))
+                   .send();
+```
+
+This is quite unwieldy for simple cases, although it does support the more [exotic combinations that ElasticSearch supports](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_geo_distance_sorting); so there are also a number of convenience functions for the more simple cases, e.g. sorting by a field in ascending order:
+
+```rust
+// Omitted the rest of the query
+.with_sort(&Sort::field("fieldname"))
+```
+
 ### Results
 
 Each of the defined operations above returns a result.  Specifically this is a struct that is a direct mapping to the JSON that ElasticSearch returns.

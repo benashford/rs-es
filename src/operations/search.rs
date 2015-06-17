@@ -141,9 +141,9 @@ pub struct SortField {
 }
 
 impl SortField {
-    pub fn new(field: String, order: Option<Order>) -> SortField {
+    pub fn new<S: Into<String>>(field: S, order: Option<Order>) -> SortField {
         SortField {
-            field:         field,
+            field:         field.into(),
             order:         order,
             mode:          None,
             nested_path:   None,
@@ -347,20 +347,20 @@ impl Sort {
     /// Convenience function for a single field default
     pub fn field<S: Into<String>>(fieldname: S) -> Sort {
         Sort {
-            fields: vec![SortField::new(fieldname.into(), None).build()]
+            fields: vec![SortField::new(fieldname, None).build()]
         }
     }
 
     pub fn field_order<S: Into<String>>(fieldname: S, order: Order) -> Sort {
         Sort {
-            fields: vec![SortField::new(fieldname.into(), Some(order)).build()]
+            fields: vec![SortField::new(fieldname, Some(order)).build()]
         }
     }
 
     pub fn fields<S: Into<String>>(fieldnames: Vec<S>) -> Sort {
         Sort {
             fields: fieldnames.into_iter().map(|fieldname| {
-                SortField::new(fieldname.into(), None).build()
+                SortField::new(fieldname, None).build()
             }).collect()
         }
     }
@@ -368,7 +368,7 @@ impl Sort {
     pub fn field_orders<S: Into<String>>(fields: Vec<(S, Order)>) -> Sort {
         Sort {
             fields: fields.into_iter().map(|(fieldname, order)| {
-                SortField::new(fieldname.into(), Some(order)).build()
+                SortField::new(fieldname, Some(order)).build()
             }).collect()
         }
     }
@@ -940,6 +940,25 @@ mod tests {
 
         client.refresh().with_indexes(&[index_name]).send().unwrap();
 
+        {
+            let result = client.search_uri()
+                .with_indexes(&[index_name])
+                .with_sort(&Sort::field("str_field"))
+                .send()
+                .unwrap();
+
+            let result_str:Vec<String> = result.hits.hits()
+                .unwrap()
+                .into_iter()
+                .map(|doc:TestDocument| doc.str_field)
+                .collect();
+
+            let expected_result_str:Vec<String> = ["A", "B", "C"].iter()
+                .map(|x| x.to_string())
+                .collect();
+
+            assert_eq!(expected_result_str, result_str);
+        }
         {
             let result = client.search_query()
                 .with_indexes(&[index_name])
