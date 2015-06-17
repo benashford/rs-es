@@ -110,7 +110,7 @@ impl GetResult {
     pub fn source<T: Decodable>(self) -> Result<T, EsError> {
         match self.source {
             Some(doc) => decode_json(doc),
-            None      => Err(EsError::EsError("No source".to_string()))
+            None      => Err(EsError::EsError("No source".to_owned()))
         }
     }
 }

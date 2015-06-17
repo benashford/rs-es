@@ -94,7 +94,7 @@ struct DeleteByQueryBody<'a> {
 impl<'a> ToJson for DeleteByQueryBody<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        d.insert("query".to_string(), self.query.to_json());
+        d.insert("query".to_owned(), self.query.to_json());
         Json::Object(d)
     }
 }
@@ -127,7 +127,7 @@ impl<'a, 'b> DeleteByQueryOperation<'a, 'b> {
             client:    client,
             indexes:   &[],
             doc_types: &[],
-            query:     QueryOption::String("".to_string()),
+            query:     QueryOption::String("".to_owned()),
             options:   Options::new()
         }
     }

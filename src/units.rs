@@ -43,7 +43,7 @@ impl ToString for DurationUnit {
             DurationUnit::Day    => "d",
             DurationUnit::Hour   => "h",
             DurationUnit::Minute => "m"
-        }.to_string()
+        }.to_owned()
     }
 }
 
@@ -97,8 +97,8 @@ impl ToJson for Location {
         match self {
             &Location::LatLon(lat, lon) => {
                 let mut d = BTreeMap::new();
-                d.insert("lat".to_string(), Json::F64(lat));
-                d.insert("lon".to_string(), Json::F64(lon));
+                d.insert("lat".to_owned(), Json::F64(lat));
+                d.insert("lon".to_owned(), Json::F64(lon));
                 Json::Object(d)
             },
             &Location::GeoHash(ref geo_hash) => {
@@ -149,7 +149,7 @@ impl ToJson for DistanceType {
             &DistanceType::SloppyArc => "sloppy_arc",
             &DistanceType::Arc       => "arc",
             &DistanceType::Plane     => "plane"
-        }.to_string())
+        }.to_owned())
     }
 }
 
@@ -178,7 +178,7 @@ impl ToString for DistanceUnit {
             DistanceUnit::Centimeter => "cm",
             DistanceUnit::Millimeter => "mm",
             DistanceUnit::NauticalMile => "NM"
-        }.to_string()
+        }.to_owned()
     }
 }
 
@@ -210,7 +210,7 @@ from!(String, JsonVal, String);
 
 impl<'a> From<&'a str> for JsonVal {
     fn from(from: &'a str) -> JsonVal {
-        JsonVal::String(from.to_string())
+        JsonVal::String(from.to_owned())
     }
 }
 

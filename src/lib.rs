@@ -169,7 +169,7 @@ impl Client {
         let json = result.unwrap();
         match json.find_path(&["version", "number"]) {
             Some(version) => match version.as_string() {
-                Some(string) => Ok(string.to_string()),
+                Some(string) => Ok(string.to_owned()),
                 None         => Err(EsError::EsError(format!("Cannot find version number in: {:?}",
                                                              json)))
             },
@@ -274,7 +274,7 @@ pub mod tests {
     pub fn make_client() -> Client {
         let hostname = match env::var("ES_HOST") {
             Ok(val) => val,
-            Err(_)  => "localhost".to_string()
+            Err(_)  => "localhost".to_owned()
         };
         Client::new(&hostname, 9200)
     }
@@ -288,13 +288,13 @@ pub mod tests {
     impl TestDocument {
         pub fn new() -> TestDocument {
             TestDocument {
-                str_field: "I am a test".to_string(),
+                str_field: "I am a test".to_owned(),
                 int_field: 1
             }
         }
 
         pub fn with_str_field(mut self, s: &str) -> TestDocument {
-            self.str_field = s.to_string();
+            self.str_field = s.to_owned();
             self
         }
 
@@ -307,8 +307,8 @@ pub mod tests {
     impl ToJson for TestDocument {
         fn to_json(&self) -> Json {
             let mut d = BTreeMap::new();
-            d.insert("str_field".to_string(), self.str_field.to_json());
-            d.insert("int_field".to_string(), self.int_field.to_json());
+            d.insert("str_field".to_owned(), self.str_field.to_json());
+            d.insert("int_field".to_owned(), self.int_field.to_json());
             Json::Object(d)
         }
     }
@@ -468,7 +468,7 @@ pub mod tests {
         let doc_a = client
             .search_uri()
             .with_indexes(&[index_name])
-            .with_query("A123".to_string())
+            .with_query("A123")
             .send()
             .unwrap();
         assert_eq!(1, doc_a.hits.total);
@@ -476,7 +476,7 @@ pub mod tests {
         let doc_1 = client
             .search_uri()
             .with_indexes(&[index_name])
-            .with_query("str_field:1ABC".to_string())
+            .with_query("str_field:1ABC")
             .send()
             .unwrap();
         assert_eq!(1, doc_1.hits.total);
@@ -484,7 +484,7 @@ pub mod tests {
         let limited_fields = client
             .search_uri()
             .with_indexes(&[index_name])
-            .with_query("str_field:B456".to_string())
+            .with_query("str_field:B456")
             .with_fields(&["int_field"])
             .send()
             .unwrap();

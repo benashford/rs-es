@@ -23,6 +23,9 @@ pub type Options<'a> = Vec<(&'a str, String)>;
 
 /// Adds a function to an operation to add specific query-string options to that
 /// operations builder interface.
+///
+/// TODO: use of `ToString` here is not the most efficient way of handling this
+/// it needs reviewing
 macro_rules! add_option {
     ($n:ident, $e:expr) => (
         pub fn $n<T: ToString>(&'a mut self, val: &T) -> &'a mut Self {
@@ -61,7 +64,7 @@ impl ToString for VersionType {
             VersionType::ExternalGt => "external_gt",
             VersionType::ExternalGte => "external_gte",
             VersionType::Force => "force"
-        }.to_string()
+        }.to_owned()
     }
 }
 

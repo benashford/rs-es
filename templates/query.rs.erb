@@ -177,8 +177,8 @@ impl ToJson for MinimumShouldMatch {
             }
             &MinimumShouldMatch::LowHigh(low, high) => {
                 let mut d = BTreeMap::new();
-                d.insert("low_freq".to_string(), low.to_json());
-                d.insert("high_freq".to_string(), high.to_json());
+                d.insert("low_freq".to_owned(), low.to_json());
+                d.insert("high_freq".to_owned(), high.to_json());
                 Json::Object(d)
             }
         }
@@ -189,9 +189,9 @@ impl ToJson for CommonQuery {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
-        inner.insert("query".to_string(), self.query.to_json());
+        inner.insert("query".to_owned(), self.query.to_json());
         self.add_optionals(&mut inner);
-        d.insert("body".to_string(), inner.to_json());
+        d.insert("body".to_owned(), inner.to_json());
         Json::Object(d)
     }
 }
@@ -275,15 +275,15 @@ impl ToJson for Shape {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
 
-        inner.insert("type".to_string(), self.shape_type.to_json());
+        inner.insert("type".to_owned(), self.shape_type.to_json());
 
         let coordinates:Vec<Vec<f64>> = self.coordinates
             .iter()
             .map (|&(a, b)| vec![a, b])
             .collect();
-        inner.insert("coordinates".to_string(), coordinates.to_json());
+        inner.insert("coordinates".to_owned(), coordinates.to_json());
 
-        d.insert("shape".to_string(), Json::Object(inner));
+        d.insert("shape".to_owned(), Json::Object(inner));
         Json::Object(d)
     }
 }
@@ -315,11 +315,11 @@ impl ToJson for IndexedShape {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
-        inner.insert("id".to_string(), self.id.to_json());
-        inner.insert("type".to_string(), self.doc_type.to_json());
-        inner.insert("index".to_string(), self.index.to_json());
-        inner.insert("path".to_string(), self.path.to_json());
-        d.insert("indexed_shape".to_string(), Json::Object(inner));
+        inner.insert("id".to_owned(), self.id.to_json());
+        inner.insert("type".to_owned(), self.doc_type.to_json());
+        inner.insert("index".to_owned(), self.index.to_json());
+        inner.insert("path".to_owned(), self.path.to_json());
+        d.insert("indexed_shape".to_owned(), Json::Object(inner));
         Json::Object(d)
     }
 }
@@ -374,8 +374,8 @@ impl Doc {
 impl ToJson for Doc {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        d.insert("_index".to_string(), self.index.to_json());
-        d.insert("_type".to_string(), self.doc_type.to_json());
+        d.insert("_index".to_owned(), self.index.to_json());
+        d.insert("_type".to_owned(), self.doc_type.to_json());
 
         optional_add!(d, self.doc, "doc");
         optional_add!(d, self.id, "_id");
@@ -445,7 +445,7 @@ impl ToString for Flag {
             &Flag::Intersection => "INTERSECTION",
             &Flag::Interval => "INTERVAL",
             &Flag::None => "NONE"
-        }.to_string()
+        }.to_owned()
     }
 }
 
@@ -543,14 +543,14 @@ impl ToJson for GeoBox {
         let mut d = BTreeMap::new();
         match self {
             &GeoBox::Corners(ref top_left, ref bottom_right) => {
-                d.insert("top_left".to_string(), top_left.to_json());
-                d.insert("bottom_right".to_string(), bottom_right.to_json());
+                d.insert("top_left".to_owned(), top_left.to_json());
+                d.insert("bottom_right".to_owned(), bottom_right.to_json());
             },
             &GeoBox::Vertices(ref top, ref left, ref bottom, ref right) => {
-                d.insert("top".to_string(), top.to_json());
-                d.insert("left".to_string(), left.to_json());
-                d.insert("bottom".to_string(), bottom.to_json());
-                d.insert("right".to_string(), right.to_json());
+                d.insert("top".to_owned(), top.to_json());
+                d.insert("left".to_owned(), left.to_json());
+                d.insert("bottom".to_owned(), bottom.to_json());
+                d.insert("right".to_owned(), right.to_json());
             }
         }
         Json::Object(d)
@@ -595,7 +595,7 @@ impl ToJson for GeoDistanceFilter {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         d.insert(self.field.clone(), self.location.to_json());
-        d.insert("distance".to_string(), self.distance.to_json());
+        d.insert("distance".to_owned(), self.distance.to_json());
         self.add_optionals(&mut d);
         self.add_core_optionals(&mut d);
         Json::Object(d)
@@ -827,7 +827,7 @@ macro_rules! decay_func_json_impl {
             fn to_json(&self) -> Json {
                 let mut d = BTreeMap::new();
                 let mut inner = BTreeMap::new();
-                inner.insert("origin".to_string(), self.origin.to_json());
+                inner.insert("origin".to_owned(), self.origin.to_json());
                 optional_add!(inner, self.scale, "scale");
                 optional_add!(inner, self.decay, "decay");
                 optional_add!(inner, self.offset, "offset");

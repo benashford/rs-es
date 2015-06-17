@@ -24,7 +24,7 @@ use std::iter::Iterator;
 macro_rules! optional_add {
     ($map:ident, $sn:expr, $field:expr, $val: ident, $ex:expr) => {
         match $sn {
-            Some(ref $val) => { $map.insert($field.to_string(), $ex); }
+            Some(ref $val) => { $map.insert($field.to_owned(), $ex); }
             _              => ()
         }
     };
@@ -42,7 +42,7 @@ macro_rules! get_json_thing {
 
 macro_rules! get_json_string {
     ($r:ident,$f:expr) => {
-        get_json_thing!($r,$f,as_string).to_string()
+        get_json_thing!($r,$f,as_string).to_owned()
     }
 }
 

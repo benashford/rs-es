@@ -58,7 +58,7 @@ fn format_query_string(options: &[(&str, String)]) -> String {
 /// take multiple values
 fn format_multi(parts: &[&str]) -> String {
     if parts.is_empty() {
-        return "_all".to_string()
+        return "_all".to_owned()
     } else {
         parts.iter().join(",")
     }

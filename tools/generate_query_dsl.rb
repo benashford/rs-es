@@ -135,7 +135,7 @@ class ESDSLGen
                   match self {
                       <% fields.each do |field| %>
                           &<%= name %>::<%= field.name %>(ref q) => {
-                              d.insert("<%= field.json_name %>".to_string(), q.to_json());
+                              d.insert("<%= field.json_name %>".to_owned(), q.to_json());
                           }<% if !last(fields, field) %>,<% end %>
                       <% end %>
                   }
@@ -656,7 +656,7 @@ class ESDSLGen
             fn to_json(&self) -> Json {
                 let mut d = BTreeMap::new();
                 <% fields.reject(&:optional).each do |field| %>
-                  d.insert("<%= field.json_name %>".to_string(),
+                  d.insert("<%= field.json_name %>".to_owned(),
                            self.<%= field.name %>.to_json());
                 <% end %>
                 self.add_optionals(&mut d);
@@ -683,7 +683,7 @@ class ESDSLGen
                 let mut inner = BTreeMap::new();
 
                 <% fields.reject(&:optional).each do |field| %>
-                  inner.insert("<%= field.json_name %>".to_string(),
+                  inner.insert("<%= field.json_name %>".to_owned(),
                                self.<%= field.name %>.to_json());
                 <% end %>
                 self.add_optionals(&mut inner);
@@ -754,7 +754,7 @@ class ESDSLGen
                         &<%= enum_name %>::<%= snake_to_camel(element) %>(_) => "<%= element %>"
                         <% if !last(elements, element) %>,<% end %>
                     <% end %>
-                }.to_string()
+                }.to_owned()
             }
         }
 

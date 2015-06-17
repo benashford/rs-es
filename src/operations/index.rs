@@ -31,7 +31,7 @@ pub enum OpType {
 
 impl ToString for OpType {
     fn to_string(&self) -> String {
-        "create".to_string()
+        "create".to_owned()
     }
 }
 

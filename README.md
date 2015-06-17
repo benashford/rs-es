@@ -368,7 +368,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-3. The various optional options `with_search_scan` are implemented as requiring something that implements `ToString` rather than `Into<String>`, this is causing some issues.
+2. Check all uses (and implementations) of ToString.  Especially as URL options, might be better off with a custom type and appropriate conversion traits.
 4. Check JSON models to use u64 where necessary, not just i64.
 5. Use `expect` instead of `unwrap` on `Option` "unwrappings" to get better error messages.
 6. Implement `version_type` option in all appropriate places where `version` is used.

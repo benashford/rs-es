@@ -57,7 +57,7 @@ impl ToString for SearchType {
             &SearchType::DFSQueryAndFetch  => "dfs_query_and_fetch",
             &SearchType::QueryThenFetch    => "query_then_fetch",
             &SearchType::QueryAndFetch     => "query_and_fetch"
-        }.to_string()
+        }.to_owned()
     }
 }
 
@@ -70,9 +70,9 @@ pub enum Order {
 impl ToString for Order {
     fn to_string(&self) -> String {
         match self {
-            &Order::Asc => "asc".to_string(),
-            &Order::Desc => "desc".to_string()
-        }
+            &Order::Asc => "asc",
+            &Order::Desc => "desc"
+        }.to_owned()
     }
 }
 
@@ -97,7 +97,7 @@ impl ToJson for Mode {
             &Mode::Max => "max",
             &Mode::Sum => "sum",
             &Mode::Avg => "avg"
-        }.to_string())
+        }.to_owned())
     }
 }
 
@@ -111,8 +111,8 @@ pub enum Missing {
 impl ToJson for Missing {
     fn to_json(&self) -> Json {
         Json::String(match self {
-            &Missing::First         => "_first".to_string(),
-            &Missing::Last          => "_last".to_string(),
+            &Missing::First         => "_first".to_owned(),
+            &Missing::Last          => "_last".to_owned(),
             &Missing::Custom(ref s) => s.clone()
         })
     }
@@ -170,6 +170,8 @@ impl ToString for SortField {
         match self.order {
             Some(ref order) => {
                 s.push_str(":");
+                // TODO - find less clumsy way of implementing the following
+                // line
                 s.push_str(&order.to_string());
             },
             None            => ()
@@ -251,7 +253,7 @@ impl ToJson for GeoDistance {
         optional_add!(inner, self.mode, "mode");
         optional_add!(inner, self.distance_type, "distance_type");
 
-        d.insert("_geo_distance".to_string(), Json::Object(inner));
+        d.insert("_geo_distance".to_owned(), Json::Object(inner));
         Json::Object(d)
     }
 }
@@ -297,11 +299,11 @@ impl ToJson for Script {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
 
-        inner.insert("script".to_string(), self.script.to_json());
-        inner.insert("type".to_string(), self.script_type.to_json());
-        inner.insert("params".to_string(), self.params.to_json());
+        inner.insert("script".to_owned(), self.script.to_json());
+        inner.insert("type".to_owned(), self.script_type.to_json());
+        inner.insert("params".to_owned(), self.params.to_json());
 
-        d.insert("_script".to_string(), Json::Object(inner));
+        d.insert("_script".to_owned(), Json::Object(inner));
         Json::Object(d)
     }
 }
@@ -478,8 +480,8 @@ struct SearchQueryOperationBody<'b> {
 impl<'a> ToJson for SearchQueryOperationBody<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        d.insert("from".to_string(), self.from.to_json());
-        d.insert("size".to_string(), self.size.to_json());
+        d.insert("from".to_owned(), self.from.to_json());
+        d.insert("size".to_owned(), self.size.to_json());
         optional_add!(d, self.query, "query");
         optional_add!(d, self.timeout, "timeout");
         optional_add!(d, self.terminate_after, "terminate_after");
@@ -602,7 +604,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
     }
 
     pub fn scan(&'b mut self, scroll: Duration) -> Result<ScanResult, EsError> {
-        self.options.push(("search_type", "scan".to_string()));
+        self.options.push(("search_type", "scan".to_owned()));
         self.options.push(("scroll", scroll.to_string()));
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
@@ -631,7 +633,7 @@ impl SearchHitsHitsResult {
     pub fn source<T: Decodable>(self) -> Result<T, EsError> {
         match self.source {
             Some(source) => decode_json(source),
-            None         => Err(EsError::EsError("No source field".to_string()))
+            None         => Err(EsError::EsError("No source field".to_owned()))
         }
     }
 }
@@ -952,8 +954,8 @@ mod tests {
                 .map(|doc:TestDocument| doc.str_field)
                 .collect();
 
-            let expected_result_str:Vec<String> = ["A", "B", "C"].iter()
-                .map(|x| x.to_string())
+            let expected_result_str:Vec<String> = vec!["A", "B", "C"].into_iter()
+                .map(|x| x.to_owned())
                 .collect();
 
             assert_eq!(expected_result_str, result_str);
@@ -971,8 +973,8 @@ mod tests {
                 .map(|doc:TestDocument| doc.str_field)
                 .collect();
 
-            let expected_result_str:Vec<String> = ["A", "B", "C"].iter()
-                .map(|x| x.to_string())
+            let expected_result_str:Vec<String> = vec!["A", "B", "C"].into_iter()
+                .map(|x| x.to_owned())
                 .collect();
 
             assert_eq!(expected_result_str,
@@ -991,8 +993,8 @@ mod tests {
                 .map(|doc:TestDocument| doc.str_field)
                 .collect();
 
-            let expected_result_str:Vec<String> = ["C", "B", "A"].iter()
-                .map(|x| x.to_string())
+            let expected_result_str:Vec<String> = vec!["C", "B", "A"].into_iter()
+                .map(|x| x.to_owned())
                 .collect();
 
             assert_eq!(expected_result_str,

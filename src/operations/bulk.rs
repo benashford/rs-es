@@ -105,7 +105,7 @@ impl ToString for ActionType {
             ActionType::Create => "create",
             ActionType::Delete => "delete",
             ActionType::Update => "update"
-        }.to_string()
+        }.to_owned()
     }
 }
 
