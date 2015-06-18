@@ -21,7 +21,7 @@ use rustc_serialize::json::Json;
 
 use ::Client;
 use ::error::EsError;
-use super::common::Options;
+use super::common::{Options, OptionVal};
 use super::format_query_string;
 
 /// Values for the op_type option
@@ -29,9 +29,11 @@ pub enum OpType {
     Create
 }
 
-impl ToString for OpType {
-    fn to_string(&self) -> String {
-        "create".to_owned()
+impl From<OpType> for OptionVal {
+    fn from(from: OpType) -> OptionVal {
+        match from {
+            OpType::Create => OptionVal("create".to_owned())
+        }
     }
 }
 

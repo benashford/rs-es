@@ -28,7 +28,7 @@ use ::do_req;
 use ::error::EsError;
 use ::units::Duration;
 
-use super::common::{Options, VersionType};
+use super::common::{Options, OptionVal, VersionType};
 use super::format_query_string;
 
 pub struct ActionSource {

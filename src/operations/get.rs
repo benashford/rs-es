@@ -22,7 +22,7 @@ use rustc_serialize::json::Json;
 use ::Client;
 use ::error::EsError;
 use ::util::StrJoin;
-use super::common::Options;
+use super::common::{Options, OptionVal};
 use super::decode_json;
 use super::format_query_string;
 
@@ -68,7 +68,7 @@ impl<'a, 'b> GetOperation<'a, 'b> {
     }
 
     pub fn with_fields(&'b mut self, fields: &[&'b str]) -> &'b mut Self {
-        self.options.push(("fields", fields.iter().join(",")));
+        self.options.push("fields", fields.iter().join(","));
         self
     }
 

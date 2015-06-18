@@ -344,7 +344,7 @@ pub mod tests {
             let result_wrapped = client
                 .index(index_name, "test_type")
                 .with_doc(&TestDocument::new().with_int_field(1))
-                .with_ttl(&927500)
+                .with_ttl(927500)
                 .send();
             info!("TEST RESULT: {:?}", result_wrapped);
             let result = result_wrapped.unwrap();
@@ -362,7 +362,7 @@ pub mod tests {
                 .index(index_name, "test_type")
                 .with_doc(&TestDocument::new().with_int_field(2))
                 .with_id("TEST_INDEXING_2")
-                .with_op_type(&OpType::Create)
+                .with_op_type(OpType::Create)
                 .send();
             let result = result_wrapped.unwrap();
 

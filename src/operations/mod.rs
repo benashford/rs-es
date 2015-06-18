@@ -31,7 +31,7 @@ use util::StrJoin;
 
 // Specific operations
 #[macro_use]
-mod common;
+pub mod common;
 
 pub mod bulk;
 pub mod delete;
@@ -42,14 +42,14 @@ pub mod search;
 // Common utility functions
 
 /// Produces a query string for a URL
-fn format_query_string(options: &[(&str, String)]) -> String {
+fn format_query_string(options: &common::Options) -> String {
     let mut st = String::new();
     if options.is_empty() {
         return st;
     }
     st.push_str("?");
-    st.push_str(&options.iter().map(|&(ref k, ref v)| {
-        format!("{}={}", k, v)
+    st.push_str(&options.0.iter().map(|&(ref k, ref v)| {
+        format!("{}={}", k, v.0)
     }).join("&"));
     st
 }

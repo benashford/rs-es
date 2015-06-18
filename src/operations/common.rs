@@ -18,18 +18,52 @@
 
 use rustc_serialize::json::{Json, ToJson};
 
+/// A newtype for the value of a URI option, this is to allow conversion traits
+/// to be implemented for it
+pub struct OptionVal(pub String);
+
+/// Conversion from `&str` to `OptionVal`
+impl<'a> From<&'a str> for OptionVal {
+    fn from(from: &'a str) -> OptionVal {
+        OptionVal(from.to_owned())
+    }
+}
+
+/// Basic types have conversions to `OptionVal`
+from_exp!(String, OptionVal, from, OptionVal(from));
+from_exp!(i64, OptionVal, from, OptionVal(from.to_string()));
+
 /// Every ES operation has a set of options
-pub type Options<'a> = Vec<(&'a str, String)>;
+pub struct Options<'a>(pub Vec<(&'a str, OptionVal)>);
+
+impl<'a> Options<'a> {
+    pub fn new() -> Options<'a> {
+        Options(Vec::new())
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Add a value
+    ///
+    /// ```
+    /// use rs_es::operations::common::Options;
+    /// let mut options = Options::new();
+    /// options.push("a", 1);
+    /// options.push("b", "2");
+    /// ```
+    pub fn push<O: Into<OptionVal>>(&mut self, key: &'a str, val: O) {
+        self.0.push((key, val.into()));
+    }
+}
 
 /// Adds a function to an operation to add specific query-string options to that
 /// operations builder interface.
-///
-/// TODO: use of `ToString` here is not the most efficient way of handling this
-/// it needs reviewing
 macro_rules! add_option {
     ($n:ident, $e:expr) => (
-        pub fn $n<T: ToString>(&'a mut self, val: &T) -> &'a mut Self {
-            self.options.push(($e, val.to_string()));
+        pub fn $n<T: Into<OptionVal>>(&'a mut self, val: T) -> &'a mut Self {
+            self.options.push($e, val);
             self
         }
     )

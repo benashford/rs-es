@@ -25,6 +25,8 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
+use ::operations::common::OptionVal;
+
 /// The units by which duration is measured.
 ///
 /// TODO - this list is incomplete
@@ -80,6 +82,12 @@ impl ToString for Duration {
 impl ToJson for Duration {
     fn to_json(&self) -> Json {
         Json::String(self.to_string())
+    }
+}
+
+impl<'a> From<&'a Duration> for OptionVal {
+    fn from(from: &'a Duration) -> OptionVal {
+        OptionVal(from.to_string())
     }
 }
 

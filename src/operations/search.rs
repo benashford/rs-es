@@ -28,7 +28,7 @@ use ::error::EsError;
 use ::query::{Filter, Query};
 use ::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
 use ::util::StrJoin;
-use super::common::Options;
+use super::common::{Options, OptionVal};
 use super::decode_json;
 use super::format_indexes_and_types;
 use super::format_query_string;
@@ -375,9 +375,19 @@ impl Sort {
     }
 }
 
-impl ToString for Sort {
-    fn to_string(&self) -> String {
-        self.fields.iter().map(|f| f.to_string()).join(",")
+/// Conversion of a `Sort` into an `OptionVal` for use in search-by-URI queries
+///
+/// ```
+/// use rs_es::operations::common::OptionVal;
+/// use rs_es::operations::search::{Sort, SortField, Order};
+/// let sort = Sort::new(vec![SortField::new("a", Some(Order::Asc)).build(),
+///                                     SortField::new("b", None).build()]);
+/// let op_val:OptionVal = (&sort).into();
+/// assert_eq!("a:asc,b", op_val.0);
+/// ```
+impl<'a> From<&'a Sort> for OptionVal {
+    fn from(from: &'a Sort) -> OptionVal {
+        OptionVal(from.fields.iter().map(|f| f.to_string()).join(","))
     }
 }
 
@@ -408,7 +418,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
     }
 
     pub fn with_query<S: Into<String>>(&'b mut self, qs: S) -> &'b mut Self {
-        self.options.push(("q", qs.into()));
+        self.options.push("q", qs.into());
         self
     }
 
@@ -430,7 +440,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
     add_option!(with_search_type, "search_type");
 
     pub fn with_fields(&'b mut self, fields: &[&str]) -> &'b mut Self {
-        self.options.push(("fields", fields.iter().join(",")));
+        self.options.push("fields", fields.iter().join(","));
         self
     }
 
@@ -604,8 +614,8 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
     }
 
     pub fn scan(&'b mut self, scroll: Duration) -> Result<ScanResult, EsError> {
-        self.options.push(("search_type", "scan".to_owned()));
-        self.options.push(("scroll", scroll.to_string()));
+        self.options.push("search_type", "scan");
+        self.options.push("scroll", &scroll);
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           format_query_string(&self.options));

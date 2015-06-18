@@ -26,7 +26,7 @@ use rustc_serialize::json::{Json, ToJson};
 use ::Client;
 use ::error::EsError;
 use ::query::Query;
-use super::common::Options;
+use super::common::{Options, OptionVal};
 use super::decode_json;
 use super::format_indexes_and_types;
 use super::format_query_string;
@@ -163,7 +163,7 @@ impl<'a, 'b> DeleteByQueryOperation<'a, 'b> {
             &QueryOption::Document(_)   => &mut self.options,
             &QueryOption::String(ref s) => {
                 let opts = &mut self.options;
-                opts.push(("q", s.clone()));
+                opts.push("q", s.to_owned());
                 opts
             }
         };
