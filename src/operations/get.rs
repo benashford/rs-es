@@ -26,6 +26,21 @@ use super::common::{Options, OptionVal};
 use super::decode_json;
 use super::format_query_string;
 
+/// Values for the `preference` query parameter
+pub enum Preference {
+    Primary,
+    Local
+}
+
+impl From<Preference> for OptionVal {
+    fn from(from: Preference) -> OptionVal {
+        OptionVal(match from {
+            Preference::Primary => "_primary",
+            Preference::Local => "_local"
+        }.to_owned())
+    }
+}
+
 /// An ES GET operation, to get a document by ID
 pub struct GetOperation<'a, 'b> {
     /// The HTTP connection

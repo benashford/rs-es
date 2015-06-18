@@ -91,6 +91,8 @@ impl<'a> From<&'a Duration> for OptionVal {
     }
 }
 
+from_exp!(Duration, OptionVal, from, OptionVal(from.to_string()));
+
 /// Representing a geographic location
 pub enum Location {
     LatLon(f64, f64),

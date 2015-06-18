@@ -32,6 +32,7 @@ impl<'a> From<&'a str> for OptionVal {
 /// Basic types have conversions to `OptionVal`
 from_exp!(String, OptionVal, from, OptionVal(from));
 from_exp!(i64, OptionVal, from, OptionVal(from.to_string()));
+from_exp!(bool, OptionVal, from, OptionVal(from.to_string()));
 
 /// Every ES operation has a set of options
 pub struct Options<'a>(pub Vec<(&'a str, OptionVal)>);
@@ -102,8 +103,42 @@ impl ToString for VersionType {
     }
 }
 
+from_exp!(VersionType, OptionVal, from, OptionVal(from.to_string()));
+
 impl ToJson for VersionType {
     fn to_json(&self) -> Json {
         Json::String(self.to_string())
+    }
+}
+
+/// The consistency query parameter
+pub enum Consistency {
+    One,
+    Quorum,
+    All
+}
+
+impl From<Consistency> for OptionVal {
+    fn from(from: Consistency) -> OptionVal {
+        OptionVal(match from {
+            Consistency::One => "one",
+            Consistency::Quorum => "quorum",
+            Consistency::All => "all"
+        }.to_owned())
+    }
+}
+
+/// Values for `default_operator` query parameters
+pub enum DefaultOperator {
+    And,
+    Or
+}
+
+impl From<DefaultOperator> for OptionVal {
+    fn from(from: DefaultOperator) -> OptionVal {
+        OptionVal(match from {
+            DefaultOperator::And => "and",
+            DefaultOperator::Or => "or"
+        }.to_owned())
     }
 }
