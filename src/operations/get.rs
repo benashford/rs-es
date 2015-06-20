@@ -93,6 +93,7 @@ impl<'a, 'b> GetOperation<'a, 'b> {
     add_option!(with_preference, "preference");
     add_option!(with_refresh, "refresh");
     add_option!(with_version, "version");
+    add_option!(with_version_type, "version_type");
 
     pub fn send(&'b mut self) -> Result<GetResult, EsError> {
         let url = format!("/{}/{}/{}{}",

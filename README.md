@@ -370,7 +370,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-3. Implement `version_type` option in all appropriate places where `version` is used.
 4. Implement `format_query_string` as trait (potentially).
 5. Source-filtering (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-source-filtering.html)
 6. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html

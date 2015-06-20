@@ -64,6 +64,7 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
     }
 
     add_option!(with_version, "version");
+    add_option!(with_version_type, "version_type");
     add_option!(with_routing, "routing");
     add_option!(with_parent, "parent");
     add_option!(with_consistency, "consistency");
