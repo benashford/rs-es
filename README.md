@@ -368,35 +368,34 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-2. Check all uses (and implementations) of ToString.  Especially as URL options, might be better off with a custom type and appropriate conversion traits.
-4. Check JSON models to use u64 where necessary, not just i64.
-5. Use `expect` instead of `unwrap` on `Option` "unwrappings" to get better error messages.
-6. Implement `version_type` option in all appropriate places where `version` is used.
-7. Implement `format_query_string` as trait (potentially).
-8. Source-filtering (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-source-filtering.html)
-9. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
-10. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
-11. Aggregations
-12. Field-data fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fielddata-fields.html
-13. Post filter: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-post-filter.html (after aggregations)
-14. Highlighting: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html and Field Highlighting Order: https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-field-order.html
-15. Rescoring: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-rescore.html
-16. Search templates (possibly)
-17. Implement Update API.
-18. Implement Multi Get API
-19. Implement Term Vectors and Multi termvectors API
-20. Test coverage.
-21. Performance (ensure use of persistent HTTP connections, etc.).
-22. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
-23. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
-24. Check type of "timeout" option on Search...
-25. Review consistency in Operation objects (e.g. taking ownership of strings, type of parameters, etc.)
-26. Index boost: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-index-boost.html
-27. Shard preference: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
-28. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
-29. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
-30. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
-1. Documentation, both rustdoc and a suitable high-level write-up in this README
+1. Check JSON models to use u64 where necessary, not just i64.
+2. Use `expect` instead of `unwrap` on `Option` "unwrappings" to get better error messages.
+3. Implement `version_type` option in all appropriate places where `version` is used.
+4. Implement `format_query_string` as trait (potentially).
+5. Source-filtering (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-source-filtering.html)
+6. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
+7. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
+8. Aggregations
+9. Field-data fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fielddata-fields.html
+10. Post filter: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-post-filter.html (after aggregations)
+11. Highlighting: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html and Field Highlighting Order: https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-field-order.html
+12. Rescoring: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-rescore.html
+13. Search templates (possibly)
+14. Implement Update API.
+15. Implement Multi Get API
+16. Implement Term Vectors and Multi termvectors API
+17. Test coverage.
+18. Performance (ensure use of persistent HTTP connections, etc.).
+19. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
+20. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
+21. Check type of "timeout" option on Search...
+22. Review consistency in Operation objects (e.g. taking ownership of strings, type of parameters, etc.)
+23. Index boost: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-index-boost.html
+24. Shard preference: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
+25. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
+26. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
+27. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
+28. Documentation, both rustdoc and a suitable high-level write-up in this README
 
 ## Licence
 
