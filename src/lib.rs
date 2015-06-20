@@ -126,7 +126,7 @@ macro_rules! es_body_op {
                  -> Result<(StatusCode, Option<Json>), EsError>
             where E: Encodable {
                 info!("Doing {} on {}", stringify!($n), url);
-                let json_string = json::encode(body).unwrap();
+                let json_string = try!(json::encode(body));
                 info!("Body: {}", json_string);
                 let url = self.full_url(url);
                 let mut result = try!(self.http_client
