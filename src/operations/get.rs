@@ -97,13 +97,13 @@ impl<'a, 'b> GetOperation<'a, 'b> {
     pub fn send(&'b mut self) -> Result<GetResult, EsError> {
         let url = format!("/{}/{}/{}{}",
                           self.index,
-                          self.doc_type.unwrap(),
+                          self.doc_type.expect("No doc_type specified"),
                           self.id,
                           format_query_string(&self.options));
         // We're ignoring status_code as all valid codes should return a value,
         // so anything else is an error.
         let (_, result) = try!(self.client.get_op(&url));
-        Ok(GetResult::from(&result.unwrap()))
+        Ok(GetResult::from(&result.expect("No Json payload")))
     }
 }
 
@@ -137,7 +137,9 @@ impl<'a> From<&'a Json> for GetResult {
             index:    get_json_string!(r, "_index"),
             doc_type: get_json_string!(r, "_type"),
             id:       get_json_string!(r, "_id"),
-            version:  r.search("_version").map(|v| v.as_u64().unwrap()),
+            version:  r.search("_version").map(|v| {
+                v.as_u64().expect("Field '_search' not an integer")
+            }),
             found:    get_json_bool!(r, "found"),
             source:   r.search("_source").map(|source| source.clone())
         }

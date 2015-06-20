@@ -80,7 +80,7 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
         info!("DELETE OPERATION STATUS: {:?} RESULT: {:?}", status_code, result);
         match status_code {
             StatusCode::Ok =>
-                Ok(DeleteResult::from(&result.unwrap())),
+                Ok(DeleteResult::from(&result.expect("No Json payload"))),
             _ =>
                 Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
@@ -178,7 +178,7 @@ impl<'a, 'b> DeleteByQueryOperation<'a, 'b> {
         info!("DELETE BY QUERY STATUS: {:?}, RESULT: {:?}", status_code, result);
         match status_code {
             StatusCode::Ok =>
-                Ok(Some(DeleteByQueryResult::from(&result.unwrap()))),
+                Ok(Some(DeleteByQueryResult::from(&result.expect("No Json payload")))),
             StatusCode::NotFound =>
                 Ok(None),
             _  =>
@@ -224,7 +224,11 @@ impl<'a> From<&'a Json> for DeleteByQueryIndexResult {
     fn from(r: &'a Json) -> DeleteByQueryIndexResult {
         info!("Parsing DeleteByQueryIndexResult: {:?}", r);
         DeleteByQueryIndexResult {
-            shards: decode_json(r.find("_shards").unwrap().clone()).unwrap()
+            shards: decode_json(r
+                                .find("_shards")
+                                .expect("No field '_shards'")
+                                .clone())
+                .unwrap()
         }
     }
 }
@@ -250,7 +254,10 @@ impl<'a> From<&'a Json> for DeleteByQueryResult {
     fn from(r: &'a Json) -> DeleteByQueryResult {
         info!("DeleteByQueryResult from: {:?}", r);
 
-        let indices = r.find("_indices").unwrap().as_object().unwrap();
+        let indices = r.find("_indices")
+            .expect("No field '_indices'")
+            .as_object()
+            .expect("Field '_indices' not an objecT");
         let mut indices_map = HashMap::new();
         for (k, v) in indices {
             indices_map.insert(k.clone(), DeleteByQueryIndexResult::from(v));

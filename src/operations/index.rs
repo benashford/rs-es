@@ -116,7 +116,7 @@ impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
                 }
             }
         });
-        Ok(IndexResult::from(&result.unwrap()))
+        Ok(IndexResult::from(&result.expect("No Json payload")))
     }
 }
 

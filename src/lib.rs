@@ -166,7 +166,7 @@ impl Client {
     /// Calls the base ES path, returning the version number
     pub fn version(&mut self) -> Result<String, EsError> {
         let (_, result) = try!(self.get_op("/"));
-        let json = result.unwrap();
+        let json = result.expect("No Json payload");
         match json.find_path(&["version", "number"]) {
             Some(version) => match version.as_string() {
                 Some(string) => Ok(string.to_owned()),

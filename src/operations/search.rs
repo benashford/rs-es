@@ -452,7 +452,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
         let (status_code, result) = try!(self.client.get_op(&url));
         info!("Search result (status: {}, result: {:?})", status_code, result);
         match status_code {
-            StatusCode::Ok => Ok(SearchResult::from(&result.unwrap())),
+            StatusCode::Ok => Ok(SearchResult::from(&result.expect("No Json payload"))),
             _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
     }
@@ -602,17 +602,19 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
     add_option!(with_search_type, "search_type");
     add_option!(with_query_cache, "query_cache");
 
+    /// Performs the search with the specified query and options
     pub fn send(&'b mut self) -> Result<SearchResult, EsError> {
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           format_query_string(&self.options));
         let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
         match status_code {
-            StatusCode::Ok => Ok(SearchResult::from(&result.unwrap())),
+            StatusCode::Ok => Ok(SearchResult::from(&result.expect("No Json payload"))),
             _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
     }
 
+    /// Begins a scan with the specified query and options
     pub fn scan(&'b mut self, scroll: Duration) -> Result<ScanResult, EsError> {
         self.options.push("search_type", "scan");
         self.options.push("scroll", &scroll);
@@ -621,7 +623,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
                           format_query_string(&self.options));
         let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
         match status_code {
-            StatusCode::Ok => Ok(ScanResult::from(scroll, &result.unwrap())),
+            StatusCode::Ok => Ok(ScanResult::from(scroll, &result.expect("No Json payload"))),
             _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
     }
@@ -655,7 +657,7 @@ impl<'a> From<&'a Json> for SearchHitsHitsResult {
             doc_type: get_json_string!(r, "_type"),
             id:       get_json_string!(r, "_id"),
             score:    {
-                let s = r.find("_score").unwrap();
+                let s = r.find("_score").expect("No field '_score'");
                 if s.is_f64() {
                     s.as_f64()
                 } else {
@@ -689,9 +691,9 @@ impl<'a> From<&'a Json> for SearchHitsResult {
         SearchHitsResult {
             total: get_json_u64!(r, "total"),
             hits:  r.find("hits")
-                .unwrap()
+                .expect("No field 'hits'")
                 .as_array()
-                .unwrap()
+                .expect("Field 'hits' is not an array")
                 .iter()
                 .map(|j| SearchHitsHitsResult::from(j))
                 .collect()
@@ -712,10 +714,10 @@ impl<'a> From<&'a Json> for SearchResult {
             took:      get_json_u64!(r, "took"),
             timed_out: get_json_bool!(r, "timed_out"),
             shards:    decode_json(r.find("_shards")
-                                   .unwrap()
+                                   .expect("No field '_shards'")
                                    .clone()).unwrap(),
             hits:      SearchHitsResult::from(r.find("hits")
-                                              .unwrap())
+                                              .expect("No field 'hits'"))
         }
     }
 }
@@ -766,6 +768,20 @@ impl<'a> Iterator for ScanIterator<'a> {
     }
 }
 
+/// Used when scanning and scrolling through results, a `ScanResult` is returned
+/// when the scan is opened.  To scroll through the results an application has
+/// two options:
+///
+/// 1. Call `scroll` repeatedly until the returned results have zero hits.  If
+/// this approach is taken, the caller is also responsible for calling `close`
+/// when finished, to prevent any server-side resources being held open.
+///
+/// 2. Call 'iter' to create an iterator from which the hits can be read.  If
+/// this approach is taken, there is no need to call `close`, it will be called
+/// automatically when iteration ends.
+///
+/// See also the [official ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/guide/current/scan-scroll.html)
+/// for proper use of this functionality.
 pub struct ScanResult {
     scroll_id:     String,
     scroll:        Duration,
@@ -790,6 +806,7 @@ impl ScanResult {
         }
     }
 
+    /// Returns an iterator from which hits can be read
     pub fn iter(self, client: &mut Client) -> ScanIterator {
         ScanIterator {
             scan_result: self,
@@ -798,6 +815,7 @@ impl ScanResult {
         }
     }
 
+    /// Calls the `/_search/scroll` ES end-point for the next page
     pub fn scroll(&mut self, client: &mut Client) -> Result<SearchResult, EsError> {
         let url = format!("/_search/scroll?scroll={}&scroll_id={}",
                           self.scroll.to_string(),
@@ -805,7 +823,7 @@ impl ScanResult {
         let (status_code, result) = try!(client.get_op(&url));
         match status_code {
             StatusCode::Ok => {
-                let r = result.unwrap();
+                let r = result.expect("No Json payload");
                 self.scroll_id = get_json_string!(r, "_scroll_id");
                 Ok(SearchResult::from(&r))
             },
@@ -815,6 +833,7 @@ impl ScanResult {
         }
     }
 
+    /// Calls ES to close the server-side part of the scan/scroll operation
     pub fn close(&self, client: &mut Client) -> Result<(), EsError> {
         let url = format!("/_search/scroll?scroll_id={}", self.scroll_id);
         let (status_code, result) = try!(client.delete_op(&url));

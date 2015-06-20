@@ -342,7 +342,7 @@ impl<'a, 'b> BulkOperation<'a, 'b> {
         let (status_code, json_opt) = try!(do_req(&mut result));
 
         match status_code {
-            StatusCode::Ok => Ok(BulkResult::from(&json_opt.unwrap())),
+            StatusCode::Ok => Ok(BulkResult::from(&json_opt.expect("No Json payload"))),
             _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
     }
@@ -361,9 +361,9 @@ impl<'a> From<&'a Json> for ActionResult {
     fn from(from: &'a Json) -> ActionResult {
         info!("ActionResult from: {:?}", from);
 
-        let d = from.as_object().unwrap();
+        let d = from.as_object().expect("Not a Json object");
         assert_eq!(1, d.len());
-        let (key, inner) = d.iter().next().unwrap();
+        let (key, inner) = d.iter().next().expect("No content");
 
         ActionResult {
             action:   ActionType::from(key),
@@ -388,9 +388,9 @@ impl<'a> From<&'a Json> for BulkResult {
         BulkResult {
             errors: get_json_bool!(from, "errors"),
             items:  from.find("items")
-                .unwrap()
+                .expect("No field called 'items'")
                 .as_array()
-                .unwrap()
+                .expect("Field 'items' not expected array")
                 .iter()
                 .map(|item| {
                     ActionResult::from(item)

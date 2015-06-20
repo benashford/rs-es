@@ -36,7 +36,13 @@ macro_rules! optional_add {
 // Macros to read values from Json structs
 macro_rules! get_json_thing {
     ($r:ident,$f:expr,$t:ident) => {
-        $r.find($f).unwrap().$t().unwrap()
+        $r.find($f)
+            .expect(concat!("No field '", stringify!($f), "'"))
+            .$t()
+            .expect(concat!("Field '",
+                            stringify!($f),
+                            "' is not of type ",
+                            stringify!($t)))
     }
 }
 

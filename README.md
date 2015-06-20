@@ -7,6 +7,8 @@ An experimental ElasticSearch client for Rust via the REST API.
 
 Development is ongoing, and is experimental, as such breaking changes are likely at any time.  Also, large parts of the ElasticSearch API are currently unimplemented.
 
+Currently being developed and tested against ElasticSearch 1.5.x, it will almost certainly not work with other versions.
+
 ## Documentation
 
 [Full documentation for `rs-es`](http://benashford.github.io/rs-es/rs_es/index.html).  The rest of this document consists of an introduction.
@@ -368,7 +370,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-2. Use `expect` instead of `unwrap` on `Option` "unwrappings" to get better error messages.
 3. Implement `version_type` option in all appropriate places where `version` is used.
 4. Implement `format_query_string` as trait (potentially).
 5. Source-filtering (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-source-filtering.html)

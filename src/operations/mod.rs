@@ -101,7 +101,7 @@ impl<'a, 'b> RefreshOperation<'a, 'b> {
                           format_multi(&self.indexes));
         let (status_code, result) = try!(self.client.post_op(&url));
         match status_code {
-            StatusCode::Ok => Ok(RefreshResult::from(&result.unwrap())),
+            StatusCode::Ok => Ok(RefreshResult::from(&result.expect("No Json payload"))),
             _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
     }
@@ -132,7 +132,11 @@ pub struct RefreshResult {
 impl<'a> From<&'a Json> for RefreshResult {
     fn from(r: &'a Json) -> RefreshResult {
         RefreshResult {
-            shards: decode_json(r.find("_shards").unwrap().clone()).unwrap()
+            shards: decode_json(
+                r.find("_shards")
+                    .expect("No field '_shards'")
+                    .clone())
+                .unwrap()
         }
     }
 }
