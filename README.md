@@ -368,7 +368,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-1. Check JSON models to use u64 where necessary, not just i64.
 2. Use `expect` instead of `unwrap` on `Option` "unwrappings" to get better error messages.
 3. Implement `version_type` option in all appropriate places where `version` is used.
 4. Implement `format_query_string` as trait (potentially).

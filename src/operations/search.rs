@@ -466,13 +466,13 @@ struct SearchQueryOperationBody<'b> {
     timeout: Option<&'b str>,
 
     /// From
-    from: i64,
+    from: u64,
 
     /// Size
-    size: i64,
+    size: u64,
 
     /// Terminate early (marked as experimental in the ES docs)
-    terminate_after: Option<i64>,
+    terminate_after: Option<u64>,
 
     /// Stats groups to which the query belongs
     stats: Option<Vec<String>>,
@@ -561,17 +561,17 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         self
     }
 
-    pub fn with_from(&'b mut self, from: i64) -> &'b mut Self {
+    pub fn with_from(&'b mut self, from: u64) -> &'b mut Self {
         self.body.from = from;
         self
     }
 
-    pub fn with_size(&'b mut self, size: i64) -> &'b mut Self {
+    pub fn with_size(&'b mut self, size: u64) -> &'b mut Self {
         self.body.size = size;
         self
     }
 
-    pub fn with_terminate_after(&'b mut self, terminate_after: i64) -> &'b mut Self {
+    pub fn with_terminate_after(&'b mut self, terminate_after: u64) -> &'b mut Self {
         self.body.terminate_after = Some(terminate_after);
         self
     }
@@ -670,7 +670,7 @@ impl<'a> From<&'a Json> for SearchHitsHitsResult {
 
 #[derive(Debug)]
 pub struct SearchHitsResult {
-    pub total: i64,
+    pub total: u64,
     pub hits:  Vec<SearchHitsHitsResult>
 }
 
@@ -687,7 +687,7 @@ impl SearchHitsResult {
 impl<'a> From<&'a Json> for SearchHitsResult {
     fn from(r: &'a Json) -> SearchHitsResult {
         SearchHitsResult {
-            total: get_json_i64!(r, "total"),
+            total: get_json_u64!(r, "total"),
             hits:  r.find("hits")
                 .unwrap()
                 .as_array()
@@ -700,7 +700,7 @@ impl<'a> From<&'a Json> for SearchHitsResult {
 }
 
 pub struct SearchResult {
-    pub took:      i64,
+    pub took:      u64,
     pub timed_out: bool,
     pub shards:    ShardCountResult,
     pub hits:      SearchHitsResult
@@ -709,7 +709,7 @@ pub struct SearchResult {
 impl<'a> From<&'a Json> for SearchResult {
     fn from(r: &'a Json) -> SearchResult {
         SearchResult {
-            took:      get_json_i64!(r, "took"),
+            took:      get_json_u64!(r, "took"),
             timed_out: get_json_bool!(r, "timed_out"),
             shards:    decode_json(r.find("_shards")
                                    .unwrap()
@@ -769,7 +769,7 @@ impl<'a> Iterator for ScanIterator<'a> {
 pub struct ScanResult {
     scroll_id:     String,
     scroll:        Duration,
-    pub took:      i64,
+    pub took:      u64,
     pub timed_out: bool,
     pub shards:    ShardCountResult,
     pub hits:      SearchHitsResult
@@ -780,7 +780,7 @@ impl ScanResult {
         ScanResult {
             scroll:    scroll,
             scroll_id: get_json_string!(r, "_scroll_id"),
-            took:      get_json_i64!(r, "took"),
+            took:      get_json_u64!(r, "took"),
             timed_out: get_json_bool!(r, "timed_out"),
             shards:    decode_json(r.find("_shards")
                                    .unwrap()

@@ -154,8 +154,8 @@ class ESDSLGen
         f('operator', 'String', true),
         f('minimum_should_match', 'MinimumShouldMatch', true),
         f('fuzziness', 'Fuzziness', true),
-        f('prefix_length', 'i64', true),
-        f('max_expansions', 'i64', true),
+        f('prefix_length', 'u64', true),
+        f('max_expansions', 'u64', true),
         f('rewrite', 'String', true),
         f('zero_terms_query', 'ZeroTermsQuery', true)
       ]
@@ -228,9 +228,9 @@ class ESDSLGen
           f('fields', 'Vec<String>', true),
           f('like_text', 'String'),
           f('ignore_tf', 'bool', true),
-          f('max_query_terms', 'i64', true),
+          f('max_query_terms', 'u64', true),
           f('fuzziness', 'Fuzziness', true),
-          f('prefix_length', 'i64', true),
+          f('prefix_length', 'u64', true),
           f('boost', 'f64', true),
           f('analyzer', 'String', true)
         ],
@@ -238,9 +238,9 @@ class ESDSLGen
           f('field', 'String'),
           f('like_text', 'String'),
           f('ignore_tf', 'bool', true),
-          f('max_query_terms', 'i64', true),
+          f('max_query_terms', 'u64', true),
           f('fuzziness', 'Fuzziness', true),
-          f('prefix_length', 'i64', true),
+          f('prefix_length', 'u64', true),
           f('boost', 'f64', true),
           f('analyzer', 'String', true)
         ],
@@ -259,8 +259,8 @@ class ESDSLGen
           f('value', 'String'),
           f('boost', 'f64', true),
           f('fuzziness', 'Fuzziness', true),
-          f('prefix_length', 'i64', true),
-          f('max_expansions', 'i64', true)
+          f('prefix_length', 'u64', true),
+          f('max_expansions', 'u64', true)
         ],
         'GeoShapeQuery' => [
           f('field', 'String'),
@@ -271,8 +271,8 @@ class ESDSLGen
           f('doc_type', 'String'),
           f('query', 'Box<Query>'),
           f('score_mode', 'ScoreMode', true),
-          f('min_children', 'i64', true),
-          f('max_children', 'i64', true)
+          f('min_children', 'u64', true),
+          f('max_children', 'u64', true)
         ],
         'HasParentQuery' => [
           f('parent_type', 'String'),
@@ -294,12 +294,12 @@ class ESDSLGen
           f('like_text', 'String', true),
           f('ids', 'Vec<String>', true),
           f('docs', 'Vec<Doc>', true),
-          f('max_query_terms', 'i64', true),
-          f('min_term_freq', 'i64', true),
-          f('min_doc_freq', 'i64', true),
-          f('max_doc_freq', 'i64', true),
-          f('min_word_length', 'i64', true),
-          f('max_word_length', 'i64', true),
+          f('max_query_terms', 'u64', true),
+          f('min_term_freq', 'u64', true),
+          f('min_doc_freq', 'u64', true),
+          f('max_doc_freq', 'u64', true),
+          f('min_word_length', 'u64', true),
+          f('max_word_length', 'u64', true),
           f('stop_words', 'Vec<String>', true),
           f('analyzer', 'String', true),
           f('minimum_should_match', 'MinimumShouldMatch', true),
@@ -326,14 +326,14 @@ class ESDSLGen
           f('allow_leading_wildcard', 'bool', true),
           f('lowercase_expanded_terms', 'bool', true),
           f('enable_position_increments', 'bool', true),
-          f('fuzzy_max_expansions', 'i64', true),
+          f('fuzzy_max_expansions', 'u64', true),
           f('fuzziness', 'Fuzziness', true),
-          f('fuzzy_prefix_length', 'i64', true),
+          f('fuzzy_prefix_length', 'u64', true),
           f('phrase_slop', 'i64', true),
           f('boost', 'f64', true),
           f('analyze_wildcard', 'bool', true),
           f('auto_generate_phrase_queries', 'bool', true),
-          f('max_determined_states', 'i64', true),
+          f('max_determined_states', 'u64', true),
           f('minimum_should_match', 'MinimumShouldMatch', true),
           f('lenient', 'bool', true),
           f('locale', 'String', true),
@@ -365,7 +365,7 @@ class ESDSLGen
           f('value', 'String'),
           f('boost', 'f64', true),
           f('flags', 'Flags', true),
-          f('max_determined_states', 'i64', true)
+          f('max_determined_states', 'u64', true)
         ],
         'SpanFirstQuery' => [
           f('span_match', 'Box<Query>'),
@@ -454,8 +454,8 @@ class ESDSLGen
           f('doc_type', 'String'),
           f('query', 'Box<Query>', true),
           f('filter', 'Box<Filter>', true),
-          f('min_children', 'i64', true),
-          f('max_children', 'i64', true)
+          f('min_children', 'u64', true),
+          f('max_children', 'u64', true)
         ],
         'HasParentFilter' => [
           f('parent_type', 'String'),
@@ -512,7 +512,7 @@ class ESDSLGen
           f('value', 'String'),
           f('boost', 'f64', true),
           f('flags', 'Flags', true),
-          f('max_determined_states', 'i64', true)
+          f('max_determined_states', 'u64', true)
         ],
         'ScriptFilter' => [
           f('script', 'String'),
@@ -539,7 +539,7 @@ class ESDSLGen
           f('params', 'BTreeMap<String, JsonVal>', true)
         ],
         'RandomScoreFunc' => [
-          f('seed', 'i64')
+          f('seed', 'u64')
         ],
         'FieldValueFactorFunc' => [
           f('field', 'String'),

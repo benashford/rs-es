@@ -203,6 +203,7 @@ impl ToJson for DistanceUnit {
 pub enum JsonVal {
     String(String),
     I64(i64),
+    U64(u64),
     F64(f64)
 }
 
@@ -211,6 +212,7 @@ impl ToJson for JsonVal {
         match self {
             &JsonVal::String(ref str) => str.to_json(),
             &JsonVal::I64(i)          => Json::I64(i),
+            &JsonVal::U64(u)          => Json::U64(u),
             &JsonVal::F64(f)          => Json::F64(f)
         }
     }
@@ -225,4 +227,7 @@ impl<'a> From<&'a str> for JsonVal {
 }
 
 from!(f64, JsonVal, F64);
+from_exp!(i32, JsonVal, from, JsonVal::I64(from as i64));
 from!(i64, JsonVal, I64);
+from_exp!(u32, JsonVal, from, JsonVal::U64(from as u64));
+from!(u64, JsonVal, U64);

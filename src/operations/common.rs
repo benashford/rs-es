@@ -31,7 +31,10 @@ impl<'a> From<&'a str> for OptionVal {
 
 /// Basic types have conversions to `OptionVal`
 from_exp!(String, OptionVal, from, OptionVal(from));
+from_exp!(i32, OptionVal, from, OptionVal(from.to_string()));
 from_exp!(i64, OptionVal, from, OptionVal(from.to_string()));
+from_exp!(u32, OptionVal, from, OptionVal(from.to_string()));
+from_exp!(u64, OptionVal, from, OptionVal(from.to_string()));
 from_exp!(bool, OptionVal, from, OptionVal(from.to_string()));
 
 /// Every ES operation has a set of options

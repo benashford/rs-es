@@ -119,9 +119,9 @@ fn decode_json<T: Decodable>(doc: Json) -> Result<T, EsError> {
 /// This is returned within various other result structs.
 #[derive(Debug, RustcDecodable)]
 pub struct ShardCountResult {
-    pub total:      i64,
-    pub successful: i64,
-    pub failed:     i64
+    pub total:      u64,
+    pub successful: u64,
+    pub failed:     u64
 }
 
 /// Result of a refresh request

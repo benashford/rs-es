@@ -115,13 +115,13 @@ pub struct Action {
     index:             Option<String>,
     doc_type:          Option<String>,
     id:                Option<String>,
-    version:           Option<i64>,
+    version:           Option<u64>,
     version_type:      Option<VersionType>,
     routing:           Option<String>,
     parent:            Option<String>,
     timestamp:         Option<String>,
     ttl:               Option<Duration>,
-    retry_on_conflict: Option<i64>,
+    retry_on_conflict: Option<u64>,
     source:            Option<Json>
 }
 
@@ -210,13 +210,13 @@ impl Action {
     add_field!(with_index, index, String);
     add_field!(with_doc_type, doc_type, String);
     add_field!(with_id, id, String);
-    add_field!(with_version, version, i64);
+    add_field!(with_version, version, u64);
     add_field!(with_version_type, version_type, VersionType);
     add_field!(with_routing, routing, String);
     add_field!(with_parent, parent, String);
     add_field!(with_timestamp, timestamp, String);
     add_field!(with_ttl, ttl, Duration);
-    add_field!(with_retry_on_conflict, retry_on_conflict, i64);
+    add_field!(with_retry_on_conflict, retry_on_conflict, u64);
 
     /// Add the serialized version of this action to the bulk `String`.
     fn add(&self, actstr: &mut String) -> Result<(), EsError> {

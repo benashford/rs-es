@@ -611,17 +611,17 @@ impl ToJson for GeoDistanceFilter {
 <%= structs['GeohashCellFilter'] %>
 
 pub enum Precision {
-    Geohash(i64),
+    Geohash(u64),
     Distance(Distance)
 }
 
-from!(i64, Precision, Geohash);
+from!(u64, Precision, Geohash);
 from!(Distance, Precision, Distance);
 
 impl ToJson for Precision {
     fn to_json(&self) -> Json {
         match self {
-            &Precision::Geohash(geohash_precision) => Json::I64(geohash_precision),
+            &Precision::Geohash(geohash_precision) => Json::U64(geohash_precision),
             &Precision::Distance(ref distance)     => distance.to_json()
         }
     }
@@ -777,12 +777,14 @@ impl ToJson for TermsFilter {
 
 enum Scale {
     I64(i64),
+    U64(u64),
     F64(f64),
     Distance(Distance),
     Duration(Duration)
 }
 
 from!(i64, Scale, I64);
+from!(u64, Scale, U64);
 from!(f64, Scale, F64);
 from!(Distance, Scale, Distance);
 from!(Duration, Scale, Duration);
@@ -791,6 +793,7 @@ impl ToJson for Scale {
     fn to_json(&self) -> Json {
         match self {
             &Scale::I64(s)          => Json::I64(s),
+            &Scale::U64(s)          => Json::U64(s),
             &Scale::F64(s)          => Json::F64(s),
             &Scale::Distance(ref s) => s.to_json(),
             &Scale::Duration(ref s) => s.to_json()
@@ -800,12 +803,14 @@ impl ToJson for Scale {
 
 enum Origin {
     I64(i64),
+    U64(u64),
     F64(f64),
     Location(Location),
     Date(String)
 }
 
 from!(i64, Origin, I64);
+from!(u64, Origin, U64);
 from!(f64, Origin, F64);
 from!(Location, Origin, Location);
 from!(String, Origin, Date);
@@ -814,6 +819,7 @@ impl ToJson for Origin {
     fn to_json(&self) -> Json {
         match self {
             &Origin::I64(orig)          => Json::I64(orig),
+            &Origin::U64(orig)          => Json::U64(orig),
             &Origin::F64(orig)          => Json::F64(orig),
             &Origin::Location(ref orig) => orig.to_json(),
             &Origin::Date(ref orig)     => Json::String(orig.clone())

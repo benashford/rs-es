@@ -113,7 +113,7 @@ pub struct GetResult {
     pub index:    String,
     pub doc_type: String,
     pub id:       String,
-    pub version:  Option<i64>,
+    pub version:  Option<u64>,
     pub found:    bool,
     pub source:   Option<Json>
 }
@@ -137,7 +137,7 @@ impl<'a> From<&'a Json> for GetResult {
             index:    get_json_string!(r, "_index"),
             doc_type: get_json_string!(r, "_type"),
             id:       get_json_string!(r, "_id"),
-            version:  r.search("_version").map(|v| v.as_i64().unwrap()),
+            version:  r.search("_version").map(|v| v.as_u64().unwrap()),
             found:    get_json_bool!(r, "found"),
             source:   r.search("_source").map(|source| source.clone())
         }

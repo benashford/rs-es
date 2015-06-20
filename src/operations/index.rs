@@ -126,7 +126,7 @@ pub struct IndexResult {
     pub index:    String,
     pub doc_type: String,
     pub id:       String,
-    pub version:  i64,
+    pub version:  u64,
     pub created:  bool
 }
 
@@ -136,7 +136,7 @@ impl<'a> From<&'a Json> for IndexResult {
             index:    get_json_string!(r, "_index"),
             doc_type: get_json_string!(r, "_type"),
             id:       get_json_string!(r, "_id"),
-            version:  get_json_i64!(r, "_version"),
+            version:  get_json_u64!(r, "_version"),
             created:  get_json_bool!(r, "created")
         }
     }

@@ -194,7 +194,7 @@ pub struct DeleteResult {
     pub index:    String,
     pub doc_type: String,
     pub id:       String,
-    pub version:  i64
+    pub version:  u64
 }
 
 impl<'a> From<&'a Json> for DeleteResult {
@@ -204,7 +204,7 @@ impl<'a> From<&'a Json> for DeleteResult {
             index:    get_json_string!(r, "_index"),
             doc_type: get_json_string!(r, "_type"),
             id:       get_json_string!(r, "_id"),
-            version:  get_json_i64!(r, "_version")
+            version:  get_json_u64!(r, "_version")
         }
     }
 }
