@@ -370,31 +370,30 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-5. Source-filtering (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-source-filtering.html)
-6. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
-7. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
-8. Aggregations
-9. Field-data fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fielddata-fields.html
-10. Post filter: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-post-filter.html (after aggregations)
-11. Highlighting: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html and Field Highlighting Order: https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-field-order.html
-12. Rescoring: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-rescore.html
-13. Search templates (possibly)
-14. Implement Update API.
-15. Implement Multi Get API
-16. Implement Term Vectors and Multi termvectors API
-17. Test coverage.
-18. Performance (ensure use of persistent HTTP connections, etc.).
-19. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
-20. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
-21. Check type of "timeout" option on Search...
-22. Review consistency in Operation objects (e.g. taking ownership of strings, type of parameters, etc.)
-23. Index boost: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-index-boost.html
-24. Shard preference: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
-25. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
-26. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
-27. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
-28. Documentation, both rustdoc and a suitable high-level write-up in this README
-29. Consider not using to_string pattern for converting to String (to avoid confusion with built-in to_string that uses formatter).
+1. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
+2. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
+3. Aggregations
+4. Field-data fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fielddata-fields.html
+5. Post filter: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-post-filter.html (after aggregations)
+6. Highlighting: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html and Field Highlighting Order: https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-field-order.html
+7. Rescoring: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-rescore.html
+8. Search templates (possibly)
+9. Implement Update API.
+10. Implement Multi Get API
+11. Implement Term Vectors and Multi termvectors API
+12. Test coverage.
+13. Performance (ensure use of persistent HTTP connections, etc.).
+14. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
+15. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
+16. Check type of "timeout" option on Search...
+17. Review consistency in Operation objects (e.g. taking ownership of strings, type of parameters, etc.)
+18. Index boost: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-index-boost.html
+19. Shard preference: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
+20. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
+21. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
+22. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
+23. Documentation, both rustdoc and a suitable high-level write-up in this README
+24. Consider not using to_string pattern for converting to String (to avoid confusion with built-in to_string that uses formatter).
 
 ## Licence
 
