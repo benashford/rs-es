@@ -370,7 +370,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-4. Implement `format_query_string` as trait (potentially).
 5. Source-filtering (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-source-filtering.html)
 6. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
 7. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
@@ -395,6 +394,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 26. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
 27. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
 28. Documentation, both rustdoc and a suitable high-level write-up in this README
+29. Consider not using to_string pattern for converting to String (to avoid confusion with built-in to_string that uses formatter).
 
 ## Licence
 

@@ -22,7 +22,6 @@ use rustc_serialize::json::Json;
 use ::Client;
 use ::error::EsError;
 use super::common::{Options, OptionVal};
-use super::format_query_string;
 
 /// Values for the op_type option
 pub enum OpType {
@@ -99,7 +98,7 @@ impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
                                   self.index,
                                   self.doc_type,
                                   id,
-                                  format_query_string(&mut self.options));
+                                  self.options);
                 match self.document {
                     Some(ref doc) => self.client.put_body_op(&url, doc),
                     None          => self.client.put_op(&url)
@@ -109,7 +108,7 @@ impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
                 let url = format!("/{}/{}{}",
                                   self.index,
                                   self.doc_type,
-                                  format_query_string(&mut self.options));
+                                  self.options);
                 match self.document {
                     Some(ref doc) => self.client.post_body_op(&url, doc),
                     None          => self.client.post_op(&url)

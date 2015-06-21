@@ -29,7 +29,6 @@ use ::query::Query;
 use super::common::{Options, OptionVal};
 use super::decode_json;
 use super::format_indexes_and_types;
-use super::format_query_string;
 use super::ShardCountResult;
 
 pub struct DeleteOperation<'a, 'b> {
@@ -76,7 +75,7 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
                           self.index,
                           self.doc_type,
                           self.id,
-                          format_query_string(&mut self.options));
+                          self.options);
         let (status_code, result) = try!(self.client.delete_op(&url));
         info!("DELETE OPERATION STATUS: {:?} RESULT: {:?}", status_code, result);
         match status_code {
@@ -170,7 +169,7 @@ impl<'a, 'b> DeleteByQueryOperation<'a, 'b> {
         };
         let url = format!("/{}/_query{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
-                          format_query_string(options));
+                          options);
         let (status_code, result) = try!(match self.query {
             QueryOption::Document(ref d) => self.client.delete_body_op(&url,
                                                                        &d.to_json()),

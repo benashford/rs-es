@@ -16,7 +16,11 @@
 
 //! Features common to all operations
 
+use std::fmt;
+
 use rustc_serialize::json::{Json, ToJson};
+
+use util::StrJoin;
 
 /// A newtype for the value of a URI option, this is to allow conversion traits
 /// to be implemented for it
@@ -59,6 +63,18 @@ impl<'a> Options<'a> {
     /// ```
     pub fn push<O: Into<OptionVal>>(&mut self, key: &'a str, val: O) {
         self.0.push((key, val.into()));
+    }
+}
+
+impl<'a> fmt::Display for Options<'a> {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        if !self.is_empty() {
+            try!(formatter.write_str("?"));
+            try!(formatter.write_str(&self.0.iter().map(|&(ref k, ref v)| {
+                format!("{}={}", k, v.0)
+            }).join("&")));
+        }
+        Ok(())
     }
 }
 

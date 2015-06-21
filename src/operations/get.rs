@@ -24,7 +24,6 @@ use ::error::EsError;
 use ::util::StrJoin;
 use super::common::{Options, OptionVal};
 use super::decode_json;
-use super::format_query_string;
 
 /// Values for the `preference` query parameter
 pub enum Preference {
@@ -100,7 +99,7 @@ impl<'a, 'b> GetOperation<'a, 'b> {
                           self.index,
                           self.doc_type.expect("No doc_type specified"),
                           self.id,
-                          format_query_string(&self.options));
+                          self.options);
         // We're ignoring status_code as all valid codes should return a value,
         // so anything else is an error.
         let (_, result) = try!(self.client.get_op(&url));

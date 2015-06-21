@@ -29,7 +29,6 @@ use ::error::EsError;
 use ::units::Duration;
 
 use super::common::{Options, OptionVal, VersionType};
-use super::format_query_string;
 
 pub struct ActionSource {
     doc:           Option<Json>,
@@ -308,7 +307,7 @@ impl<'a, 'b> BulkOperation<'a, 'b> {
             None           => ()
         }
         url.push_str("_bulk");
-        url.push_str(&format_query_string(&self.options));
+        url.push_str(&self.options.to_string());
         url
     }
 

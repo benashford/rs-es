@@ -31,7 +31,6 @@ use ::util::StrJoin;
 use super::common::{Options, OptionVal};
 use super::decode_json;
 use super::format_indexes_and_types;
-use super::format_query_string;
 use super::ShardCountResult;
 
 /// Representing a search-by-uri option
@@ -447,7 +446,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
     pub fn send(&'b mut self) -> Result<SearchResult, EsError> {
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
-                          format_query_string(&self.options));
+                          self.options);
         info!("Searching with: {}", url);
         let (status_code, result) = try!(self.client.get_op(&url));
         info!("Search result (status: {}, result: {:?})", status_code, result);
@@ -606,7 +605,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
     pub fn send(&'b mut self) -> Result<SearchResult, EsError> {
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
-                          format_query_string(&self.options));
+                          self.options);
         let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
         match status_code {
             StatusCode::Ok => Ok(SearchResult::from(&result.expect("No Json payload"))),
@@ -620,7 +619,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         self.options.push("scroll", &scroll);
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
-                          format_query_string(&self.options));
+                          self.options);
         let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
         match status_code {
             StatusCode::Ok => Ok(ScanResult::from(scroll, &result.expect("No Json payload"))),
