@@ -370,9 +370,9 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-1. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
-2. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
-3. Aggregations
+1. Aggregations
+2. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
+3. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
 4. Field-data fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fielddata-fields.html
 5. Post filter: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-post-filter.html (after aggregations)
 6. Highlighting: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html and Field Highlighting Order: https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-field-order.html
