@@ -394,6 +394,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 22. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
 23. Documentation, both rustdoc and a suitable high-level write-up in this README
 24. Consider not using to_string pattern for converting to String (to avoid confusion with built-in to_string that uses formatter).
+25. Avoid calls to `.to_json()` in cases where `Json::Whatever(thing)` would do instead.
 
 ## Licence
 
