@@ -457,6 +457,60 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
     }
 }
 
+/// Options for source filtering
+pub enum Source<'a> {
+    /// Disable source documents
+    Off,
+
+    /// Filtering
+    Filter(Option<&'a [&'a str]>, Option<&'a [&'a str]>)
+}
+
+impl<'a> Source<'a> {
+    /// An include-only source filter
+    pub fn include(fields: &'a [&'a str]) -> Source<'a> {
+        Source::Filter(Some(fields), None)
+    }
+
+    /// An exclude-only source filter
+    pub fn exclude(fields: &'a [&'a str]) -> Source<'a> {
+        Source::Filter(None, Some(fields))
+    }
+
+    /// An include and exclude source filter
+    pub fn filter(incl: &'a [&'a str], excl: &'a [&'a str]) -> Source<'a> {
+        Source::Filter(Some(incl), Some(excl))
+    }
+}
+
+/// Convenience function to Json-ify a reference to a slice of references of
+/// items that can be converted to Json
+fn slice_to_json<J: ToJson + ?Sized>(slice: &[&J]) -> Json {
+    Json::Array(slice.iter().map(|e| {
+        e.to_json()
+    }).collect())
+}
+
+impl<'a> ToJson for Source<'a> {
+    fn to_json(&self) -> Json {
+        match self {
+            &Source::Off                => Json::Boolean(false),
+            &Source::Filter(incl, excl) => {
+                let mut d = BTreeMap::new();
+                match incl {
+                    Some(val) => { d.insert("include".to_owned(), slice_to_json(val)); },
+                    None      => (),
+                }
+                match excl {
+                    Some(val) => { d.insert("exclude".to_owned(), slice_to_json(val)); },
+                    None      => (),
+                }
+                Json::Object(d)
+            }
+        }
+    }
+}
+
 struct SearchQueryOperationBody<'b> {
     /// The query
     query: Option<&'b Query>,
@@ -483,7 +537,10 @@ struct SearchQueryOperationBody<'b> {
     sort: Option<&'b Sort>,
 
     /// Track scores
-    track_scores: Option<bool>
+    track_scores: Option<bool>,
+
+    /// Source filtering
+    source: Option<Source<'b>>
 }
 
 impl<'a> ToJson for SearchQueryOperationBody<'a> {
@@ -498,6 +555,7 @@ impl<'a> ToJson for SearchQueryOperationBody<'a> {
         optional_add!(d, self.min_score, "min_score");
         optional_add!(d, self.sort, "sort");
         optional_add!(d, self.track_scores, "track_scores");
+        optional_add!(d, self.source, "_source");
         Json::Object(d)
     }
 }
@@ -535,7 +593,8 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
                 stats:           None,
                 min_score:       None,
                 sort:            None,
-                track_scores:    None
+                track_scores:    None,
+                source:          None
             }
         }
     }
@@ -594,6 +653,17 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
 
     pub fn with_track_scores(&'b mut self, track_scores: bool) -> &'b mut Self {
         self.body.track_scores = Some(track_scores);
+        self
+    }
+
+    /// Specify source filtering, by default full source will be returned in a hit
+    ///
+    /// To switch-off source document in each hit: `with_source(Source::Off)`.
+    /// To include fields: `with_source(Source::include(&["field_name"]))`,
+    /// To exclude fields: `with_source(Source::exclude(&["field_name"]))`,
+    /// To include and exclude: `with_source(Source::filter(&["include"], &["exclude"]))`
+    pub fn with_source(&'b mut self, source: Source<'b>) -> &'b mut Self {
+        self.body.source = Some(source);
         self
     }
 
@@ -856,6 +926,7 @@ mod tests {
 
     use super::SearchHitsHitsResult;
     use super::Sort;
+    use super::Source;
 
     fn make_document(idx: i64) -> TestDocument {
         TestDocument::new()
@@ -951,6 +1022,28 @@ mod tests {
             .collect();
 
         assert_eq!(200, hits.len());
+    }
+
+    #[test]
+    fn test_source_filter() {
+        let mut client = ::tests::make_client();
+        let index_name = "test_source_filter";
+        ::tests::clean_db(&mut client, index_name);
+
+        client.index(index_name, "test").with_doc(&make_document(100)).send().unwrap();
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
+
+        let mut result = client.search_query()
+            .with_indexes(&[index_name])
+            .with_source(Source::include(&["str_field"]))
+            .send()
+            .unwrap();
+
+        assert_eq!(1, result.hits.hits.len());
+        let json = result.hits.hits.remove(0).source.unwrap();
+
+        assert_eq!(true, json.find("str_field").is_some());
+        assert_eq!(false, json.find("int_field").is_some());
     }
 
     #[test]
