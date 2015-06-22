@@ -16,6 +16,8 @@
 
 //! Implementations of both Search-by-URI and Search-by-Query operations
 
+pub mod aggregations;
+
 use std::collections::{BTreeMap, HashMap};
 
 use hyper::status::StatusCode;
@@ -32,6 +34,8 @@ use super::common::{Options, OptionVal};
 use super::decode_json;
 use super::format_indexes_and_types;
 use super::ShardCountResult;
+
+use self::aggregations::AggregationsResult;
 
 /// Representing a search-by-uri option
 pub struct SearchURIOperation<'a, 'b> {
@@ -540,7 +544,10 @@ struct SearchQueryOperationBody<'b> {
     track_scores: Option<bool>,
 
     /// Source filtering
-    source: Option<Source<'b>>
+    source: Option<Source<'b>>,
+
+    /// Aggregations
+    aggs: Option<&'b aggregations::Aggregations<'b>>
 }
 
 impl<'a> ToJson for SearchQueryOperationBody<'a> {
@@ -556,6 +563,7 @@ impl<'a> ToJson for SearchQueryOperationBody<'a> {
         optional_add!(d, self.sort, "sort");
         optional_add!(d, self.track_scores, "track_scores");
         optional_add!(d, self.source, "_source");
+        optional_add!(d, self.aggs, "aggs");
         Json::Object(d)
     }
 }
@@ -594,7 +602,8 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
                 min_score:       None,
                 sort:            None,
                 track_scores:    None,
-                source:          None
+                source:          None,
+                aggs:            None
             }
         }
     }
@@ -667,6 +676,12 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         self
     }
 
+    /// Specify any aggregations
+    pub fn with_aggs(&'b mut self, aggs: &'b aggregations::Aggregations) -> &'b mut Self {
+        self.body.aggs = Some(aggs);
+        self
+    }
+
     add_option!(with_routing, "routing");
     add_option!(with_search_type, "search_type");
     add_option!(with_query_cache, "query_cache");
@@ -678,7 +693,17 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
                           self.options);
         let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
         match status_code {
-            StatusCode::Ok => Ok(SearchResult::from(&result.expect("No Json payload"))),
+            StatusCode::Ok => {
+                let result_json = result.expect("No Json payload");
+                let mut search_result = SearchResult::from(&result_json);
+                match self.body.aggs {
+                    Some(ref aggs) => {
+                        search_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
+                    },
+                    _              => ()
+                }
+                Ok(search_result)
+            },
             _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
     }
@@ -692,7 +717,17 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
                           self.options);
         let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
         match status_code {
-            StatusCode::Ok => Ok(ScanResult::from(scroll, &result.expect("No Json payload"))),
+            StatusCode::Ok => {
+                let result_json = result.expect("No Json payload");
+                let mut scan_result = ScanResult::from(scroll, &result_json);
+                match self.body.aggs {
+                    Some(ref aggs) => {
+                        scan_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
+                    },
+                    _              => ()
+                }
+                Ok(scan_result)
+            },
             _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
     }
@@ -774,7 +809,15 @@ pub struct SearchResult {
     pub took:      u64,
     pub timed_out: bool,
     pub shards:    ShardCountResult,
-    pub hits:      SearchHitsResult
+    pub hits:      SearchHitsResult,
+    pub aggs:      Option<AggregationsResult>
+}
+
+impl SearchResult {
+    /// Take a reference to any aggregations in this result
+    pub fn aggs_ref<'a>(&'a self) -> Option<&'a AggregationsResult> {
+        self.aggs.as_ref()
+    }
 }
 
 impl<'a> From<&'a Json> for SearchResult {
@@ -786,7 +829,8 @@ impl<'a> From<&'a Json> for SearchResult {
                                    .expect("No field '_shards'")
                                    .clone()).unwrap(),
             hits:      SearchHitsResult::from(r.find("hits")
-                                              .expect("No field 'hits'"))
+                                              .expect("No field 'hits'")),
+            aggs:      None
         }
     }
 }
@@ -857,7 +901,8 @@ pub struct ScanResult {
     pub took:      u64,
     pub timed_out: bool,
     pub shards:    ShardCountResult,
-    pub hits:      SearchHitsResult
+    pub hits:      SearchHitsResult,
+    pub aggs:      Option<AggregationsResult>
 }
 
 impl ScanResult {
@@ -871,7 +916,8 @@ impl ScanResult {
                                    .unwrap()
                                    .clone()).unwrap(),
             hits:      SearchHitsResult::from(r.find("hits")
-                                              .unwrap())
+                                              .unwrap()),
+            aggs:      None
         }
     }
 
@@ -918,15 +964,20 @@ impl ScanResult {
 
 #[cfg(test)]
 mod tests {
+    extern crate env_logger;
+    extern crate regex;
+
     use ::Client;
     use ::tests::TestDocument;
 
     use ::operations::bulk::Action;
-    use ::units::{Duration, DurationUnit};
+    use ::units::{Duration, DurationUnit, JsonVal};
 
     use super::SearchHitsHitsResult;
     use super::Sort;
     use super::Source;
+
+    use super::aggregations::{Aggregations, Min};
 
     fn make_document(idx: i64) -> TestDocument {
         TestDocument::new()
@@ -1044,6 +1095,44 @@ mod tests {
 
         assert_eq!(true, json.find("str_field").is_some());
         assert_eq!(false, json.find("int_field").is_some());
+    }
+
+    #[test]
+    fn test_aggs() {
+        let mut client = ::tests::make_client();
+        let index_name = "test_aggs";
+        ::tests::clean_db(&mut client, index_name);
+
+        client.bulk(&[Action::index(TestDocument::new().with_int_field(10)),
+                      Action::index(TestDocument::new().with_int_field(1))])
+            .with_index(index_name)
+            .with_doc_type("doc_type")
+            .send()
+            .unwrap();
+
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
+
+        let mut aggs = Aggregations::new();
+        aggs.insert("min_int_field", Min::Field("int_field"));
+
+        let result = client.search_query()
+            .with_indexes(&[index_name])
+            .with_aggs(&aggs)
+            .send()
+            .unwrap();
+
+        let min = &result.aggs_ref()
+            .unwrap()
+            .get("min_int_field")
+            .unwrap()
+            .as_min()
+            .unwrap()
+            .value;
+
+        match min {
+            &JsonVal::F64(i) => assert_eq!(1.0, i),
+            _                => panic!("Not an integer")
+        }
     }
 
     #[test]
