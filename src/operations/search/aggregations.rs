@@ -59,7 +59,7 @@ pub enum Min<'a> {
 
 impl<'a> From<Min<'a>> for Aggregation<'a> {
     fn from(from: Min<'a>) -> Aggregation<'a> {
-        Aggregation::Min(from)
+        Aggregation::Metrics(MetricsAggregation::Min(from))
     }
 }
 
@@ -79,19 +79,32 @@ impl<'a> ToJson for Min<'a> {
 }
 
 /// Individual aggregations and their options
-enum Aggregation<'a> {
+enum MetricsAggregation<'a> {
     Min(Min<'a>)
 }
 
-impl<'a> ToJson for Aggregation<'a> {
+impl<'a> ToJson for MetricsAggregation<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         match self {
-            &Aggregation::Min(ref min_agg) => {
+            &MetricsAggregation::Min(ref min_agg) => {
                 d.insert("min".to_owned(), min_agg.to_json());
             }
         }
         Json::Object(d)
+    }
+}
+
+/// Aggregations are either metrics or bucket-based aggregations
+enum Aggregation<'a> {
+    Metrics(MetricsAggregation<'a>)
+}
+
+impl<'a> ToJson for Aggregation<'a> {
+    fn to_json(&self) -> Json {
+        match self {
+            &Aggregation::Metrics(ref ma) => ma.to_json()
+        }
     }
 }
 
@@ -161,7 +174,13 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
         let owned_key = (*key).to_owned();
         let json = object.get(&owned_key).expect(&format!("No key: {}", &owned_key));
         ar_map.insert(owned_key, match val {
-            &Aggregation::Min(_) => AggregationResult::Min(MinResult::from(json))
+            &Aggregation::Metrics(ref ma) => {
+                match ma {
+                    &MetricsAggregation::Min(_) => {
+                        AggregationResult::Min(MinResult::from(json))
+                    }
+                }
+            }
         });
     }
 
