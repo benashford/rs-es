@@ -198,8 +198,9 @@ impl ToJson for DistanceUnit {
     }
 }
 
-// A Json value that's not a structural thing - i.e. just String, i64 and f64,
-// no array or object
+/// A Json value that's not a structural thing - i.e. just String, i64 and f64,
+/// no array or object
+#[derive(Debug)]
 pub enum JsonVal {
     String(String),
     I64(i64),
@@ -231,3 +232,15 @@ from_exp!(i32, JsonVal, from, JsonVal::I64(from as i64));
 from!(i64, JsonVal, I64);
 from_exp!(u32, JsonVal, from, JsonVal::U64(from as u64));
 from!(u64, JsonVal, U64);
+
+impl<'a> From<&'a Json> for JsonVal {
+    fn from(from: &'a Json) -> JsonVal {
+        match from {
+            &Json::String(ref s) => JsonVal::String(s.clone()),
+            &Json::F64(f)        => JsonVal::F64(f),
+            &Json::I64(f)        => JsonVal::I64(f),
+            &Json::U64(f)        => JsonVal::U64(f),
+            _                    => panic!("Not a String, F64, I64 or U64")
+        }
+    }
+}
