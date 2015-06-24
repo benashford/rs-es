@@ -59,11 +59,17 @@ pub enum Min<'a> {
     Script(Script<'a>)
 }
 
-impl<'a> From<Min<'a>> for Aggregation<'a> {
-    fn from(from: Min<'a>) -> Aggregation<'a> {
-        Aggregation::Metrics(MetricsAggregation::Min(from))
+macro_rules! metric_agg {
+    ($b:ident) => {
+        impl<'a> From<$b<'a>> for Aggregation<'a> {
+            fn from(from: $b<'a>) -> Aggregation<'a> {
+                Aggregation::Metrics(MetricsAggregation::$b(from))
+            }
+        }
     }
 }
+
+metric_agg!(Min);
 
 impl<'a> ToJson for Min<'a> {
     fn to_json(&self) -> Json {
@@ -188,17 +194,23 @@ impl<'a> Terms<'a> {
     add_field!(with_order, order, Order<'a>);
 }
 
-impl<'a> From<(Terms<'a>, Aggregations<'a>)> for Aggregation<'a> {
-    fn from(from: (Terms<'a>, Aggregations<'a>)) -> Aggregation<'a> {
-        Aggregation::Bucket(BucketAggregation::Terms(from.0), Some(from.1))
+macro_rules! bucket_agg {
+    ($b:ident) => {
+        impl<'a> From<($b<'a>, Aggregations<'a>)> for Aggregation<'a> {
+            fn from(from: ($b<'a>, Aggregations<'a>)) -> Aggregation<'a> {
+                Aggregation::Bucket(BucketAggregation::$b(from.0), Some(from.1))
+            }
+        }
+
+        impl<'a> From<$b<'a>> for Aggregation<'a> {
+            fn from(from: $b<'a>) -> Aggregation<'a> {
+                Aggregation::Bucket(BucketAggregation::$b(from), None)
+            }
+        }
     }
 }
 
-impl<'a> From<Terms<'a>> for Aggregation<'a> {
-    fn from(from: Terms<'a>) -> Aggregation<'a> {
-        Aggregation::Bucket(BucketAggregation::Terms(from), None)
-    }
-}
+bucket_agg!(Terms);
 
 impl<'a> ToJson for Terms<'a> {
     fn to_json(&self) -> Json {
