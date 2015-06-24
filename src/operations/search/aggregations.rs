@@ -260,6 +260,9 @@ impl<'a> ToJson for Aggregation<'a> {
 }
 
 /// The set of aggregations
+///
+/// There are many ways of creating aggregations, either standalone or via a
+/// conversion trait
 #[derive(Debug)]
 pub struct Aggregations<'a>(HashMap<&'a str, Aggregation<'a>>);
 
