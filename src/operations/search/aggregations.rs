@@ -119,14 +119,29 @@ impl<'a> ToString for OrderKey<'a> {
     }
 }
 
+/// Used to define the ordering of buckets in a some bucketted aggregations
+///
+/// # Examples
+///
+/// ```
+/// use rs_es::operations::search::aggregations::{Order, OrderKey};
+///
+/// let order1 = Order::asc(OrderKey::Count);
+/// let order2 = Order::desc("field_name");
+/// ```
+///
+/// The first will produce a JSON fragment: `{"_count": "asc"}`; the second will
+/// produce a JSON fragment: `{"field_name", "desc"}`
 pub struct Order<'a>(OrderKey<'a>, super::Order);
 
 impl<'a> Order<'a> {
-    fn asc<O: Into<OrderKey<'a>>>(key: O) -> Order<'a> {
+    /// Create an `Order` ascending
+    pub fn asc<O: Into<OrderKey<'a>>>(key: O) -> Order<'a> {
         Order(key.into(), super::Order::Asc)
     }
 
-    fn desc<O: Into<OrderKey<'a>>>(key: O) -> Order<'a> {
+    /// Create an `Order` descending
+    pub fn desc<O: Into<OrderKey<'a>>>(key: O) -> Order<'a> {
         Order(key.into(), super::Order::Desc)
     }
 }
@@ -334,14 +349,27 @@ pub enum AggregationResult {
     Terms(TermsResult)
 }
 
-impl AggregationResult {
-    pub fn as_min<'a>(&'a self) -> Result<&'a MinResult, EsError> {
-        use self::AggregationResult::*;
-        match self {
-            &Min(ref res) => Ok(res),
-            _             => Err(EsError::EsError(format!("Wrong type: {:?}", self)))
+/// Macro to implement the various as... functions that return the details of an
+/// aggregation for that particular type
+macro_rules! agg_as {
+    ($n:ident,$t:ident,$rt:ty) => {
+        pub fn $n<'a>(&'a self) -> Result<&'a $rt, EsError> {
+            match self {
+                &AggregationResult::$t(ref res) => Ok(res),
+                _                               => {
+                    Err(EsError::EsError(format!("Wrong type: {:?}", self)))
+                }
+            }
         }
     }
+}
+
+impl AggregationResult {
+    // Metrics
+    agg_as!(as_min, Min, MinResult);
+
+    // buckets
+    agg_as!(as_terms, Terms, TermsResult);
 }
 
 #[derive(Debug)]
