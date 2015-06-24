@@ -24,6 +24,7 @@ use error::EsError;
 use units::JsonVal;
 
 /// Script attributes for various attributes
+#[derive(Debug)]
 pub struct Script<'a> {
     field:  &'a str,
     script: &'a str,
@@ -49,6 +50,7 @@ impl<'a> Script<'a> {
 }
 
 /// Min aggregation
+#[derive(Debug)]
 pub enum Min<'a> {
     /// Field
     Field(&'a str),
@@ -79,7 +81,8 @@ impl<'a> ToJson for Min<'a> {
 }
 
 /// Individual aggregations and their options
-enum MetricsAggregation<'a> {
+#[derive(Debug)]
+pub enum MetricsAggregation<'a> {
     Min(Min<'a>)
 }
 
@@ -97,6 +100,7 @@ impl<'a> ToJson for MetricsAggregation<'a> {
 
 /// Order - used for some bucketing aggregations to determine the order of
 /// buckets
+#[derive(Debug)]
 pub enum OrderKey<'a> {
     Count,
     Term,
@@ -132,6 +136,7 @@ impl<'a> ToString for OrderKey<'a> {
 ///
 /// The first will produce a JSON fragment: `{"_count": "asc"}`; the second will
 /// produce a JSON fragment: `{"field_name", "desc"}`
+#[derive(Debug)]
 pub struct Order<'a>(OrderKey<'a>, super::Order);
 
 impl<'a> Order<'a> {
@@ -160,6 +165,7 @@ trait AddToJson {
 }
 
 /// Terms aggregation
+#[derive(Debug)]
 pub struct Terms<'a> {
     field:      &'a str,
     size:       Option<u64>,
@@ -206,7 +212,8 @@ impl<'a> ToJson for Terms<'a> {
 }
 
 /// The set of bucket aggregations
-enum BucketAggregation<'a> {
+#[derive(Debug)]
+pub enum BucketAggregation<'a> {
     Terms(Terms<'a>)
 }
 
@@ -221,7 +228,8 @@ impl<'a> AddToJson for BucketAggregation<'a> {
 }
 
 /// Aggregations are either metrics or bucket-based aggregations
-enum Aggregation<'a> {
+#[derive(Debug)]
+pub enum Aggregation<'a> {
     /// A metric aggregation (e.g. min)
     Metrics(MetricsAggregation<'a>),
 
@@ -252,15 +260,46 @@ impl<'a> ToJson for Aggregation<'a> {
 }
 
 /// The set of aggregations
+#[derive(Debug)]
 pub struct Aggregations<'a>(HashMap<&'a str, Aggregation<'a>>);
 
 impl<'a> Aggregations<'a> {
+    /// Create an empty-set of aggregations, individual aggregations should be
+    /// added via the `add` method
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rs_es::operations::search::aggregations::{Aggregations, Min};
+    ///
+    /// let mut aggs = Aggregations::new();
+    /// aggs.add("agg_name", Min::Field("field_name"));
+    /// ```
     pub fn new() -> Aggregations<'a> {
         Aggregations(HashMap::new())
     }
 
-    pub fn insert<A: Into<Aggregation<'a>>>(&mut self, key: &'a str, val: A) {
+    /// Add an aggregation to the set of aggregations
+    pub fn add<A: Into<Aggregation<'a>>>(&mut self, key: &'a str, val: A) {
         self.0.insert(key, val.into());
+    }
+}
+
+impl<'b> From<Vec<(&'b str, Aggregation<'b>)>> for Aggregations<'b> {
+    fn from(from: Vec<(&'b str, Aggregation<'b>)>) -> Aggregations<'b> {
+        let mut aggs = Aggregations::new();
+        for (name, agg) in from {
+            aggs.add(name, agg);
+        }
+        aggs
+    }
+}
+
+impl <'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
+    fn from(from: (&'a str, A)) -> Aggregations<'a> {
+        let mut aggs = Aggregations::new();
+        aggs.add(from.0, from.1.into());
+        aggs
     }
 }
 
@@ -293,6 +332,15 @@ impl<'a> From<&'a Json> for MinResult {
 
 // Buckets result
 
+/// Macros for buckets to return a reference to the sub-aggregations
+macro_rules! add_aggs_ref {
+    () => {
+        pub fn aggs_ref<'a>(&'a self) -> Option<&'a AggregationsResult> {
+            self.aggs.as_ref()
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct TermsBucketResult {
     pub key: JsonVal,
@@ -302,18 +350,21 @@ pub struct TermsBucketResult {
 
 impl TermsBucketResult {
     fn from(from: &Json, aggs: &Option<Aggregations>) -> TermsBucketResult {
+        info!("Creating TermsBucketResult from: {:?} with {:?}", from, aggs);
+
         TermsBucketResult {
             key: JsonVal::from(from.find("key").expect("No 'key' value")),
             doc_count: get_json_u64!(from, "doc_count"),
             aggs: match aggs {
                 &Some(ref agg) => {
-                    Some(object_to_result(agg,
-                                          get_json_object!(from, "aggregations")))
+                    Some(object_to_result(agg, from.as_object().expect("Not an object")))
                 },
                 &None          => None
             }
         }
     }
+
+    add_aggs_ref!();
 }
 
 #[derive(Debug)]

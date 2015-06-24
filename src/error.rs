@@ -19,6 +19,7 @@
 use std::error::Error;
 use std::fmt;
 use std::io;
+use std::io::Read;
 
 use hyper;
 use hyper::client::response;
@@ -84,7 +85,18 @@ impl From<json::BuilderError> for EsError {
 
 impl<'a> From<&'a mut response::Response> for EsError {
     fn from(err: &'a mut response::Response) -> EsError {
-        EsError::EsServerError(format!("{} - {:?}", err.status, err))
+        let mut body = String::new();
+        match err.read_to_string(&mut body) {
+            Ok(_)  => (),
+            Err(_) => {
+                return EsError::EsServerError(format!("{} - cannot read response - {:?}",
+                                                      err.status,
+                                                      err));
+            }
+        }
+        EsError::EsServerError(format!("{} - {}",
+                                       err.status,
+                                       body))
     }
 }
 

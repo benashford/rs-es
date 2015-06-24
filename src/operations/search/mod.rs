@@ -65,6 +65,7 @@ impl ToString for SearchType {
 }
 
 /// Order of a sort
+#[derive(Debug)]
 pub enum Order {
     Asc,
     Desc
@@ -977,7 +978,7 @@ mod tests {
     use super::Sort;
     use super::Source;
 
-    use super::aggregations::{Aggregations, Min};
+    use super::aggregations::{Aggregations, Min, Order, OrderKey, Terms};
 
     fn make_document(idx: i64) -> TestDocument {
         TestDocument::new()
@@ -1098,6 +1099,74 @@ mod tests {
     }
 
     #[test]
+    fn test_bucket_aggs() {
+        let mut client = ::tests::make_client();
+        let index_name = "test_bucket_aggs";
+        ::tests::clean_db(&mut client, index_name);
+
+        client.bulk(&[Action::index(TestDocument::new().with_str_field("A").with_int_field(2)),
+                      Action::index(TestDocument::new().with_str_field("B").with_int_field(3)),
+                      Action::index(TestDocument::new().with_str_field("A").with_int_field(1)),
+                      Action::index(TestDocument::new().with_str_field("B").with_int_field(2))])
+            .with_index(index_name)
+            .with_doc_type("doc_type")
+            .send()
+            .unwrap();
+
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
+
+        let aggs = Aggregations::from(("str",
+                                       (Terms::new("str_field").with_order(Order::asc(OrderKey::Term)),
+                                        Aggregations::from(("int",
+                                                            Min::Field("int_field"))))));
+
+        let result = client.search_query()
+            .with_indexes(&[index_name])
+            .with_aggs(&aggs)
+            .send()
+            .unwrap();
+
+        let buckets = &result.aggs_ref()
+            .unwrap()
+            .get("str")
+            .unwrap()
+            .as_terms()
+            .unwrap()
+            .buckets;
+
+        let bucket_a = &buckets[0];
+        let bucket_b = &buckets[1];
+
+        assert_eq!(2, bucket_a.doc_count);
+        assert_eq!(2, bucket_b.doc_count);
+
+        let min_a = &bucket_a.aggs_ref()
+            .unwrap()
+            .get("int")
+            .unwrap()
+            .as_min()
+            .unwrap()
+            .value;
+
+        let min_b = &bucket_b.aggs_ref()
+            .unwrap()
+            .get("int")
+            .unwrap()
+            .as_min()
+            .unwrap()
+            .value;
+
+        match min_a {
+            &JsonVal::F64(i) => assert_eq!(1.0, i),
+            _                => panic!("Not an integer")
+        }
+        match min_b {
+            &JsonVal::F64(i) => assert_eq!(2.0, i),
+            _                => panic!("Not an integer")
+        }
+    }
+
+    #[test]
     fn test_aggs() {
         let mut client = ::tests::make_client();
         let index_name = "test_aggs";
@@ -1112,12 +1181,9 @@ mod tests {
 
         client.refresh().with_indexes(&[index_name]).send().unwrap();
 
-        let mut aggs = Aggregations::new();
-        aggs.insert("min_int_field", Min::Field("int_field"));
-
         let result = client.search_query()
             .with_indexes(&[index_name])
-            .with_aggs(&aggs)
+            .with_aggs(&Aggregations::from(("min_int_field", Min::Field("int_field"))))
             .send()
             .unwrap();
 
