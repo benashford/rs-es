@@ -129,53 +129,52 @@ impl<'a> From<Script<'a>> for FieldOrScript<'a> {
     }
 }
 
+/// Macros to build simple `FieldOrScript` based aggregations
+macro_rules! field_or_script_new {
+    ($t:ident) => {
+        impl<'a> $t<'a> {
+            pub fn new<FOS: Into<FieldOrScript<'a>>>(fos: FOS) -> $t<'a> {
+                $t(fos.into())
+            }
+        }
+    }
+}
+
+macro_rules! field_or_script_to_json {
+    ($t:ident) => {
+        impl<'a> ToJson for $t<'a> {
+            fn to_json(&self) -> Json {
+                let mut d = BTreeMap::new();
+                self.0.add_to_object(&mut d);
+                Json::Object(d)
+            }
+        }
+    }
+}
+
 /// Min aggregation
 #[derive(Debug)]
 pub struct Min<'a>(FieldOrScript<'a>);
 
-impl<'a> Min<'a> {
-    pub fn new<FOS: Into<FieldOrScript<'a>>>(fos: FOS) -> Min<'a> {
-        Min(fos.into())
-    }
-}
-
+field_or_script_new!(Min);
+field_or_script_to_json!(Min);
 metrics_agg!(Min);
-
-impl<'a> ToJson for Min<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        self.0.add_to_object(&mut d);
-        Json::Object(d)
-    }
-}
 
 /// Max aggregation
 #[derive(Debug)]
 pub struct Max<'a>(FieldOrScript<'a>);
 
+field_or_script_new!(Max);
+field_or_script_to_json!(Max);
 metrics_agg!(Max);
-
-impl<'a> ToJson for Max<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        self.0.add_to_object(&mut d);
-        Json::Object(d)
-    }
-}
 
 /// Sum aggregation
 #[derive(Debug)]
 pub struct Sum<'a>(FieldOrScript<'a>);
 
+field_or_script_new!(Sum);
+field_or_script_to_json!(Sum);
 metrics_agg!(Sum);
-
-impl<'a> ToJson for Sum<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        self.0.add_to_object(&mut d);
-        Json::Object(d)
-    }
-}
 
 /// Individual aggregations and their options
 #[derive(Debug)]

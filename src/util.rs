@@ -116,6 +116,9 @@ impl<I, S> StrJoin for I where
 }
 
 /// Useful macros for implementing `From` traits
+///
+/// TODO: this may only be useful for Query DSL, in which case should be moved
+/// to that module
 macro_rules! from_exp {
     ($ft:ty, $dt:ident, $pi:ident, $ex:expr) => {
         impl From<$ft> for $dt {
