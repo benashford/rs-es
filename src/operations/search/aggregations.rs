@@ -59,7 +59,7 @@ pub enum Min<'a> {
     Script(Script<'a>)
 }
 
-macro_rules! metric_agg {
+macro_rules! metrics_agg {
     ($b:ident) => {
         impl<'a> From<$b<'a>> for Aggregation<'a> {
             fn from(from: $b<'a>) -> Aggregation<'a> {
@@ -69,7 +69,7 @@ macro_rules! metric_agg {
     }
 }
 
-metric_agg!(Min);
+metrics_agg!(Min);
 
 impl<'a> ToJson for Min<'a> {
     fn to_json(&self) -> Json {
@@ -86,10 +86,39 @@ impl<'a> ToJson for Min<'a> {
     }
 }
 
+/// Max aggregation
+#[derive(Debug)]
+pub enum Max<'a> {
+    /// Field
+    Field(&'a str),
+
+    /// By Script
+    Script(Script<'a>)
+}
+
+metrics_agg!(Max);
+
+// TODO: this is nearly identical to the implementation for `Min`
+impl<'a> ToJson for Max<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        match self {
+            &Max::Field(field) => {
+                d.insert("field".to_string(), field.to_json());
+            },
+            &Max::Script(ref script) => {
+                script.add_to_object(&mut d);
+            }
+        }
+        Json::Object(d)
+    }
+}
+
 /// Individual aggregations and their options
 #[derive(Debug)]
 pub enum MetricsAggregation<'a> {
-    Min(Min<'a>)
+    Min(Min<'a>),
+    Max(Max<'a>)
 }
 
 impl<'a> ToJson for MetricsAggregation<'a> {
@@ -98,6 +127,9 @@ impl<'a> ToJson for MetricsAggregation<'a> {
         match self {
             &MetricsAggregation::Min(ref min_agg) => {
                 d.insert("min".to_owned(), min_agg.to_json());
+            },
+            &MetricsAggregation::Max(ref max_agg) => {
+                d.insert("max".to_owned(), max_agg.to_json());
             }
         }
         Json::Object(d)
@@ -345,6 +377,19 @@ impl<'a> From<&'a Json> for MinResult {
     }
 }
 
+#[derive(Debug)]
+pub struct MaxResult {
+    pub value: JsonVal
+}
+
+impl<'a> From<&'a Json> for MaxResult {
+    fn from(from: &'a Json) -> MaxResult {
+        MaxResult {
+            value: JsonVal::from(from.find("value").expect("No 'value' value"))
+        }
+    }
+}
+
 // Buckets result
 
 /// Macros for buckets to return a reference to the sub-aggregations
@@ -410,6 +455,7 @@ impl TermsResult {
 pub enum AggregationResult {
     // Metrics
     Min(MinResult),
+    Max(MaxResult),
 
     // Buckets
     Terms(TermsResult)
@@ -433,6 +479,7 @@ macro_rules! agg_as {
 impl AggregationResult {
     // Metrics
     agg_as!(as_min, Min, MinResult);
+    agg_as!(as_max, Max, MaxResult);
 
     // buckets
     agg_as!(as_terms, Terms, TermsResult);
@@ -453,6 +500,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                 match ma {
                     &MetricsAggregation::Min(_) => {
                         AggregationResult::Min(MinResult::from(json))
+                    },
+                    &MetricsAggregation::Max(_) => {
+                        AggregationResult::Max(MaxResult::from(json))
                     }
                 }
             },
