@@ -176,12 +176,21 @@ field_or_script_new!(Sum);
 field_or_script_to_json!(Sum);
 metrics_agg!(Sum);
 
+/// Avg aggregation
+#[derive(Debug)]
+pub struct Avg<'a>(FieldOrScript<'a>);
+
+field_or_script_new!(Avg);
+field_or_script_to_json!(Avg);
+metrics_agg!(Avg);
+
 /// Individual aggregations and their options
 #[derive(Debug)]
 pub enum MetricsAggregation<'a> {
     Min(Min<'a>),
     Max(Max<'a>),
-    Sum(Sum<'a>)
+    Sum(Sum<'a>),
+    Avg(Avg<'a>)
 }
 
 impl<'a> ToJson for MetricsAggregation<'a> {
@@ -196,6 +205,9 @@ impl<'a> ToJson for MetricsAggregation<'a> {
             },
             &MetricsAggregation::Sum(ref sum_agg) => {
                 d.insert("sum".to_owned(), sum_agg.to_json());
+            },
+            &MetricsAggregation::Avg(ref avg_agg) => {
+                d.insert("avg".to_owned(), avg_agg.to_json());
             }
         }
         Json::Object(d)
@@ -461,8 +473,20 @@ pub struct SumResult {
 impl<'a> From<&'a Json> for SumResult {
     fn from(from: &'a Json) -> SumResult {
         SumResult {
-            value: from.find("value").expect("No 'value' value")
-                .as_f64().expect("Not a numeric value")
+            value: get_json_f64!(from, "value")
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct AvgResult {
+    pub value: f64
+}
+
+impl<'a> From<&'a Json> for AvgResult {
+    fn from(from: &'a Json) -> AvgResult {
+        AvgResult {
+            value: get_json_f64!(from, "value")
         }
     }
 }
@@ -534,6 +558,7 @@ pub enum AggregationResult {
     Min(MinResult),
     Max(MaxResult),
     Sum(SumResult),
+    Avg(AvgResult),
 
     // Buckets
     Terms(TermsResult)
@@ -585,6 +610,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &MetricsAggregation::Sum(_) => {
                         AggregationResult::Sum(SumResult::from(json))
+                    },
+                    &MetricsAggregation::Avg(_) => {
+                        AggregationResult::Avg(AvgResult::from(json))
                     }
                 }
             },
