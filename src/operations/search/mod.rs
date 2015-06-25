@@ -1118,7 +1118,7 @@ mod tests {
         let aggs = Aggregations::from(("str",
                                        (Terms::new("str_field").with_order(Order::asc(OrderKey::Term)),
                                         Aggregations::from(("int",
-                                                            Min::Field("int_field"))))));
+                                                            Min::new("int_field"))))));
 
         let result = client.search_query()
             .with_indexes(&[index_name])
@@ -1183,7 +1183,7 @@ mod tests {
 
         let result = client.search_query()
             .with_indexes(&[index_name])
-            .with_aggs(&Aggregations::from(("min_int_field", Min::Field("int_field"))))
+            .with_aggs(&Aggregations::from(("min_int_field", Min::new("int_field"))))
             .send()
             .unwrap();
 

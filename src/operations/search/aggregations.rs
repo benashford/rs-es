@@ -23,22 +23,55 @@ use rustc_serialize::json::{Json, ToJson};
 use error::EsError;
 use units::JsonVal;
 
+#[derive(Debug)]
+pub enum Scripts<'a> {
+    Inline(&'a str, Option<&'a str>),
+    Id(&'a str)
+}
+
 /// Script attributes for various attributes
 #[derive(Debug)]
 pub struct Script<'a> {
-    field:  Option<&'a str>,
-    script: &'a str,
+    script: Scripts<'a>,
     params: Option<Json>
 }
 
 impl<'a> Script<'a> {
+    pub fn id(script_id: &'a str) -> Script<'a> {
+        Script {
+            script: Scripts::Id(script_id),
+            params: None
+        }
+    }
+
+    pub fn script(script: &'a str) -> Script<'a> {
+        Script {
+            script: Scripts::Inline(script, None),
+            params: None
+        }
+    }
+
+    pub fn script_and_field(script: &'a str, field: &'a str) -> Script<'a> {
+        Script {
+            script: Scripts::Inline(script, Some(field)),
+            params: None
+        }
+    }
+
     fn add_to_object(&self, obj: &mut BTreeMap<String, Json>) {
-        obj.insert("script".to_owned(), self.script.to_json());
-        match self.field {
-            Some(field) => {
-                obj.insert("field".to_owned(), field.to_json());
+        match self.script {
+            Scripts::Inline(script, field) => {
+                obj.insert("script".to_owned(), script.to_json());
+                match field {
+                    Some(f) => {
+                        obj.insert("field".to_owned(), f.to_json());
+                    },
+                    None    => ()
+                }
             },
-            None        => ()
+            Scripts::Id(script_id) => {
+                obj.insert("script_id".to_owned(), script_id.to_json());
+            }
         };
         match self.params {
             Some(ref json) => {
@@ -54,16 +87,6 @@ impl<'a> Script<'a> {
     }
 }
 
-/// Min aggregation
-#[derive(Debug)]
-pub enum Min<'a> {
-    /// Field
-    Field(&'a str),
-
-    /// By Script
-    Script(Script<'a>)
-}
-
 macro_rules! metrics_agg {
     ($b:ident) => {
         impl<'a> From<$b<'a>> for Aggregation<'a> {
@@ -74,47 +97,68 @@ macro_rules! metrics_agg {
     }
 }
 
+/// A common pattern is for an aggregation to accept a field or a script
+#[derive(Debug)]
+pub enum FieldOrScript<'a> {
+    Field(&'a str),
+    Script(Script<'a>)
+}
+
+impl<'a> FieldOrScript<'a> {
+    fn add_to_object(&self, obj: &mut BTreeMap<String, Json>) {
+        match self {
+            &FieldOrScript::Field(field) => {
+                obj.insert("field".to_owned(), field.to_json());
+            },
+            &FieldOrScript::Script(ref script) => {
+                script.add_to_object(obj);
+            }
+        }
+    }
+}
+
+impl<'a> From<&'a str> for FieldOrScript<'a> {
+    fn from(from: &'a str) -> FieldOrScript<'a> {
+        FieldOrScript::Field(from)
+    }
+}
+
+impl<'a> From<Script<'a>> for FieldOrScript<'a> {
+    fn from(from: Script<'a>) -> FieldOrScript<'a> {
+        FieldOrScript::Script(from)
+    }
+}
+
+/// Min aggregation
+#[derive(Debug)]
+pub struct Min<'a>(FieldOrScript<'a>);
+
+impl<'a> Min<'a> {
+    pub fn new<FOS: Into<FieldOrScript<'a>>>(fos: FOS) -> Min<'a> {
+        Min(fos.into())
+    }
+}
+
 metrics_agg!(Min);
 
 impl<'a> ToJson for Min<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        match self {
-            &Min::Field(field) => {
-                d.insert("field".to_string(), field.to_json());
-            },
-            &Min::Script(ref script) => {
-                script.add_to_object(&mut d);
-            }
-        }
+        self.0.add_to_object(&mut d);
         Json::Object(d)
     }
 }
 
 /// Max aggregation
 #[derive(Debug)]
-pub enum Max<'a> {
-    /// Field
-    Field(&'a str),
-
-    /// By Script
-    Script(Script<'a>)
-}
+pub struct Max<'a>(FieldOrScript<'a>);
 
 metrics_agg!(Max);
 
-// TODO: this is nearly identical to the implementation for `Min`
 impl<'a> ToJson for Max<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        match self {
-            &Max::Field(field) => {
-                d.insert("field".to_string(), field.to_json());
-            },
-            &Max::Script(ref script) => {
-                script.add_to_object(&mut d);
-            }
-        }
+        self.0.add_to_object(&mut d);
         Json::Object(d)
     }
 }
@@ -202,24 +246,19 @@ impl<'a> ToJson for Order<'a> {
     }
 }
 
-/// Add to JSON trait
-trait AddToJson {
-    fn add_to_json(&self, &mut BTreeMap<String, Json>);
-}
-
 /// Terms aggregation
 #[derive(Debug)]
 pub struct Terms<'a> {
-    field:      &'a str,
+    field:      FieldOrScript<'a>,
     size:       Option<u64>,
     shard_size: Option<u64>,
     order:      Option<Order<'a>>
 }
 
 impl<'a> Terms<'a> {
-    pub fn new(field: &'a str) -> Terms<'a> {
+    pub fn new<FOS: Into<FieldOrScript<'a>>>(field: FOS) -> Terms<'a> {
         Terms {
-            field:      field,
+            field:      field.into(),
             size:       None,
             shard_size: None,
             order:      None
@@ -252,10 +291,12 @@ bucket_agg!(Terms);
 impl<'a> ToJson for Terms<'a> {
     fn to_json(&self) -> Json {
         let mut json = BTreeMap::new();
-        json.insert("field".to_owned(), Json::String(self.field.to_owned()));
+        self.field.add_to_object(&mut json);
+
         optional_add!(json, self.size, "size");
         optional_add!(json, self.shard_size, "shard_size");
         optional_add!(json, self.order, "order");
+
         Json::Object(json)
     }
 }
@@ -266,8 +307,8 @@ pub enum BucketAggregation<'a> {
     Terms(Terms<'a>)
 }
 
-impl<'a> AddToJson for BucketAggregation<'a> {
-    fn add_to_json(&self, json: &mut BTreeMap<String, Json>) {
+impl<'a> BucketAggregation<'a> {
+    fn add_to_object(&self, json: &mut BTreeMap<String, Json>) {
         match self {
             &BucketAggregation::Terms(ref terms) => {
                 json.insert("terms".to_owned(), terms.to_json());
@@ -295,7 +336,7 @@ impl<'a> ToJson for Aggregation<'a> {
             },
             &Aggregation::Bucket(ref ba, ref aggs) => {
                 let mut d = BTreeMap::new();
-                ba.add_to_json(&mut d);
+                ba.add_to_object(&mut d);
                 match aggs {
                     &Some(ref a) => {
                         d.insert("aggs".to_owned(), a.to_json());
@@ -325,7 +366,7 @@ impl<'a> Aggregations<'a> {
     /// use rs_es::operations::search::aggregations::{Aggregations, Min};
     ///
     /// let mut aggs = Aggregations::new();
-    /// aggs.add("agg_name", Min::Field("field_name"));
+    /// aggs.add("agg_name", Min::new("field_name"));
     /// ```
     pub fn new() -> Aggregations<'a> {
         Aggregations(HashMap::new())
