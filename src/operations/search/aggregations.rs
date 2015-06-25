@@ -163,11 +163,26 @@ impl<'a> ToJson for Max<'a> {
     }
 }
 
+/// Sum aggregation
+#[derive(Debug)]
+pub struct Sum<'a>(FieldOrScript<'a>);
+
+metrics_agg!(Sum);
+
+impl<'a> ToJson for Sum<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        self.0.add_to_object(&mut d);
+        Json::Object(d)
+    }
+}
+
 /// Individual aggregations and their options
 #[derive(Debug)]
 pub enum MetricsAggregation<'a> {
     Min(Min<'a>),
-    Max(Max<'a>)
+    Max(Max<'a>),
+    Sum(Sum<'a>)
 }
 
 impl<'a> ToJson for MetricsAggregation<'a> {
@@ -179,6 +194,9 @@ impl<'a> ToJson for MetricsAggregation<'a> {
             },
             &MetricsAggregation::Max(ref max_agg) => {
                 d.insert("max".to_owned(), max_agg.to_json());
+            },
+            &MetricsAggregation::Sum(ref sum_agg) => {
+                d.insert("sum".to_owned(), sum_agg.to_json());
             }
         }
         Json::Object(d)
@@ -436,6 +454,20 @@ impl<'a> From<&'a Json> for MaxResult {
     }
 }
 
+#[derive(Debug)]
+pub struct SumResult {
+    pub value: f64
+}
+
+impl<'a> From<&'a Json> for SumResult {
+    fn from(from: &'a Json) -> SumResult {
+        SumResult {
+            value: from.find("value").expect("No 'value' value")
+                .as_f64().expect("Not a numeric value")
+        }
+    }
+}
+
 // Buckets result
 
 /// Macros for buckets to return a reference to the sub-aggregations
@@ -502,6 +534,7 @@ pub enum AggregationResult {
     // Metrics
     Min(MinResult),
     Max(MaxResult),
+    Sum(SumResult),
 
     // Buckets
     Terms(TermsResult)
@@ -526,6 +559,7 @@ impl AggregationResult {
     // Metrics
     agg_as!(as_min, Min, MinResult);
     agg_as!(as_max, Max, MaxResult);
+    agg_as!(as_sum, Sum, SumResult);
 
     // buckets
     agg_as!(as_terms, Terms, TermsResult);
@@ -549,6 +583,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &MetricsAggregation::Max(_) => {
                         AggregationResult::Max(MaxResult::from(json))
+                    },
+                    &MetricsAggregation::Sum(_) => {
+                        AggregationResult::Sum(SumResult::from(json))
                     }
                 }
             },
