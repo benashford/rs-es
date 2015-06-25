@@ -26,21 +26,26 @@ use units::JsonVal;
 /// Script attributes for various attributes
 #[derive(Debug)]
 pub struct Script<'a> {
-    field:  &'a str,
+    field:  Option<&'a str>,
     script: &'a str,
     params: Option<Json>
 }
 
 impl<'a> Script<'a> {
     fn add_to_object(&self, obj: &mut BTreeMap<String, Json>) {
-        obj.insert("field".to_owned(), self.field.to_json());
         obj.insert("script".to_owned(), self.script.to_json());
+        match self.field {
+            Some(field) => {
+                obj.insert("field".to_owned(), field.to_json());
+            },
+            None        => ()
+        };
         match self.params {
             Some(ref json) => {
                 obj.insert("params".to_owned(), json.clone());
             },
             None           => ()
-        }
+        };
     }
 
     pub fn with_params(mut self, params: Json) -> Self {
