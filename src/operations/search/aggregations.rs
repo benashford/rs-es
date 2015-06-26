@@ -200,6 +200,14 @@ field_or_script_new!(ExtendedStats);
 field_or_script_to_json!(ExtendedStats);
 metrics_agg!(ExtendedStats);
 
+/// Value count aggregation
+#[derive(Debug)]
+pub struct ValueCount<'a>(FieldOrScript<'a>);
+
+field_or_script_new!(ValueCount);
+field_or_script_to_json!(ValueCount);
+metrics_agg!(ValueCount);
+
 /// Individual aggregations and their options
 #[derive(Debug)]
 pub enum MetricsAggregation<'a> {
@@ -208,7 +216,8 @@ pub enum MetricsAggregation<'a> {
     Sum(Sum<'a>),
     Avg(Avg<'a>),
     Stats(Stats<'a>),
-    ExtendedStats(ExtendedStats<'a>)
+    ExtendedStats(ExtendedStats<'a>),
+    ValueCount(ValueCount<'a>)
 }
 
 impl<'a> ToJson for MetricsAggregation<'a> {
@@ -232,6 +241,9 @@ impl<'a> ToJson for MetricsAggregation<'a> {
             },
             &MetricsAggregation::ExtendedStats(ref ext_stat_agg) => {
                 d.insert("extended_stats".to_owned(), ext_stat_agg.to_json());
+            },
+            &MetricsAggregation::ValueCount(ref vc_agg) => {
+                d.insert("value_count".to_owned(), vc_agg.to_json());
             }
         }
         Json::Object(d)
@@ -583,6 +595,19 @@ impl<'a> From<&'a Json> for ExtendedStatsResult {
     }
 }
 
+#[derive(Debug)]
+pub struct ValueCountResult {
+    value: u64
+}
+
+impl<'a> From<&'a Json> for ValueCountResult {
+    fn from(from: &'a Json) -> ValueCountResult {
+        ValueCountResult {
+            value: get_json_u64!(from, "value")
+        }
+    }
+}
+
 // Buckets result
 
 /// Macros for buckets to return a reference to the sub-aggregations
@@ -653,6 +678,7 @@ pub enum AggregationResult {
     Avg(AvgResult),
     Stats(StatsResult),
     ExtendedStats(ExtendedStatsResult),
+    ValueCount(ValueCountResult),
 
     // Buckets
     Terms(TermsResult)
@@ -681,6 +707,7 @@ impl AggregationResult {
     agg_as!(as_avg, Avg, AvgResult);
     agg_as!(as_stats, Stats, StatsResult);
     agg_as!(as_extended_stats, ExtendedStats, ExtendedStatsResult);
+    agg_as!(as_value_count, ValueCount, ValueCountResult);
 
     // buckets
     agg_as!(as_terms, Terms, TermsResult);
@@ -716,6 +743,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &MetricsAggregation::ExtendedStats(_) => {
                         AggregationResult::ExtendedStats(ExtendedStatsResult::from(json))
+                    },
+                    &MetricsAggregation::ValueCount(_) => {
+                        AggregationResult::ValueCount(ValueCountResult::from(json))
                     }
                 }
             },
