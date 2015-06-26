@@ -192,6 +192,14 @@ field_or_script_new!(Stats);
 field_or_script_to_json!(Stats);
 metrics_agg!(Stats);
 
+/// Extended stats aggregation
+#[derive(Debug)]
+pub struct ExtendedStats<'a>(FieldOrScript<'a>);
+
+field_or_script_new!(ExtendedStats);
+field_or_script_to_json!(ExtendedStats);
+metrics_agg!(ExtendedStats);
+
 /// Individual aggregations and their options
 #[derive(Debug)]
 pub enum MetricsAggregation<'a> {
@@ -199,7 +207,8 @@ pub enum MetricsAggregation<'a> {
     Max(Max<'a>),
     Sum(Sum<'a>),
     Avg(Avg<'a>),
-    Stats(Stats<'a>)
+    Stats(Stats<'a>),
+    ExtendedStats(ExtendedStats<'a>)
 }
 
 impl<'a> ToJson for MetricsAggregation<'a> {
@@ -220,6 +229,9 @@ impl<'a> ToJson for MetricsAggregation<'a> {
             },
             &MetricsAggregation::Stats(ref stats_agg) => {
                 d.insert("stats".to_owned(), stats_agg.to_json());
+            },
+            &MetricsAggregation::ExtendedStats(ref ext_stat_agg) => {
+                d.insert("extended_stats".to_owned(), ext_stat_agg.to_json());
             }
         }
         Json::Object(d)
@@ -524,6 +536,53 @@ impl<'a> From<&'a Json> for StatsResult {
     }
 }
 
+/// Used by the `ExtendedStatsResult`
+#[derive(Debug)]
+pub struct Bounds {
+    pub upper: f64,
+    pub lower: f64
+}
+
+impl<'a> From<&'a Json> for Bounds {
+    fn from(from: &'a Json) -> Bounds {
+        Bounds {
+            upper: get_json_f64!(from, "upper"),
+            lower: get_json_f64!(from, "lower")
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ExtendedStatsResult {
+    pub count: u64,
+    pub min: f64,
+    pub max: f64,
+    pub avg: f64,
+    pub sum: f64,
+    pub sum_of_squares: f64,
+    pub variance: f64,
+    pub std_deviation: f64,
+    pub std_deviation_bounds: Bounds
+}
+
+impl<'a> From<&'a Json> for ExtendedStatsResult {
+    fn from(from: &'a Json) -> ExtendedStatsResult {
+        ExtendedStatsResult {
+            count: get_json_u64!(from, "count"),
+            min: get_json_f64!(from, "min"),
+            max: get_json_f64!(from, "max"),
+            avg: get_json_f64!(from, "avg"),
+            sum: get_json_f64!(from, "sum"),
+            sum_of_squares: get_json_f64!(from, "sum_of_squares"),
+            variance: get_json_f64!(from, "variance"),
+            std_deviation: get_json_f64!(from, "std_deviation"),
+            std_deviation_bounds: from.find("std_deviation_bounds")
+                .expect("No 'std_deviation_bounds'")
+                .into()
+        }
+    }
+}
+
 // Buckets result
 
 /// Macros for buckets to return a reference to the sub-aggregations
@@ -593,6 +652,7 @@ pub enum AggregationResult {
     Sum(SumResult),
     Avg(AvgResult),
     Stats(StatsResult),
+    ExtendedStats(ExtendedStatsResult),
 
     // Buckets
     Terms(TermsResult)
@@ -620,6 +680,7 @@ impl AggregationResult {
     agg_as!(as_sum, Sum, SumResult);
     agg_as!(as_avg, Avg, AvgResult);
     agg_as!(as_stats, Stats, StatsResult);
+    agg_as!(as_extended_stats, ExtendedStats, ExtendedStatsResult);
 
     // buckets
     agg_as!(as_terms, Terms, TermsResult);
@@ -652,6 +713,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &MetricsAggregation::Stats(_) => {
                         AggregationResult::Stats(StatsResult::from(json))
+                    },
+                    &MetricsAggregation::ExtendedStats(_) => {
+                        AggregationResult::ExtendedStats(ExtendedStatsResult::from(json))
                     }
                 }
             },
