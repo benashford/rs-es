@@ -339,6 +339,85 @@ impl<'a> ToJson for GeoBounds<'a> {
 
 metrics_agg!(GeoBounds);
 
+/// Scripted method aggregation
+#[derive(Debug)]
+pub struct ScriptedMetric<'a> {
+    init_script:         Option<&'a str>,
+    map_script:          &'a str,
+    combine_script:      Option<&'a str>,
+    reduce_script:       Option<&'a str>,
+    params:              Option<Json>,
+    reduce_params:       Option<Json>,
+    lang:                Option<&'a str>,
+    init_script_file:    Option<&'a str>,
+    init_script_id:      Option<&'a str>,
+    map_script_file:     Option<&'a str>,
+    map_script_id:       Option<&'a str>,
+    combine_script_file: Option<&'a str>,
+    combine_script_id:   Option<&'a str>,
+    reduce_script_file:  Option<&'a str>,
+    reduce_script_id:    Option<&'a str>
+}
+
+impl<'a> ScriptedMetric<'a> {
+    pub fn new(map_script: &'a str) -> ScriptedMetric<'a> {
+        ScriptedMetric {
+            init_script:         None,
+            map_script:          map_script,
+            combine_script:      None,
+            reduce_script:       None,
+            params:              None,
+            reduce_params:       None,
+            lang:                None,
+            init_script_file:    None,
+            init_script_id:      None,
+            map_script_file:     None,
+            map_script_id:       None,
+            combine_script_file: None,
+            combine_script_id:   None,
+            reduce_script_file:  None,
+            reduce_script_id:    None
+        }
+    }
+
+    add_field!(with_init_script, init_script, &'a str);
+    add_field!(with_combine_script, combine_script, &'a str);
+    add_field!(with_reduce_script, reduce_script, &'a str);
+    add_field!(with_params, params, Json);
+    add_field!(with_reduce_params, reduce_params, Json);
+    add_field!(with_lang, lang, &'a str);
+    add_field!(with_init_script_file, init_script_file, &'a str);
+    add_field!(with_init_script_id, init_script_id, &'a str);
+    add_field!(with_map_script_file, map_script_file, &'a str);
+    add_field!(with_map_script_id, map_script_id, &'a str);
+    add_field!(with_combine_script_file, combine_script_file, &'a str);
+    add_field!(with_combine_script_id, combine_script_id, &'a str);
+    add_field!(with_reduce_script_file, reduce_script_file, &'a str);
+    add_field!(with_reduce_script_id, reduce_script_id, &'a str);
+}
+
+impl<'a> ToJson for ScriptedMetric<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("map_script".to_owned(), self.map_script.to_json());
+        optional_add!(d, self.init_script, "init_script");
+        optional_add!(d, self.combine_script, "combine_script");
+        optional_add!(d, self.reduce_script, "reduce_script");
+        optional_add!(d, self.params, "params");
+        optional_add!(d, self.reduce_params, "reduce_params");
+        optional_add!(d, self.lang, "lang");
+        optional_add!(d, self.init_script_file, "init_script_file");
+        optional_add!(d, self.init_script_id, "init_script_id");
+        optional_add!(d, self.map_script_file, "map_script_file");
+        optional_add!(d, self.map_script_id, "map_script_id");
+        optional_add!(d, self.combine_script_file, "combine_script_file");
+        optional_add!(d, self.combine_script_id, "combine_script_id");
+        optional_add!(d, self.reduce_script_file, "reduce_script_file");
+        optional_add!(d, self.reduce_script_id, "reduce_script_id");
+        Json::Object(d)
+    }
+}
+
 /// Individual aggregations and their options
 #[derive(Debug)]
 pub enum MetricsAggregation<'a> {
@@ -352,7 +431,8 @@ pub enum MetricsAggregation<'a> {
     Percentiles(Percentiles<'a>),
     PercentileRanks(PercentileRanks<'a>),
     Cardinality(Cardinality<'a>),
-    GeoBounds(GeoBounds<'a>)
+    GeoBounds(GeoBounds<'a>),
+    ScriptedMetric(ScriptedMetric<'a>)
 }
 
 impl<'a> ToJson for MetricsAggregation<'a> {
@@ -391,6 +471,9 @@ impl<'a> ToJson for MetricsAggregation<'a> {
             },
             &MetricsAggregation::GeoBounds(ref gb_agg) => {
                 d.insert("geo_bounds".to_owned(), gb_agg.to_json());
+            },
+            &MetricsAggregation::ScriptedMetric(ref sm_agg) => {
+                d.insert("scripted_metric".to_owned(), sm_agg.to_json());
             }
         }
         Json::Object(d)
@@ -744,7 +827,7 @@ impl<'a> From<&'a Json> for ExtendedStatsResult {
 
 #[derive(Debug)]
 pub struct ValueCountResult {
-    value: u64
+    pub value: u64
 }
 
 impl<'a> From<&'a Json> for ValueCountResult {
@@ -757,7 +840,7 @@ impl<'a> From<&'a Json> for ValueCountResult {
 
 #[derive(Debug)]
 pub struct PercentilesResult {
-    values: HashMap<String, f64>
+    pub values: HashMap<String, f64>
 }
 
 impl<'a> From<&'a Json> for PercentilesResult {
@@ -777,7 +860,7 @@ impl<'a> From<&'a Json> for PercentilesResult {
 
 #[derive(Debug)]
 pub struct PercentileRanksResult {
-    values: HashMap<String, f64>
+    pub values: HashMap<String, f64>
 }
 
 impl<'a> From<&'a Json> for PercentileRanksResult {
@@ -797,7 +880,7 @@ impl<'a> From<&'a Json> for PercentileRanksResult {
 
 #[derive(Debug)]
 pub struct CardinalityResult {
-    value: u64
+    pub value: u64
 }
 
 impl<'a> From<&'a Json> for CardinalityResult {
@@ -810,13 +893,26 @@ impl<'a> From<&'a Json> for CardinalityResult {
 
 #[derive(Debug)]
 pub struct GeoBoundsResult {
-    bounds: GeoBox
+    pub bounds: GeoBox
 }
 
 impl<'a> From<&'a Json> for GeoBoundsResult {
     fn from(from: &'a Json) -> GeoBoundsResult {
         GeoBoundsResult {
             bounds: GeoBox::from(from.find("bounds").expect("No 'bounds' field"))
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ScriptedMetricResult {
+    pub value: JsonVal
+}
+
+impl<'a> From<&'a Json> for ScriptedMetricResult {
+    fn from(from: &'a Json) -> ScriptedMetricResult {
+        ScriptedMetricResult {
+            value: JsonVal::from(from.find("value").expect("No 'value' field"))
         }
     }
 }
@@ -896,6 +992,7 @@ pub enum AggregationResult {
     PercentileRanks(PercentileRanksResult),
     Cardinality(CardinalityResult),
     GeoBounds(GeoBoundsResult),
+    ScriptedMetric(ScriptedMetricResult),
 
     // Buckets
     Terms(TermsResult)
@@ -929,6 +1026,7 @@ impl AggregationResult {
     agg_as!(as_percentile_ranks, PercentileRanks, PercentileRanksResult);
     agg_as!(as_cardinality, Cardinality, CardinalityResult);
     agg_as!(as_geo_bounds, GeoBounds, GeoBoundsResult);
+    agg_as!(as_scripted_metric, ScriptedMetric, ScriptedMetricResult);
 
     // buckets
     agg_as!(as_terms, Terms, TermsResult);
@@ -979,6 +1077,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &MetricsAggregation::GeoBounds(_) => {
                         AggregationResult::GeoBounds(GeoBoundsResult::from(json))
+                    },
+                    &MetricsAggregation::ScriptedMetric(_) => {
+                        AggregationResult::ScriptedMetric(ScriptedMetricResult::from(json))
                     }
                 }
             },
