@@ -371,6 +371,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 ### Some, non-exhaustive, specific TODOs
 
 1. Aggregations
+2. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html
 2. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
 3. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
 4. Field-data fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fielddata-fields.html
