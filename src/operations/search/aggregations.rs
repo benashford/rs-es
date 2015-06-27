@@ -546,6 +546,44 @@ impl<'a> ToJson for Filter<'a> {
 
 bucket_agg!(Filter);
 
+/// Filters aggregation
+#[derive(Debug)]
+pub struct Filters<'a> {
+    filters: HashMap<&'a str, &'a query::Filter>
+}
+
+impl<'a> Filters<'a> {
+    pub fn new(filters: HashMap<&'a str, &'a query::Filter>) -> Filters<'a> {
+        Filters {
+            filters: filters
+        }
+    }
+}
+
+impl<'a> From<Vec<(&'a str, &'a query::Filter)>> for Filters<'a> {
+    fn from(from: Vec<(&'a str, &'a query::Filter)>) -> Filters<'a> {
+        let mut filters = HashMap::with_capacity(from.len());
+        for (k, v) in from {
+            filters.insert(k, v);
+        }
+        Filters::new(filters)
+    }
+}
+
+impl<'a> ToJson for Filters<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        for (&k, v) in self.filters.iter() {
+            inner.insert(k.to_owned(), v.to_json());
+        }
+        d.insert("filters".to_owned(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
+bucket_agg!(Filters);
+
 /// Order - used for some bucketing aggregations to determine the order of
 /// buckets
 #[derive(Debug)]
@@ -651,6 +689,7 @@ impl<'a> ToJson for Terms<'a> {
 pub enum BucketAggregation<'a> {
     Global(Global<'a>),
     Filter(Filter<'a>),
+    Filters(Filters<'a>),
     Terms(Terms<'a>)
 }
 
@@ -662,7 +701,10 @@ impl<'a> BucketAggregation<'a> {
             },
             &BucketAggregation::Filter(ref filter) => {
                 json.insert("filter".to_owned(), filter.to_json());
-            }
+            },
+            &BucketAggregation::Filters(ref filters) => {
+                json.insert("filters".to_owned(), filters.to_json());
+            },
             &BucketAggregation::Terms(ref terms) => {
                 json.insert("terms".to_owned(), terms.to_json());
             }
@@ -1033,6 +1075,40 @@ impl FilterResult {
 }
 
 #[derive(Debug)]
+pub struct FiltersBucketResult {
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl FiltersBucketResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> FiltersBucketResult {
+        FiltersBucketResult {
+            doc_count: get_json_u64!(from, "doc_count"),
+            aggs: extract_aggs!(from, aggs)
+        }
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
+pub struct FiltersResult {
+    pub buckets: HashMap<String, FiltersBucketResult>
+}
+
+impl FiltersResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> FiltersResult {
+        FiltersResult {
+            buckets: from.find("buckets").expect("No buckets")
+                .as_object().expect("Not an object")
+                .into_iter().map(|(k, v)| {
+                    (k.clone(), FiltersBucketResult::from(v, aggs))
+                }).collect()
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct TermsBucketResult {
     pub key: JsonVal,
     pub doc_count: u64,
@@ -1096,6 +1172,7 @@ pub enum AggregationResult {
     // Buckets
     Global(GlobalResult),
     Filter(FilterResult),
+    Filters(FiltersResult),
     Terms(TermsResult)
 }
 
@@ -1132,6 +1209,7 @@ impl AggregationResult {
     // buckets
     agg_as!(as_global, Global, GlobalResult);
     agg_as!(as_filter, Filter, FilterResult);
+    agg_as!(as_filters, Filters, FiltersResult);
     agg_as!(as_terms, Terms, TermsResult);
 }
 
@@ -1193,7 +1271,10 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &BucketAggregation::Filter(_) => {
                         AggregationResult::Filter(FilterResult::from(json, aggs))
-                    }
+                    },
+                    &BucketAggregation::Filters(_) => {
+                        AggregationResult::Filters(FiltersResult::from(json, aggs))
+                    },
                     &BucketAggregation::Terms(_) => {
                         AggregationResult::Terms(TermsResult::from(json, aggs))
                     }
