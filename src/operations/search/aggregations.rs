@@ -17,6 +17,7 @@
 //! Implementation of ElasticSearch [aggregations](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations.html)
 
 use std::collections::{BTreeMap, HashMap};
+use std::marker::PhantomData;
 
 use rustc_serialize::json::{Json, ToJson};
 
@@ -480,6 +481,48 @@ impl<'a> ToJson for MetricsAggregation<'a> {
     }
 }
 
+// Bucket aggregations
+
+macro_rules! bucket_agg {
+    ($b:ident) => {
+        impl<'a> From<($b<'a>, Aggregations<'a>)> for Aggregation<'a> {
+            fn from(from: ($b<'a>, Aggregations<'a>)) -> Aggregation<'a> {
+                Aggregation::Bucket(BucketAggregation::$b(from.0), Some(from.1))
+            }
+        }
+
+        impl<'a> From<$b<'a>> for Aggregation<'a> {
+            fn from(from: $b<'a>) -> Aggregation<'a> {
+                Aggregation::Bucket(BucketAggregation::$b(from), None)
+            }
+        }
+    }
+}
+
+/// Global aggregation, defines a single global bucket.  Can only be used as a
+/// top-level aggregation.  See: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-global-aggregation.html
+#[derive(Debug)]
+pub struct Global<'a> {
+    /// Needed for lifecycle reasons
+    phantom: PhantomData<&'a str>
+}
+
+impl<'a> Global<'a> {
+    pub fn new() -> Global<'a> {
+        Global {
+            phantom: PhantomData
+        }
+    }
+}
+
+impl<'a> ToJson for Global<'a> {
+    fn to_json(&self) -> Json {
+        Json::Object(BTreeMap::new())
+    }
+}
+
+bucket_agg!(Global);
+
 /// Order - used for some bucketing aggregations to determine the order of
 /// buckets
 #[derive(Debug)]
@@ -565,22 +608,6 @@ impl<'a> Terms<'a> {
     add_field!(with_order, order, Order<'a>);
 }
 
-macro_rules! bucket_agg {
-    ($b:ident) => {
-        impl<'a> From<($b<'a>, Aggregations<'a>)> for Aggregation<'a> {
-            fn from(from: ($b<'a>, Aggregations<'a>)) -> Aggregation<'a> {
-                Aggregation::Bucket(BucketAggregation::$b(from.0), Some(from.1))
-            }
-        }
-
-        impl<'a> From<$b<'a>> for Aggregation<'a> {
-            fn from(from: $b<'a>) -> Aggregation<'a> {
-                Aggregation::Bucket(BucketAggregation::$b(from), None)
-            }
-        }
-    }
-}
-
 bucket_agg!(Terms);
 
 impl<'a> ToJson for Terms<'a> {
@@ -599,12 +626,16 @@ impl<'a> ToJson for Terms<'a> {
 /// The set of bucket aggregations
 #[derive(Debug)]
 pub enum BucketAggregation<'a> {
+    Global(Global<'a>),
     Terms(Terms<'a>)
 }
 
 impl<'a> BucketAggregation<'a> {
     fn add_to_object(&self, json: &mut BTreeMap<String, Json>) {
         match self {
+            &BucketAggregation::Global(ref g) => {
+                json.insert("global".to_owned(), g.to_json());
+            }
             &BucketAggregation::Terms(ref terms) => {
                 json.insert("terms".to_owned(), terms.to_json());
             }
@@ -928,6 +959,35 @@ macro_rules! add_aggs_ref {
     }
 }
 
+/// Macro to extract sub-aggregations for a bucket aggregation
+macro_rules! extract_aggs {
+    ($f:ident, $a:ident) => {
+        match $a {
+            &Some(ref agg) => {
+                Some(object_to_result(agg, $f.as_object().expect("Not an object")))
+            },
+            &None          => None
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct GlobalResult {
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl GlobalResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> GlobalResult {
+        GlobalResult {
+            doc_count: get_json_u64!(from, "doc_count"),
+            aggs: extract_aggs!(from, aggs)
+        }
+    }
+
+    add_aggs_ref!();
+}
+
 #[derive(Debug)]
 pub struct TermsBucketResult {
     pub key: JsonVal,
@@ -942,12 +1002,7 @@ impl TermsBucketResult {
         TermsBucketResult {
             key: JsonVal::from(from.find("key").expect("No 'key' value")),
             doc_count: get_json_u64!(from, "doc_count"),
-            aggs: match aggs {
-                &Some(ref agg) => {
-                    Some(object_to_result(agg, from.as_object().expect("Not an object")))
-                },
-                &None          => None
-            }
+            aggs: extract_aggs!(from, aggs)
         }
     }
 
@@ -995,6 +1050,7 @@ pub enum AggregationResult {
     ScriptedMetric(ScriptedMetricResult),
 
     // Buckets
+    Global(GlobalResult),
     Terms(TermsResult)
 }
 
@@ -1029,6 +1085,7 @@ impl AggregationResult {
     agg_as!(as_scripted_metric, ScriptedMetric, ScriptedMetricResult);
 
     // buckets
+    agg_as!(as_global, Global, GlobalResult);
     agg_as!(as_terms, Terms, TermsResult);
 }
 
@@ -1085,6 +1142,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
             },
             &Aggregation::Bucket(ref ba, ref aggs) => {
                 match ba {
+                    &BucketAggregation::Global(_) => {
+                        AggregationResult::Global(GlobalResult::from(json, aggs))
+                    },
                     &BucketAggregation::Terms(_) => {
                         AggregationResult::Terms(TermsResult::from(json, aggs))
                     }
