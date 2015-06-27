@@ -250,6 +250,33 @@ impl<'a> ToJson for Percentiles<'a> {
 
 metrics_agg!(Percentiles);
 
+/// Percentile Ranks aggregation
+#[derive(Debug)]
+pub struct PercentileRanks<'a> {
+    fos:    FieldOrScript<'a>,
+    values: Vec<f64>
+}
+
+impl<'a> PercentileRanks<'a> {
+    pub fn new<F: Into<FieldOrScript<'a>>>(fos: F, vals: Vec<f64>) -> PercentileRanks<'a> {
+        PercentileRanks {
+            fos:    fos.into(),
+            values: vals
+        }
+    }
+}
+
+impl<'a> ToJson for PercentileRanks<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        self.fos.add_to_object(&mut d);
+        d.insert("values".to_owned(), self.values.to_json());
+        Json::Object(d)
+    }
+}
+
+metrics_agg!(PercentileRanks);
+
 /// Individual aggregations and their options
 #[derive(Debug)]
 pub enum MetricsAggregation<'a> {
@@ -260,7 +287,8 @@ pub enum MetricsAggregation<'a> {
     Stats(Stats<'a>),
     ExtendedStats(ExtendedStats<'a>),
     ValueCount(ValueCount<'a>),
-    Percentiles(Percentiles<'a>)
+    Percentiles(Percentiles<'a>),
+    PercentileRanks(PercentileRanks<'a>)
 }
 
 impl<'a> ToJson for MetricsAggregation<'a> {
@@ -290,6 +318,9 @@ impl<'a> ToJson for MetricsAggregation<'a> {
             },
             &MetricsAggregation::Percentiles(ref pc_agg) => {
                 d.insert("percentiles".to_owned(), pc_agg.to_json());
+            },
+            &MetricsAggregation::PercentileRanks(ref pr_agg) => {
+                d.insert("percentile_ranks".to_owned(), pr_agg.to_json());
             }
         }
         Json::Object(d)
@@ -674,6 +705,26 @@ impl<'a> From<&'a Json> for PercentilesResult {
     }
 }
 
+#[derive(Debug)]
+pub struct PercentileRanksResult {
+    values: HashMap<String, f64>
+}
+
+impl<'a> From<&'a Json> for PercentileRanksResult {
+    fn from(from: &'a Json) -> PercentileRanksResult {
+        let val_obj = get_json_object!(from, "values");
+        let mut vals = HashMap::with_capacity(val_obj.len());
+
+        for (k, v) in val_obj.into_iter() {
+            vals.insert(k.clone(), v.as_f64().expect("Not numeric value"));
+        }
+
+        PercentileRanksResult {
+            values: vals
+        }
+    }
+}
+
 // Buckets result
 
 /// Macros for buckets to return a reference to the sub-aggregations
@@ -746,6 +797,7 @@ pub enum AggregationResult {
     ExtendedStats(ExtendedStatsResult),
     ValueCount(ValueCountResult),
     Percentiles(PercentilesResult),
+    PercentileRanks(PercentileRanksResult),
 
     // Buckets
     Terms(TermsResult)
@@ -776,6 +828,7 @@ impl AggregationResult {
     agg_as!(as_extended_stats, ExtendedStats, ExtendedStatsResult);
     agg_as!(as_value_count, ValueCount, ValueCountResult);
     agg_as!(as_percentiles, Percentiles, PercentilesResult);
+    agg_as!(as_percentile_ranks, PercentileRanks, PercentileRanksResult);
 
     // buckets
     agg_as!(as_terms, Terms, TermsResult);
@@ -817,6 +870,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     }
                     &MetricsAggregation::Percentiles(_) => {
                         AggregationResult::Percentiles(PercentilesResult::from(json))
+                    },
+                    &MetricsAggregation::PercentileRanks(_) => {
+                        AggregationResult::PercentileRanks(PercentileRanksResult::from(json))
                     }
                 }
             },
