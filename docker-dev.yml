@@ -7,4 +7,4 @@ dev:
   links:
     - es
 es:
-  image: elasticsearch:1.5
+  image: elasticsearch:1.6

@@ -7,7 +7,7 @@ An experimental ElasticSearch client for Rust via the REST API.
 
 Development is ongoing, and is experimental, as such breaking changes are likely at any time.  Also, large parts of the ElasticSearch API are currently unimplemented.
 
-Currently being developed and tested against ElasticSearch 1.5.x, it will almost certainly not work with other versions.
+Currently being developed and tested against ElasticSearch 1.6.x, it will almost certainly not work with other versions.
 
 ## Documentation
 
