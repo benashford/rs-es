@@ -174,6 +174,7 @@ impl ToJson for GeoBox {
 
 /// A non-specific holder for an option which can either be a single thing, or
 /// multiple instances of that thing.
+#[derive(Debug)]
 pub enum OneOrMany<T: ToJson> {
     One(T),
     Many(Vec<T>)
@@ -201,6 +202,7 @@ impl<T: ToJson> ToJson for OneOrMany<T> {
 }
 
 /// DistanceType
+#[derive(Debug)]
 pub enum DistanceType {
     SloppyArc,
     Arc,
@@ -218,6 +220,7 @@ impl ToJson for DistanceType {
 }
 
 /// DistanceUnit
+#[derive(Debug)]
 pub enum DistanceUnit {
     Mile,
     Yard,

@@ -22,6 +22,7 @@ use std::marker::PhantomData;
 use rustc_serialize::json::{Json, ToJson};
 
 use error::EsError;
+use query;
 use units::{GeoBox, JsonVal};
 
 #[derive(Debug)]
@@ -523,6 +524,28 @@ impl<'a> ToJson for Global<'a> {
 
 bucket_agg!(Global);
 
+/// Filter aggregation
+#[derive(Debug)]
+pub struct Filter<'a> {
+    filter: &'a query::Filter
+}
+
+impl<'a> Filter<'a> {
+    pub fn new(filter: &'a query::Filter) -> Filter<'a> {
+        Filter {
+            filter: filter
+        }
+    }
+}
+
+impl<'a> ToJson for Filter<'a> {
+    fn to_json(&self) -> Json {
+        self.filter.to_json()
+    }
+}
+
+bucket_agg!(Filter);
+
 /// Order - used for some bucketing aggregations to determine the order of
 /// buckets
 #[derive(Debug)]
@@ -627,6 +650,7 @@ impl<'a> ToJson for Terms<'a> {
 #[derive(Debug)]
 pub enum BucketAggregation<'a> {
     Global(Global<'a>),
+    Filter(Filter<'a>),
     Terms(Terms<'a>)
 }
 
@@ -635,6 +659,9 @@ impl<'a> BucketAggregation<'a> {
         match self {
             &BucketAggregation::Global(ref g) => {
                 json.insert("global".to_owned(), g.to_json());
+            },
+            &BucketAggregation::Filter(ref filter) => {
+                json.insert("filter".to_owned(), filter.to_json());
             }
             &BucketAggregation::Terms(ref terms) => {
                 json.insert("terms".to_owned(), terms.to_json());
@@ -989,6 +1016,23 @@ impl GlobalResult {
 }
 
 #[derive(Debug)]
+pub struct FilterResult {
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl FilterResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> FilterResult {
+        FilterResult {
+            doc_count: get_json_u64!(from, "doc_count"),
+            aggs: extract_aggs!(from, aggs)
+        }
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
 pub struct TermsBucketResult {
     pub key: JsonVal,
     pub doc_count: u64,
@@ -1051,6 +1095,7 @@ pub enum AggregationResult {
 
     // Buckets
     Global(GlobalResult),
+    Filter(FilterResult),
     Terms(TermsResult)
 }
 
@@ -1086,6 +1131,7 @@ impl AggregationResult {
 
     // buckets
     agg_as!(as_global, Global, GlobalResult);
+    agg_as!(as_filter, Filter, FilterResult);
     agg_as!(as_terms, Terms, TermsResult);
 }
 
@@ -1145,6 +1191,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     &BucketAggregation::Global(_) => {
                         AggregationResult::Global(GlobalResult::from(json, aggs))
                     },
+                    &BucketAggregation::Filter(_) => {
+                        AggregationResult::Filter(FilterResult::from(json, aggs))
+                    }
                     &BucketAggregation::Terms(_) => {
                         AggregationResult::Terms(TermsResult::from(json, aggs))
                     }

@@ -53,6 +53,7 @@ impl From<Query> for Box<Query> {
 
 <%= simple_value_enum('ZeroTermsQuery', ['none', 'all']) %>
 
+#[derive(Debug)]
 pub enum Fuzziness {
     Auto,
     LevenshteinDistance(i64),
@@ -205,6 +206,7 @@ impl ToJson for CommonQuery {
 
 <%= structs['FilteredQuery'] %>
 
+#[derive(Debug)]
 pub enum Strategy {
     LeapFrogQueryFirst,
     LeapFrogFilterFirst,
@@ -257,6 +259,7 @@ impl ToJson for Strategy {
 
 // Required for GeoShape
 
+#[derive(Debug)]
 pub struct Shape {
     shape_type: String,
     coordinates: Vec<(f64, f64)>
@@ -289,6 +292,7 @@ impl ToJson for Shape {
     }
 }
 
+#[derive(Debug)]
 pub struct IndexedShape {
     id:       String,
     doc_type: String,
@@ -341,6 +345,7 @@ impl ToJson for IndexedShape {
 <%= to_json_impl('IndicesQuery') %>
 
 // A document can be provided as an example
+#[derive(Debug)]
 pub struct Doc {
     index:    String,
     doc_type: String,
@@ -393,6 +398,7 @@ impl ToJson for Doc {
 
 <%= structs['PrefixQuery'] %>
 
+#[derive(Debug)]
 pub enum Rewrite {
     ConstantScoreAuto,
     ScoringBoolean,
@@ -428,6 +434,7 @@ impl ToJson for Rewrite {
 
 <%= structs['RegexpQuery'] %>
 
+#[derive(Debug)]
 pub enum Flag {
     All,
     AnyString,
@@ -450,6 +457,7 @@ impl ToString for Flag {
     }
 }
 
+#[derive(Debug)]
 pub struct Flags {
     flags: Vec<Flag>
 }
@@ -535,6 +543,7 @@ impl ToJson for GeoBoundingBoxFilter {
 
 <%= structs['GeoDistanceFilter'] %>
 
+#[derive(Debug)]
 pub struct Distance {
     amt: f64,
     unit: DistanceUnit
@@ -576,6 +585,7 @@ impl ToJson for GeoDistanceFilter {
 
 <%= structs['GeohashCellFilter'] %>
 
+#[derive(Debug)]
 pub enum Precision {
     Geohash(u64),
     Distance(Distance)
@@ -614,6 +624,7 @@ impl ToJson for GeohashCellFilter {
 
 <%= structs['IndicesFilter'] %>
 
+#[derive(Debug)]
 pub enum NoMatchFilter {
     None,
     All,
@@ -741,6 +752,7 @@ impl ToJson for TermsFilter {
 
 <%= structs['LinearFunc'] %>
 
+#[derive(Debug)]
 enum Scale {
     I64(i64),
     U64(u64),
@@ -767,6 +779,7 @@ impl ToJson for Scale {
     }
 }
 
+#[derive(Debug)]
 enum Origin {
     I64(i64),
     U64(u64),
@@ -821,6 +834,7 @@ decay_func_json_impl!(ExpFunc);
 <%= structs['GaussFunc'] %>
 decay_func_json_impl!(GaussFunc);
 
+#[derive(Debug)]
 pub struct Function {
     filter: Option<Filter>,
     function: Func,
