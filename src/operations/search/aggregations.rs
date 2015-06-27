@@ -208,6 +208,48 @@ field_or_script_new!(ValueCount);
 field_or_script_to_json!(ValueCount);
 metrics_agg!(ValueCount);
 
+/// Percentiles aggregation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-percentile-aggregation.html
+///
+/// # Examples
+///
+/// ```
+/// use rs_es::operations::search::aggregations::Percentiles;
+///
+/// let p1 = Percentiles::new("field_name").with_compression(100);
+/// let p2 = Percentiles::new("field_name").with_percents(vec![10.0, 20.0]);
+/// ```
+#[derive(Debug)]
+pub struct Percentiles<'a> {
+    fos:         FieldOrScript<'a>,
+    percents:    Option<Vec<f64>>,
+    compression: Option<u64>
+}
+
+impl<'a> Percentiles<'a> {
+    pub fn new<F: Into<FieldOrScript<'a>>>(fos: F) -> Percentiles<'a> {
+        Percentiles {
+            fos:         fos.into(),
+            percents:    None,
+            compression: None
+        }
+    }
+
+    add_field!(with_percents, percents, Vec<f64>);
+    add_field!(with_compression, compression, u64);
+}
+
+impl<'a> ToJson for Percentiles<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        self.fos.add_to_object(&mut d);
+        optional_add!(d, self.percents, "percents");
+        optional_add!(d, self.compression, "compression");
+        Json::Object(d)
+    }
+}
+
+metrics_agg!(Percentiles);
+
 /// Individual aggregations and their options
 #[derive(Debug)]
 pub enum MetricsAggregation<'a> {
@@ -217,7 +259,8 @@ pub enum MetricsAggregation<'a> {
     Avg(Avg<'a>),
     Stats(Stats<'a>),
     ExtendedStats(ExtendedStats<'a>),
-    ValueCount(ValueCount<'a>)
+    ValueCount(ValueCount<'a>),
+    Percentiles(Percentiles<'a>)
 }
 
 impl<'a> ToJson for MetricsAggregation<'a> {
@@ -244,6 +287,9 @@ impl<'a> ToJson for MetricsAggregation<'a> {
             },
             &MetricsAggregation::ValueCount(ref vc_agg) => {
                 d.insert("value_count".to_owned(), vc_agg.to_json());
+            },
+            &MetricsAggregation::Percentiles(ref pc_agg) => {
+                d.insert("percentiles".to_owned(), pc_agg.to_json());
             }
         }
         Json::Object(d)
@@ -608,6 +654,26 @@ impl<'a> From<&'a Json> for ValueCountResult {
     }
 }
 
+#[derive(Debug)]
+pub struct PercentilesResult {
+    values: HashMap<String, f64>
+}
+
+impl<'a> From<&'a Json> for PercentilesResult {
+    fn from(from: &'a Json) -> PercentilesResult {
+        let val_obj = get_json_object!(from, "values");
+        let mut vals = HashMap::with_capacity(val_obj.len());
+
+        for (k, v) in val_obj.into_iter() {
+            vals.insert(k.clone(), v.as_f64().expect("Not numeric value"));
+        }
+        
+        PercentilesResult {
+            values: vals
+        }
+    }
+}
+
 // Buckets result
 
 /// Macros for buckets to return a reference to the sub-aggregations
@@ -679,6 +745,7 @@ pub enum AggregationResult {
     Stats(StatsResult),
     ExtendedStats(ExtendedStatsResult),
     ValueCount(ValueCountResult),
+    Percentiles(PercentilesResult),
 
     // Buckets
     Terms(TermsResult)
@@ -708,6 +775,7 @@ impl AggregationResult {
     agg_as!(as_stats, Stats, StatsResult);
     agg_as!(as_extended_stats, ExtendedStats, ExtendedStatsResult);
     agg_as!(as_value_count, ValueCount, ValueCountResult);
+    agg_as!(as_percentiles, Percentiles, PercentilesResult);
 
     // buckets
     agg_as!(as_terms, Terms, TermsResult);
@@ -746,6 +814,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &MetricsAggregation::ValueCount(_) => {
                         AggregationResult::ValueCount(ValueCountResult::from(json))
+                    }
+                    &MetricsAggregation::Percentiles(_) => {
+                        AggregationResult::Percentiles(PercentilesResult::from(json))
                     }
                 }
             },
