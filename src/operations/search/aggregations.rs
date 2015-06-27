@@ -21,7 +21,7 @@ use std::collections::{BTreeMap, HashMap};
 use rustc_serialize::json::{Json, ToJson};
 
 use error::EsError;
-use units::JsonVal;
+use units::{GeoBox, JsonVal};
 
 #[derive(Debug)]
 pub enum Scripts<'a> {
@@ -310,6 +310,35 @@ impl<'a> ToJson for Cardinality<'a> {
 
 metrics_agg!(Cardinality);
 
+/// Geo Bounds aggregation
+#[derive(Debug)]
+pub struct GeoBounds<'a> {
+    field:          &'a str,
+    wrap_longitude: Option<bool>
+}
+
+impl<'a> GeoBounds<'a> {
+    pub fn new(field: &'a str) -> GeoBounds {
+        GeoBounds {
+            field: field,
+            wrap_longitude: None
+        }
+    }
+
+    add_field!(with_wrap_longitude, wrap_longitude, bool);
+}
+
+impl<'a> ToJson for GeoBounds<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("field".to_owned(), self.field.to_json());
+        optional_add!(d, self.wrap_longitude, "wrap_longitude");
+        Json::Object(d)
+    }
+}
+
+metrics_agg!(GeoBounds);
+
 /// Individual aggregations and their options
 #[derive(Debug)]
 pub enum MetricsAggregation<'a> {
@@ -322,7 +351,8 @@ pub enum MetricsAggregation<'a> {
     ValueCount(ValueCount<'a>),
     Percentiles(Percentiles<'a>),
     PercentileRanks(PercentileRanks<'a>),
-    Cardinality(Cardinality<'a>)
+    Cardinality(Cardinality<'a>),
+    GeoBounds(GeoBounds<'a>)
 }
 
 impl<'a> ToJson for MetricsAggregation<'a> {
@@ -358,6 +388,9 @@ impl<'a> ToJson for MetricsAggregation<'a> {
             },
             &MetricsAggregation::Cardinality(ref card_agg) => {
                 d.insert("cardinality".to_owned(), card_agg.to_json());
+            },
+            &MetricsAggregation::GeoBounds(ref gb_agg) => {
+                d.insert("geo_bounds".to_owned(), gb_agg.to_json());
             }
         }
         Json::Object(d)
@@ -735,7 +768,7 @@ impl<'a> From<&'a Json> for PercentilesResult {
         for (k, v) in val_obj.into_iter() {
             vals.insert(k.clone(), v.as_f64().expect("Not numeric value"));
         }
-        
+
         PercentilesResult {
             values: vals
         }
@@ -771,6 +804,19 @@ impl<'a> From<&'a Json> for CardinalityResult {
     fn from(from: &'a Json) -> CardinalityResult {
         CardinalityResult {
             value: get_json_u64!(from, "value")
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct GeoBoundsResult {
+    bounds: GeoBox
+}
+
+impl<'a> From<&'a Json> for GeoBoundsResult {
+    fn from(from: &'a Json) -> GeoBoundsResult {
+        GeoBoundsResult {
+            bounds: GeoBox::from(from.find("bounds").expect("No 'bounds' field"))
         }
     }
 }
@@ -849,7 +895,8 @@ pub enum AggregationResult {
     Percentiles(PercentilesResult),
     PercentileRanks(PercentileRanksResult),
     Cardinality(CardinalityResult),
-    
+    GeoBounds(GeoBoundsResult),
+
     // Buckets
     Terms(TermsResult)
 }
@@ -881,6 +928,7 @@ impl AggregationResult {
     agg_as!(as_percentiles, Percentiles, PercentilesResult);
     agg_as!(as_percentile_ranks, PercentileRanks, PercentileRanksResult);
     agg_as!(as_cardinality, Cardinality, CardinalityResult);
+    agg_as!(as_geo_bounds, GeoBounds, GeoBoundsResult);
 
     // buckets
     agg_as!(as_terms, Terms, TermsResult);
@@ -928,6 +976,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &MetricsAggregation::Cardinality(_) => {
                         AggregationResult::Cardinality(CardinalityResult::from(json))
+                    },
+                    &MetricsAggregation::GeoBounds(_) => {
+                        AggregationResult::GeoBounds(GeoBoundsResult::from(json))
                     }
                 }
             },

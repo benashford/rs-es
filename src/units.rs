@@ -94,9 +94,18 @@ impl<'a> From<&'a Duration> for OptionVal {
 from_exp!(Duration, OptionVal, from, OptionVal(from.to_string()));
 
 /// Representing a geographic location
+#[derive(Debug)]
 pub enum Location {
     LatLon(f64, f64),
     GeoHash(String)
+}
+
+impl<'a> From<&'a Json> for Location {
+    fn from(from: &'a Json) -> Location {
+        Location::LatLon(
+            get_json_f64!(from, "lat"),
+            get_json_f64!(from, "lon"))
+    }
 }
 
 from_exp!((f64, f64), Location, from, Location::LatLon(from.0, from.1));
@@ -115,6 +124,51 @@ impl ToJson for Location {
                 Json::String(geo_hash.clone())
             }
         }
+    }
+}
+
+/// Representing a geographic box
+#[derive(Debug)]
+pub enum GeoBox {
+    Corners(Location, Location),
+    Vertices(f64, f64, f64, f64)
+}
+
+impl<'a> From<&'a Json> for GeoBox {
+    fn from(from: &'a Json) -> GeoBox {
+        GeoBox::Corners(
+            Location::from(from.find("top_left").expect("No 'top_left' field")),
+            Location::from(from.find("bottom_right").expect("No 'bottom_right' field")))
+    }
+}
+
+from_exp!((Location, Location), GeoBox, from, GeoBox::Corners(from.0, from.1));
+from_exp!(((f64, f64), (f64, f64)),
+          GeoBox,
+          from,
+          GeoBox::Corners(Location::LatLon({from.0}.0, {from.0}.1),
+                          Location::LatLon({from.1}.0, {from.1}.1)));
+from_exp!((f64, f64, f64, f64),
+          GeoBox,
+          from,
+          GeoBox::Vertices(from.0, from.1, from.2, from.3));
+
+impl ToJson for GeoBox {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        match self {
+            &GeoBox::Corners(ref top_left, ref bottom_right) => {
+                d.insert("top_left".to_owned(), top_left.to_json());
+                d.insert("bottom_right".to_owned(), bottom_right.to_json());
+            },
+            &GeoBox::Vertices(ref top, ref left, ref bottom, ref right) => {
+                d.insert("top".to_owned(), top.to_json());
+                d.insert("left".to_owned(), left.to_json());
+                d.insert("bottom".to_owned(), bottom.to_json());
+                d.insert("right".to_owned(), right.to_json());
+            }
+        }
+        Json::Object(d)
     }
 }
 
