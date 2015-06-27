@@ -277,6 +277,39 @@ impl<'a> ToJson for PercentileRanks<'a> {
 
 metrics_agg!(PercentileRanks);
 
+/// Cardinality aggregation
+#[derive(Debug)]
+pub struct Cardinality<'a> {
+    fos:                 FieldOrScript<'a>,
+    precision_threshold: Option<u64>,
+    rehash:              Option<bool>
+}
+
+impl<'a> Cardinality<'a> {
+    pub fn new<F: Into<FieldOrScript<'a>>>(fos: F) -> Cardinality<'a> {
+        Cardinality {
+            fos:                 fos.into(),
+            precision_threshold: None,
+            rehash:              None
+        }
+    }
+
+    add_field!(with_precision_threshold, precision_threshold, u64);
+    add_field!(with_rehash, rehash, bool);
+}
+
+impl<'a> ToJson for Cardinality<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        self.fos.add_to_object(&mut d);
+        optional_add!(d, self.precision_threshold, "precision_threshold");
+        optional_add!(d, self.rehash, "rehash");
+        Json::Object(d)
+    }
+}
+
+metrics_agg!(Cardinality);
+
 /// Individual aggregations and their options
 #[derive(Debug)]
 pub enum MetricsAggregation<'a> {
@@ -288,7 +321,8 @@ pub enum MetricsAggregation<'a> {
     ExtendedStats(ExtendedStats<'a>),
     ValueCount(ValueCount<'a>),
     Percentiles(Percentiles<'a>),
-    PercentileRanks(PercentileRanks<'a>)
+    PercentileRanks(PercentileRanks<'a>),
+    Cardinality(Cardinality<'a>)
 }
 
 impl<'a> ToJson for MetricsAggregation<'a> {
@@ -321,6 +355,9 @@ impl<'a> ToJson for MetricsAggregation<'a> {
             },
             &MetricsAggregation::PercentileRanks(ref pr_agg) => {
                 d.insert("percentile_ranks".to_owned(), pr_agg.to_json());
+            },
+            &MetricsAggregation::Cardinality(ref card_agg) => {
+                d.insert("cardinality".to_owned(), card_agg.to_json());
             }
         }
         Json::Object(d)
@@ -725,6 +762,19 @@ impl<'a> From<&'a Json> for PercentileRanksResult {
     }
 }
 
+#[derive(Debug)]
+pub struct CardinalityResult {
+    value: u64
+}
+
+impl<'a> From<&'a Json> for CardinalityResult {
+    fn from(from: &'a Json) -> CardinalityResult {
+        CardinalityResult {
+            value: get_json_u64!(from, "value")
+        }
+    }
+}
+
 // Buckets result
 
 /// Macros for buckets to return a reference to the sub-aggregations
@@ -798,7 +848,8 @@ pub enum AggregationResult {
     ValueCount(ValueCountResult),
     Percentiles(PercentilesResult),
     PercentileRanks(PercentileRanksResult),
-
+    Cardinality(CardinalityResult),
+    
     // Buckets
     Terms(TermsResult)
 }
@@ -829,6 +880,7 @@ impl AggregationResult {
     agg_as!(as_value_count, ValueCount, ValueCountResult);
     agg_as!(as_percentiles, Percentiles, PercentilesResult);
     agg_as!(as_percentile_ranks, PercentileRanks, PercentileRanksResult);
+    agg_as!(as_cardinality, Cardinality, CardinalityResult);
 
     // buckets
     agg_as!(as_terms, Terms, TermsResult);
@@ -873,6 +925,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &MetricsAggregation::PercentileRanks(_) => {
                         AggregationResult::PercentileRanks(PercentileRanksResult::from(json))
+                    },
+                    &MetricsAggregation::Cardinality(_) => {
+                        AggregationResult::Cardinality(CardinalityResult::from(json))
                     }
                 }
             },
