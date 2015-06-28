@@ -591,7 +591,7 @@ pub struct Missing<'a> {
 }
 
 impl<'a> Missing<'a> {
-    pub fn new(field: &'a str) -> Missing {
+    pub fn new(field: &'a str) -> Missing<'a> {
         Missing {
             field: field
         }
@@ -607,6 +607,30 @@ impl<'a> ToJson for Missing<'a> {
 }
 
 bucket_agg!(Missing);
+
+/// Nested aggregation
+#[derive(Debug)]
+pub struct Nested<'a> {
+    pub path: &'a str
+}
+
+impl<'a> Nested<'a> {
+    pub fn new(path: &'a str) -> Nested<'a> {
+        Nested {
+            path: path
+        }
+    }
+}
+
+impl<'a> ToJson for Nested<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("path".to_owned(), self.path.to_json());
+        Json::Object(d)
+    }
+}
+
+bucket_agg!(Nested);
 
 /// Order - used for some bucketing aggregations to determine the order of
 /// buckets
@@ -715,6 +739,7 @@ pub enum BucketAggregation<'a> {
     Filter(Filter<'a>),
     Filters(Filters<'a>),
     Missing(Missing<'a>),
+    Nested(Nested<'a>),
     Terms(Terms<'a>)
 }
 
@@ -732,6 +757,9 @@ impl<'a> BucketAggregation<'a> {
             },
             &BucketAggregation::Missing(ref missing) => {
                 json.insert("missing".to_owned(), missing.to_json());
+            },
+            &BucketAggregation::Nested(ref nested) => {
+                json.insert("nested".to_owned(), nested.to_json());
             },
             &BucketAggregation::Terms(ref terms) => {
                 json.insert("terms".to_owned(), terms.to_json());
@@ -1149,7 +1177,22 @@ impl MissingResult {
             aggs: extract_aggs!(from, aggs)
         }
     }
-    
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
+pub struct NestedResult {
+    pub aggs: Option<AggregationsResult>
+}
+
+impl NestedResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> NestedResult {
+        NestedResult {
+            aggs: extract_aggs!(from, aggs)
+        }
+    }
+
     add_aggs_ref!();
 }
 
@@ -1219,6 +1262,7 @@ pub enum AggregationResult {
     Filter(FilterResult),
     Filters(FiltersResult),
     Missing(MissingResult),
+    Nested(NestedResult),
     Terms(TermsResult)
 }
 
@@ -1257,6 +1301,7 @@ impl AggregationResult {
     agg_as!(as_filter, Filter, FilterResult);
     agg_as!(as_filters, Filters, FiltersResult);
     agg_as!(as_missing, Missing, MissingResult);
+    agg_as!(as_nested, Nested, NestedResult);
     agg_as!(as_terms, Terms, TermsResult);
 }
 
@@ -1324,6 +1369,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &BucketAggregation::Missing(_) => {
                         AggregationResult::Missing(MissingResult::from(json, aggs))
+                    },
+                    &BucketAggregation::Nested(_) => {
+                        AggregationResult::Nested(NestedResult::from(json, aggs))
                     },
                     &BucketAggregation::Terms(_) => {
                         AggregationResult::Terms(TermsResult::from(json, aggs))
