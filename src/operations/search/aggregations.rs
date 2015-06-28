@@ -584,6 +584,30 @@ impl<'a> ToJson for Filters<'a> {
 
 bucket_agg!(Filters);
 
+/// Missing aggregation
+#[derive(Debug)]
+pub struct Missing<'a> {
+    pub field: &'a str
+}
+
+impl<'a> Missing<'a> {
+    pub fn new(field: &'a str) -> Missing {
+        Missing {
+            field: field
+        }
+    }
+}
+
+impl<'a> ToJson for Missing<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("field".to_owned(), self.field.to_json());
+        Json::Object(d)
+    }
+}
+
+bucket_agg!(Missing);
+
 /// Order - used for some bucketing aggregations to determine the order of
 /// buckets
 #[derive(Debug)]
@@ -690,6 +714,7 @@ pub enum BucketAggregation<'a> {
     Global(Global<'a>),
     Filter(Filter<'a>),
     Filters(Filters<'a>),
+    Missing(Missing<'a>),
     Terms(Terms<'a>)
 }
 
@@ -704,6 +729,9 @@ impl<'a> BucketAggregation<'a> {
             },
             &BucketAggregation::Filters(ref filters) => {
                 json.insert("filters".to_owned(), filters.to_json());
+            },
+            &BucketAggregation::Missing(ref missing) => {
+                json.insert("missing".to_owned(), missing.to_json());
             },
             &BucketAggregation::Terms(ref terms) => {
                 json.insert("terms".to_owned(), terms.to_json());
@@ -1109,6 +1137,23 @@ impl FiltersResult {
 }
 
 #[derive(Debug)]
+pub struct MissingResult {
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl MissingResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> MissingResult {
+        MissingResult {
+            doc_count: get_json_u64!(from, "doc_count"),
+            aggs: extract_aggs!(from, aggs)
+        }
+    }
+    
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
 pub struct TermsBucketResult {
     pub key: JsonVal,
     pub doc_count: u64,
@@ -1173,6 +1218,7 @@ pub enum AggregationResult {
     Global(GlobalResult),
     Filter(FilterResult),
     Filters(FiltersResult),
+    Missing(MissingResult),
     Terms(TermsResult)
 }
 
@@ -1210,6 +1256,7 @@ impl AggregationResult {
     agg_as!(as_global, Global, GlobalResult);
     agg_as!(as_filter, Filter, FilterResult);
     agg_as!(as_filters, Filters, FiltersResult);
+    agg_as!(as_missing, Missing, MissingResult);
     agg_as!(as_terms, Terms, TermsResult);
 }
 
@@ -1274,6 +1321,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &BucketAggregation::Filters(_) => {
                         AggregationResult::Filters(FiltersResult::from(json, aggs))
+                    },
+                    &BucketAggregation::Missing(_) => {
+                        AggregationResult::Missing(MissingResult::from(json, aggs))
                     },
                     &BucketAggregation::Terms(_) => {
                         AggregationResult::Terms(TermsResult::from(json, aggs))
