@@ -632,6 +632,32 @@ impl<'a> ToJson for Nested<'a> {
 
 bucket_agg!(Nested);
 
+/// Reverse nested aggregation, will produce an error if used anywhere other than
+/// inside a nested aggregation.
+///
+/// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-reverse-nested-aggregation.html
+#[derive(Debug)]
+pub struct ReverseNested<'a> {
+    /// Needed for lifecycle reasons
+    phantom: PhantomData<&'a str>
+}
+
+impl<'a> ReverseNested<'a> {
+    pub fn new() -> ReverseNested<'a> {
+        ReverseNested {
+            phantom: PhantomData
+        }
+    }
+}
+
+impl<'a> ToJson for ReverseNested<'a> {
+    fn to_json(&self) -> Json {
+        Json::Object(BTreeMap::new())
+    }
+}
+
+bucket_agg!(ReverseNested);
+
 /// Order - used for some bucketing aggregations to determine the order of
 /// buckets
 #[derive(Debug)]
@@ -740,6 +766,7 @@ pub enum BucketAggregation<'a> {
     Filters(Filters<'a>),
     Missing(Missing<'a>),
     Nested(Nested<'a>),
+    ReverseNested(ReverseNested<'a>),
     Terms(Terms<'a>)
 }
 
@@ -760,6 +787,9 @@ impl<'a> BucketAggregation<'a> {
             },
             &BucketAggregation::Nested(ref nested) => {
                 json.insert("nested".to_owned(), nested.to_json());
+            },
+            &BucketAggregation::ReverseNested(ref revnest) => {
+                json.insert("reverse_nested".to_owned(), revnest.to_json());
             },
             &BucketAggregation::Terms(ref terms) => {
                 json.insert("terms".to_owned(), terms.to_json());
@@ -1197,6 +1227,19 @@ impl NestedResult {
 }
 
 #[derive(Debug)]
+pub struct ReverseNestedResult {
+    pub aggs: Option<AggregationsResult>
+}
+
+impl ReverseNestedResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> ReverseNestedResult {
+        ReverseNestedResult {
+            aggs: extract_aggs!(from, aggs)
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct TermsBucketResult {
     pub key: JsonVal,
     pub doc_count: u64,
@@ -1263,6 +1306,7 @@ pub enum AggregationResult {
     Filters(FiltersResult),
     Missing(MissingResult),
     Nested(NestedResult),
+    ReverseNested(ReverseNestedResult),
     Terms(TermsResult)
 }
 
@@ -1302,6 +1346,7 @@ impl AggregationResult {
     agg_as!(as_filters, Filters, FiltersResult);
     agg_as!(as_missing, Missing, MissingResult);
     agg_as!(as_nested, Nested, NestedResult);
+    agg_as!(as_reverse_nested, ReverseNested, ReverseNestedResult);
     agg_as!(as_terms, Terms, TermsResult);
 }
 
@@ -1372,6 +1417,10 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &BucketAggregation::Nested(_) => {
                         AggregationResult::Nested(NestedResult::from(json, aggs))
+                    },
+                    &BucketAggregation::ReverseNested(_) => {
+                        AggregationResult::ReverseNested(ReverseNestedResult::from(json,
+                                                                                   aggs))
                     },
                     &BucketAggregation::Terms(_) => {
                         AggregationResult::Terms(TermsResult::from(json, aggs))
