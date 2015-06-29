@@ -658,6 +658,30 @@ impl<'a> ToJson for ReverseNested<'a> {
 
 bucket_agg!(ReverseNested);
 
+/// Children aggregation - sub-aggregations run against the child document
+#[derive(Debug)]
+pub struct Children<'a> {
+    doc_type: &'a str
+}
+
+impl<'a> Children<'a> {
+    pub fn new(doc_type: &'a str) -> Children<'a> {
+        Children {
+            doc_type: doc_type
+        }
+    }
+}
+
+impl<'a> ToJson for Children<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("type".to_owned(), self.doc_type.to_json());
+        Json::Object(d)
+    }
+}
+
+bucket_agg!(Children);
+
 /// Order - used for some bucketing aggregations to determine the order of
 /// buckets
 #[derive(Debug)]
@@ -767,6 +791,7 @@ pub enum BucketAggregation<'a> {
     Missing(Missing<'a>),
     Nested(Nested<'a>),
     ReverseNested(ReverseNested<'a>),
+    Children(Children<'a>),
     Terms(Terms<'a>)
 }
 
@@ -790,6 +815,9 @@ impl<'a> BucketAggregation<'a> {
             },
             &BucketAggregation::ReverseNested(ref revnest) => {
                 json.insert("reverse_nested".to_owned(), revnest.to_json());
+            },
+            &BucketAggregation::Children(ref children) => {
+                json.insert("children".to_owned(), children.to_json());
             },
             &BucketAggregation::Terms(ref terms) => {
                 json.insert("terms".to_owned(), terms.to_json());
@@ -1240,6 +1268,23 @@ impl ReverseNestedResult {
 }
 
 #[derive(Debug)]
+pub struct ChildrenResult {
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl ChildrenResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> ChildrenResult {
+        ChildrenResult {
+            doc_count: get_json_u64!(from, "doc_count"),
+            aggs: extract_aggs!(from, aggs)
+        }
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
 pub struct TermsBucketResult {
     pub key: JsonVal,
     pub doc_count: u64,
@@ -1307,6 +1352,7 @@ pub enum AggregationResult {
     Missing(MissingResult),
     Nested(NestedResult),
     ReverseNested(ReverseNestedResult),
+    Children(ChildrenResult),
     Terms(TermsResult)
 }
 
@@ -1347,6 +1393,7 @@ impl AggregationResult {
     agg_as!(as_missing, Missing, MissingResult);
     agg_as!(as_nested, Nested, NestedResult);
     agg_as!(as_reverse_nested, ReverseNested, ReverseNestedResult);
+    agg_as!(as_children, Children, ChildrenResult);
     agg_as!(as_terms, Terms, TermsResult);
 }
 
@@ -1421,6 +1468,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     &BucketAggregation::ReverseNested(_) => {
                         AggregationResult::ReverseNested(ReverseNestedResult::from(json,
                                                                                    aggs))
+                    },
+                    &BucketAggregation::Children(_) => {
+                        AggregationResult::Children(ChildrenResult::from(json, aggs))
                     },
                     &BucketAggregation::Terms(_) => {
                         AggregationResult::Terms(TermsResult::from(json, aggs))
