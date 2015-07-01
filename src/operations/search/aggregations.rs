@@ -767,8 +767,6 @@ impl<'a> Terms<'a> {
     add_field!(with_order, order, Order<'a>);
 }
 
-bucket_agg!(Terms);
-
 impl<'a> ToJson for Terms<'a> {
     fn to_json(&self) -> Json {
         let mut json = BTreeMap::new();
@@ -781,6 +779,8 @@ impl<'a> ToJson for Terms<'a> {
         Json::Object(json)
     }
 }
+
+bucket_agg!(Terms);
 
 /// The set of bucket aggregations
 #[derive(Debug)]
