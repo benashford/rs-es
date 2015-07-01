@@ -782,6 +782,77 @@ impl<'a> ToJson for Terms<'a> {
 
 bucket_agg!(Terms);
 
+// Range aggs and dependencies
+
+/// A specific range, there will be many of these making up a range aggregation
+#[derive(Debug)]
+pub struct RangeInst<'a> {
+    from: Option<JsonVal>,
+    to:   Option<JsonVal>,
+    key:  Option<&'a str>
+}
+
+impl<'a> RangeInst<'a> {
+    pub fn new() -> RangeInst<'a> {
+        RangeInst {
+            from: None,
+            to:   None,
+            key:  None
+        }
+    }
+
+    add_field!(with_from, from, JsonVal);
+    add_field!(with_to, to, JsonVal);
+    add_field!(with_key, key, &'a str);
+}
+
+impl<'a> ToJson for RangeInst<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+
+        optional_add!(d, self.from, "from");
+        optional_add!(d, self.to, "to");
+        optional_add!(d, self.key, "key");
+
+        Json::Object(d)
+    }
+}
+
+/// Range aggregations
+///
+/// The keyed option will always be used.
+///
+/// https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-range-aggregation.html
+#[derive(Debug)]
+pub struct Range<'a> {
+    field: FieldOrScript<'a>,
+    keyed: bool,
+    ranges: Vec<RangeInst<'a>>
+}
+
+impl<'a> Range<'a> {
+    pub fn new<FOS: Into<FieldOrScript<'a>>>(field: FOS,
+                                             ranges: Vec<RangeInst<'a>>) -> Range<'a> {
+        Range {
+            field:  field.into(),
+            keyed:  true,
+            ranges: ranges
+        }
+    }
+}
+
+impl<'a> ToJson for Range<'a> {
+    fn to_json(&self) -> Json {
+        let mut json = BTreeMap::new();
+        self.field.add_to_object(&mut json);
+        json.insert("keyed".to_owned(), Json::Boolean(self.keyed));
+        json.insert("ranges".to_owned(), self.ranges.to_json());
+        Json::Object(json)
+    }
+}
+
+bucket_agg!(Range);
+
 /// The set of bucket aggregations
 #[derive(Debug)]
 pub enum BucketAggregation<'a> {
@@ -792,7 +863,8 @@ pub enum BucketAggregation<'a> {
     Nested(Nested<'a>),
     ReverseNested(ReverseNested<'a>),
     Children(Children<'a>),
-    Terms(Terms<'a>)
+    Terms(Terms<'a>),
+    Range(Range<'a>)
 }
 
 impl<'a> BucketAggregation<'a> {
@@ -821,6 +893,9 @@ impl<'a> BucketAggregation<'a> {
             },
             &BucketAggregation::Terms(ref terms) => {
                 json.insert("terms".to_owned(), terms.to_json());
+            },
+            &BucketAggregation::Range(ref range) => {
+                json.insert("range".to_owned(), range.to_json());
             }
         }
     }
@@ -1326,6 +1401,47 @@ impl TermsResult {
     }
 }
 
+// Range result objects
+
+#[derive(Debug)]
+pub struct RangeBucketResult {
+    pub from:      Option<JsonVal>,
+    pub to:        Option<JsonVal>,
+    pub doc_count: u64,
+    pub aggs:      Option<AggregationsResult>
+}
+
+impl RangeBucketResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> RangeBucketResult {
+        RangeBucketResult {
+            from:      from.find("from").and_then(|from| Some(from.into())),
+            to:        from.find("to").and_then(|to| Some(to.into())),
+            doc_count: get_json_u64!(from, "doc_count"),
+            aggs:      extract_aggs!(from, aggs)
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct RangeResult {
+    buckets: HashMap<String, RangeBucketResult>,
+}
+
+impl RangeResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> RangeResult {
+        let bucket_obj = get_json_object!(from, "buckets");
+        let mut buckets = HashMap::with_capacity(bucket_obj.len());
+
+        for (k, v) in bucket_obj.into_iter() {
+            buckets.insert(k.clone(), RangeBucketResult::from(v, aggs));
+        }
+
+        RangeResult {
+            buckets: buckets
+        }
+    }
+}
+
 /// The result of one specific aggregation
 ///
 /// The data returned varies depending on aggregation type
@@ -1353,7 +1469,8 @@ pub enum AggregationResult {
     Nested(NestedResult),
     ReverseNested(ReverseNestedResult),
     Children(ChildrenResult),
-    Terms(TermsResult)
+    Terms(TermsResult),
+    Range(RangeResult)
 }
 
 /// Macro to implement the various as... functions that return the details of an
@@ -1395,6 +1512,7 @@ impl AggregationResult {
     agg_as!(as_reverse_nested, ReverseNested, ReverseNestedResult);
     agg_as!(as_children, Children, ChildrenResult);
     agg_as!(as_terms, Terms, TermsResult);
+    agg_as!(as_range, Range, RangeResult);
 }
 
 #[derive(Debug)]
@@ -1474,6 +1592,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &BucketAggregation::Terms(_) => {
                         AggregationResult::Terms(TermsResult::from(json, aggs))
+                    },
+                    &BucketAggregation::Range(_) => {
+                        AggregationResult::Range(RangeResult::from(json, aggs))
                     }
                 }
             }
