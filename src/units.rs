@@ -29,13 +29,14 @@ use ::operations::common::OptionVal;
 
 /// The units by which duration is measured.
 ///
-/// TODO - this list is incomplete
+/// TODO - this list is incomplete, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#time-units
 #[derive(Debug)]
 pub enum DurationUnit {
     Week,
     Day,
     Hour,
-    Minute
+    Minute,
+    Month
 }
 
 impl ToString for DurationUnit {
@@ -44,7 +45,8 @@ impl ToString for DurationUnit {
             DurationUnit::Week   => "w",
             DurationUnit::Day    => "d",
             DurationUnit::Hour   => "h",
-            DurationUnit::Minute => "m"
+            DurationUnit::Minute => "m",
+            DurationUnit::Month  => "M",
         }.to_owned()
     }
 }

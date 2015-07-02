@@ -23,7 +23,7 @@ use rustc_serialize::json::{Json, ToJson};
 
 use error::EsError;
 use query;
-use units::{GeoBox, JsonVal};
+use units::{Duration, GeoBox, JsonVal};
 
 #[derive(Debug)]
 pub enum Scripts<'a> {
@@ -996,6 +996,103 @@ impl<'a> ToJson for Histogram<'a> {
 
 bucket_agg!(Histogram);
 
+/// Date histogram and related fields
+#[derive(Debug)]
+pub enum TimeZone<'a> {
+    Offset(u64),
+    Str(&'a str)
+}
+
+impl<'a> ToJson for TimeZone<'a> {
+    fn to_json(&self) -> Json {
+        match self {
+            &TimeZone::Offset(offset) => Json::U64(offset),
+            &TimeZone::Str(tz_str)    => tz_str.to_json()
+        }
+    }
+}
+
+impl<'a> From<&'a str> for TimeZone<'a> {
+    fn from(from: &'a str) -> TimeZone<'a> {
+        TimeZone::Str(from)
+    }
+}
+
+impl<'a> From<u64> for TimeZone<'a> {
+    fn from(from: u64) -> TimeZone<'a> {
+        TimeZone::Offset(from)
+    }
+}
+
+#[derive(Debug)]
+pub enum Interval {
+    Year,
+    Quarter,
+    Month,
+    Week,
+    Day,
+    Hour,
+    Minute,
+    Second
+}
+
+impl ToJson for Interval {
+    fn to_json(&self) -> Json {
+        use self::Interval::*;
+        match *self {
+            Year => "year",
+            Quarter => "quarter",
+            Month => "month",
+            Week => "week",
+            Day => "day",
+            Hour => "hour",
+            Minute => "minute",
+            Second => "second"
+        }.to_json()
+    }
+}
+
+#[derive(Debug)]
+pub struct DateHistogram<'a> {
+    field: &'a str,
+    interval: Interval,
+    time_zone: Option<TimeZone<'a>>,
+    offset: Option<Duration>,
+    format: Option<&'a str>,
+}
+
+impl<'a> DateHistogram<'a> {
+    pub fn new<I>(field: &'a str, interval: I) -> DateHistogram<'a>
+    where I: Into<Interval> {
+        DateHistogram {
+            field: field,
+            interval: interval.into(),
+            time_zone: None,
+            offset: None,
+            format: None
+        }
+    }
+
+    add_field!(with_time_zone, time_zone, TimeZone<'a>);
+    add_field!(with_offset, offset, Duration);
+    add_field!(with_format, format, &'a str);
+}
+
+impl<'a> ToJson for DateHistogram<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("field".to_owned(), self.field.to_json());
+        d.insert("interval".to_owned(), self.interval.to_json());
+        optional_add!(d, self.time_zone, "time_zone");
+        optional_add!(d, self.offset, "offset");
+        optional_add!(d, self.format, "format");
+
+        Json::Object(d)
+    }
+}
+
+bucket_agg!(DateHistogram);
+
 /// The set of bucket aggregations
 #[derive(Debug)]
 pub enum BucketAggregation<'a> {
@@ -1009,7 +1106,8 @@ pub enum BucketAggregation<'a> {
     Terms(Terms<'a>),
     Range(Range<'a>),
     DateRange(DateRange<'a>),
-    Histogram(Histogram<'a>)
+    Histogram(Histogram<'a>),
+    DateHistogram(DateHistogram<'a>)
 }
 
 impl<'a> BucketAggregation<'a> {
@@ -1047,6 +1145,9 @@ impl<'a> BucketAggregation<'a> {
             },
             &BucketAggregation::Histogram(ref histogram) => {
                 json.insert("histogram".to_owned(), histogram.to_json());
+            },
+            &BucketAggregation::DateHistogram(ref dh) => {
+                json.insert("date_histogram".to_owned(), dh.to_json());
             }
         }
     }
@@ -1675,6 +1776,44 @@ impl HistogramResult {
     }
 }
 
+// Date histogram results
+#[derive(Debug)]
+pub struct DateHistogramBucketResult {
+    pub key_as_string: String,
+    pub key: u64,
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl DateHistogramBucketResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> DateHistogramBucketResult {
+        DateHistogramBucketResult {
+            key_as_string: get_json_string!(from, "key_as_string"),
+            key: get_json_u64!(from, "key"),
+            doc_count: get_json_u64!(from, "doc_count"),
+            aggs: extract_aggs!(from, aggs)
+        }
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
+pub struct DateHistogramResult {
+    pub buckets: Vec<DateHistogramBucketResult>
+}
+
+impl DateHistogramResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> DateHistogramResult {
+        DateHistogramResult {
+            buckets: from.find("buckets").expect("No buckets")
+                .as_array().expect("Not an array")
+                .iter().map(|bucket| DateHistogramBucketResult::from(bucket, aggs))
+                .collect()
+        }
+    }
+}
+
 /// The result of one specific aggregation
 ///
 /// The data returned varies depending on aggregation type
@@ -1705,7 +1844,8 @@ pub enum AggregationResult {
     Terms(TermsResult),
     Range(RangeResult),
     DateRange(DateRangeResult),
-    Histogram(HistogramResult)
+    Histogram(HistogramResult),
+    DateHistogram(DateHistogramResult)
 }
 
 /// Macro to implement the various as... functions that return the details of an
@@ -1750,6 +1890,7 @@ impl AggregationResult {
     agg_as!(as_range, Range, RangeResult);
     agg_as!(as_date_range, DateRange, DateRangeResult);
     agg_as!(as_histogram, Histogram, HistogramResult);
+    agg_as!(as_date_histogram, DateHistogram, DateHistogramResult);
 }
 
 #[derive(Debug)]
@@ -1838,6 +1979,10 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &BucketAggregation::Histogram(_) => {
                         AggregationResult::Histogram(HistogramResult::from(json, aggs))
+                    },
+                    &BucketAggregation::DateHistogram(_) => {
+                        AggregationResult::DateHistogram(DateHistogramResult::from(json,
+                                                                                   aggs))
                     }
                 }
             }
