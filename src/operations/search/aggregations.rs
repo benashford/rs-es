@@ -687,6 +687,7 @@ bucket_agg!(Children);
 #[derive(Debug)]
 pub enum OrderKey<'a> {
     Count,
+    Key,
     Term,
     Expr(&'a str)
 }
@@ -701,6 +702,7 @@ impl<'a> ToString for OrderKey<'a> {
     fn to_string(&self) -> String {
         match *self {
             OrderKey::Count   => "_count".to_owned(),
+            OrderKey::Key     => "_key".to_owned(),
             OrderKey::Term    => "_term".to_owned(),
             OrderKey::Expr(e) => e.to_owned()
         }
@@ -921,6 +923,79 @@ impl<'a> ToJson for DateRange<'a> {
 
 bucket_agg!(DateRange);
 
+/// Histogram aggregation.
+#[derive(Debug)]
+pub struct ExtendedBounds {
+    min: i64,
+    max: i64
+}
+
+impl ExtendedBounds {
+    pub fn new(min: i64, max: i64) -> ExtendedBounds {
+        ExtendedBounds {
+            min: min,
+            max: max
+        }
+    }
+}
+
+impl ToJson for ExtendedBounds {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("min".to_owned(), Json::I64(self.min));
+        d.insert("max".to_owned(), Json::I64(self.max));
+
+        Json::Object(d)
+    }
+}
+
+impl From<(i64, i64)> for ExtendedBounds {
+    fn from(from: (i64, i64)) -> ExtendedBounds {
+        ExtendedBounds::new(from.0, from.1)
+    }
+}
+
+#[derive(Debug)]
+pub struct Histogram<'a> {
+    field:           &'a str,
+    interval:        Option<u64>,
+    min_doc_count:   Option<u64>,
+    extended_bounds: Option<ExtendedBounds>,
+    order:           Option<Order<'a>>
+}
+
+impl<'a> Histogram<'a> {
+    pub fn new(field: &'a str) -> Histogram<'a> {
+        Histogram {
+            field: field,
+            interval: None,
+            min_doc_count: None,
+            extended_bounds: None,
+            order: None
+        }
+    }
+
+    add_field!(with_interval, interval, u64);
+    add_field!(with_min_doc_count, min_doc_count, u64);
+    add_field!(with_extended_bounds, extended_bounds, ExtendedBounds);
+    add_field!(with_order, order, Order<'a>);
+}
+
+impl<'a> ToJson for Histogram<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("field".to_owned(), self.field.to_json());
+        optional_add!(d, self.interval, "interval");
+        optional_add!(d, self.min_doc_count, "min_doc_count");
+        optional_add!(d, self.extended_bounds, "extended_bounds");
+        optional_add!(d, self.order, "order");
+
+        Json::Object(d)
+    }
+}
+
+bucket_agg!(Histogram);
+
 /// The set of bucket aggregations
 #[derive(Debug)]
 pub enum BucketAggregation<'a> {
@@ -933,7 +1008,8 @@ pub enum BucketAggregation<'a> {
     Children(Children<'a>),
     Terms(Terms<'a>),
     Range(Range<'a>),
-    DateRange(DateRange<'a>)
+    DateRange(DateRange<'a>),
+    Histogram(Histogram<'a>)
 }
 
 impl<'a> BucketAggregation<'a> {
@@ -968,6 +1044,9 @@ impl<'a> BucketAggregation<'a> {
             },
             &BucketAggregation::DateRange(ref date_range) => {
                 json.insert("date_range".to_owned(), date_range.to_json());
+            },
+            &BucketAggregation::Histogram(ref histogram) => {
+                json.insert("histogram".to_owned(), histogram.to_json());
             }
         }
     }
@@ -1560,6 +1639,42 @@ impl DateRangeResult {
     }
 }
 
+/// Used for histogram results
+#[derive(Debug)]
+pub struct HistogramBucketResult {
+    pub key: String,
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl HistogramBucketResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> HistogramBucketResult {
+        HistogramBucketResult {
+            key: get_json_string!(from, "key"),
+            doc_count: get_json_u64!(from, "doc_count"),
+            aggs: extract_aggs!(from, aggs)
+        }
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
+pub struct HistogramResult {
+    pub buckets: Vec<HistogramBucketResult>
+}
+
+impl HistogramResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> HistogramResult {
+        HistogramResult {
+            buckets: from.find("buckets").expect("No buckets")
+                .as_array().expect("Not an array")
+                .iter().map(|bucket| HistogramBucketResult::from(bucket, aggs))
+                .collect()
+        }
+    }
+}
+
 /// The result of one specific aggregation
 ///
 /// The data returned varies depending on aggregation type
@@ -1589,7 +1704,8 @@ pub enum AggregationResult {
     Children(ChildrenResult),
     Terms(TermsResult),
     Range(RangeResult),
-    DateRange(DateRangeResult)
+    DateRange(DateRangeResult),
+    Histogram(HistogramResult)
 }
 
 /// Macro to implement the various as... functions that return the details of an
@@ -1633,6 +1749,7 @@ impl AggregationResult {
     agg_as!(as_terms, Terms, TermsResult);
     agg_as!(as_range, Range, RangeResult);
     agg_as!(as_date_range, DateRange, DateRangeResult);
+    agg_as!(as_histogram, Histogram, HistogramResult);
 }
 
 #[derive(Debug)]
@@ -1718,6 +1835,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &BucketAggregation::DateRange(_) => {
                         AggregationResult::DateRange(DateRangeResult::from(json, aggs))
+                    },
+                    &BucketAggregation::Histogram(_) => {
+                        AggregationResult::Histogram(HistogramResult::from(json, aggs))
                     }
                 }
             }
