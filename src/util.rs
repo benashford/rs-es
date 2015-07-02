@@ -82,6 +82,30 @@ macro_rules! get_json_f64 {
     }
 }
 
+/// Optional extraction, this is opposed to the `get_json_*` macros that will
+/// panic.
+macro_rules! optional_json_thing {
+    ($r:ident,$f:expr,$t:ident) => {
+        $r.find($f).and_then(|v| {
+            v.$t()
+        })
+    }
+}
+
+macro_rules! optional_json_string {
+    ($r:ident,$f:expr) => {
+        optional_json_thing!($r, $f, as_string).and_then(|str| {
+            Some(str.to_owned())
+        })
+    }
+}
+
+macro_rules! optional_json_f64 {
+    ($r:ident,$f:expr) => {
+        optional_json_thing!($r, $f, as_f64).and_then(|f| Some(f))
+    }
+}
+
 /// A custom String-join trait as the stdlib one is currently marked as unstable.
 pub trait StrJoin {
     /// Join an iterator of things that can be referenced as strings into a

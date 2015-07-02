@@ -839,6 +839,10 @@ impl<'a> Range<'a> {
             ranges: ranges
         }
     }
+
+    pub fn inst() -> RangeInst<'a> {
+        RangeInst::new()
+    }
 }
 
 impl<'a> ToJson for Range<'a> {
@@ -853,6 +857,70 @@ impl<'a> ToJson for Range<'a> {
 
 bucket_agg!(Range);
 
+/// A specific element of a range for a `DateRange` aggregation
+#[derive(Debug)]
+pub struct DateRangeInst<'a> {
+    from: Option<&'a str>,
+    to:   Option<&'a str>
+}
+
+impl<'a> DateRangeInst<'a> {
+    pub fn new() -> DateRangeInst<'a> {
+        DateRangeInst {
+            from: None,
+            to:   None
+        }
+    }
+
+    add_field!(with_from, from, &'a str);
+    add_field!(with_to, to, &'a str);
+}
+
+impl<'a> ToJson for DateRangeInst<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        optional_add!(d, self.from, "from");
+        optional_add!(d, self.to, "to");
+
+        Json::Object(d)
+    }
+}
+
+/// Date range aggregation.  See: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-daterange-aggregation.html
+#[derive(Debug)]
+pub struct DateRange<'a> {
+    field: FieldOrScript<'a>,
+    format: Option<&'a str>,
+    ranges: Vec<DateRangeInst<'a>>
+}
+
+impl<'a> DateRange<'a> {
+    pub fn new<FOS: Into<FieldOrScript<'a>>>(field: FOS,
+                                             ranges: Vec<DateRangeInst<'a>>) -> DateRange<'a> {
+        DateRange {
+            field: field.into(),
+            format: None,
+            ranges: ranges
+        }
+    }
+
+    pub fn inst() -> DateRangeInst<'a> {
+        DateRangeInst::new()
+    }
+}
+
+impl<'a> ToJson for DateRange<'a> {
+    fn to_json(&self) -> Json {
+        let mut json = BTreeMap::new();
+        self.field.add_to_object(&mut json);
+        optional_add!(json, self.format, "format");
+        json.insert("ranges".to_owned(), self.ranges.to_json());
+        Json::Object(json)
+    }
+}
+
+bucket_agg!(DateRange);
+
 /// The set of bucket aggregations
 #[derive(Debug)]
 pub enum BucketAggregation<'a> {
@@ -864,7 +932,8 @@ pub enum BucketAggregation<'a> {
     ReverseNested(ReverseNested<'a>),
     Children(Children<'a>),
     Terms(Terms<'a>),
-    Range(Range<'a>)
+    Range(Range<'a>),
+    DateRange(DateRange<'a>)
 }
 
 impl<'a> BucketAggregation<'a> {
@@ -896,6 +965,9 @@ impl<'a> BucketAggregation<'a> {
             },
             &BucketAggregation::Range(ref range) => {
                 json.insert("range".to_owned(), range.to_json());
+            },
+            &BucketAggregation::DateRange(ref date_range) => {
+                json.insert("date_range".to_owned(), date_range.to_json());
             }
         }
     }
@@ -1420,11 +1492,13 @@ impl RangeBucketResult {
             aggs:      extract_aggs!(from, aggs)
         }
     }
+
+    add_aggs_ref!();
 }
 
 #[derive(Debug)]
 pub struct RangeResult {
-    buckets: HashMap<String, RangeBucketResult>,
+    pub buckets: HashMap<String, RangeBucketResult>,
 }
 
 impl RangeResult {
@@ -1438,6 +1512,50 @@ impl RangeResult {
 
         RangeResult {
             buckets: buckets
+        }
+    }
+}
+
+// Date range result objects
+
+#[derive(Debug)]
+pub struct DateRangeBucketResult {
+    pub from:           Option<f64>,
+    pub from_as_string: Option<String>,
+    pub to:             Option<f64>,
+    pub to_as_string:   Option<String>,
+    pub doc_count:      u64,
+    pub aggs:           Option<AggregationsResult>
+}
+
+impl DateRangeBucketResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> DateRangeBucketResult {
+        DateRangeBucketResult {
+            from:           optional_json_f64!(from, "from"),
+            from_as_string: optional_json_string!(from, "from_as_string"),
+            to:             optional_json_f64!(from, "to"),
+            to_as_string:   optional_json_string!(from, "to_as_string"),
+            doc_count:      get_json_u64!(from, "doc_count"),
+            aggs:           extract_aggs!(from, aggs)
+        }
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
+pub struct DateRangeResult {
+    pub buckets: Vec<DateRangeBucketResult>
+}
+
+impl DateRangeResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> DateRangeResult {
+        DateRangeResult {
+            buckets: from.find("buckets").expect("No buckets")
+                .as_array().expect("Not an array")
+                .iter().map(|bucket| {
+                    DateRangeBucketResult::from(bucket, aggs)
+                }).collect()
         }
     }
 }
@@ -1470,7 +1588,8 @@ pub enum AggregationResult {
     ReverseNested(ReverseNestedResult),
     Children(ChildrenResult),
     Terms(TermsResult),
-    Range(RangeResult)
+    Range(RangeResult),
+    DateRange(DateRangeResult)
 }
 
 /// Macro to implement the various as... functions that return the details of an
@@ -1513,6 +1632,7 @@ impl AggregationResult {
     agg_as!(as_children, Children, ChildrenResult);
     agg_as!(as_terms, Terms, TermsResult);
     agg_as!(as_range, Range, RangeResult);
+    agg_as!(as_date_range, DateRange, DateRangeResult);
 }
 
 #[derive(Debug)]
@@ -1595,6 +1715,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     },
                     &BucketAggregation::Range(_) => {
                         AggregationResult::Range(RangeResult::from(json, aggs))
+                    },
+                    &BucketAggregation::DateRange(_) => {
+                        AggregationResult::DateRange(DateRangeResult::from(json, aggs))
                     }
                 }
             }
