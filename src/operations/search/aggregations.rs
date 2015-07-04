@@ -1913,6 +1913,8 @@ impl GeoDistanceBucketResult {
             aggs: extract_aggs!(from, aggs)
         }
     }
+
+    add_aggs_ref!();
 }
 
 #[derive(Debug)]
