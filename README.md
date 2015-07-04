@@ -376,6 +376,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 2. Add significant-terms aggregation (esp., if made a permanent feature): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
 2. Add IP Range aggregation (complex due to changing response type): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-iprange-aggregation.html
 2. Reduce repetition in aggregations.rs
+2. Consistency on when builder objects take ownership, vs. borrow a reference to some data.
 2. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
 3. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
 4. Field-data fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fielddata-fields.html

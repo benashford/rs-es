@@ -23,7 +23,7 @@ use rustc_serialize::json::{Json, ToJson};
 
 use error::EsError;
 use query;
-use units::{Duration, GeoBox, JsonVal};
+use units::{DistanceType, DistanceUnit, Duration, GeoBox, JsonVal, Location};
 
 #[derive(Debug)]
 pub enum Scripts<'a> {
@@ -1093,6 +1093,81 @@ impl<'a> ToJson for DateHistogram<'a> {
 
 bucket_agg!(DateHistogram);
 
+#[derive(Debug)]
+pub struct GeoDistanceInst {
+    from: Option<f64>,
+    to:   Option<f64>
+}
+
+impl GeoDistanceInst {
+    pub fn new() -> GeoDistanceInst {
+        GeoDistanceInst {
+            from: None,
+            to:   None
+        }
+    }
+
+    add_field!(with_from, from, f64);
+    add_field!(with_to, to, f64);
+}
+
+impl ToJson for GeoDistanceInst {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        optional_add!(d, self.from, "from");
+        optional_add!(d, self.to, "to");
+
+        Json::Object(d)
+    }
+}
+
+#[derive(Debug)]
+pub struct GeoDistance<'a> {
+    field:         &'a str,
+    origin:        &'a Location,
+    unit:          Option<DistanceUnit>,
+    distance_type: Option<DistanceType>,
+    ranges:        &'a [GeoDistanceInst]
+}
+
+impl<'a> GeoDistance<'a> {
+    pub fn new(field: &'a str,
+               origin: &'a Location,
+               ranges: &'a [GeoDistanceInst]) -> GeoDistance<'a> {
+        GeoDistance {
+            field:         field,
+            origin:        origin,
+            unit:          None,
+            distance_type: None,
+            ranges:        ranges
+        }
+    }
+
+    add_field!(with_unit, unit, DistanceUnit);
+    add_field!(with_distance_type, distance_type, DistanceType);
+
+    pub fn inst() -> GeoDistanceInst {
+        GeoDistanceInst::new()
+    }
+}
+
+impl<'a> ToJson for GeoDistance<'a> {
+    fn to_json(&self) -> Json {
+        let mut json = BTreeMap::new();
+
+        json.insert("field".to_owned(), self.field.to_json());
+        json.insert("origin".to_owned(), self.origin.to_json());
+        json.insert("ranges".to_owned(), self.ranges.to_json());
+
+        optional_add!(json, self.unit, "unit");
+        optional_add!(json, self.distance_type, "distance_type");
+
+        Json::Object(json)
+    }
+}
+
+bucket_agg!(GeoDistance);
+
 /// The set of bucket aggregations
 #[derive(Debug)]
 pub enum BucketAggregation<'a> {
@@ -1107,7 +1182,8 @@ pub enum BucketAggregation<'a> {
     Range(Range<'a>),
     DateRange(DateRange<'a>),
     Histogram(Histogram<'a>),
-    DateHistogram(DateHistogram<'a>)
+    DateHistogram(DateHistogram<'a>),
+    GeoDistance(GeoDistance<'a>)
 }
 
 impl<'a> BucketAggregation<'a> {
@@ -1148,6 +1224,9 @@ impl<'a> BucketAggregation<'a> {
             },
             &BucketAggregation::DateHistogram(ref dh) => {
                 json.insert("date_histogram".to_owned(), dh.to_json());
+            },
+            &BucketAggregation::GeoDistance(ref gd) => {
+                json.insert("geo_distance".to_owned(), gd.to_json());
             }
         }
     }
@@ -1814,6 +1893,44 @@ impl DateHistogramResult {
     }
 }
 
+// GeoDistance results
+#[derive(Debug)]
+pub struct GeoDistanceBucketResult {
+    pub key: String,
+    pub from: Option<f64>,
+    pub to: Option<f64>,
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl GeoDistanceBucketResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoDistanceBucketResult {
+        GeoDistanceBucketResult {
+            key: get_json_string!(from, "key"),
+            from: optional_json_f64!(from, "from"),
+            to: optional_json_f64!(from, "to"),
+            doc_count: get_json_u64!(from, "doc_count"),
+            aggs: extract_aggs!(from, aggs)
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct GeoDistanceResult {
+    pub buckets: Vec<GeoDistanceBucketResult>
+}
+
+impl GeoDistanceResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoDistanceResult {
+        GeoDistanceResult {
+            buckets: from.find("buckets").expect("No buckets")
+                .as_array().expect("Not an array")
+                .iter().map(|bucket| GeoDistanceBucketResult::from(bucket, aggs))
+                .collect()
+        }
+    }
+}
+
 /// The result of one specific aggregation
 ///
 /// The data returned varies depending on aggregation type
@@ -1845,7 +1962,8 @@ pub enum AggregationResult {
     Range(RangeResult),
     DateRange(DateRangeResult),
     Histogram(HistogramResult),
-    DateHistogram(DateHistogramResult)
+    DateHistogram(DateHistogramResult),
+    GeoDistance(GeoDistanceResult)
 }
 
 /// Macro to implement the various as... functions that return the details of an
@@ -1891,6 +2009,7 @@ impl AggregationResult {
     agg_as!(as_date_range, DateRange, DateRangeResult);
     agg_as!(as_histogram, Histogram, HistogramResult);
     agg_as!(as_date_histogram, DateHistogram, DateHistogramResult);
+    agg_as!(as_geo_distance, GeoDistance, GeoDistanceResult);
 }
 
 #[derive(Debug)]
@@ -1983,6 +2102,10 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     &BucketAggregation::DateHistogram(_) => {
                         AggregationResult::DateHistogram(DateHistogramResult::from(json,
                                                                                    aggs))
+                    },
+                    &BucketAggregation::GeoDistance(_) => {
+                        AggregationResult::GeoDistance(GeoDistanceResult::from(json,
+                                                                               aggs))
                     }
                 }
             }
