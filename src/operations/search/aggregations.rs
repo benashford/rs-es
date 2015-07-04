@@ -1168,6 +1168,46 @@ impl<'a> ToJson for GeoDistance<'a> {
 
 bucket_agg!(GeoDistance);
 
+/// Geohash aggregation
+#[derive(Debug)]
+pub struct GeoHash<'a> {
+    field:      &'a str,
+    precision:  Option<u64>,
+    size:       Option<u64>,
+    shard_size: Option<u64>
+}
+
+impl<'a> GeoHash<'a> {
+    pub fn new(field: &'a str) -> GeoHash<'a> {
+        GeoHash {
+            field: field,
+            precision: None,
+            size: None,
+            shard_size: None
+        }
+    }
+
+    add_field!(with_precision, precision, u64);
+    add_field!(with_size, size, u64);
+    add_field!(with_shard_size, shard_size, u64);
+}
+
+impl<'a> ToJson for GeoHash<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+
+        d.insert("field".to_owned(), self.field.to_json());
+
+        optional_add!(d, self.precision, "precision");
+        optional_add!(d, self.size, "size");
+        optional_add!(d, self.shard_size, "shard_size");
+
+        Json::Object(d)
+    }
+}
+
+bucket_agg!(GeoHash);
+
 /// The set of bucket aggregations
 #[derive(Debug)]
 pub enum BucketAggregation<'a> {
@@ -1183,7 +1223,8 @@ pub enum BucketAggregation<'a> {
     DateRange(DateRange<'a>),
     Histogram(Histogram<'a>),
     DateHistogram(DateHistogram<'a>),
-    GeoDistance(GeoDistance<'a>)
+    GeoDistance(GeoDistance<'a>),
+    GeoHash(GeoHash<'a>)
 }
 
 impl<'a> BucketAggregation<'a> {
@@ -1227,6 +1268,9 @@ impl<'a> BucketAggregation<'a> {
             },
             &BucketAggregation::GeoDistance(ref gd) => {
                 json.insert("geo_distance".to_owned(), gd.to_json());
+            },
+            &BucketAggregation::GeoHash(ref gh) => {
+                json.insert("get_hash".to_owned(), gh.to_json());
             }
         }
     }
@@ -1933,6 +1977,41 @@ impl GeoDistanceResult {
     }
 }
 
+#[derive(Debug)]
+pub struct GeoHashBucketResult {
+    pub key:       String,
+    pub doc_count: u64,
+    pub aggs:      Option<AggregationsResult>
+}
+
+impl GeoHashBucketResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoHashBucketResult {
+        GeoHashBucketResult {
+            key: get_json_string!(from, "key"),
+            doc_count: get_json_u64!(from, "doc_count"),
+            aggs: extract_aggs!(from, aggs)
+        }
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
+pub struct GeoHashResult {
+    pub buckets: Vec<GeoHashBucketResult>
+}
+
+impl GeoHashResult {
+    fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoHashResult {
+        GeoHashResult {
+            buckets: from.find("buckets").expect("No buckets")
+                .as_array().expect("Not an array")
+                .iter().map(|bucket| GeoHashBucketResult::from(bucket, aggs))
+                .collect()
+        }
+    }
+}
+
 /// The result of one specific aggregation
 ///
 /// The data returned varies depending on aggregation type
@@ -1965,7 +2044,8 @@ pub enum AggregationResult {
     DateRange(DateRangeResult),
     Histogram(HistogramResult),
     DateHistogram(DateHistogramResult),
-    GeoDistance(GeoDistanceResult)
+    GeoDistance(GeoDistanceResult),
+    GeoHash(GeoHashResult)
 }
 
 /// Macro to implement the various as... functions that return the details of an
@@ -2012,6 +2092,7 @@ impl AggregationResult {
     agg_as!(as_histogram, Histogram, HistogramResult);
     agg_as!(as_date_histogram, DateHistogram, DateHistogramResult);
     agg_as!(as_geo_distance, GeoDistance, GeoDistanceResult);
+    agg_as!(as_geo_hash, GeoHash, GeoHashResult);
 }
 
 #[derive(Debug)]
@@ -2108,6 +2189,9 @@ fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> Agg
                     &BucketAggregation::GeoDistance(_) => {
                         AggregationResult::GeoDistance(GeoDistanceResult::from(json,
                                                                                aggs))
+                    },
+                    &BucketAggregation::GeoHash(_) => {
+                        AggregationResult::GeoHash(GeoHashResult::from(json, aggs))
                     }
                 }
             }
