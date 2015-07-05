@@ -167,6 +167,8 @@ let result = client.search_query()
                    .send();
 ```
 
+A search query also supports [scan and scroll](#scan-and-scroll), [sorting](#sorting), and [aggregations](#aggregations).
+
 #### `bulk`
 
 An implementation of the [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html).  This is the preferred way of indexing (or deleting, when Delete-by-Query is removed) many documents.
@@ -348,6 +350,55 @@ The iterator will include a mutable reference to the client, so the same client 
 
 The type of each value returned from the iterator is `Result<SearchHitsHitsResult, EsError>`.  If an error is returned than it must be assumed the iterator is closed.  The type `SearchHitsHitsResult` is the same as returned in a normal search (the verbose name is intended to mirror the structure of JSON returned by ElasticSearch), as such the function [`source` is available to load the Json payload into an appropriately implemented struct](#results).
 
+### Aggregations
+
+Experimental support for aggregations is also supported.
+
+```rust
+client.search_query().with_indexes(&[index_name]).with_aggs(&aggs).send();
+```
+
+Where `aggs` is a `rs_es::operations::search::aggregations::Aggregations`, for convenience sake conversion traits are implemented for common patterns; specifically the tuple `(&str, Aggregation)` for a single aggregation, and `Vec<(&str, Aggregation)>` for multiple aggregations.
+
+Bucket aggregations (i.e. those that define a bucket that can contain sub-aggregations) can also be specified as a tuple `(Aggregation, Aggregations)`.
+
+```rust
+let aggs = Aggregations::from(("str",
+                               (Terms::new("str_field").with_order(Order::asc(OrderKey::Term)),
+                                Aggregations::from(("int",
+                                                    Min::new("int_field"))))));
+
+```
+
+The above would, when used within a `search_query` operation, generate a JSON fragment within the search request:
+
+```
+"str": {
+    "terms": {
+        "field": "str_field",
+        "order": {"_term": "asc"}
+    },
+    "aggs": {
+        "int": {
+            "field": "int_field"
+        }
+    }
+}
+```
+
+Aggregation results are accessed in a similar way to accessing Json fields in the `rustc-serialize` library, e.g. to get the a reference to the result of the Terms aggregation called `str` (see above):
+
+```rust
+let terms_result = result.aggs_ref()
+    .unwrap()
+    .get("str")
+    .unwrap()
+    .as_terms()
+    .unwrap()
+```
+
+EXPERIMENTAL: the structure of results may change as it currently feels quite cumbersome, however given this seems to be an established pattern (see the rustc-serialize project), it may not change that much.
+
 ## Unimplemented features
 
 The ElasticSearch API is made-up of a large number of smaller APIs, the vast majority of which are not yet implemented.  So far the document and search APIs are being implemented, but still to do: index management, cluster management.
@@ -370,8 +421,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-1. Aggregations
-2. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
+1. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
 2. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html
 2. Add significant-terms aggregation (esp., if made a permanent feature): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
 2. Add IP Range aggregation (complex due to changing response type): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-iprange-aggregation.html
