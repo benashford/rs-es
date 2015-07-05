@@ -386,6 +386,8 @@ The above would, when used within a `search_query` operation, generate a JSON fr
 }
 ```
 
+The majority, but not all aggregations are currently supported.  See the [documentation of the aggregations package](http://benashford.github.io/rs-es/rs_es/operations/search/aggregations/index.html) for details.
+
 Aggregation results are accessed in a similar way to accessing Json fields in the `rustc-serialize` library, e.g. to get the a reference to the result of the Terms aggregation called `str` (see above):
 
 ```rust
