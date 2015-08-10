@@ -52,6 +52,12 @@ macro_rules! get_json_object {
     }
 }
 
+macro_rules! get_json_array {
+    ($r:ident,$f:expr) => {
+        get_json_thing!($r,$f,as_array)
+    }
+}
+
 macro_rules! get_json_string {
     ($r:ident,$f:expr) => {
         get_json_thing!($r,$f,as_string).to_owned()

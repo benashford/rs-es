@@ -38,6 +38,7 @@ pub mod delete;
 pub mod get;
 pub mod index;
 pub mod search;
+pub mod analyze;
 
 // Common utility functions
 
