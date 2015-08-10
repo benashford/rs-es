@@ -223,7 +223,7 @@ let result = client.search_query().with_query(query).send();
 
 // An iterator over the Json source documents
 for hit in result.hits.hits {
-    println!("Json document: {:?}", hits.source.unwrap());
+    println!("Json document: {:?}", hit.source.unwrap());
 }
 ```
 
