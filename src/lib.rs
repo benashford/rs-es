@@ -50,6 +50,7 @@ use operations::get::GetOperation;
 use operations::index::IndexOperation;
 use operations::search::{SearchURIOperation, SearchQueryOperation};
 use operations::RefreshOperation;
+use operations::analyze::AnalyzeOperation;
 
 // The client
 
@@ -232,6 +233,14 @@ impl Client {
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
     pub fn bulk<'a, 'b>(&'a mut self, actions: &'b [Action]) -> BulkOperation<'a, 'b> {
         BulkOperation::new(self, actions)
+    }
+
+    /// Analyze
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.9/indices-analyze.html
+    pub fn analyze<'a>(&'a mut self,
+                       body: &'a str) -> AnalyzeOperation {
+        AnalyzeOperation::new(self, body)
     }
 
     // Search APIs
