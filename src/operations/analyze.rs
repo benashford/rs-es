@@ -17,14 +17,11 @@
 
 //! Implementation of ElasticSearch Analyze operation
 
-use std::collections::{BTreeMap, HashMap};
-use rustc_serialize::{Encodable, Decodable};
+use std::collections::BTreeMap;
 use rustc_serialize::json::{Json, ToJson};
 
 use ::Client;
 use ::error::EsError;
-use super::common::{Options, OptionVal};
-
 
 pub struct AnalyzeOperation<'a, 'b> {
     /// The HTTP client that this operation will use
@@ -41,7 +38,7 @@ struct AnalyzeRequest<'b> {
 
 impl<'b> ToJson for AnalyzeRequest<'b> {
     fn to_json(&self) -> Json {
-        let mut d : BTreeMap<String, Json> = BTreeMap::new();
+        let mut d = BTreeMap::new();
 
         d.insert("body".to_owned(), self.body.to_json());
         optional_add!(d, self.analyzer, "analyzer");
@@ -49,7 +46,6 @@ impl<'b> ToJson for AnalyzeRequest<'b> {
         Json::Object(d)
     }
 }
-
 
 impl<'a, 'b> AnalyzeOperation<'a, 'b> {
     pub fn new(client: &'a mut Client, body: &'b str) -> AnalyzeOperation<'a, 'b> {
@@ -100,16 +96,16 @@ pub struct Token {
 
 impl<'a> From<&'a Json> for AnalyzeResult {
     fn from(r: &'a Json) -> AnalyzeResult {
-            let mut tokens = Vec::new();
-            for t in get_json_array!(r, "tokens") {
-                tokens.push(Token {
-                    token: get_json_string!(t, "token"),
-                    token_type: get_json_string!(t, "type"),
-                    position: get_json_u64!(t, "position"),
-                    start_offset: get_json_u64!(t, "start_offset"),
-                    end_offset: get_json_u64!(t, "end_offset")
-                })
-            }
+        let mut tokens = Vec::new();
+        for t in get_json_array!(r, "tokens") {
+            tokens.push(Token {
+                token: get_json_string!(t, "token"),
+                token_type: get_json_string!(t, "type"),
+                position: get_json_u64!(t, "position"),
+                start_offset: get_json_u64!(t, "start_offset"),
+                end_offset: get_json_u64!(t, "end_offset")
+            })
+        }
         AnalyzeResult {
             tokens: tokens
         }
