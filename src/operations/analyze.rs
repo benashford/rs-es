@@ -27,35 +27,18 @@ pub struct AnalyzeOperation<'a, 'b> {
     /// The HTTP client that this operation will use
     client:   &'a mut Client,
 
-    index:    Option<&'b str>,
-    req:      AnalyzeRequest<'b>
-}
-
-struct AnalyzeRequest<'b> {
     body:     &'b str,
+    index:    Option<&'b str>,
     analyzer: Option<&'b str>
-}
-
-impl<'b> ToJson for AnalyzeRequest<'b> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-
-        d.insert("body".to_owned(), self.body.to_json());
-        optional_add!(d, self.analyzer, "analyzer");
-
-        Json::Object(d)
-    }
 }
 
 impl<'a, 'b> AnalyzeOperation<'a, 'b> {
     pub fn new(client: &'a mut Client, body: &'b str) -> AnalyzeOperation<'a, 'b> {
         AnalyzeOperation {
             client:   client,
+            body:     body,
             index:    None,
-            req: AnalyzeRequest {
-                body:     body,
-                analyzer: None
-            }
+            analyzer: None
         }
     }
 
@@ -65,16 +48,22 @@ impl<'a, 'b> AnalyzeOperation<'a, 'b> {
     }
 
     pub fn with_analyzer(&'b mut self, analyzer: &'b str) -> &'b mut Self {
-        self.req.analyzer = Some(analyzer);
+        self.analyzer = Some(analyzer);
         self
     }
 
     pub fn send(&'b mut self) -> Result<AnalyzeResult, EsError> {
-        let url = match self.index {
+        let mut url = match self.index {
             None => "/_analyze".to_owned(),
-            Some(index) => format!("/{}/_analyze", index)
+            Some(index) => format!("{}/_analyze", index)
         };
-        let (_, result) = try!(self.client.post_body_op(&url, &self.req.to_json()));
+        match self.analyzer {
+            None => (),
+            Some(analyzer) => {
+                url.push_str(&format!("?analyzer={}", analyzer))
+            }
+        }
+        let (_, result) = try!(self.client.post_body_op(&url, &self.body));
         Ok(AnalyzeResult::from(&result.expect("No Json payload")))
     }
 }
