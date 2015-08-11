@@ -18,8 +18,9 @@
 //! Implementation of ElasticSearch Analyze operation
 
 use std::collections::BTreeMap;
-use rustc_serialize::json::{Json, ToJson};
+use rustc_serialize::json::{Json};
 
+use ::do_req;
 use ::Client;
 use ::error::EsError;
 
@@ -63,7 +64,13 @@ impl<'a, 'b> AnalyzeOperation<'a, 'b> {
                 url.push_str(&format!("?analyzer={}", analyzer))
             }
         }
-        let (_, result) = try!(self.client.post_body_op(&url, &self.body));
+        let client = &self.client;
+        let full_url = client.full_url(&url);
+        let mut req = try!(client.http_client
+                           .post(&full_url)
+                           .body(self.body)
+                           .send());
+        let (_, result) = try!(do_req(&mut req));
         Ok(AnalyzeResult::from(&result.expect("No Json payload")))
     }
 }
