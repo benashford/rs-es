@@ -17,8 +17,7 @@
 
 //! Implementation of ElasticSearch Analyze operation
 
-use std::collections::BTreeMap;
-use rustc_serialize::json::{Json};
+use rustc_serialize::json::Json;
 
 use ::do_req;
 use ::Client;
