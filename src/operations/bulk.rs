@@ -191,7 +191,7 @@ impl Action {
 
     pub fn update<S: Into<String>>(id: S, update: &ActionSource) -> Action {
         Action {
-            action:            ActionType::Delete,
+            action:            ActionType::Update,
             index:             None,
             doc_type:          None,
             id:                Some(id.into()),
