@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ben Ashford
+ * Copyright 2015-2016 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,7 +217,7 @@ metrics_agg!(ValueCount);
 /// ```
 /// use rs_es::operations::search::aggregations::Percentiles;
 ///
-/// let p1 = Percentiles::new("field_name").with_compression(100);
+/// let p1 = Percentiles::new("field_name").with_compression(100u64);
 /// let p2 = Percentiles::new("field_name").with_percents(vec![10.0, 20.0]);
 /// ```
 #[derive(Debug)]
