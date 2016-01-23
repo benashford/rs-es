@@ -33,18 +33,6 @@ use units::{DistanceType,
             OneOrMany};
 use util::StrJoin;
 
-impl From<Filter> for Box<Filter> {
-    fn from(from: Filter) -> Box<Filter> {
-        Box::new(from)
-    }
-}
-
-impl From<Query> for Box<Query> {
-    fn from(from: Query) -> Box<Query> {
-        Box::new(from)
-    }
-}
-
 <%= enums['Query'] %>
 
 <%= enums['Filter'] %>
