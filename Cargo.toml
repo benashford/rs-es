@@ -1,6 +1,6 @@
 [package]
 name = "rs-es"
-version = "0.1.18"
+version = "0.2.0"
 authors = ["Ben Ashford"]
 license = "Apache-2.0"
 repository = "https://github.com/benashford/rs-es"
@@ -16,10 +16,10 @@ exclude = ["devbox/**/*", "docker-dev.yml"]
 name = "rs_es"
 
 [dependencies]
-hyper = "*"
-rustc-serialize = "*"
-log = "*"
+hyper = "^0.7"
+rustc-serialize = "^0.3"
+log = "^0.3"
 
 [dev-dependencies]
-env_logger = "*"
-regex = "*"
+env_logger = "^0.3"
+regex = "^0.1"
