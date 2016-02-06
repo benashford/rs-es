@@ -425,7 +425,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-0. Test against Rust 1.3
+0. Upgrade the targeted version of ElasticSearch from 1.6 to 2.1, paying attention to the changelogs: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking-changes-2.0.html
 1. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
 2. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html
 2. Add significant-terms aggregation (esp., if made a permanent feature): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
