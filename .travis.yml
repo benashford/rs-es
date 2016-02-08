@@ -5,13 +5,11 @@ rust:
   - beta
   - nightly
 
-services:
-  - elasticsearch
-
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y ruby
   - curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/2.0.2/elasticsearch-2.0.2.deb && sudo dpkg -i --force-confnew elasticsearch-2.0.2.deb
+  - sudo service elasticsearch start
 
 
 # As recommended here: http://docs.travis-ci.com/user/database-setup/#ElasticSearch
