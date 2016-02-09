@@ -111,27 +111,6 @@ Index, type and ID are mandatory.
 let result = client.delete("index_name", "type_name", "ID_VALUE").send();
 ```
 
-#### `delete_by_query`
-
-An implementation of the [Delete By Query API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-delete-by-query.html).
-
-No fields are mandatory, but index, type and a large set of parameters are optional.  Both query strings and the [Query DSL](#the-query-dsl) are valid for this operation.
-
-```rust
-// Using a query string
-let result = client.delete_by_query()
-                   .with_indexes(&["index_name"])
-                   .with_query_string("field:value")
-                   .send();
-
-// Using the query DSL
-use rs_es::query::Query;
-let result = client.delete_by_query()
-                   .with_indexes(&["index_name"])
-                   .with_query(Query::build_match("field", "value").build())
-                   .send();
-```
-
 #### `refresh`
 
 Sends a refresh request.

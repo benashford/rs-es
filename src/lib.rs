@@ -45,7 +45,7 @@ use rustc_serialize::json::{self, Json};
 
 use error::EsError;
 use operations::bulk::{BulkOperation, Action};
-use operations::delete::{DeleteOperation, DeleteByQueryOperation};
+use operations::delete::DeleteOperation;
 use operations::get::GetOperation;
 use operations::index::IndexOperation;
 use operations::search::{SearchURIOperation, SearchQueryOperation};
@@ -162,7 +162,6 @@ impl Client {
     es_op!(put_op, put);
     es_body_op!(put_body_op, put);
     es_op!(delete_op, delete);
-    es_body_op!(delete_body_op, delete);
 
     /// Calls the base ES path, returning the version number
     pub fn version(&mut self) -> Result<String, EsError> {
@@ -219,15 +218,6 @@ impl Client {
 
     // Multi-document APIs
 
-    /// Delete by query
-    ///
-    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-delete-by-query.html
-    ///
-    /// Warning: will be removed in ElasticSearch 2.0
-    pub fn delete_by_query<'a>(&'a mut self) -> DeleteByQueryOperation {
-        DeleteByQueryOperation::new(self)
-    }
-
     /// Bulk
     ///
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
@@ -276,6 +266,8 @@ pub mod tests {
 
     use super::query::{Filter, Query};
 
+    use super::units::{Duration, DurationUnit};
+
     use self::regex::Regex;
 
     // test setup
@@ -322,13 +314,31 @@ pub mod tests {
         }
     }
 
-    pub fn clean_db(client: &mut Client,
+    pub fn clean_db(mut client: &mut Client,
                     test_idx: &str) {
-        client.delete_by_query()
+        let mut scan = client.search_query()
             .with_indexes(&[test_idx])
             .with_query(&Query::build_match_all().build())
-            .send()
+            .scan(Duration::new(1, DurationUnit::Minute))
             .unwrap();
+
+        loop {
+            let page = scan.scroll(&mut client).unwrap();
+            let mut hits = page.hits.hits;
+            if hits.len() == 0 {
+                break;
+            }
+            let actions: Vec<Action> = hits.drain(..)
+                .map(|hit| {
+                    Action::delete(hit.id)
+                        .with_index(test_idx)
+                        .with_doc_type(hit.doc_type)
+                })
+                .collect();
+            client.bulk(&actions).send().unwrap();
+        }
+
+        scan.close(&mut client).unwrap();
     }
 
     // tests
@@ -409,44 +419,6 @@ pub mod tests {
             assert_eq!(source.str_field, "I am a test");
             assert_eq!(source.int_field, 3);
         }
-    }
-
-    #[test]
-    fn test_delete_by_query() {
-        let index_name = "test_delete_by_query";
-        let mut client = make_client();
-        clean_db(&mut client, index_name);
-
-        let td1 = TestDocument::new().with_str_field("TEST DOC 1").with_int_field(100);
-        let td2 = TestDocument::new().with_str_field("TEST DOC 2").with_int_field(200);
-
-        client
-            .index(index_name, "test_type")
-            .with_id("ABC123")
-            .with_doc(&td1)
-            .send().unwrap();
-        client
-            .index(index_name, "test_type")
-            .with_id("ABC124")
-            .with_doc(&td2)
-            .send().unwrap();
-
-        let delete_result = client
-            .delete_by_query()
-            .with_indexes(&[index_name])
-            .with_doc_types(&["test_type"])
-            .with_query(&Query::build_match("int_field", 200)
-                        .with_lenient(false)
-                        .build())
-            .send().unwrap();
-
-        assert!(delete_result.unwrap().successful());
-
-        let doc1 = client.get(index_name, "ABC123").with_doc_type("test_type").send().unwrap();
-        let doc2 = client.get(index_name, "ABC124").with_doc_type("test_type").send().unwrap();
-
-        assert!(doc1.found);
-        assert!(!doc2.found);
     }
 
     fn setup_search_test_data(client: &mut Client, index_name: &str) {
