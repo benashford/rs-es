@@ -7,7 +7,7 @@ An experimental ElasticSearch client for Rust via the REST API.
 
 Development is ongoing, and is experimental, as such breaking changes are likely at any time.  Also, large parts of the ElasticSearch API are currently unimplemented.
 
-Currently being developed and tested against ElasticSearch 1.6.x, it will almost certainly not work with earlier versions.
+Versions up-to and including 0.2 of `rs-es` targetted ElasticSearch 1.6.x.  Starting with the (as yet unpublished) 0.3, the baseline has been moved up to ElasticSearch 2.0, with the intention of rapidly moving on to 2.1 and 2.2 after testing.
 
 Please note, due a minor breaking change between Rust 1.5 and 1.6 the 0.1.x releases of `rs-es` only work with Rust 1.5 or earlier, the 0.2.x releases only work with Rust 1.6 or later.
 
