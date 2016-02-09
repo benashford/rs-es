@@ -32,21 +32,25 @@ use ::operations::common::OptionVal;
 /// TODO - this list is incomplete, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#time-units
 #[derive(Debug)]
 pub enum DurationUnit {
+    Month,
     Week,
     Day,
     Hour,
     Minute,
-    Month
+    Second,
+    Millisecond
 }
 
 impl ToString for DurationUnit {
     fn to_string(&self) -> String {
         match *self {
+            DurationUnit::Month  => "M",
             DurationUnit::Week   => "w",
             DurationUnit::Day    => "d",
             DurationUnit::Hour   => "h",
             DurationUnit::Minute => "m",
-            DurationUnit::Month  => "M",
+            DurationUnit::Second => "s",
+            DurationUnit::Millisecond => "ms"
         }.to_owned()
     }
 }
@@ -72,6 +76,34 @@ impl Duration {
             amt: amt,
             unit: unit
         }
+    }
+
+    pub fn months(amt: i64) -> Duration {
+        Duration::new(amt, DurationUnit::Month)
+    }
+
+    pub fn weeks(amt: i64) -> Duration {
+        Duration::new(amt, DurationUnit::Week)
+    }
+
+    pub fn days(amt: i64) -> Duration {
+        Duration::new(amt, DurationUnit::Day)
+    }
+
+    pub fn hours(amt: i64) -> Duration {
+        Duration::new(amt, DurationUnit::Hour)
+    }
+
+    pub fn minutes(amt: i64) -> Duration {
+        Duration::new(amt, DurationUnit::Minute)
+    }
+
+    pub fn seconds(amt: i64) -> Duration {
+        Duration::new(amt, DurationUnit::Second)
+    }
+
+    pub fn milliseconds(amt: i64) -> Duration {
+        Duration::new(amt, DurationUnit::Millisecond)
     }
 }
 

@@ -972,7 +972,7 @@ mod tests {
     use ::tests::TestDocument;
 
     use ::operations::bulk::Action;
-    use ::units::{Duration, DurationUnit, JsonVal};
+    use ::units::{Duration, JsonVal};
 
     use super::SearchHitsHitsResult;
     use super::Sort;
@@ -1012,7 +1012,7 @@ mod tests {
         let mut scan_result = client.search_query()
             .with_indexes(&indexes)
             .with_size(100)
-            .scan(Duration::new(1, DurationUnit::Minute))
+            .scan(Duration::minutes(1))
             .unwrap();
 
         scan_result.scroll(&mut client).unwrap();
@@ -1032,7 +1032,7 @@ mod tests {
         let mut scan_result = client.search_query()
             .with_indexes(&indexes)
             .with_size(100)
-            .scan(Duration::new(1, DurationUnit::Minute))
+            .scan(Duration::minutes(1))
             .unwrap();
 
         assert_eq!(1000, scan_result.hits.total);
@@ -1063,7 +1063,7 @@ mod tests {
         let scan_result = client.search_query()
             .with_indexes(&indexes)
             .with_size(10)
-            .scan(Duration::new(1, DurationUnit::Minute))
+            .scan(Duration::minutes(1))
             .unwrap();
 
         assert_eq!(1000, scan_result.hits.total);

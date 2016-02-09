@@ -303,7 +303,7 @@ To use scan and scroll, begin with a [search query](#search_query) request, but 
 let scan = client.search_query()
                  .with_indexes(&["index_name"])
                  .with_query(Query::build_match("field", "value").build())
-                 .scan(Duration::new(1, DurationUnit::Minute))
+                 .scan(Duration::minutes(1))
                  .unwrap();
 ```
 

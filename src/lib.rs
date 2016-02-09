@@ -266,7 +266,7 @@ pub mod tests {
 
     use super::query::{Filter, Query};
 
-    use super::units::{Duration, DurationUnit};
+    use super::units::Duration;
 
     use self::regex::Regex;
 
@@ -319,7 +319,7 @@ pub mod tests {
         let mut scan = client.search_query()
             .with_indexes(&[test_idx])
             .with_query(&Query::build_match_all().build())
-            .scan(Duration::new(1, DurationUnit::Minute))
+            .scan(Duration::minutes(1))
             .unwrap();
 
         loop {
@@ -363,7 +363,7 @@ pub mod tests {
             let result_wrapped = client
                 .index(index_name, "test_type")
                 .with_doc(&TestDocument::new().with_int_field(1))
-                .with_ttl(927500)
+                .with_ttl(&Duration::milliseconds(927500))
                 .send();
             info!("TEST RESULT: {:?}", result_wrapped);
             let result = result_wrapped.unwrap();
