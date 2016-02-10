@@ -16,4 +16,4 @@ before_script:
   - sleep 10
 
 script:
-  - curl -XPUT 'http://localhost:9200/newidx/newtype/1' -d '{"hello": "value"}'
+  - RUST_BACKTRACE=1 cargo test --verbose
