@@ -710,7 +710,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
     }
 
     /// Begins a scan with the specified query and options
-    pub fn scan(&'b mut self, scroll: Duration) -> Result<ScanResult, EsError> {
+    pub fn scan(&'b mut self, scroll: Duration) -> Result<Option<ScanResult>, EsError> {
         self.options.push("search_type", "scan");
         self.options.push("scroll", &scroll);
         let url = format!("/{}/_search{}",
@@ -727,9 +727,12 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
                     },
                     _              => ()
                 }
-                Ok(scan_result)
+                Ok(Some(scan_result))
             },
-            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+            StatusCode::NotFound => {
+                Ok(None)
+            },
+            _ => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
     }
 }
@@ -1013,6 +1016,7 @@ mod tests {
             .with_indexes(&indexes)
             .with_size(100)
             .scan(Duration::minutes(1))
+            .unwrap()
             .unwrap();
 
         scan_result.scroll(&mut client).unwrap();
@@ -1033,6 +1037,7 @@ mod tests {
             .with_indexes(&indexes)
             .with_size(100)
             .scan(Duration::minutes(1))
+            .unwrap()
             .unwrap();
 
         assert_eq!(1000, scan_result.hits.total);
@@ -1064,6 +1069,7 @@ mod tests {
             .with_indexes(&indexes)
             .with_size(10)
             .scan(Duration::minutes(1))
+            .unwrap()
             .unwrap();
 
         assert_eq!(1000, scan_result.hits.total);

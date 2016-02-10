@@ -304,10 +304,13 @@ let scan = client.search_query()
                  .with_indexes(&["index_name"])
                  .with_query(Query::build_match("field", "value").build())
                  .scan(Duration::minutes(1))
+                 .unwrap()
                  .unwrap();
 ```
 
 (Disclaimer: any use of `unwrap` in this or other example is for the purposes of brevity, obviously real code should handle errors in accordance to the needs of the application.)
+
+The two `unwrap`s is because the return type is `Result<Option<ScanResult>, EsError>`, i.e. a successful operation may return `None` representing "not found".
 
 Then `scroll` can be called multiple times to fetch each page.  Finally `close` will tell ElasticSearch the scan has finished and it can close any open resources.
 
@@ -405,7 +408,8 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 ### Some, non-exhaustive, specific TODOs
 
 0. Remove delete_by_query and it's use in tests.  This is no-longer available in ES 2.0 or higher.
-0. Upgrade the targeted version of ElasticSearch from 1.6 to 2.1, paying attention to the changelogs: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking-changes-2.0.html
+0. Upgrade the targeted version of ElasticSearch from 1.6 to 2.2, paying attention to the changelogs: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking-changes-2.0.html
+1. Documentation
 1. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
 2. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html
 2. Add significant-terms aggregation (esp., if made a permanent feature): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
@@ -435,10 +439,9 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 20. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
 21. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
 22. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
-23. Documentation, both rustdoc and a suitable high-level write-up in this README
-24. Consider not using to_string pattern for converting to String (to avoid confusion with built-in to_string that uses formatter).
-25. Avoid calls to `.to_json()` in cases where `Json::Whatever(thing)` would do instead.
-26. Tidy-up/standardise logging.
+23. Consider not using to_string pattern for converting to String (to avoid confusion with built-in to_string that uses formatter).
+24. Avoid calls to `.to_json()` in cases where `Json::Whatever(thing)` would do instead.
+25. Tidy-up/standardise logging.
 
 ## Licence
 
