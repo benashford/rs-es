@@ -6,4 +6,4 @@ machine:
 
 test:
   override:
-    - cargo test
+    - cargo test --verbose
