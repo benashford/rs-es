@@ -304,13 +304,10 @@ let scan = client.search_query()
                  .with_indexes(&["index_name"])
                  .with_query(Query::build_match("field", "value").build())
                  .scan(Duration::minutes(1))
-                 .unwrap()
                  .unwrap();
 ```
 
 (Disclaimer: any use of `unwrap` in this or other example is for the purposes of brevity, obviously real code should handle errors in accordance to the needs of the application.)
-
-The two `unwrap`s is because the return type is `Result<Option<ScanResult>, EsError>`, i.e. a successful operation may return `None` representing "not found".
 
 Then `scroll` can be called multiple times to fetch each page.  Finally `close` will tell ElasticSearch the scan has finished and it can close any open resources.
 
