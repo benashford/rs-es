@@ -718,8 +718,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
                           self.options);
         let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
         match status_code {
-            StatusCode::Ok |
-            StatusCode::NotFound => {
+            StatusCode::Ok => {
                 let result_json = result.expect("No Json payload");
                 let mut scan_result = ScanResult::from(scroll, &result_json);
                 match self.body.aggs {
@@ -729,6 +728,9 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
                     _              => ()
                 }
                 Ok(scan_result)
+            },
+            StatusCode::NotFound => {
+                Err(EsError::EsServerError(format!("Not found: {:?}", result)))
             },
             _ => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }

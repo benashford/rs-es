@@ -316,11 +316,13 @@ pub mod tests {
 
     pub fn clean_db(mut client: &mut Client,
                     test_idx: &str) {
-        let mut scan = client.search_query()
+        let mut scan = match client.search_query()
             .with_indexes(&[test_idx])
             .with_query(&Query::build_match_all().build())
-            .scan(Duration::minutes(1))
-            .unwrap();
+            .scan(Duration::minutes(1)) {
+                Ok(scan) => scan,
+                Err(_) => return // Ignore not-found errors
+            };
 
         loop {
             let page = scan.scroll(&mut client).unwrap();
