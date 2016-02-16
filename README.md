@@ -237,6 +237,8 @@ let hits:Vec<DocType> = result.hits.hits().unwrap();
 
 ### The Query DSL
 
+TODO: changes to Query DSL in 2.0
+
 ElasticSearch offers a [rich DSL for searches](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl.html).  It is JSON based, and therefore very easy to use and composable if using from a dynamic language (e.g. [Ruby](https://github.com/elastic/elasticsearch-ruby/tree/master/elasticsearch-dsl#features-overview)); but Rust, being a staticly-typed language, things are different.  The `rs_es::query` module defines a set of builder objects which can be similarly composed to the same ends.
 
 For example:

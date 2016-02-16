@@ -33,261 +33,118 @@ use units::{DistanceType,
             OneOrMany};
 use util::StrJoin;
 
-          #[derive(Debug)]
-          pub enum Query {
-             
-               MatchAll(MatchAllQuery)
-               ,
-             
-               Match(MatchQuery)
-               ,
-             
-               MultiMatch(MultiMatchQuery)
-               ,
-             
-               Bool(BoolQuery)
-               ,
-             
-               Boosting(BoostingQuery)
-               ,
-             
-               Common(CommonQuery)
-               ,
-             
-               ConstantScore(ConstantScoreQuery)
-               ,
-             
-               DisMax(DisMaxQuery)
-               ,
-             
-               Filtered(FilteredQuery)
-               ,
-             
-               FuzzyLikeThis(FuzzyLikeThisQuery)
-               ,
-             
-               FuzzyLikeThisField(FuzzyLikeThisFieldQuery)
-               ,
-             
-               FunctionScore(FunctionScoreQuery)
-               ,
-             
-               Fuzzy(FuzzyQuery)
-               ,
-             
-               GeoShape(GeoShapeQuery)
-               ,
-             
-               HasChild(HasChildQuery)
-               ,
-             
-               HasParent(HasParentQuery)
-               ,
-             
-               Ids(IdsQuery)
-               ,
-             
-               Indices(IndicesQuery)
-               ,
-             
-               MoreLikeThis(MoreLikeThisQuery)
-               ,
-             
-               Nested(NestedQuery)
-               ,
-             
-               Prefix(PrefixQuery)
-               ,
-             
-               QueryString(QueryStringQuery)
-               ,
-             
-               SimpleQueryString(SimpleQueryStringQuery)
-               ,
-             
-               Range(RangeQuery)
-               ,
-             
-               Regexp(RegexpQuery)
-               ,
-             
-               SpanFirst(SpanFirstQuery)
-               ,
-             
-               SpanMulti(SpanMultiQuery)
-               ,
-             
-               SpanNear(SpanNearQuery)
-               ,
-             
-               SpanNot(SpanNotQuery)
-               ,
-             
-               SpanOr(SpanOrQuery)
-               ,
-             
-               SpanTerm(SpanTermQuery)
-               ,
-             
-               Term(TermQuery)
-               ,
-             
-               Terms(TermsQuery)
-               ,
-             
-               Wildcard(WildcardQuery)
-               
-             
-          }
+// Miscellaneous types required by queries go here
 
-          impl Query {
-              
-                  pub fn build_match_all(
-                     ) -> MatchAllQuery {
-                     
-                         MatchAllQuery {
-                             
-                                 boost: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_match<A: Into<String>,B: Into<JsonVal>>(
-                     
-                         field: A,
-                     
-                         query: B
-                     ) -> MatchQuery {
-                     
-                         MatchQuery {
-                             
-                                 field: 
-                                                     field.into()
-                                                 ,
-                             
-                                 query: 
-                                                     query.into()
-                                                 ,
-                             
-                                 match_type: 
-                                                     None
-                                                 ,
-                             
-                                 cutoff_frequency: 
-                                                     None
-                                                 ,
-                             
-                                 lenient: 
-                                                     None
-                                                 ,
-                             
-                                 analyzer: 
-                                                     None
-                                                 ,
-                             
-                                 boost: 
-                                                     None
-                                                 ,
-                             
-                                 operator: 
-                                                     None
-                                                 ,
-                             
-                                 minimum_should_match: 
-                                                     None
-                                                 ,
-                             
-                                 fuzziness: 
-                                                     None
-                                                 ,
-                             
-                                 prefix_length: 
-                                                     None
-                                                 ,
-                             
-                                 max_expansions: 
-                                                     None
-                                                 ,
-                             
-                                 rewrite: 
-                                                     None
-                                                 ,
-                             
-                                 zero_terms_query: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_multi_match<A: Into<Vec<String>>,B: Into<JsonVal>>(
-                     
-                         fields: A,
-                     
-                         query: B
-                     ) -> MultiMatchQuery {
-                     
-                         MultiMatchQuery {
-                             
-                                 fields: 
-                                                     fields.into()
-                                                 ,
-                             
-                                 query: 
-                                                     query.into()
-                                                 ,
-                             
-                                 use_dis_max: 
-                                                     None
-                                                 ,
-                             
-                                 match_type: 
-                                                     None
-                                                 ,
-                             
-                                 analyzer: 
-                                                     None
-                                                 ,
-                             
-                                 boost: 
-                                                     None
-                                                 ,
-                             
-                                 operator: 
-                                                     None
-                                                 ,
-                             
-                                 minimum_should_match: 
-                                                     None
-                                                 ,
-                             
-                                 fuzziness: 
-                                                     None
-                                                 ,
-                             
-                                 prefix_length: 
-                                                     None
-                                                 ,
-                             
-                                 max_expansions: 
-                                                     None
-                                                 ,
-                             
-                                 rewrite: 
-                                                     None
-                                                 ,
-                             
-                                 zero_terms_query: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
+// Functions
+
+/// Function
+#[derive(Debug)]
+pub struct Function {
+    // TODO : implement specific fields
+    //     filter: Option<Filter>,
+    //     function: Func,
+    weight: Option<f64>
+}
+
+impl ToJson for Function {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        // TODO - implement body
+//         optional_add!(d, self.filter, "filter");
+//         optional_add!(d, self.weight, "weight");
+//         d.insert(self.function.name(), self.function.to_json());
+         Json::Object(d)
+     }
+ }
+
+
+// Specific query types go here
+
+/// Query represents all available queries
+
+// TODO: Filters and Queries are merged, ensure all filters are included in this enum
+#[derive(Debug)]
+pub enum Query {
+    MatchAll(MatchAllQuery),
+    Match(MatchQuery),
+    MultiMatch(MultiMatchQuery),
+    Bool(BoolQuery),
+    Boosting(BoostingQuery),
+    Common(CommonQuery),
+    ConstantScore(ConstantScoreQuery),
+    DisMax(DisMaxQuery),
+    FuzzyLikeThis(FuzzyLikeThisQuery),
+    FuzzyLikeThisField(FuzzyLikeThisFieldQuery),
+    FunctionScore(FunctionScoreQuery),
+    Fuzzy(FuzzyQuery),
+    GeoShape(GeoShapeQuery),
+    HasChild(HasChildQuery),
+    HasParent(HasParentQuery),
+    Ids(IdsQuery),
+    Indices(IndicesQuery),
+    MoreLikeThis(MoreLikeThisQuery),
+    Nested(NestedQuery),
+    Prefix(PrefixQuery),
+    QueryString(QueryStringQuery),
+    SimpleQueryString(SimpleQueryStringQuery),
+    Range(RangeQuery),
+    Regexp(RegexpQuery),
+    SpanFirst(SpanFirstQuery),
+    SpanMulti(SpanMultiQuery),
+    SpanNear(SpanNearQuery),
+    SpanNot(SpanNotQuery),
+    SpanOr(SpanOrQuery),
+    SpanTerm(SpanTermQuery),
+    Term(TermQuery),
+    Terms(TermsQuery),
+    Wildcard(WildcardQuery)
+}
+
+impl Query {
+    pub fn build_match_all() -> MatchAllQuery {
+        MatchAllQuery {
+            boost: None
+        }
+    }
+
+    pub fn build_match<A: Into<String>, B: Into<JsonVal>>(field: A,
+                                                          query: B) -> MatchQuery {
+        MatchQuery {
+            field: field.into(),
+            query: query.into(),
+            match_type: None,
+            cutoff_frequency: None,
+            lenient: None,
+            analyzer: None,
+            boost: None,
+            operator: None,
+            minimum_should_match: None,
+            fuzziness: None,
+            prefix_length: None,
+            max_expansions: None,
+            rewrite: None,
+            zero_terms_query: None
+        }
+    }
+
+    pub fn build_multi_match<A: Into<Vec<String>>,B: Into<JsonVal>>(fields: A,
+                                                                    query: B) -> MultiMatchQuery {
+        MultiMatchQuery {
+            fields: fields.into(),
+            query: query.into(),
+            use_dis_max: None,
+            match_type: None,
+            analyzer: None,
+            boost: None,
+            operator: None,
+            minimum_should_match: None,
+            fuzziness: None,
+            prefix_length: None,
+            max_expansions: None,
+            rewrite: None,
+            zero_terms_query: None
+        }
+    }
               
                   pub fn build_bool(
                      ) -> BoolQuery {
@@ -387,10 +244,6 @@ use util::StrJoin;
                      
                          ConstantScoreQuery {
                              
-                                 filter: 
-                                                     None
-                                                 ,
-                             
                                  query: 
                                                      None
                                                  ,
@@ -420,29 +273,6 @@ use util::StrJoin;
                              
                                  queries: 
                                                      queries.into()
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_filtered<A: Into<Box<Filter>>>(
-                     
-                         filter: A
-                     ) -> FilteredQuery {
-                     
-                         FilteredQuery {
-                             
-                                 filter: 
-                                                     filter.into()
-                                                 ,
-                             
-                                 query: 
-                                                     None
-                                                 ,
-                             
-                                 strategy: 
-                                                     None
                                                  
                              
                           }
@@ -545,10 +375,6 @@ use util::StrJoin;
                          FunctionScoreQuery {
                              
                                  query: 
-                                                     None
-                                                 ,
-                             
-                                 filter: 
                                                      None
                                                  ,
                              
@@ -1333,10 +1159,6 @@ use util::StrJoin;
                               d.insert("dis_max".to_owned(), q.to_json());
                           },
                       
-                          &Query::Filtered(ref q) => {
-                              d.insert("filtered".to_owned(), q.to_json());
-                          },
-                      
                           &Query::FuzzyLikeThis(ref q) => {
                               d.insert("fuzzy_like_this".to_owned(), q.to_json());
                           },
@@ -1441,1061 +1263,6 @@ use util::StrJoin;
                   Json::Object(d)
               }
           }
-
-
-          #[derive(Debug)]
-          pub enum Filter {
-             
-               And(AndFilter)
-               ,
-             
-               Bool(BoolFilter)
-               ,
-             
-               Exists(ExistsFilter)
-               ,
-             
-               GeoBoundingBox(GeoBoundingBoxFilter)
-               ,
-             
-               GeoDistance(GeoDistanceFilter)
-               ,
-             
-               GeoPolygon(GeoPolygonFilter)
-               ,
-             
-               GeoShape(GeoShapeFilter)
-               ,
-             
-               GeohashCell(GeohashCellFilter)
-               ,
-             
-               HasChild(HasChildFilter)
-               ,
-             
-               HasParent(HasParentFilter)
-               ,
-             
-               Ids(IdsFilter)
-               ,
-             
-               Indices(IndicesFilter)
-               ,
-             
-               MatchAll(MatchAllFilter)
-               ,
-             
-               Missing(MissingFilter)
-               ,
-             
-               Nested(NestedFilter)
-               ,
-             
-               Not(NotFilter)
-               ,
-             
-               Or(OrFilter)
-               ,
-             
-               Prefix(PrefixFilter)
-               ,
-             
-               Query(QueryFilter)
-               ,
-             
-               Range(RangeFilter)
-               ,
-             
-               Regexp(RegexpFilter)
-               ,
-             
-               Script(ScriptFilter)
-               ,
-             
-               Term(TermFilter)
-               ,
-             
-               Terms(TermsFilter)
-               ,
-             
-               Type(TypeFilter)
-               
-             
-          }
-
-          impl Filter {
-              
-                  pub fn build_and(
-                     ) -> AndFilter {
-                     
-                         AndFilter {
-                             
-                                 filters: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_bool(
-                     ) -> BoolFilter {
-                     
-                         BoolFilter {
-                             
-                                 must: 
-                                                     None
-                                                 ,
-                             
-                                 must_not: 
-                                                     None
-                                                 ,
-                             
-                                 should: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_exists<A: Into<String>>(
-                     
-                         field: A
-                     ) -> ExistsFilter {
-                     
-                         ExistsFilter {
-                             
-                                 field: 
-                                                     field.into()
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_geo_bounding_box<A: Into<String>,B: Into<GeoBox>>(
-                     
-                         field: A,
-                     
-                         geo_box: B
-                     ) -> GeoBoundingBoxFilter {
-                     
-                         GeoBoundingBoxFilter {
-                             
-                                 field: 
-                                                     field.into()
-                                                 ,
-                             
-                                 geo_box: 
-                                                     geo_box.into()
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_geo_distance<A: Into<String>,B: Into<Location>,C: Into<Distance>>(
-                     
-                         field: A,
-                     
-                         location: B,
-                     
-                         distance: C
-                     ) -> GeoDistanceFilter {
-                     
-                         GeoDistanceFilter {
-                             
-                                 field: 
-                                                     field.into()
-                                                 ,
-                             
-                                 location: 
-                                                     location.into()
-                                                 ,
-                             
-                                 distance: 
-                                                     distance.into()
-                                                 ,
-                             
-                                 distance_type: 
-                                                     None
-                                                 ,
-                             
-                                 optimize_bbox: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_geo_polygon<A: Into<String>,B: Into<Vec<Location>>>(
-                     
-                         field: A,
-                     
-                         points: B
-                     ) -> GeoPolygonFilter {
-                     
-                         GeoPolygonFilter {
-                             
-                                 field: 
-                                                     field.into()
-                                                 ,
-                             
-                                 points: 
-                                                     points.into()
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_geo_shape<A: Into<String>>(
-                     
-                         field: A
-                     ) -> GeoShapeFilter {
-                     
-                         GeoShapeFilter {
-                             
-                                 field: 
-                                                     field.into()
-                                                 ,
-                             
-                                 shape: 
-                                                     None
-                                                 ,
-                             
-                                 indexed_shape: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_geohash_cell<A: Into<String>,B: Into<Location>>(
-                     
-                         field: A,
-                     
-                         location: B
-                     ) -> GeohashCellFilter {
-                     
-                         GeohashCellFilter {
-                             
-                                 field: 
-                                                     field.into()
-                                                 ,
-                             
-                                 location: 
-                                                     location.into()
-                                                 ,
-                             
-                                 precision: 
-                                                     None
-                                                 ,
-                             
-                                 neighbors: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_has_child<A: Into<String>>(
-                     
-                         doc_type: A
-                     ) -> HasChildFilter {
-                     
-                         HasChildFilter {
-                             
-                                 doc_type: 
-                                                     doc_type.into()
-                                                 ,
-                             
-                                 query: 
-                                                     None
-                                                 ,
-                             
-                                 filter: 
-                                                     None
-                                                 ,
-                             
-                                 min_children: 
-                                                     None
-                                                 ,
-                             
-                                 max_children: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_has_parent<A: Into<String>>(
-                     
-                         parent_type: A
-                     ) -> HasParentFilter {
-                     
-                         HasParentFilter {
-                             
-                                 parent_type: 
-                                                     parent_type.into()
-                                                 ,
-                             
-                                 query: 
-                                                     None
-                                                 ,
-                             
-                                 filter: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_ids<A: Into<Vec<String>>>(
-                     
-                         values: A
-                     ) -> IdsFilter {
-                     
-                         IdsFilter {
-                             
-                                 doc_type: 
-                                                     None
-                                                 ,
-                             
-                                 values: 
-                                                     values.into()
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_indices(
-                     ) -> IndicesFilter {
-                     
-                         IndicesFilter {
-                             
-                                 index: 
-                                                     None
-                                                 ,
-                             
-                                 indices: 
-                                                     None
-                                                 ,
-                             
-                                 filter: 
-                                                     None
-                                                 ,
-                             
-                                 no_match_filter: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_match_all(
-                     ) -> MatchAllFilter {
-                     
-                         MatchAllFilter {
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_missing<A: Into<String>>(
-                     
-                         field: A
-                     ) -> MissingFilter {
-                     
-                         MissingFilter {
-                             
-                                 field: 
-                                                     field.into()
-                                                 ,
-                             
-                                 existence: 
-                                                     None
-                                                 ,
-                             
-                                 null_value: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_nested<A: Into<String>,B: Into<Box<Filter>>>(
-                     
-                         path: A,
-                     
-                         filter: B
-                     ) -> NestedFilter {
-                     
-                         NestedFilter {
-                             
-                                 path: 
-                                                     path.into()
-                                                 ,
-                             
-                                 filter: 
-                                                     filter.into()
-                                                 ,
-                             
-                                 score_mode: 
-                                                     None
-                                                 ,
-                             
-                                 join: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_not<A: Into<Box<Filter>>>(
-                     
-                         filter: A
-                     ) -> NotFilter {
-                     
-                         NotFilter {
-                             
-                                 filter: 
-                                                     filter.into()
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_or<A: Into<Vec<Filter>>>(
-                     
-                         filters: A
-                     ) -> OrFilter {
-                     
-                         OrFilter {
-                             
-                                 filters: 
-                                                     filters.into()
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_prefix<A: Into<String>,B: Into<String>>(
-                     
-                         field: A,
-                     
-                         value: B
-                     ) -> PrefixFilter {
-                     
-                         PrefixFilter {
-                             
-                                 field: 
-                                                     field.into()
-                                                 ,
-                             
-                                 value: 
-                                                     value.into()
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_query<A: Into<Box<Query>>>(
-                     
-                         query: A
-                     ) -> QueryFilter {
-                     
-                         QueryFilter {
-                             
-                                 query: 
-                                                     query.into()
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_range<A: Into<String>>(
-                     
-                         field: A
-                     ) -> RangeFilter {
-                     
-                         RangeFilter {
-                             
-                                 field: 
-                                                     field.into()
-                                                 ,
-                             
-                                 gte: 
-                                                     None
-                                                 ,
-                             
-                                 gt: 
-                                                     None
-                                                 ,
-                             
-                                 lte: 
-                                                     None
-                                                 ,
-                             
-                                 lt: 
-                                                     None
-                                                 ,
-                             
-                                 boost: 
-                                                     None
-                                                 ,
-                             
-                                 time_zone: 
-                                                     None
-                                                 ,
-                             
-                                 format: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_regexp<A: Into<String>,B: Into<String>>(
-                     
-                         field: A,
-                     
-                         value: B
-                     ) -> RegexpFilter {
-                     
-                         RegexpFilter {
-                             
-                                 field: 
-                                                     field.into()
-                                                 ,
-                             
-                                 value: 
-                                                     value.into()
-                                                 ,
-                             
-                                 boost: 
-                                                     None
-                                                 ,
-                             
-                                 flags: 
-                                                     None
-                                                 ,
-                             
-                                 max_determined_states: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_script<A: Into<String>>(
-                     
-                         script: A
-                     ) -> ScriptFilter {
-                     
-                         ScriptFilter {
-                             
-                                 script: 
-                                                     script.into()
-                                                 ,
-                             
-                                 params: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_term<A: Into<String>,B: Into<JsonVal>>(
-                     
-                         field: A,
-                     
-                         value: B
-                     ) -> TermFilter {
-                     
-                         TermFilter {
-                             
-                                 field: 
-                                                     field.into()
-                                                 ,
-                             
-                                 value: 
-                                                     value.into()
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_terms<A: Into<String>,B: Into<Vec<JsonVal>>>(
-                     
-                         field: A,
-                     
-                         values: B
-                     ) -> TermsFilter {
-                     
-                         TermsFilter {
-                             
-                                 field: 
-                                                     field.into()
-                                                 ,
-                             
-                                 values: 
-                                                     values.into()
-                                                 ,
-                             
-                                 execution: 
-                                                     None
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-                  pub fn build_type<A: Into<String>>(
-                     
-                         value: A
-                     ) -> TypeFilter {
-                     
-                         TypeFilter {
-                             
-                                 value: 
-                                                     value.into()
-                                                 ,
-                             
-                                 _cache: 
-                                                     None
-                                                 ,
-                             
-                                 _cache_key: 
-                                                     None
-                                                 ,
-                             
-                                 _name: 
-                                                     None
-                                                 
-                             
-                          }
-                      
-                  }
-              
-          }
-
-          impl ToJson for Filter {
-              fn to_json(&self) -> Json {
-                  let mut d = BTreeMap::<String, Json>::new();
-                  match self {
-                      
-                          &Filter::And(ref q) => {
-                              d.insert("and".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Bool(ref q) => {
-                              d.insert("bool".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Exists(ref q) => {
-                              d.insert("exists".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::GeoBoundingBox(ref q) => {
-                              d.insert("geo_bounding_box".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::GeoDistance(ref q) => {
-                              d.insert("geo_distance".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::GeoPolygon(ref q) => {
-                              d.insert("geo_polygon".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::GeoShape(ref q) => {
-                              d.insert("geo_shape".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::GeohashCell(ref q) => {
-                              d.insert("geohash_cell".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::HasChild(ref q) => {
-                              d.insert("has_child".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::HasParent(ref q) => {
-                              d.insert("has_parent".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Ids(ref q) => {
-                              d.insert("ids".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Indices(ref q) => {
-                              d.insert("indices".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::MatchAll(ref q) => {
-                              d.insert("match_all".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Missing(ref q) => {
-                              d.insert("missing".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Nested(ref q) => {
-                              d.insert("nested".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Not(ref q) => {
-                              d.insert("not".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Or(ref q) => {
-                              d.insert("or".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Prefix(ref q) => {
-                              d.insert("prefix".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Query(ref q) => {
-                              d.insert("query".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Range(ref q) => {
-                              d.insert("range".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Regexp(ref q) => {
-                              d.insert("regexp".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Script(ref q) => {
-                              d.insert("script".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Term(ref q) => {
-                              d.insert("term".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Terms(ref q) => {
-                              d.insert("terms".to_owned(), q.to_json());
-                          },
-                      
-                          &Filter::Type(ref q) => {
-                              d.insert("type".to_owned(), q.to_json());
-                          }
-                      
-                  }
-                  Json::Object(d)
-              }
-          }
-
 
 // Match queries
 
@@ -3382,10 +2149,6 @@ impl ToJson for CommonQuery {
           #[derive(Debug)]
           pub struct ConstantScoreQuery {
               
-                  filter: 
-                                         Option<Box<Filter>>
-                                      ,
-              
                   query: 
                                          Option<Box<Query>>
                                       ,
@@ -3397,11 +2160,6 @@ impl ToJson for CommonQuery {
           }
 
           impl ConstantScoreQuery {
-              
-                  pub fn with_filter<T: Into<Box<Filter>>>(mut self, value: T) -> Self {
-                      self.filter = Some(value.into());
-                      self
-                  }
               
                   pub fn with_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
                       self.query = Some(value.into());
@@ -3416,9 +2174,6 @@ impl ToJson for CommonQuery {
 
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-                  
-                      optional_add!(m, self.filter, "filter");
-                  
                       optional_add!(m, self.query, "query");
                   
                       optional_add!(m, self.boost, "boost");
@@ -3508,57 +2263,6 @@ impl ToJson for CommonQuery {
             }
         }
 
-
-          #[derive(Debug)]
-          pub struct FilteredQuery {
-              
-                  filter: 
-                                         Box<Filter>
-                                      ,
-              
-                  query: 
-                                         Option<Box<Query>>
-                                      ,
-              
-                  strategy: 
-                                         Option<Strategy>
-                                      
-              
-          }
-
-          impl FilteredQuery {
-              
-                  pub fn with_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
-                      self.query = Some(value.into());
-                      self
-                  }
-              
-                  pub fn with_strategy<T: Into<Strategy>>(mut self, value: T) -> Self {
-                      self.strategy = Some(value.into());
-                      self
-                  }
-              
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-                  
-                      optional_add!(m, self.query, "query");
-                  
-                      optional_add!(m, self.strategy, "strategy");
-                  
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-                  
-              }
-
-              pub fn build(self) -> Query {
-                  Query::Filtered(self)
-              }
-          }
-
-
 #[derive(Debug)]
 pub enum Strategy {
     LeapFrogQueryFirst,
@@ -3581,20 +2285,6 @@ impl ToJson for Strategy {
         }
     }
 }
-
-        impl ToJson for FilteredQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                
-                  d.insert("filter".to_owned(),
-                           self.filter.to_json());
-                
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
-
 
           #[derive(Debug)]
           pub struct FuzzyLikeThisQuery {
@@ -3835,10 +2525,6 @@ impl ToJson for Strategy {
                                          Option<Box<Query>>
                                       ,
               
-                  filter: 
-                                         Option<Box<Filter>>
-                                      ,
-              
                   boost: 
                                          Option<f64>
                                       ,
@@ -3872,11 +2558,6 @@ impl ToJson for Strategy {
                       self
                   }
               
-                  pub fn with_filter<T: Into<Box<Filter>>>(mut self, value: T) -> Self {
-                      self.filter = Some(value.into());
-                      self
-                  }
-              
                   pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
                       self.boost = Some(value.into());
                       self
@@ -3907,8 +2588,6 @@ impl ToJson for Strategy {
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
                       optional_add!(m, self.query, "query");
-                  
-                      optional_add!(m, self.filter, "filter");
                   
                       optional_add!(m, self.boost, "boost");
                   
@@ -6086,2276 +4765,2277 @@ impl ToJson for TermsQuery {
 
 
 // Filters
-
-          #[derive(Debug)]
-          pub struct AndFilter {
+// TODO - determine which of these are required
+//           #[derive(Debug)]
+//           pub struct AndFilter {
               
-                  filters: 
-                                         Option<Vec<Filter>>
-                                      ,
+//                   filters: 
+//                                          Option<Vec<Filter>>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl AndFilter {
+//           impl AndFilter {
               
-                  pub fn with_filters<T: Into<Vec<Filter>>>(mut self, value: T) -> Self {
-                      self.filters = Some(value.into());
-                      self
-                  }
+//                   pub fn with_filters<T: Into<Vec<Filter>>>(mut self, value: T) -> Self {
+//                       self.filters = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.filters, "filters");
+//                       optional_add!(m, self.filters, "filters");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::And(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::And(self)
+//               }
+//           }
 
-        impl ToJson for AndFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for AndFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct BoolFilter {
+//           #[derive(Debug)]
+//           pub struct BoolFilter {
               
-                  must: 
-                                         Option<Vec<Filter>>
-                                      ,
+//                   must: 
+//                                          Option<Vec<Filter>>
+//                                       ,
               
-                  must_not: 
-                                         Option<Vec<Filter>>
-                                      ,
+//                   must_not: 
+//                                          Option<Vec<Filter>>
+//                                       ,
               
-                  should: 
-                                         Option<Vec<Filter>>
-                                      ,
+//                   should: 
+//                                          Option<Vec<Filter>>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl BoolFilter {
+//           impl BoolFilter {
               
-                  pub fn with_must<T: Into<Vec<Filter>>>(mut self, value: T) -> Self {
-                      self.must = Some(value.into());
-                      self
-                  }
+//                   pub fn with_must<T: Into<Vec<Filter>>>(mut self, value: T) -> Self {
+//                       self.must = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_must_not<T: Into<Vec<Filter>>>(mut self, value: T) -> Self {
-                      self.must_not = Some(value.into());
-                      self
-                  }
+//                   pub fn with_must_not<T: Into<Vec<Filter>>>(mut self, value: T) -> Self {
+//                       self.must_not = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_should<T: Into<Vec<Filter>>>(mut self, value: T) -> Self {
-                      self.should = Some(value.into());
-                      self
-                  }
+//                   pub fn with_should<T: Into<Vec<Filter>>>(mut self, value: T) -> Self {
+//                       self.should = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.must, "must");
+//                       optional_add!(m, self.must, "must");
                   
-                      optional_add!(m, self.must_not, "must_not");
+//                       optional_add!(m, self.must_not, "must_not");
                   
-                      optional_add!(m, self.should, "should");
+//                       optional_add!(m, self.should, "should");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Bool(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Bool(self)
+//               }
+//           }
 
-        impl ToJson for BoolFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for BoolFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct ExistsFilter {
+//           #[derive(Debug)]
+//           pub struct ExistsFilter {
               
-                  field: 
-                                         String
-                                      ,
+//                   field: 
+//                                          String
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl ExistsFilter {
+//           impl ExistsFilter {
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Exists(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Exists(self)
+//               }
+//           }
 
-        impl ToJson for ExistsFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for ExistsFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                  d.insert("field".to_owned(),
-                           self.field.to_json());
+//                   d.insert("field".to_owned(),
+//                            self.field.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct GeoBoundingBoxFilter {
+//           #[derive(Debug)]
+//           pub struct GeoBoundingBoxFilter {
               
-                  field: 
-                                         String
-                                      ,
+//                   field: 
+//                                          String
+//                                       ,
               
-                  geo_box: 
-                                         GeoBox
-                                      ,
+//                   geo_box: 
+//                                          GeoBox
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl GeoBoundingBoxFilter {
+//           impl GeoBoundingBoxFilter {
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::GeoBoundingBox(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::GeoBoundingBox(self)
+//               }
+//           }
 
 
-impl ToJson for GeoBoundingBoxFilter {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert(self.field.clone(), self.geo_box.to_json());
-        self.add_optionals(&mut d);
-        self.add_core_optionals(&mut d);
-        Json::Object(d)
-    }
-}
+// impl ToJson for GeoBoundingBoxFilter {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert(self.field.clone(), self.geo_box.to_json());
+//         self.add_optionals(&mut d);
+//         self.add_core_optionals(&mut d);
+//         Json::Object(d)
+//     }
+// }
 
-          #[derive(Debug)]
-          pub struct GeoDistanceFilter {
+//           #[derive(Debug)]
+//           pub struct GeoDistanceFilter {
               
-                  field: 
-                                         String
-                                      ,
+//                   field: 
+//                                          String
+//                                       ,
               
-                  location: 
-                                         Location
-                                      ,
+//                   location: 
+//                                          Location
+//                                       ,
               
-                  distance: 
-                                         Distance
-                                      ,
+//                   distance: 
+//                                          Distance
+//                                       ,
               
-                  distance_type: 
-                                         Option<DistanceType>
-                                      ,
+//                   distance_type: 
+//                                          Option<DistanceType>
+//                                       ,
               
-                  optimize_bbox: 
-                                         Option<OptimizeBbox>
-                                      ,
+//                   optimize_bbox: 
+//                                          Option<OptimizeBbox>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl GeoDistanceFilter {
+//           impl GeoDistanceFilter {
               
-                  pub fn with_distance_type<T: Into<DistanceType>>(mut self, value: T) -> Self {
-                      self.distance_type = Some(value.into());
-                      self
-                  }
+//                   pub fn with_distance_type<T: Into<DistanceType>>(mut self, value: T) -> Self {
+//                       self.distance_type = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_optimize_bbox<T: Into<OptimizeBbox>>(mut self, value: T) -> Self {
-                      self.optimize_bbox = Some(value.into());
-                      self
-                  }
+//                   pub fn with_optimize_bbox<T: Into<OptimizeBbox>>(mut self, value: T) -> Self {
+//                       self.optimize_bbox = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.distance_type, "distance_type");
+//                       optional_add!(m, self.distance_type, "distance_type");
                   
-                      optional_add!(m, self.optimize_bbox, "optimize_bbox");
+//                       optional_add!(m, self.optimize_bbox, "optimize_bbox");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::GeoDistance(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::GeoDistance(self)
+//               }
+//           }
 
 
-#[derive(Debug)]
-pub struct Distance {
-    amt: f64,
-    unit: DistanceUnit
-}
+// #[derive(Debug)]
+// pub struct Distance {
+//     amt: f64,
+//     unit: DistanceUnit
+// }
 
-impl Distance {
-    pub fn new(amt: f64, unit: DistanceUnit) -> Distance {
-        Distance {
-            amt:  amt,
-            unit: unit
-        }
-    }
-}
+// impl Distance {
+//     pub fn new(amt: f64, unit: DistanceUnit) -> Distance {
+//         Distance {
+//             amt:  amt,
+//             unit: unit
+//         }
+//     }
+// }
 
-impl ToJson for Distance {
-    fn to_json(&self) -> Json {
-        Json::String(format!("{}{}", self.amt, self.unit.to_string()))
-    }
-}
+// impl ToJson for Distance {
+//     fn to_json(&self) -> Json {
+//         Json::String(format!("{}{}", self.amt, self.unit.to_string()))
+//     }
+// }
 
-        #[derive(Debug)]
-        pub enum OptimizeBbox {
+//         #[derive(Debug)]
+//         pub enum OptimizeBbox {
             
-                Memory
-                ,
+//                 Memory
+//                 ,
             
-                Indexed
-                ,
+//                 Indexed
+//                 ,
             
-                None
+//                 None
                 
             
-        }
+//         }
 
-        impl ToJson for OptimizeBbox {
-            fn to_json(&self) -> Json {
-                match self {
+//         impl ToJson for OptimizeBbox {
+//             fn to_json(&self) -> Json {
+//                 match self {
                     
-                        &OptimizeBbox::Memory
-                        => "memory".to_json()
-                        ,
+//                         &OptimizeBbox::Memory
+//                         => "memory".to_json()
+//                         ,
                     
-                        &OptimizeBbox::Indexed
-                        => "indexed".to_json()
-                        ,
+//                         &OptimizeBbox::Indexed
+//                         => "indexed".to_json()
+//                         ,
                     
-                        &OptimizeBbox::None
-                        => "none".to_json()
+//                         &OptimizeBbox::None
+//                         => "none".to_json()
                         
                     
-                }
-            }
-        }
+//                 }
+//             }
+//         }
 
 
-impl ToJson for GeoDistanceFilter {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert(self.field.clone(), self.location.to_json());
-        d.insert("distance".to_owned(), self.distance.to_json());
-        self.add_optionals(&mut d);
-        self.add_core_optionals(&mut d);
-        Json::Object(d)
-    }
-}
+// impl ToJson for GeoDistanceFilter {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert(self.field.clone(), self.location.to_json());
+//         d.insert("distance".to_owned(), self.distance.to_json());
+//         self.add_optionals(&mut d);
+//         self.add_core_optionals(&mut d);
+//         Json::Object(d)
+//     }
+// }
 
-          #[derive(Debug)]
-          pub struct GeoPolygonFilter {
+//           #[derive(Debug)]
+//           pub struct GeoPolygonFilter {
               
-                  field: 
-                                         String
-                                      ,
+//                   field: 
+//                                          String
+//                                       ,
               
-                  points: 
-                                         Vec<Location>
-                                      ,
+//                   points: 
+//                                          Vec<Location>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl GeoPolygonFilter {
+//           impl GeoPolygonFilter {
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::GeoPolygon(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::GeoPolygon(self)
+//               }
+//           }
 
-        impl ToJson for GeoPolygonFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
+//         impl ToJson for GeoPolygonFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
+//                 let mut inner = BTreeMap::new();
 
                 
-                  inner.insert("points".to_owned(),
-                               self.points.to_json());
+//                   inner.insert("points".to_owned(),
+//                                self.points.to_json());
                 
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut inner);
+//                 d.insert(self.field.clone(), Json::Object(inner));
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct GeoShapeFilter {
+//           #[derive(Debug)]
+//           pub struct GeoShapeFilter {
               
-                  field: 
-                                         String
-                                      ,
+//                   field: 
+//                                          String
+//                                       ,
               
-                  shape: 
-                                         Option<Shape>
-                                      ,
+//                   shape: 
+//                                          Option<Shape>
+//                                       ,
               
-                  indexed_shape: 
-                                         Option<IndexedShape>
-                                      ,
+//                   indexed_shape: 
+//                                          Option<IndexedShape>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl GeoShapeFilter {
+//           impl GeoShapeFilter {
               
-                  pub fn with_shape<T: Into<Shape>>(mut self, value: T) -> Self {
-                      self.shape = Some(value.into());
-                      self
-                  }
+//                   pub fn with_shape<T: Into<Shape>>(mut self, value: T) -> Self {
+//                       self.shape = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_indexed_shape<T: Into<IndexedShape>>(mut self, value: T) -> Self {
-                      self.indexed_shape = Some(value.into());
-                      self
-                  }
+//                   pub fn with_indexed_shape<T: Into<IndexedShape>>(mut self, value: T) -> Self {
+//                       self.indexed_shape = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.shape, "shape");
+//                       optional_add!(m, self.shape, "shape");
                   
-                      optional_add!(m, self.indexed_shape, "indexed_shape");
+//                       optional_add!(m, self.indexed_shape, "indexed_shape");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::GeoShape(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::GeoShape(self)
+//               }
+//           }
 
-        impl ToJson for GeoShapeFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
+//         impl ToJson for GeoShapeFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
+//                 let mut inner = BTreeMap::new();
 
                 
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut inner);
+//                 d.insert(self.field.clone(), Json::Object(inner));
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct GeohashCellFilter {
+//           #[derive(Debug)]
+//           pub struct GeohashCellFilter {
               
-                  field: 
-                                         String
-                                      ,
+//                   field: 
+//                                          String
+//                                       ,
               
-                  location: 
-                                         Location
-                                      ,
+//                   location: 
+//                                          Location
+//                                       ,
               
-                  precision: 
-                                         Option<Precision>
-                                      ,
+//                   precision: 
+//                                          Option<Precision>
+//                                       ,
               
-                  neighbors: 
-                                         Option<bool>
-                                      ,
+//                   neighbors: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl GeohashCellFilter {
+//           impl GeohashCellFilter {
               
-                  pub fn with_precision<T: Into<Precision>>(mut self, value: T) -> Self {
-                      self.precision = Some(value.into());
-                      self
-                  }
+//                   pub fn with_precision<T: Into<Precision>>(mut self, value: T) -> Self {
+//                       self.precision = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_neighbors<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.neighbors = Some(value.into());
-                      self
-                  }
+//                   pub fn with_neighbors<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self.neighbors = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.precision, "precision");
+//                       optional_add!(m, self.precision, "precision");
                   
-                      optional_add!(m, self.neighbors, "neighbors");
+//                       optional_add!(m, self.neighbors, "neighbors");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::GeohashCell(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::GeohashCell(self)
+//               }
+//           }
 
 
-#[derive(Debug)]
-pub enum Precision {
-    Geohash(u64),
-    Distance(Distance)
-}
+// #[derive(Debug)]
+// pub enum Precision {
+//     Geohash(u64),
+//     Distance(Distance)
+// }
 
-from!(u64, Precision, Geohash);
-from!(Distance, Precision, Distance);
+// from!(u64, Precision, Geohash);
+// from!(Distance, Precision, Distance);
 
-impl ToJson for Precision {
-    fn to_json(&self) -> Json {
-        match self {
-            &Precision::Geohash(geohash_precision) => Json::U64(geohash_precision),
-            &Precision::Distance(ref distance)     => distance.to_json()
-        }
-    }
-}
+// impl ToJson for Precision {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &Precision::Geohash(geohash_precision) => Json::U64(geohash_precision),
+//             &Precision::Distance(ref distance)     => distance.to_json()
+//         }
+//     }
+// }
 
-impl ToJson for GeohashCellFilter {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert(self.field.clone(), self.location.to_json());
-        self.add_optionals(&mut d);
-        self.add_core_optionals(&mut d);
-        Json::Object(d)
-    }
-}
+// impl ToJson for GeohashCellFilter {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert(self.field.clone(), self.location.to_json());
+//         self.add_optionals(&mut d);
+//         self.add_core_optionals(&mut d);
+//         Json::Object(d)
+//     }
+// }
 
-          #[derive(Debug)]
-          pub struct HasChildFilter {
+//           #[derive(Debug)]
+//           pub struct HasChildFilter {
               
-                  doc_type: 
-                                         String
-                                      ,
+//                   doc_type: 
+//                                          String
+//                                       ,
               
-                  query: 
-                                         Option<Box<Query>>
-                                      ,
+//                   query: 
+//                                          Option<Box<Query>>
+//                                       ,
               
-                  filter: 
-                                         Option<Box<Filter>>
-                                      ,
+//                   filter: 
+//                                          Option<Box<Filter>>
+//                                       ,
               
-                  min_children: 
-                                         Option<u64>
-                                      ,
+//                   min_children: 
+//                                          Option<u64>
+//                                       ,
               
-                  max_children: 
-                                         Option<u64>
-                                      ,
+//                   max_children: 
+//                                          Option<u64>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl HasChildFilter {
+//           impl HasChildFilter {
               
-                  pub fn with_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
-                      self.query = Some(value.into());
-                      self
-                  }
+//                   pub fn with_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
+//                       self.query = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_filter<T: Into<Box<Filter>>>(mut self, value: T) -> Self {
-                      self.filter = Some(value.into());
-                      self
-                  }
+//                   pub fn with_filter<T: Into<Box<Filter>>>(mut self, value: T) -> Self {
+//                       self.filter = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_min_children<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.min_children = Some(value.into());
-                      self
-                  }
+//                   pub fn with_min_children<T: Into<u64>>(mut self, value: T) -> Self {
+//                       self.min_children = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_max_children<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.max_children = Some(value.into());
-                      self
-                  }
+//                   pub fn with_max_children<T: Into<u64>>(mut self, value: T) -> Self {
+//                       self.max_children = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.query, "query");
+//                       optional_add!(m, self.query, "query");
                   
-                      optional_add!(m, self.filter, "filter");
+//                       optional_add!(m, self.filter, "filter");
                   
-                      optional_add!(m, self.min_children, "min_children");
+//                       optional_add!(m, self.min_children, "min_children");
                   
-                      optional_add!(m, self.max_children, "max_children");
+//                       optional_add!(m, self.max_children, "max_children");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::HasChild(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::HasChild(self)
+//               }
+//           }
 
-        impl ToJson for HasChildFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for HasChildFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                  d.insert("type".to_owned(),
-                           self.doc_type.to_json());
+//                   d.insert("type".to_owned(),
+//                            self.doc_type.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct HasParentFilter {
+//           #[derive(Debug)]
+//           pub struct HasParentFilter {
               
-                  parent_type: 
-                                         String
-                                      ,
+//                   parent_type: 
+//                                          String
+//                                       ,
               
-                  query: 
-                                         Option<Box<Query>>
-                                      ,
+//                   query: 
+//                                          Option<Box<Query>>
+//                                       ,
               
-                  filter: 
-                                         Option<Box<Filter>>
-                                      ,
+//                   filter: 
+//                                          Option<Box<Filter>>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl HasParentFilter {
+//           impl HasParentFilter {
               
-                  pub fn with_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
-                      self.query = Some(value.into());
-                      self
-                  }
+//                   pub fn with_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
+//                       self.query = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_filter<T: Into<Box<Filter>>>(mut self, value: T) -> Self {
-                      self.filter = Some(value.into());
-                      self
-                  }
+//                   pub fn with_filter<T: Into<Box<Filter>>>(mut self, value: T) -> Self {
+//                       self.filter = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.query, "query");
+//                       optional_add!(m, self.query, "query");
                   
-                      optional_add!(m, self.filter, "filter");
+//                       optional_add!(m, self.filter, "filter");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::HasParent(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::HasParent(self)
+//               }
+//           }
 
-        impl ToJson for HasParentFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for HasParentFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                  d.insert("parent_type".to_owned(),
-                           self.parent_type.to_json());
+//                   d.insert("parent_type".to_owned(),
+//                            self.parent_type.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct IdsFilter {
+//           #[derive(Debug)]
+//           pub struct IdsFilter {
               
-                  doc_type: 
-                                         Option<OneOrMany<String>>
-                                      ,
+//                   doc_type: 
+//                                          Option<OneOrMany<String>>
+//                                       ,
               
-                  values: 
-                                         Vec<String>
-                                      ,
+//                   values: 
+//                                          Vec<String>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl IdsFilter {
+//           impl IdsFilter {
               
-                  pub fn with_type<T: Into<OneOrMany<String>>>(mut self, value: T) -> Self {
-                      self.doc_type = Some(value.into());
-                      self
-                  }
+//                   pub fn with_type<T: Into<OneOrMany<String>>>(mut self, value: T) -> Self {
+//                       self.doc_type = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.doc_type, "type");
+//                       optional_add!(m, self.doc_type, "type");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Ids(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Ids(self)
+//               }
+//           }
 
-        impl ToJson for IdsFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for IdsFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                  d.insert("values".to_owned(),
-                           self.values.to_json());
+//                   d.insert("values".to_owned(),
+//                            self.values.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct IndicesFilter {
+//           #[derive(Debug)]
+//           pub struct IndicesFilter {
               
-                  index: 
-                                         Option<String>
-                                      ,
+//                   index: 
+//                                          Option<String>
+//                                       ,
               
-                  indices: 
-                                         Option<Vec<String>>
-                                      ,
+//                   indices: 
+//                                          Option<Vec<String>>
+//                                       ,
               
-                  filter: 
-                                         Option<Box<Filter>>
-                                      ,
+//                   filter: 
+//                                          Option<Box<Filter>>
+//                                       ,
               
-                  no_match_filter: 
-                                         Option<NoMatchFilter>
-                                      ,
+//                   no_match_filter: 
+//                                          Option<NoMatchFilter>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl IndicesFilter {
+//           impl IndicesFilter {
               
-                  pub fn with_index<T: Into<String>>(mut self, value: T) -> Self {
-                      self.index = Some(value.into());
-                      self
-                  }
+//                   pub fn with_index<T: Into<String>>(mut self, value: T) -> Self {
+//                       self.index = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_indices<T: Into<Vec<String>>>(mut self, value: T) -> Self {
-                      self.indices = Some(value.into());
-                      self
-                  }
+//                   pub fn with_indices<T: Into<Vec<String>>>(mut self, value: T) -> Self {
+//                       self.indices = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_filter<T: Into<Box<Filter>>>(mut self, value: T) -> Self {
-                      self.filter = Some(value.into());
-                      self
-                  }
+//                   pub fn with_filter<T: Into<Box<Filter>>>(mut self, value: T) -> Self {
+//                       self.filter = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_no_match_filter<T: Into<NoMatchFilter>>(mut self, value: T) -> Self {
-                      self.no_match_filter = Some(value.into());
-                      self
-                  }
+//                   pub fn with_no_match_filter<T: Into<NoMatchFilter>>(mut self, value: T) -> Self {
+//                       self.no_match_filter = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.index, "index");
+//                       optional_add!(m, self.index, "index");
                   
-                      optional_add!(m, self.indices, "indices");
+//                       optional_add!(m, self.indices, "indices");
                   
-                      optional_add!(m, self.filter, "filter");
+//                       optional_add!(m, self.filter, "filter");
                   
-                      optional_add!(m, self.no_match_filter, "no_match_filter");
+//                       optional_add!(m, self.no_match_filter, "no_match_filter");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Indices(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Indices(self)
+//               }
+//           }
 
 
-#[derive(Debug)]
-pub enum NoMatchFilter {
-    None,
-    All,
-    Filter(Box<Filter>)
-}
+// #[derive(Debug)]
+// pub enum NoMatchFilter {
+//     None,
+//     All,
+//     Filter(Box<Filter>)
+// }
 
-from_exp!(Filter, NoMatchFilter, from, NoMatchFilter::Filter(Box::new(from)));
+// from_exp!(Filter, NoMatchFilter, from, NoMatchFilter::Filter(Box::new(from)));
 
-impl ToJson for NoMatchFilter {
-    fn to_json(&self) -> Json {
-        match self {
-            &NoMatchFilter::None               => "none".to_json(),
-            &NoMatchFilter::All                => "all".to_json(),
-            &NoMatchFilter::Filter(ref filter) => filter.to_json()
-        }
-    }
-}
+// impl ToJson for NoMatchFilter {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &NoMatchFilter::None               => "none".to_json(),
+//             &NoMatchFilter::All                => "all".to_json(),
+//             &NoMatchFilter::Filter(ref filter) => filter.to_json()
+//         }
+//     }
+// }
 
-        impl ToJson for IndicesFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for IndicesFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct MatchAllFilter {
+//           #[derive(Debug)]
+//           pub struct MatchAllFilter {
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl MatchAllFilter {
+//           impl MatchAllFilter {
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::MatchAll(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::MatchAll(self)
+//               }
+//           }
 
-        impl ToJson for MatchAllFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for MatchAllFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct MissingFilter {
+//           #[derive(Debug)]
+//           pub struct MissingFilter {
               
-                  field: 
-                                         String
-                                      ,
+//                   field: 
+//                                          String
+//                                       ,
               
-                  existence: 
-                                         Option<bool>
-                                      ,
+//                   existence: 
+//                                          Option<bool>
+//                                       ,
               
-                  null_value: 
-                                         Option<bool>
-                                      ,
+//                   null_value: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl MissingFilter {
+//           impl MissingFilter {
               
-                  pub fn with_existence<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.existence = Some(value.into());
-                      self
-                  }
+//                   pub fn with_existence<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self.existence = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_null_value<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.null_value = Some(value.into());
-                      self
-                  }
+//                   pub fn with_null_value<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self.null_value = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.existence, "existence");
+//                       optional_add!(m, self.existence, "existence");
                   
-                      optional_add!(m, self.null_value, "null_value");
+//                       optional_add!(m, self.null_value, "null_value");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Missing(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Missing(self)
+//               }
+//           }
 
-        impl ToJson for MissingFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for MissingFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                  d.insert("field".to_owned(),
-                           self.field.to_json());
+//                   d.insert("field".to_owned(),
+//                            self.field.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct NestedFilter {
+//           #[derive(Debug)]
+//           pub struct NestedFilter {
               
-                  path: 
-                                         String
-                                      ,
+//                   path: 
+//                                          String
+//                                       ,
               
-                  filter: 
-                                         Box<Filter>
-                                      ,
+//                   filter: 
+//                                          Box<Filter>
+//                                       ,
               
-                  score_mode: 
-                                         Option<ScoreMode>
-                                      ,
+//                   score_mode: 
+//                                          Option<ScoreMode>
+//                                       ,
               
-                  join: 
-                                         Option<bool>
-                                      ,
+//                   join: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl NestedFilter {
+//           impl NestedFilter {
               
-                  pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
-                      self.score_mode = Some(value.into());
-                      self
-                  }
+//                   pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
+//                       self.score_mode = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_join<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.join = Some(value.into());
-                      self
-                  }
+//                   pub fn with_join<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self.join = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.score_mode, "score_mode");
+//                       optional_add!(m, self.score_mode, "score_mode");
                   
-                      optional_add!(m, self.join, "join");
+//                       optional_add!(m, self.join, "join");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Nested(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Nested(self)
+//               }
+//           }
 
-        impl ToJson for NestedFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for NestedFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                  d.insert("path".to_owned(),
-                           self.path.to_json());
+//                   d.insert("path".to_owned(),
+//                            self.path.to_json());
                 
-                  d.insert("filter".to_owned(),
-                           self.filter.to_json());
+//                   d.insert("filter".to_owned(),
+//                            self.filter.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct NotFilter {
+//           #[derive(Debug)]
+//           pub struct NotFilter {
               
-                  filter: 
-                                         Box<Filter>
-                                      ,
+//                   filter: 
+//                                          Box<Filter>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl NotFilter {
+//           impl NotFilter {
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Not(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Not(self)
+//               }
+//           }
 
-        impl ToJson for NotFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for NotFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                  d.insert("filter".to_owned(),
-                           self.filter.to_json());
+//                   d.insert("filter".to_owned(),
+//                            self.filter.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct OrFilter {
+//           #[derive(Debug)]
+//           pub struct OrFilter {
               
-                  filters: 
-                                         Vec<Filter>
-                                      ,
+//                   filters: 
+//                                          Vec<Filter>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl OrFilter {
+//           impl OrFilter {
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Or(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Or(self)
+//               }
+//           }
 
-        impl ToJson for OrFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for OrFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                  d.insert("filters".to_owned(),
-                           self.filters.to_json());
+//                   d.insert("filters".to_owned(),
+//                            self.filters.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct PrefixFilter {
+//           #[derive(Debug)]
+//           pub struct PrefixFilter {
               
-                  field: 
-                                         String
-                                      ,
+//                   field: 
+//                                          String
+//                                       ,
               
-                  value: 
-                                         String
-                                      ,
+//                   value: 
+//                                          String
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl PrefixFilter {
+//           impl PrefixFilter {
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Prefix(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Prefix(self)
+//               }
+//           }
 
 
-impl ToJson for PrefixFilter {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert(self.field.clone(), self.value.to_json());
-        self.add_optionals(&mut d);
-        self.add_core_optionals(&mut d);
-        Json::Object(d)
-    }
-}
+// impl ToJson for PrefixFilter {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert(self.field.clone(), self.value.to_json());
+//         self.add_optionals(&mut d);
+//         self.add_core_optionals(&mut d);
+//         Json::Object(d)
+//     }
+// }
 
-          #[derive(Debug)]
-          pub struct QueryFilter {
+//           #[derive(Debug)]
+//           pub struct QueryFilter {
               
-                  query: 
-                                         Box<Query>
-                                      ,
+//                   query: 
+//                                          Box<Query>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl QueryFilter {
+//           impl QueryFilter {
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Query(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Query(self)
+//               }
+//           }
 
-        impl ToJson for QueryFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for QueryFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                  d.insert("query".to_owned(),
-                           self.query.to_json());
+//                   d.insert("query".to_owned(),
+//                            self.query.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct RangeFilter {
+//           #[derive(Debug)]
+//           pub struct RangeFilter {
               
-                  field: 
-                                         String
-                                      ,
+//                   field: 
+//                                          String
+//                                       ,
               
-                  gte: 
-                                         Option<JsonVal>
-                                      ,
+//                   gte: 
+//                                          Option<JsonVal>
+//                                       ,
               
-                  gt: 
-                                         Option<JsonVal>
-                                      ,
+//                   gt: 
+//                                          Option<JsonVal>
+//                                       ,
               
-                  lte: 
-                                         Option<JsonVal>
-                                      ,
+//                   lte: 
+//                                          Option<JsonVal>
+//                                       ,
               
-                  lt: 
-                                         Option<JsonVal>
-                                      ,
+//                   lt: 
+//                                          Option<JsonVal>
+//                                       ,
               
-                  boost: 
-                                         Option<f64>
-                                      ,
+//                   boost: 
+//                                          Option<f64>
+//                                       ,
               
-                  time_zone: 
-                                         Option<String>
-                                      ,
+//                   time_zone: 
+//                                          Option<String>
+//                                       ,
               
-                  format: 
-                                         Option<String>
-                                      ,
+//                   format: 
+//                                          Option<String>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl RangeFilter {
+//           impl RangeFilter {
               
-                  pub fn with_gte<T: Into<JsonVal>>(mut self, value: T) -> Self {
-                      self.gte = Some(value.into());
-                      self
-                  }
+//                   pub fn with_gte<T: Into<JsonVal>>(mut self, value: T) -> Self {
+//                       self.gte = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_gt<T: Into<JsonVal>>(mut self, value: T) -> Self {
-                      self.gt = Some(value.into());
-                      self
-                  }
+//                   pub fn with_gt<T: Into<JsonVal>>(mut self, value: T) -> Self {
+//                       self.gt = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_lte<T: Into<JsonVal>>(mut self, value: T) -> Self {
-                      self.lte = Some(value.into());
-                      self
-                  }
+//                   pub fn with_lte<T: Into<JsonVal>>(mut self, value: T) -> Self {
+//                       self.lte = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_lt<T: Into<JsonVal>>(mut self, value: T) -> Self {
-                      self.lt = Some(value.into());
-                      self
-                  }
+//                   pub fn with_lt<T: Into<JsonVal>>(mut self, value: T) -> Self {
+//                       self.lt = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
+//                   pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+//                       self.boost = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_time_zone<T: Into<String>>(mut self, value: T) -> Self {
-                      self.time_zone = Some(value.into());
-                      self
-                  }
+//                   pub fn with_time_zone<T: Into<String>>(mut self, value: T) -> Self {
+//                       self.time_zone = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_format<T: Into<String>>(mut self, value: T) -> Self {
-                      self.format = Some(value.into());
-                      self
-                  }
+//                   pub fn with_format<T: Into<String>>(mut self, value: T) -> Self {
+//                       self.format = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.gte, "gte");
+//                       optional_add!(m, self.gte, "gte");
                   
-                      optional_add!(m, self.gt, "gt");
+//                       optional_add!(m, self.gt, "gt");
                   
-                      optional_add!(m, self.lte, "lte");
+//                       optional_add!(m, self.lte, "lte");
                   
-                      optional_add!(m, self.lt, "lt");
+//                       optional_add!(m, self.lt, "lt");
                   
-                      optional_add!(m, self.boost, "boost");
+//                       optional_add!(m, self.boost, "boost");
                   
-                      optional_add!(m, self.time_zone, "time_zone");
+//                       optional_add!(m, self.time_zone, "time_zone");
                   
-                      optional_add!(m, self.format, "format");
+//                       optional_add!(m, self.format, "format");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Range(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Range(self)
+//               }
+//           }
 
-        impl ToJson for RangeFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
+//         impl ToJson for RangeFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
+//                 let mut inner = BTreeMap::new();
 
                 
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut inner);
+//                 d.insert(self.field.clone(), Json::Object(inner));
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct RegexpFilter {
+//           #[derive(Debug)]
+//           pub struct RegexpFilter {
               
-                  field: 
-                                         String
-                                      ,
+//                   field: 
+//                                          String
+//                                       ,
               
-                  value: 
-                                         String
-                                      ,
+//                   value: 
+//                                          String
+//                                       ,
               
-                  boost: 
-                                         Option<f64>
-                                      ,
+//                   boost: 
+//                                          Option<f64>
+//                                       ,
               
-                  flags: 
-                                         Option<Flags>
-                                      ,
+//                   flags: 
+//                                          Option<Flags>
+//                                       ,
               
-                  max_determined_states: 
-                                         Option<u64>
-                                      ,
+//                   max_determined_states: 
+//                                          Option<u64>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl RegexpFilter {
+//           impl RegexpFilter {
               
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
+//                   pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+//                       self.boost = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_flags<T: Into<Flags>>(mut self, value: T) -> Self {
-                      self.flags = Some(value.into());
-                      self
-                  }
+//                   pub fn with_flags<T: Into<Flags>>(mut self, value: T) -> Self {
+//                       self.flags = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_max_determined_states<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.max_determined_states = Some(value.into());
-                      self
-                  }
+//                   pub fn with_max_determined_states<T: Into<u64>>(mut self, value: T) -> Self {
+//                       self.max_determined_states = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.boost, "boost");
+//                       optional_add!(m, self.boost, "boost");
                   
-                      optional_add!(m, self.flags, "flags");
+//                       optional_add!(m, self.flags, "flags");
                   
-                      optional_add!(m, self.max_determined_states, "max_determined_states");
+//                       optional_add!(m, self.max_determined_states, "max_determined_states");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Regexp(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Regexp(self)
+//               }
+//           }
 
-        impl ToJson for RegexpFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
+//         impl ToJson for RegexpFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
+//                 let mut inner = BTreeMap::new();
 
                 
-                  inner.insert("value".to_owned(),
-                               self.value.to_json());
+//                   inner.insert("value".to_owned(),
+//                                self.value.to_json());
                 
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut inner);
+//                 d.insert(self.field.clone(), Json::Object(inner));
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct ScriptFilter {
+//           #[derive(Debug)]
+//           pub struct ScriptFilter {
               
-                  script: 
-                                         String
-                                      ,
+//                   script: 
+//                                          String
+//                                       ,
               
-                  params: 
-                                         Option<BTreeMap<String, JsonVal>>
-                                      ,
+//                   params: 
+//                                          Option<BTreeMap<String, JsonVal>>
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl ScriptFilter {
+//           impl ScriptFilter {
               
-                  pub fn with_params<T: Into<BTreeMap<String, JsonVal>>>(mut self, value: T) -> Self {
-                      self.params = Some(value.into());
-                      self
-                  }
+//                   pub fn with_params<T: Into<BTreeMap<String, JsonVal>>>(mut self, value: T) -> Self {
+//                       self.params = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.params, "params");
+//                       optional_add!(m, self.params, "params");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Script(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Script(self)
+//               }
+//           }
 
-        impl ToJson for ScriptFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+//         impl ToJson for ScriptFilter {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
                 
-                  d.insert("script".to_owned(),
-                           self.script.to_json());
+//                   d.insert("script".to_owned(),
+//                            self.script.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                 self.add_optionals(&mut d);
+//                 self.add_core_optionals(&mut d);
+//                 Json::Object(d)
+//             }
+//         }
 
 
-          #[derive(Debug)]
-          pub struct TermFilter {
+//           #[derive(Debug)]
+//           pub struct TermFilter {
               
-                  field: 
-                                         String
-                                      ,
+//                   field: 
+//                                          String
+//                                       ,
               
-                  value: 
-                                         JsonVal
-                                      ,
+//                   value: 
+//                                          JsonVal
+//                                       ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+//                   _cache: 
+//                                          Option<bool>
+//                                       ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+//                   _cache_key: 
+//                                          Option<String>
+//                                       ,
               
-                  _name: 
-                                         Option<String>
+//                   _name: 
+//                                          Option<String>
                                       
               
-          }
+//           }
 
-          impl TermFilter {
+//           impl TermFilter {
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+//                       self._cache = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._cache_key = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+//                       self._name = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+//                       optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+//                       optional_add!(m, self._name, "_name");
                   
-              }
+//               }
 
-              pub fn build(self) -> Filter {
-                  Filter::Term(self)
-              }
-          }
+//               pub fn build(self) -> Filter {
+//                   Filter::Term(self)
+//               }
+//           }
 
 
-impl ToJson for TermFilter {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert(self.field.clone(), self.value.to_json());
-        self.add_optionals(&mut d);
-        self.add_core_optionals(&mut d);
-        Json::Object(d)
-    }
-}
+// impl ToJson for TermFilter {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert(self.field.clone(), self.value.to_json());
+//         self.add_optionals(&mut d);
+//         self.add_core_optionals(&mut d);
+//         Json::Object(d)
+//     }
+// }
 
-          #[derive(Debug)]
-          pub struct TermsFilter {
+// TODO: determine if required or not
+          // #[derive(Debug)]
+          // pub struct TermsFilter {
               
-                  field: 
-                                         String
-                                      ,
+          //         field: 
+          //                                String
+          //                             ,
               
-                  values: 
-                                         Vec<JsonVal>
-                                      ,
+          //         values: 
+          //                                Vec<JsonVal>
+          //                             ,
               
-                  execution: 
-                                         Option<Execution>
-                                      ,
+          //         execution: 
+          //                                Option<Execution>
+          //                             ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+          //         _cache: 
+          //                                Option<bool>
+          //                             ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+          //         _cache_key: 
+          //                                Option<String>
+          //                             ,
               
-                  _name: 
-                                         Option<String>
+          //         _name: 
+          //                                Option<String>
                                       
               
-          }
+          // }
 
-          impl TermsFilter {
+          // impl TermsFilter {
               
-                  pub fn with_execution<T: Into<Execution>>(mut self, value: T) -> Self {
-                      self.execution = Some(value.into());
-                      self
-                  }
+          //         pub fn with_execution<T: Into<Execution>>(mut self, value: T) -> Self {
+          //             self.execution = Some(value.into());
+          //             self
+          //         }
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+          //         pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self._cache = Some(value.into());
+          //             self
+          //         }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+          //         pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+          //             self._cache_key = Some(value.into());
+          //             self
+          //         }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+          //         pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+          //             self._name = Some(value.into());
+          //             self
+          //         }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.execution, "execution");
+          //             optional_add!(m, self.execution, "execution");
                   
-              }
+          //     }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+          //             optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+          //             optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+          //             optional_add!(m, self._name, "_name");
                   
-              }
+          //     }
 
-              pub fn build(self) -> Filter {
-                  Filter::Terms(self)
-              }
-          }
+          //     pub fn build(self) -> Filter {
+          //         Filter::Terms(self)
+          //     }
+          // }
 
 
         #[derive(Debug)]
@@ -8428,494 +7108,495 @@ impl ToJson for TermFilter {
         }
 
 
-impl ToJson for TermsFilter {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert(self.field.clone(), self.values.to_json());
-        self.add_optionals(&mut d);
-        self.add_core_optionals(&mut d);
-        Json::Object(d)
-    }
-}
+// impl ToJson for TermsFilter {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert(self.field.clone(), self.values.to_json());
+//         self.add_optionals(&mut d);
+//         self.add_core_optionals(&mut d);
+//         Json::Object(d)
+//     }
+// }
 
-          #[derive(Debug)]
-          pub struct TypeFilter {
+// TODO: determine whether this is used or not
+        //   #[derive(Debug)]
+        //   pub struct TypeFilter {
               
-                  value: 
-                                         String
-                                      ,
+        //           value: 
+        //                                  String
+        //                               ,
               
-                  _cache: 
-                                         Option<bool>
-                                      ,
+        //           _cache: 
+        //                                  Option<bool>
+        //                               ,
               
-                  _cache_key: 
-                                         Option<String>
-                                      ,
+        //           _cache_key: 
+        //                                  Option<String>
+        //                               ,
               
-                  _name: 
-                                         Option<String>
+        //           _name: 
+        //                                  Option<String>
                                       
               
-          }
+        //   }
 
-          impl TypeFilter {
+        //   impl TypeFilter {
               
-                  pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-                      self._cache = Some(value.into());
-                      self
-                  }
+        //           pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
+        //               self._cache = Some(value.into());
+        //               self
+        //           }
               
-                  pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-                      self._cache_key = Some(value.into());
-                      self
-                  }
+        //           pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
+        //               self._cache_key = Some(value.into());
+        //               self
+        //           }
               
-                  pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-                      self._name = Some(value.into());
-                      self
-                  }
+        //           pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
+        //               self._name = Some(value.into());
+        //               self
+        //           }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+        //       }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self._cache, "_cache");
+        //               optional_add!(m, self._cache, "_cache");
                   
-                      optional_add!(m, self._cache_key, "_cache_key");
+        //               optional_add!(m, self._cache_key, "_cache_key");
                   
-                      optional_add!(m, self._name, "_name");
+        //               optional_add!(m, self._name, "_name");
                   
-              }
+        //       }
 
-              pub fn build(self) -> Filter {
-                  Filter::Type(self)
-              }
-          }
+        //       pub fn build(self) -> Filter {
+        //           Filter::Type(self)
+        //       }
+        //   }
 
-        impl ToJson for TypeFilter {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+        // impl ToJson for TypeFilter {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
                 
-                  d.insert("value".to_owned(),
-                           self.value.to_json());
+        //           d.insert("value".to_owned(),
+        //                    self.value.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
 // Functions for use in `FunctionScoreQuery`
 
-        #[derive(Debug)]
-        pub enum Func {
+        // #[derive(Debug)]
+        // pub enum Func {
             
-                ScriptScore(ScriptScoreFunc)
-                ,
+        //         ScriptScore(ScriptScoreFunc)
+        //         ,
             
-                RandomScore(RandomScoreFunc)
-                ,
+        //         RandomScore(RandomScoreFunc)
+        //         ,
             
-                FieldValueFactor(FieldValueFactorFunc)
-                ,
+        //         FieldValueFactor(FieldValueFactorFunc)
+        //         ,
             
-                Linear(LinearFunc)
-                ,
+        //         Linear(LinearFunc)
+        //         ,
             
-                Exp(ExpFunc)
-                ,
+        //         Exp(ExpFunc)
+        //         ,
             
-                Gauss(GaussFunc)
+        //         Gauss(GaussFunc)
                 
             
-        }
+        // }
 
-        impl Func {
+        // impl Func {
             
-                pub fn build_script_score<A: Into<String>>(
+        //         pub fn build_script_score<A: Into<String>>(
                    
-                      script: A
+        //               script: A
                    
-                ) -> ScriptScoreFunc {
-                   ScriptScoreFunc {
+        //         ) -> ScriptScoreFunc {
+        //            ScriptScoreFunc {
                       
-                          script: 
-                                             script.into()
-                                          ,
+        //                   script: 
+        //                                      script.into()
+        //                                   ,
                       
-                          lang: 
-                                             None
-                                          ,
+        //                   lang: 
+        //                                      None
+        //                                   ,
                       
-                          params: 
-                                             None
+        //                   params: 
+        //                                      None
                                           
                       
-                   }
-                }
+        //            }
+        //         }
             
-                pub fn build_random_score<A: Into<u64>>(
+        //         pub fn build_random_score<A: Into<u64>>(
                    
-                      seed: A
+        //               seed: A
                    
-                ) -> RandomScoreFunc {
-                   RandomScoreFunc {
+        //         ) -> RandomScoreFunc {
+        //            RandomScoreFunc {
                       
-                          seed: 
-                                             seed.into()
+        //                   seed: 
+        //                                      seed.into()
                                           
                       
-                   }
-                }
+        //            }
+        //         }
             
-                pub fn build_field_value_factor<A: Into<String>>(
+        //         pub fn build_field_value_factor<A: Into<String>>(
                    
-                      field: A
+        //               field: A
                    
-                ) -> FieldValueFactorFunc {
-                   FieldValueFactorFunc {
+        //         ) -> FieldValueFactorFunc {
+        //            FieldValueFactorFunc {
                       
-                          field: 
-                                             field.into()
-                                          ,
+        //                   field: 
+        //                                      field.into()
+        //                                   ,
                       
-                          factor: 
-                                             None
-                                          ,
+        //                   factor: 
+        //                                      None
+        //                                   ,
                       
-                          modifier: 
-                                             None
+        //                   modifier: 
+        //                                      None
                                           
                       
-                   }
-                }
+        //            }
+        //         }
             
-                pub fn build_linear<A: Into<String>,B: Into<Origin>>(
+        //         pub fn build_linear<A: Into<String>,B: Into<Origin>>(
                    
-                      field: A,
+        //               field: A,
                    
-                      origin: B
+        //               origin: B
                    
-                ) -> LinearFunc {
-                   LinearFunc {
+        //         ) -> LinearFunc {
+        //            LinearFunc {
                       
-                          field: 
-                                             field.into()
-                                          ,
+        //                   field: 
+        //                                      field.into()
+        //                                   ,
                       
-                          origin: 
-                                             origin.into()
-                                          ,
+        //                   origin: 
+        //                                      origin.into()
+        //                                   ,
                       
-                          scale: 
-                                             None
-                                          ,
+        //                   scale: 
+        //                                      None
+        //                                   ,
                       
-                          offset: 
-                                             None
-                                          ,
+        //                   offset: 
+        //                                      None
+        //                                   ,
                       
-                          decay: 
-                                             None
-                                          ,
+        //                   decay: 
+        //                                      None
+        //                                   ,
                       
-                          multi_value_mode: 
-                                             None
+        //                   multi_value_mode: 
+        //                                      None
                                           
                       
-                   }
-                }
+        //            }
+        //         }
             
-                pub fn build_exp<A: Into<String>,B: Into<Origin>>(
+        //         pub fn build_exp<A: Into<String>,B: Into<Origin>>(
                    
-                      field: A,
+        //               field: A,
                    
-                      origin: B
+        //               origin: B
                    
-                ) -> ExpFunc {
-                   ExpFunc {
+        //         ) -> ExpFunc {
+        //            ExpFunc {
                       
-                          field: 
-                                             field.into()
-                                          ,
+        //                   field: 
+        //                                      field.into()
+        //                                   ,
                       
-                          origin: 
-                                             origin.into()
-                                          ,
+        //                   origin: 
+        //                                      origin.into()
+        //                                   ,
                       
-                          scale: 
-                                             None
-                                          ,
+        //                   scale: 
+        //                                      None
+        //                                   ,
                       
-                          offset: 
-                                             None
-                                          ,
+        //                   offset: 
+        //                                      None
+        //                                   ,
                       
-                          decay: 
-                                             None
-                                          ,
+        //                   decay: 
+        //                                      None
+        //                                   ,
                       
-                          multi_value_mode: 
-                                             None
+        //                   multi_value_mode: 
+        //                                      None
                                           
                       
-                   }
-                }
+        //            }
+        //         }
             
-                pub fn build_gauss<A: Into<String>,B: Into<Origin>>(
+        //         pub fn build_gauss<A: Into<String>,B: Into<Origin>>(
                    
-                      field: A,
+        //               field: A,
                    
-                      origin: B
+        //               origin: B
                    
-                ) -> GaussFunc {
-                   GaussFunc {
+        //         ) -> GaussFunc {
+        //            GaussFunc {
                       
-                          field: 
-                                             field.into()
-                                          ,
+        //                   field: 
+        //                                      field.into()
+        //                                   ,
                       
-                          origin: 
-                                             origin.into()
-                                          ,
+        //                   origin: 
+        //                                      origin.into()
+        //                                   ,
                       
-                          scale: 
-                                             None
-                                          ,
+        //                   scale: 
+        //                                      None
+        //                                   ,
                       
-                          offset: 
-                                             None
-                                          ,
+        //                   offset: 
+        //                                      None
+        //                                   ,
                       
-                          decay: 
-                                             None
-                                          ,
+        //                   decay: 
+        //                                      None
+        //                                   ,
                       
-                          multi_value_mode: 
-                                             None
+        //                   multi_value_mode: 
+        //                                      None
                                           
                       
-                   }
-                }
+        //            }
+        //         }
             
 
-            fn name(&self) -> String {
-                match self {
+        //     fn name(&self) -> String {
+        //         match self {
                     
-                        &Func::ScriptScore(_) => "script_score"
-                        ,
+        //                 &Func::ScriptScore(_) => "script_score"
+        //                 ,
                     
-                        &Func::RandomScore(_) => "random_score"
-                        ,
+        //                 &Func::RandomScore(_) => "random_score"
+        //                 ,
                     
-                        &Func::FieldValueFactor(_) => "field_value_factor"
-                        ,
+        //                 &Func::FieldValueFactor(_) => "field_value_factor"
+        //                 ,
                     
-                        &Func::Linear(_) => "linear"
-                        ,
+        //                 &Func::Linear(_) => "linear"
+        //                 ,
                     
-                        &Func::Exp(_) => "exp"
-                        ,
+        //                 &Func::Exp(_) => "exp"
+        //                 ,
                     
-                        &Func::Gauss(_) => "gauss"
+        //                 &Func::Gauss(_) => "gauss"
                         
                     
-                }.to_owned()
-            }
-        }
+        //         }.to_owned()
+        //     }
+        // }
 
-        impl ToJson for Func {
-            fn to_json(&self) -> Json {
-                match self {
+        // impl ToJson for Func {
+        //     fn to_json(&self) -> Json {
+        //         match self {
                     
-                        &Func::ScriptScore(ref inner)
-                        => inner.to_json()
-                        ,
+        //                 &Func::ScriptScore(ref inner)
+        //                 => inner.to_json()
+        //                 ,
                     
-                        &Func::RandomScore(ref inner)
-                        => inner.to_json()
-                        ,
+        //                 &Func::RandomScore(ref inner)
+        //                 => inner.to_json()
+        //                 ,
                     
-                        &Func::FieldValueFactor(ref inner)
-                        => inner.to_json()
-                        ,
+        //                 &Func::FieldValueFactor(ref inner)
+        //                 => inner.to_json()
+        //                 ,
                     
-                        &Func::Linear(ref inner)
-                        => inner.to_json()
-                        ,
+        //                 &Func::Linear(ref inner)
+        //                 => inner.to_json()
+        //                 ,
                     
-                        &Func::Exp(ref inner)
-                        => inner.to_json()
-                        ,
+        //                 &Func::Exp(ref inner)
+        //                 => inner.to_json()
+        //                 ,
                     
-                        &Func::Gauss(ref inner)
-                        => inner.to_json()
+        //                 &Func::Gauss(ref inner)
+        //                 => inner.to_json()
                         
                     
-                }
-            }
-        }
+        //         }
+        //     }
+        // }
 
 
-          #[derive(Debug)]
-          pub struct ScriptScoreFunc {
+        //   #[derive(Debug)]
+        //   pub struct ScriptScoreFunc {
               
-                  script: 
-                                         String
-                                      ,
+        //           script: 
+        //                                  String
+        //                               ,
               
-                  lang: 
-                                         Option<String>
-                                      ,
+        //           lang: 
+        //                                  Option<String>
+        //                               ,
               
-                  params: 
-                                         Option<BTreeMap<String, JsonVal>>
+        //           params: 
+        //                                  Option<BTreeMap<String, JsonVal>>
                                       
               
-          }
+        //   }
 
-          impl ScriptScoreFunc {
+        //   impl ScriptScoreFunc {
               
-                  pub fn with_lang<T: Into<String>>(mut self, value: T) -> Self {
-                      self.lang = Some(value.into());
-                      self
-                  }
+        //           pub fn with_lang<T: Into<String>>(mut self, value: T) -> Self {
+        //               self.lang = Some(value.into());
+        //               self
+        //           }
               
-                  pub fn with_params<T: Into<BTreeMap<String, JsonVal>>>(mut self, value: T) -> Self {
-                      self.params = Some(value.into());
-                      self
-                  }
+        //           pub fn with_params<T: Into<BTreeMap<String, JsonVal>>>(mut self, value: T) -> Self {
+        //               self.params = Some(value.into());
+        //               self
+        //           }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.lang, "lang");
+        //               optional_add!(m, self.lang, "lang");
                   
-                      optional_add!(m, self.params, "params");
+        //               optional_add!(m, self.params, "params");
                   
-              }
+        //       }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+        //       }
 
-              pub fn build(self) -> Func {
-                  Func::ScriptScore(self)
-              }
-          }
+        //       pub fn build(self) -> Func {
+        //           Func::ScriptScore(self)
+        //       }
+        //   }
 
-        impl ToJson for ScriptScoreFunc {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+        // impl ToJson for ScriptScoreFunc {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
                 
-                  d.insert("script".to_owned(),
-                           self.script.to_json());
+        //           d.insert("script".to_owned(),
+        //                    self.script.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
-          #[derive(Debug)]
-          pub struct RandomScoreFunc {
+        //   #[derive(Debug)]
+        //   pub struct RandomScoreFunc {
               
-                  seed: 
-                                         u64
+        //           seed: 
+        //                                  u64
                                       
               
-          }
+        //   }
 
-          impl RandomScoreFunc {
+        //   impl RandomScoreFunc {
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+        //       }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+        //       }
 
-              pub fn build(self) -> Func {
-                  Func::RandomScore(self)
-              }
-          }
+        //       pub fn build(self) -> Func {
+        //           Func::RandomScore(self)
+        //       }
+        //   }
 
-        impl ToJson for RandomScoreFunc {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+        // impl ToJson for RandomScoreFunc {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
                 
-                  d.insert("seed".to_owned(),
-                           self.seed.to_json());
+        //           d.insert("seed".to_owned(),
+        //                    self.seed.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
-          #[derive(Debug)]
-          pub struct FieldValueFactorFunc {
+          // #[derive(Debug)]
+          // pub struct FieldValueFactorFunc {
               
-                  field: 
-                                         String
-                                      ,
+          //         field: 
+          //                                String
+          //                             ,
               
-                  factor: 
-                                         Option<f64>
-                                      ,
+          //         factor: 
+          //                                Option<f64>
+          //                             ,
               
-                  modifier: 
-                                         Option<Modifier>
+          //         modifier: 
+          //                                Option<Modifier>
                                       
               
-          }
+          // }
 
-          impl FieldValueFactorFunc {
+          // impl FieldValueFactorFunc {
               
-                  pub fn with_factor<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.factor = Some(value.into());
-                      self
-                  }
+          //         pub fn with_factor<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.factor = Some(value.into());
+          //             self
+          //         }
               
-                  pub fn with_modifier<T: Into<Modifier>>(mut self, value: T) -> Self {
-                      self.modifier = Some(value.into());
-                      self
-                  }
+          //         pub fn with_modifier<T: Into<Modifier>>(mut self, value: T) -> Self {
+          //             self.modifier = Some(value.into());
+          //             self
+          //         }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.factor, "factor");
+          //             optional_add!(m, self.factor, "factor");
                   
-                      optional_add!(m, self.modifier, "modifier");
+          //             optional_add!(m, self.modifier, "modifier");
                   
-              }
+          //     }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+          //     }
 
-              pub fn build(self) -> Func {
-                  Func::FieldValueFactor(self)
-              }
-          }
+          //     pub fn build(self) -> Func {
+          //         Func::FieldValueFactor(self)
+          //     }
+          // }
 
 
         #[derive(Debug)]
@@ -9002,122 +7683,122 @@ impl ToJson for TermsFilter {
         }
 
 
-        impl ToJson for FieldValueFactorFunc {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+        // impl ToJson for FieldValueFactorFunc {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
                 
-                  d.insert("field".to_owned(),
-                           self.field.to_json());
+        //           d.insert("field".to_owned(),
+        //                    self.field.to_json());
                 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
-          #[derive(Debug)]
-          pub struct LinearFunc {
+          // #[derive(Debug)]
+          // pub struct LinearFunc {
               
-                  field: 
-                                         String
-                                      ,
+          //         field: 
+          //                                String
+          //                             ,
               
-                  origin: 
-                                         Origin
-                                      ,
+          //         origin: 
+          //                                Origin
+          //                             ,
               
-                  scale: 
-                                         Option<Scale>
-                                      ,
+          //         scale: 
+          //                                Option<Scale>
+          //                             ,
               
-                  offset: 
-                                         Option<Scale>
-                                      ,
+          //         offset: 
+          //                                Option<Scale>
+          //                             ,
               
-                  decay: 
-                                         Option<f64>
-                                      ,
+          //         decay: 
+          //                                Option<f64>
+          //                             ,
               
-                  multi_value_mode: 
-                                         Option<MultiValueMode>
+          //         multi_value_mode: 
+          //                                Option<MultiValueMode>
                                       
               
-          }
+          // }
 
-          impl LinearFunc {
+          // impl LinearFunc {
               
-                  pub fn with_scale<T: Into<Scale>>(mut self, value: T) -> Self {
-                      self.scale = Some(value.into());
-                      self
-                  }
+          //         pub fn with_scale<T: Into<Scale>>(mut self, value: T) -> Self {
+          //             self.scale = Some(value.into());
+          //             self
+          //         }
               
-                  pub fn with_offset<T: Into<Scale>>(mut self, value: T) -> Self {
-                      self.offset = Some(value.into());
-                      self
-                  }
+          //         pub fn with_offset<T: Into<Scale>>(mut self, value: T) -> Self {
+          //             self.offset = Some(value.into());
+          //             self
+          //         }
               
-                  pub fn with_decay<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.decay = Some(value.into());
-                      self
-                  }
+          //         pub fn with_decay<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.decay = Some(value.into());
+          //             self
+          //         }
               
-                  pub fn with_multi_value_mode<T: Into<MultiValueMode>>(mut self, value: T) -> Self {
-                      self.multi_value_mode = Some(value.into());
-                      self
-                  }
+          //         pub fn with_multi_value_mode<T: Into<MultiValueMode>>(mut self, value: T) -> Self {
+          //             self.multi_value_mode = Some(value.into());
+          //             self
+          //         }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.scale, "scale");
+          //             optional_add!(m, self.scale, "scale");
                   
-                      optional_add!(m, self.offset, "offset");
+          //             optional_add!(m, self.offset, "offset");
                   
-                      optional_add!(m, self.decay, "decay");
+          //             optional_add!(m, self.decay, "decay");
                   
-                      optional_add!(m, self.multi_value_mode, "multi_value_mode");
+          //             optional_add!(m, self.multi_value_mode, "multi_value_mode");
                   
-              }
+          //     }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+          //     }
 
-              pub fn build(self) -> Func {
-                  Func::Linear(self)
-              }
-          }
+          //     pub fn build(self) -> Func {
+          //         Func::Linear(self)
+          //     }
+          // }
 
 
-#[derive(Debug)]
-enum Scale {
-    I64(i64),
-    U64(u64),
-    F64(f64),
-    Distance(Distance),
-    Duration(Duration)
-}
+// #[derive(Debug)]
+// enum Scale {
+//     I64(i64),
+//     U64(u64),
+//     F64(f64),
+//     Distance(Distance),
+//     Duration(Duration)
+// }
 
-from!(i64, Scale, I64);
-from!(u64, Scale, U64);
-from!(f64, Scale, F64);
-from!(Distance, Scale, Distance);
-from!(Duration, Scale, Duration);
+// from!(i64, Scale, I64);
+// from!(u64, Scale, U64);
+// from!(f64, Scale, F64);
+// from!(Distance, Scale, Distance);
+// from!(Duration, Scale, Duration);
 
-impl ToJson for Scale {
-    fn to_json(&self) -> Json {
-        match self {
-            &Scale::I64(s)          => Json::I64(s),
-            &Scale::U64(s)          => Json::U64(s),
-            &Scale::F64(s)          => Json::F64(s),
-            &Scale::Distance(ref s) => s.to_json(),
-            &Scale::Duration(ref s) => s.to_json()
-        }
-    }
-}
+// impl ToJson for Scale {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &Scale::I64(s)          => Json::I64(s),
+//             &Scale::U64(s)          => Json::U64(s),
+//             &Scale::F64(s)          => Json::F64(s),
+//             &Scale::Distance(ref s) => s.to_json(),
+//             &Scale::Duration(ref s) => s.to_json()
+//         }
+//     }
+// }
 
 #[derive(Debug)]
 enum Origin {
@@ -9146,23 +7827,24 @@ impl ToJson for Origin {
     }
 }
 
-macro_rules! decay_func_json_impl {
-    ($df:ident) => {
-        impl ToJson for $df {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
-                inner.insert("origin".to_owned(), self.origin.to_json());
-                optional_add!(inner, self.scale, "scale");
-                optional_add!(inner, self.decay, "decay");
-                optional_add!(inner, self.offset, "offset");
-                d.insert(self.field.clone(), Json::Object(inner));
-                optional_add!(d, self.multi_value_mode, "multi_value_mode");
-                Json::Object(d)
-            }
-        }
-    }
-}
+// TODO: determine if still required or not
+// macro_rules! decay_func_json_impl {
+//     ($df:ident) => {
+//         impl ToJson for $df {
+//             fn to_json(&self) -> Json {
+//                 let mut d = BTreeMap::new();
+//                 let mut inner = BTreeMap::new();
+//                 inner.insert("origin".to_owned(), self.origin.to_json());
+//                 optional_add!(inner, self.scale, "scale");
+//                 optional_add!(inner, self.decay, "decay");
+//                 optional_add!(inner, self.offset, "offset");
+//                 d.insert(self.field.clone(), Json::Object(inner));
+//                 optional_add!(d, self.multi_value_mode, "multi_value_mode");
+//                 Json::Object(d)
+//             }
+//         }
+//     }
+// }
 
         #[derive(Debug)]
         pub enum MultiValueMode {
@@ -9206,195 +7888,179 @@ macro_rules! decay_func_json_impl {
         }
 
 
-decay_func_json_impl!(LinearFunc);
+// decay_func_json_impl!(LinearFunc);
 
-          #[derive(Debug)]
-          pub struct ExpFunc {
+//           #[derive(Debug)]
+//           pub struct ExpFunc {
               
-                  field: 
-                                         String
-                                      ,
+//                   field: 
+//                                          String
+//                                       ,
               
-                  origin: 
-                                         Origin
-                                      ,
+//                   origin: 
+//                                          Origin
+//                                       ,
               
-                  scale: 
-                                         Option<Scale>
-                                      ,
+//                   scale: 
+//                                          Option<Scale>
+//                                       ,
               
-                  offset: 
-                                         Option<Scale>
-                                      ,
+//                   offset: 
+//                                          Option<Scale>
+//                                       ,
               
-                  decay: 
-                                         Option<f64>
-                                      ,
+//                   decay: 
+//                                          Option<f64>
+//                                       ,
               
-                  multi_value_mode: 
-                                         Option<MultiValueMode>
+//                   multi_value_mode: 
+//                                          Option<MultiValueMode>
                                       
               
-          }
+//           }
 
-          impl ExpFunc {
+//           impl ExpFunc {
               
-                  pub fn with_scale<T: Into<Scale>>(mut self, value: T) -> Self {
-                      self.scale = Some(value.into());
-                      self
-                  }
+//                   pub fn with_scale<T: Into<Scale>>(mut self, value: T) -> Self {
+//                       self.scale = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_offset<T: Into<Scale>>(mut self, value: T) -> Self {
-                      self.offset = Some(value.into());
-                      self
-                  }
+//                   pub fn with_offset<T: Into<Scale>>(mut self, value: T) -> Self {
+//                       self.offset = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_decay<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.decay = Some(value.into());
-                      self
-                  }
+//                   pub fn with_decay<T: Into<f64>>(mut self, value: T) -> Self {
+//                       self.decay = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_multi_value_mode<T: Into<MultiValueMode>>(mut self, value: T) -> Self {
-                      self.multi_value_mode = Some(value.into());
-                      self
-                  }
+//                   pub fn with_multi_value_mode<T: Into<MultiValueMode>>(mut self, value: T) -> Self {
+//                       self.multi_value_mode = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.scale, "scale");
+//                       optional_add!(m, self.scale, "scale");
                   
-                      optional_add!(m, self.offset, "offset");
+//                       optional_add!(m, self.offset, "offset");
                   
-                      optional_add!(m, self.decay, "decay");
+//                       optional_add!(m, self.decay, "decay");
                   
-                      optional_add!(m, self.multi_value_mode, "multi_value_mode");
+//                       optional_add!(m, self.multi_value_mode, "multi_value_mode");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+//               }
 
-              pub fn build(self) -> Func {
-                  Func::Exp(self)
-              }
-          }
+//               pub fn build(self) -> Func {
+//                   Func::Exp(self)
+//               }
+//           }
 
-decay_func_json_impl!(ExpFunc);
+// decay_func_json_impl!(ExpFunc);
 
-          #[derive(Debug)]
-          pub struct GaussFunc {
+//           #[derive(Debug)]
+//           pub struct GaussFunc {
               
-                  field: 
-                                         String
-                                      ,
+//                   field: 
+//                                          String
+//                                       ,
               
-                  origin: 
-                                         Origin
-                                      ,
+//                   origin: 
+//                                          Origin
+//                                       ,
               
-                  scale: 
-                                         Option<Scale>
-                                      ,
+//                   scale: 
+//                                          Option<Scale>
+//                                       ,
               
-                  offset: 
-                                         Option<Scale>
-                                      ,
+//                   offset: 
+//                                          Option<Scale>
+//                                       ,
               
-                  decay: 
-                                         Option<f64>
-                                      ,
+//                   decay: 
+//                                          Option<f64>
+//                                       ,
               
-                  multi_value_mode: 
-                                         Option<MultiValueMode>
+//                   multi_value_mode: 
+//                                          Option<MultiValueMode>
                                       
               
-          }
+//           }
 
-          impl GaussFunc {
+//           impl GaussFunc {
               
-                  pub fn with_scale<T: Into<Scale>>(mut self, value: T) -> Self {
-                      self.scale = Some(value.into());
-                      self
-                  }
+//                   pub fn with_scale<T: Into<Scale>>(mut self, value: T) -> Self {
+//                       self.scale = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_offset<T: Into<Scale>>(mut self, value: T) -> Self {
-                      self.offset = Some(value.into());
-                      self
-                  }
+//                   pub fn with_offset<T: Into<Scale>>(mut self, value: T) -> Self {
+//                       self.offset = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_decay<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.decay = Some(value.into());
-                      self
-                  }
+//                   pub fn with_decay<T: Into<f64>>(mut self, value: T) -> Self {
+//                       self.decay = Some(value.into());
+//                       self
+//                   }
               
-                  pub fn with_multi_value_mode<T: Into<MultiValueMode>>(mut self, value: T) -> Self {
-                      self.multi_value_mode = Some(value.into());
-                      self
-                  }
+//                   pub fn with_multi_value_mode<T: Into<MultiValueMode>>(mut self, value: T) -> Self {
+//                       self.multi_value_mode = Some(value.into());
+//                       self
+//                   }
               
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-                      optional_add!(m, self.scale, "scale");
+//                       optional_add!(m, self.scale, "scale");
                   
-                      optional_add!(m, self.offset, "offset");
+//                       optional_add!(m, self.offset, "offset");
                   
-                      optional_add!(m, self.decay, "decay");
+//                       optional_add!(m, self.decay, "decay");
                   
-                      optional_add!(m, self.multi_value_mode, "multi_value_mode");
+//                       optional_add!(m, self.multi_value_mode, "multi_value_mode");
                   
-              }
+//               }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
                   
-              }
+//               }
 
-              pub fn build(self) -> Func {
-                  Func::Gauss(self)
-              }
-          }
+//               pub fn build(self) -> Func {
+//                   Func::Gauss(self)
+//               }
+//           }
 
-decay_func_json_impl!(GaussFunc);
+// decay_func_json_impl!(GaussFunc);
 
-#[derive(Debug)]
-pub struct Function {
-    filter: Option<Filter>,
-    function: Func,
-    weight: Option<f64>
-}
+// TODO - implementation (definition moved to top)
+// impl Function {
+//     pub fn new(function: Func) -> Function {
+//         Function {
+//             filter:   None,
+//             function: function,
+//             weight:   None
+//         }
+//     }
 
-impl Function {
-    pub fn new(function: Func) -> Function {
-        Function {
-            filter:   None,
-            function: function,
-            weight:   None
-        }
-    }
+//     pub fn with_filter(mut self, filter: Filter) -> Function {
+//         self.filter = Some(filter);
+//         self
+//     }
 
-    pub fn with_filter(mut self, filter: Filter) -> Function {
-        self.filter = Some(filter);
-        self
-    }
-
-    pub fn with_weight(mut self, weight: f64) -> Function {
-        self.weight = Some(weight);
-        self
-    }
-}
-
-impl ToJson for Function {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        optional_add!(d, self.filter, "filter");
-        optional_add!(d, self.weight, "weight");
-        d.insert(self.function.name(), self.function.to_json());
-        Json::Object(d)
-    }
-}
+//     pub fn with_weight(mut self, weight: f64) -> Function {
+//         self.weight = Some(weight);
+//         self
+//     }
+// }

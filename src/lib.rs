@@ -264,7 +264,7 @@ pub mod tests {
     use super::operations::bulk::Action;
     use super::operations::index::OpType;
 
-    use super::query::{Filter, Query};
+    use super::query::Query;
 
     use super::units::Duration;
 
@@ -491,10 +491,9 @@ pub mod tests {
         let within_range = client
             .search_query()
             .with_indexes(&[index_name])
-            .with_query(&Query::build_filtered(Filter::build_range("int_field")
-                                               .with_gte(2)
-                                               .with_lte(3)
-                                               .build())
+            .with_query(&Query::build_range("int_field")
+                        .with_gte(2)
+                        .with_lte(3)
                         .build())
             .send().unwrap();
         assert_eq!(2, within_range.hits.total);

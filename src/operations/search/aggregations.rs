@@ -527,11 +527,11 @@ bucket_agg!(Global);
 /// Filter aggregation
 #[derive(Debug)]
 pub struct Filter<'a> {
-    filter: &'a query::Filter
+    filter: &'a query::Query
 }
 
 impl<'a> Filter<'a> {
-    pub fn new(filter: &'a query::Filter) -> Filter<'a> {
+    pub fn new(filter: &'a query::Query) -> Filter<'a> {
         Filter {
             filter: filter
         }
@@ -549,19 +549,19 @@ bucket_agg!(Filter);
 /// Filters aggregation
 #[derive(Debug)]
 pub struct Filters<'a> {
-    filters: HashMap<&'a str, &'a query::Filter>
+    filters: HashMap<&'a str, &'a query::Query>
 }
 
 impl<'a> Filters<'a> {
-    pub fn new(filters: HashMap<&'a str, &'a query::Filter>) -> Filters<'a> {
+    pub fn new(filters: HashMap<&'a str, &'a query::Query>) -> Filters<'a> {
         Filters {
             filters: filters
         }
     }
 }
 
-impl<'a> From<Vec<(&'a str, &'a query::Filter)>> for Filters<'a> {
-    fn from(from: Vec<(&'a str, &'a query::Filter)>) -> Filters<'a> {
+impl<'a> From<Vec<(&'a str, &'a query::Query)>> for Filters<'a> {
+    fn from(from: Vec<(&'a str, &'a query::Query)>) -> Filters<'a> {
         let mut filters = HashMap::with_capacity(from.len());
         for (k, v) in from {
             filters.insert(k, v);

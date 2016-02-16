@@ -27,7 +27,7 @@ use rustc_serialize::json::{Json, ToJson};
 
 use ::Client;
 use ::error::EsError;
-use ::query::{Filter, Query};
+use ::query::Query;
 use ::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
 use ::util::StrJoin;
 use super::common::{Options, OptionVal};
@@ -137,7 +137,7 @@ pub struct SortField {
     order:         Option<Order>,
     mode:          Option<Mode>,
     nested_path:   Option<String>,
-    nested_filter: Option<Filter>,
+    nested_filter: Option<Query>,
     missing:       Option<Missing>,
     unmapped_type: Option<String>
 }
@@ -158,7 +158,7 @@ impl SortField {
 
     add_field!(with_mode, mode, Mode);
     add_field!(with_nested_path, nested_path, String);
-    add_field!(with_nested_filter, nested_filter, Filter);
+    add_field!(with_nested_filter, nested_filter, Query);
     add_field!(with_missing, missing, Missing);
     add_field!(with_unmapped_type, unmapped_type, String);
 
