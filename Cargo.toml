@@ -8,7 +8,6 @@ documentation = "http://benashford.github.io/rs-es/rs_es/index.html"
 description = "Client for the ElasticSearch REST API"
 readme = "README.md"
 keywords = ["elasticsearch", "elastic"]
-build = "build.rs"
 
 exclude = ["devbox/**/*", "docker-dev.yml"]
 
