@@ -33,6 +33,19 @@ use units::{DistanceType,
             OneOrMany};
 use util::StrJoin;
 
+// Helper macros
+
+/// This package is full of builder interfaces, with much repeated code for adding
+/// optional fields.  This macro removes much of the repetition.
+macro_rules! add_option {
+    ($n:ident, $e:ident, $t:ty) => (
+        pub fn $n<T: Into<$t>>(mut self, val: T) -> Self {
+            self.$e = Some(val.into());
+            self
+        }
+    )
+}
+
 // Miscellaneous types required by queries go here
 
 // Enums
@@ -263,10 +276,7 @@ impl Query {
 }
 
 impl MatchAllQuery {
-    pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-        self.boost = Some(value.into());
-        self
-    }
+    add_option!(with_boost, boost, f64);
 
     pub fn build(self) -> Query {
         Query::MatchAll(self)
@@ -312,65 +322,18 @@ impl Query {
 }
 
 impl MatchQuery {
-    pub fn with_type<T: Into<MatchType>>(mut self, value: T) -> Self {
-        self.match_type = Some(value.into());
-        self
-    }
-
-    pub fn with_cutoff_frequency<T: Into<f64>>(mut self, value: T) -> Self {
-        self.cutoff_frequency = Some(value.into());
-        self
-    }
-
-    pub fn with_lenient<T: Into<bool>>(mut self, value: T) -> Self {
-        self.lenient = Some(value.into());
-        self
-    }
-
-    pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
-        self.analyzer = Some(value.into());
-        self
-    }
-
-    pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-        self.boost = Some(value.into());
-        self
-    }
-
-    pub fn with_operator<T: Into<String>>(mut self, value: T) -> Self {
-        self.operator = Some(value.into());
-        self
-    }
-
-    pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
-        self.minimum_should_match = Some(value.into());
-        self
-    }
-
-    pub fn with_fuzziness<T: Into<Fuzziness>>(mut self, value: T) -> Self {
-        self.fuzziness = Some(value.into());
-        self
-    }
-
-    pub fn with_prefix_length<T: Into<u64>>(mut self, value: T) -> Self {
-        self.prefix_length = Some(value.into());
-        self
-    }
-
-    pub fn with_max_expansions<T: Into<u64>>(mut self, value: T) -> Self {
-        self.max_expansions = Some(value.into());
-        self
-    }
-
-    pub fn with_rewrite<T: Into<String>>(mut self, value: T) -> Self {
-        self.rewrite = Some(value.into());
-        self
-    }
-
-    pub fn with_zero_terms_query<T: Into<ZeroTermsQuery>>(mut self, value: T) -> Self {
-        self.zero_terms_query = Some(value.into());
-        self
-    }
+    add_option!(with_type, match_type, MatchType);
+    add_option!(with_cutoff_frequency, cutoff_frequency, f64);
+    add_option!(with_lenient, lenient, bool);
+    add_option!(with_analyzer, analyzer, String);
+    add_option!(with_boost, boost, f64);
+    add_option!(with_operator, operator, String);
+    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_option!(with_fuzziness, fuzziness, Fuzziness);
+    add_option!(with_prefix_length, prefix_length, u64);
+    add_option!(with_max_expansions, max_expansions, u64);
+    add_option!(with_rewrite, rewrite, String);
+    add_option!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
 
     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
         optional_add!(m, self.match_type, "type");
