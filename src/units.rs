@@ -299,6 +299,12 @@ pub enum JsonVal {
     F64(f64)
 }
 
+impl Default for JsonVal {
+    fn default() -> Self {
+        JsonVal::String(Default::default())
+    }
+}
+
 impl ToJson for JsonVal {
     fn to_json(&self) -> Json {
         match self {

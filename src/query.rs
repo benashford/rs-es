@@ -35,6 +35,154 @@ use util::StrJoin;
 
 // Miscellaneous types required by queries go here
 
+// Enums
+
+/// MatchType - the type of Match query
+#[derive(Debug)]
+pub enum MatchType {
+    Boolean,
+    Phrase,
+    PhrasePrefix
+}
+
+impl ToJson for MatchType {
+    fn to_json(&self) -> Json {
+        match self {
+            &MatchType::Boolean => "boolean",
+            &MatchType::Phrase => "phrase",
+            &MatchType::PhrasePrefix => "phrase_prefix"
+        }.to_json()
+    }
+}
+
+/// Minimum should match - used in numerous queries
+
+#[derive(Debug)]
+pub struct CombinationMinimumShouldMatch {
+    first: MinimumShouldMatch,
+    second: MinimumShouldMatch
+}
+
+impl CombinationMinimumShouldMatch {
+    pub fn new<A, B>(first: A, second: B) -> CombinationMinimumShouldMatch
+        where A: Into<MinimumShouldMatch>,
+              B: Into<MinimumShouldMatch>
+    {
+        CombinationMinimumShouldMatch {
+            first:  first.into(),
+            second: second.into()
+        }
+    }
+}
+
+impl ToString for CombinationMinimumShouldMatch {
+    fn to_string(&self) -> String {
+        format!("{}<{}", self.first.to_string(), self.second.to_string())
+    }
+}
+
+impl ToJson for CombinationMinimumShouldMatch {
+    fn to_json(&self) -> Json {
+        Json::String(self.to_string())
+    }
+}
+
+#[derive(Debug)]
+pub enum MinimumShouldMatch {
+    Integer(i64),
+    Percentage(f64),
+    Combination(Box<CombinationMinimumShouldMatch>),
+    MultipleCombination(Vec<CombinationMinimumShouldMatch>),
+    LowHigh(i64, i64)
+}
+
+from!(i64, MinimumShouldMatch, Integer);
+from!(f64, MinimumShouldMatch, Percentage);
+from_exp!(CombinationMinimumShouldMatch,
+          MinimumShouldMatch,
+          from,
+          MinimumShouldMatch::Combination(Box::new(from)));
+from!(Vec<CombinationMinimumShouldMatch>, MinimumShouldMatch, MultipleCombination);
+from_exp!((i64, i64),
+          MinimumShouldMatch,
+          from,
+          MinimumShouldMatch::LowHigh(from.0, from.1));
+
+impl ToString for MinimumShouldMatch {
+    fn to_string(&self) -> String {
+        match self {
+            &MinimumShouldMatch::Integer(val) => val.to_string(),
+            &MinimumShouldMatch::Percentage(val) => {
+                format!("{}%", val)
+            },
+            _ => panic!("Can't convert {:?} to String", self)
+        }
+    }
+}
+
+impl ToJson for MinimumShouldMatch {
+    fn to_json(&self) -> Json {
+        match self {
+            &MinimumShouldMatch::Integer(val) => val.to_json(),
+            &MinimumShouldMatch::Percentage(_) => {
+                self.to_string().to_json()
+            },
+            &MinimumShouldMatch::Combination(ref comb) => {
+                comb.to_json()
+            },
+            &MinimumShouldMatch::MultipleCombination(ref combs) => {
+                Json::String(combs.iter().map(|c| c.to_string()).join(" "))
+            }
+            &MinimumShouldMatch::LowHigh(low, high) => {
+                let mut d = BTreeMap::new();
+                d.insert("low_freq".to_owned(), low.to_json());
+                d.insert("high_freq".to_owned(), high.to_json());
+                Json::Object(d)
+            }
+        }
+    }
+}
+
+/// Fuzziness
+
+#[derive(Debug)]
+pub enum Fuzziness {
+    Auto,
+    LevenshteinDistance(i64),
+    Proportionate(f64)
+}
+
+from!(i64, Fuzziness, LevenshteinDistance);
+from!(f64, Fuzziness, Proportionate);
+
+impl ToJson for Fuzziness {
+    fn to_json(&self) -> Json {
+        use self::Fuzziness::{Auto, LevenshteinDistance, Proportionate};
+        match self {
+            &Auto                      => "auto".to_json(),
+            &LevenshteinDistance(dist) => dist.to_json(),
+            &Proportionate(prop)       => prop.to_json()
+        }
+    }
+}
+
+/// Zero Terms Query
+
+#[derive(Debug)]
+pub enum ZeroTermsQuery {
+    None,
+    All
+}
+
+impl ToJson for ZeroTermsQuery {
+    fn to_json(&self) -> Json {
+        match self {
+            &ZeroTermsQuery::None => "none",
+            &ZeroTermsQuery::All => "all"
+        }.to_json()
+    }
+}
+
 // Functions
 
 /// Function
@@ -64,6 +212,8 @@ impl ToJson for Function {
 pub enum Query {
     MatchAll(MatchAllQuery),
     Match(MatchQuery),
+
+    // TODO: below this line, not yet converted
     MultiMatch(MultiMatchQuery),
     Bool(BoolQuery),
     Boosting(BoostingQuery),
@@ -131,27 +281,135 @@ impl ToJson for MatchAllQuery {
     }
 }
 
+/// Match query
+
+#[derive(Debug, Default)]
+pub struct MatchQuery {
+    field: String,
+    query: JsonVal,
+    match_type: Option<MatchType>,
+    cutoff_frequency: Option<f64>,
+    lenient: Option<bool>,
+    analyzer: Option<String>,
+    boost: Option<f64>,
+    operator: Option<String>,
+    minimum_should_match: Option<MinimumShouldMatch>,
+    fuzziness: Option<Fuzziness>,
+    prefix_length: Option<u64>,
+    max_expansions: Option<u64>,
+    rewrite: Option<String>,
+    zero_terms_query: Option<ZeroTermsQuery>
+}
+
 impl Query {
-    pub fn build_match<A: Into<String>, B: Into<JsonVal>>(field: A,
-                                                          query: B) -> MatchQuery {
+    pub fn build_match<A: Into<String>, B: Into<JsonVal>>(field: A, query: B) -> MatchQuery {
         MatchQuery {
             field: field.into(),
             query: query.into(),
-            match_type: None,
-            cutoff_frequency: None,
-            lenient: None,
-            analyzer: None,
-            boost: None,
-            operator: None,
-            minimum_should_match: None,
-            fuzziness: None,
-            prefix_length: None,
-            max_expansions: None,
-            rewrite: None,
-            zero_terms_query: None
+            ..Default::default()
         }
     }
+}
 
+impl MatchQuery {
+    pub fn with_type<T: Into<MatchType>>(mut self, value: T) -> Self {
+        self.match_type = Some(value.into());
+        self
+    }
+
+    pub fn with_cutoff_frequency<T: Into<f64>>(mut self, value: T) -> Self {
+        self.cutoff_frequency = Some(value.into());
+        self
+    }
+
+    pub fn with_lenient<T: Into<bool>>(mut self, value: T) -> Self {
+        self.lenient = Some(value.into());
+        self
+    }
+
+    pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
+        self.analyzer = Some(value.into());
+        self
+    }
+
+    pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+        self.boost = Some(value.into());
+        self
+    }
+
+    pub fn with_operator<T: Into<String>>(mut self, value: T) -> Self {
+        self.operator = Some(value.into());
+        self
+    }
+
+    pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
+        self.minimum_should_match = Some(value.into());
+        self
+    }
+
+    pub fn with_fuzziness<T: Into<Fuzziness>>(mut self, value: T) -> Self {
+        self.fuzziness = Some(value.into());
+        self
+    }
+
+    pub fn with_prefix_length<T: Into<u64>>(mut self, value: T) -> Self {
+        self.prefix_length = Some(value.into());
+        self
+    }
+
+    pub fn with_max_expansions<T: Into<u64>>(mut self, value: T) -> Self {
+        self.max_expansions = Some(value.into());
+        self
+    }
+
+    pub fn with_rewrite<T: Into<String>>(mut self, value: T) -> Self {
+        self.rewrite = Some(value.into());
+        self
+    }
+
+    pub fn with_zero_terms_query<T: Into<ZeroTermsQuery>>(mut self, value: T) -> Self {
+        self.zero_terms_query = Some(value.into());
+        self
+    }
+
+    fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+        optional_add!(m, self.match_type, "type");
+        optional_add!(m, self.cutoff_frequency, "cutoff_frequency");
+        optional_add!(m, self.lenient, "lenient");
+        optional_add!(m, self.analyzer, "analyzer");
+        optional_add!(m, self.boost, "boost");
+        optional_add!(m, self.operator, "operator");
+        optional_add!(m, self.minimum_should_match, "minimum_should_match");
+        optional_add!(m, self.fuzziness, "fuzziness");
+        optional_add!(m, self.prefix_length, "prefix_length");
+        optional_add!(m, self.max_expansions, "max_expansions");
+        optional_add!(m, self.rewrite, "rewrite");
+        optional_add!(m, self.zero_terms_query, "zero_terms_query");
+    }
+
+    pub fn build(self) -> Query {
+        Query::Match(self)
+    }
+}
+
+impl ToJson for MatchQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+
+        inner.insert("query".to_owned(),
+                     self.query.to_json());
+
+        self.add_optionals(&mut inner);
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
+
+// Old queries - TODO: move or delete these
+
+impl Query {
     pub fn build_multi_match<A: Into<Vec<String>>,B: Into<JsonVal>>(fields: A,
                                                                     query: B) -> MultiMatchQuery {
         MultiMatchQuery {
@@ -1291,81 +1549,9 @@ impl Query {
 
 // Match queries
 
-        #[derive(Debug)]
-        pub enum ZeroTermsQuery {
-
-                None
-                ,
-
-                All
 
 
-        }
 
-        impl ToJson for ZeroTermsQuery {
-            fn to_json(&self) -> Json {
-                match self {
-
-                        &ZeroTermsQuery::None
-                        => "none".to_json()
-                        ,
-
-                        &ZeroTermsQuery::All
-                        => "all".to_json()
-
-
-                }
-            }
-        }
-
-
-#[derive(Debug)]
-pub enum Fuzziness {
-    Auto,
-    LevenshteinDistance(i64),
-    Proportionate(f64)
-}
-
-from!(i64, Fuzziness, LevenshteinDistance);
-from!(f64, Fuzziness, Proportionate);
-
-impl ToJson for Fuzziness {
-    fn to_json(&self) -> Json {
-        use self::Fuzziness::{Auto, LevenshteinDistance, Proportionate};
-        match self {
-            &Auto                      => "auto".to_json(),
-            &LevenshteinDistance(dist) => dist.to_json(),
-            &Proportionate(prop)       => prop.to_json()
-        }
-    }
-}
-
-        #[derive(Debug)]
-        pub enum MatchType {
-
-                Phrase
-                ,
-
-                PhrasePrefix
-
-
-        }
-
-        impl ToJson for MatchType {
-            fn to_json(&self) -> Json {
-                match self {
-
-                        &MatchType::Phrase
-                        => "phrase".to_json()
-                        ,
-
-                        &MatchType::PhrasePrefix
-                        => "phrase_prefix".to_json()
-
-
-                }
-            }
-        }
 
 
         #[derive(Debug)]
@@ -1421,184 +1607,6 @@ impl ToJson for Fuzziness {
 
 
 
-          #[derive(Debug)]
-          pub struct MatchQuery {
-
-                  field:
-                                         String
-                                      ,
-
-                  query:
-                                         JsonVal
-                                      ,
-
-                  match_type:
-                                         Option<MatchType>
-                                      ,
-
-                  cutoff_frequency:
-                                         Option<f64>
-                                      ,
-
-                  lenient:
-                                         Option<bool>
-                                      ,
-
-                  analyzer:
-                                         Option<String>
-                                      ,
-
-                  boost:
-                                         Option<f64>
-                                      ,
-
-                  operator:
-                                         Option<String>
-                                      ,
-
-                  minimum_should_match:
-                                         Option<MinimumShouldMatch>
-                                      ,
-
-                  fuzziness:
-                                         Option<Fuzziness>
-                                      ,
-
-                  prefix_length:
-                                         Option<u64>
-                                      ,
-
-                  max_expansions:
-                                         Option<u64>
-                                      ,
-
-                  rewrite:
-                                         Option<String>
-                                      ,
-
-                  zero_terms_query:
-                                         Option<ZeroTermsQuery>
-
-
-          }
-
-          impl MatchQuery {
-
-                  pub fn with_type<T: Into<MatchType>>(mut self, value: T) -> Self {
-                      self.match_type = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_cutoff_frequency<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.cutoff_frequency = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_lenient<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.lenient = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
-                      self.analyzer = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_operator<T: Into<String>>(mut self, value: T) -> Self {
-                      self.operator = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
-                      self.minimum_should_match = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_fuzziness<T: Into<Fuzziness>>(mut self, value: T) -> Self {
-                      self.fuzziness = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_prefix_length<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.prefix_length = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_max_expansions<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.max_expansions = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_rewrite<T: Into<String>>(mut self, value: T) -> Self {
-                      self.rewrite = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_zero_terms_query<T: Into<ZeroTermsQuery>>(mut self, value: T) -> Self {
-                      self.zero_terms_query = Some(value.into());
-                      self
-                  }
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-                      optional_add!(m, self.match_type, "type");
-
-                      optional_add!(m, self.cutoff_frequency, "cutoff_frequency");
-
-                      optional_add!(m, self.lenient, "lenient");
-
-                      optional_add!(m, self.analyzer, "analyzer");
-
-                      optional_add!(m, self.boost, "boost");
-
-                      optional_add!(m, self.operator, "operator");
-
-                      optional_add!(m, self.minimum_should_match, "minimum_should_match");
-
-                      optional_add!(m, self.fuzziness, "fuzziness");
-
-                      optional_add!(m, self.prefix_length, "prefix_length");
-
-                      optional_add!(m, self.max_expansions, "max_expansions");
-
-                      optional_add!(m, self.rewrite, "rewrite");
-
-                      optional_add!(m, self.zero_terms_query, "zero_terms_query");
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::Match(self)
-              }
-          }
-
-        impl ToJson for MatchQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
-
-
-                  inner.insert("query".to_owned(),
-                               self.query.to_json());
-
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
 
 
           #[derive(Debug)]
@@ -2031,91 +2039,6 @@ impl ToJson for Fuzziness {
           }
 
 
-#[derive(Debug)]
-pub struct CombinationMinimumShouldMatch {
-    first: MinimumShouldMatch,
-    second: MinimumShouldMatch
-}
-
-impl CombinationMinimumShouldMatch {
-    pub fn new<A, B>(first: A, second: B) -> CombinationMinimumShouldMatch
-        where A: Into<MinimumShouldMatch>,
-              B: Into<MinimumShouldMatch>
-    {
-        CombinationMinimumShouldMatch {
-            first:  first.into(),
-            second: second.into()
-        }
-    }
-}
-
-impl ToString for CombinationMinimumShouldMatch {
-    fn to_string(&self) -> String {
-        format!("{}<{}", self.first.to_string(), self.second.to_string())
-    }
-}
-
-impl ToJson for CombinationMinimumShouldMatch {
-    fn to_json(&self) -> Json {
-        self.to_string().to_json()
-    }
-}
-
-#[derive(Debug)]
-pub enum MinimumShouldMatch {
-    Integer(i64),
-    Percentage(f64),
-    Combination(Box<CombinationMinimumShouldMatch>),
-    MultipleCombination(Vec<CombinationMinimumShouldMatch>),
-    LowHigh(i64, i64)
-}
-
-from!(i64, MinimumShouldMatch, Integer);
-from!(f64, MinimumShouldMatch, Percentage);
-from_exp!(CombinationMinimumShouldMatch,
-          MinimumShouldMatch,
-          from,
-          MinimumShouldMatch::Combination(Box::new(from)));
-from!(Vec<CombinationMinimumShouldMatch>, MinimumShouldMatch, MultipleCombination);
-from_exp!((i64, i64),
-          MinimumShouldMatch,
-          from,
-          MinimumShouldMatch::LowHigh(from.0, from.1));
-
-impl ToString for MinimumShouldMatch {
-    fn to_string(&self) -> String {
-        match self {
-            &MinimumShouldMatch::Integer(val) => val.to_string(),
-            &MinimumShouldMatch::Percentage(val) => {
-                format!("{}%", val)
-            },
-            _ => panic!("Can't convert {:?} to String", self)
-        }
-    }
-}
-
-impl ToJson for MinimumShouldMatch {
-    fn to_json(&self) -> Json {
-        match self {
-            &MinimumShouldMatch::Integer(val) => val.to_json(),
-            &MinimumShouldMatch::Percentage(_) => {
-                self.to_string().to_json()
-            },
-            &MinimumShouldMatch::Combination(ref comb) => {
-                comb.to_json()
-            },
-            &MinimumShouldMatch::MultipleCombination(ref combs) => {
-                Json::String(combs.iter().map(|c| c.to_string()).join(" "))
-            }
-            &MinimumShouldMatch::LowHigh(low, high) => {
-                let mut d = BTreeMap::new();
-                d.insert("low_freq".to_owned(), low.to_json());
-                d.insert("high_freq".to_owned(), high.to_json());
-                Json::Object(d)
-            }
-        }
-    }
-}
 
 impl ToJson for CommonQuery {
     fn to_json(&self) -> Json {
