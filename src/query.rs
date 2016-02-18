@@ -38,9 +38,9 @@ use util::StrJoin;
 /// This package is full of builder interfaces, with much repeated code for adding
 /// optional fields.  This macro removes much of the repetition.
 macro_rules! add_option {
-    ($n:ident, $e:ident, $t:ty) => (
+    ($n:ident, $e:expr, $t:ty) => (
         pub fn $n<T: Into<$t>>(mut self, val: T) -> Self {
-            self.$e = Some(val.into());
+            self.options.insert($e.to_owned(), val.into().to_json());
             self
         }
     )
@@ -292,11 +292,13 @@ pub enum Query {
 
 // Specific query types go here
 
+type Options = BTreeMap<String, Json>;
+
 /// Match all query
 
 #[derive(Debug, Default)]
 pub struct MatchAllQuery {
-    boost: Option<f64>
+    options: Options
 }
 
 impl Query {
@@ -306,16 +308,14 @@ impl Query {
 }
 
 impl MatchAllQuery {
-    add_option!(with_boost, boost, f64);
+    add_option!(with_boost, "boost", f64);
 
     build!(MatchAll);
 }
 
 impl ToJson for MatchAllQuery {
     fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        optional_add!(d, self.boost, "boost");
-        Json::Object(d)
+        self.options.to_json()
     }
 }
 
@@ -324,62 +324,34 @@ impl ToJson for MatchAllQuery {
 #[derive(Debug, Default)]
 pub struct MatchQuery {
     field: String,
-    query: JsonVal,
-    match_type: Option<MatchType>,
-    cutoff_frequency: Option<f64>,
-    lenient: Option<bool>,
-    analyzer: Option<String>,
-    boost: Option<f64>,
-    operator: Option<String>,
-    minimum_should_match: Option<MinimumShouldMatch>,
-    fuzziness: Option<Fuzziness>,
-    prefix_length: Option<u64>,
-    max_expansions: Option<u64>,
-    rewrite: Option<String>,
-    zero_terms_query: Option<ZeroTermsQuery>,
-    slop: Option<i64>
+    options: Options
 }
 
 impl Query {
     pub fn build_match<A: Into<String>, B: Into<JsonVal>>(field: A, query: B) -> MatchQuery {
+        let mut options = Options::new();
+        options.insert("query".to_owned(), query.into().to_json());
         MatchQuery {
             field: field.into(),
-            query: query.into(),
-            ..Default::default()
+            options: options
         }
     }
 }
 
 impl MatchQuery {
-    add_option!(with_type, match_type, MatchType);
-    add_option!(with_cutoff_frequency, cutoff_frequency, f64);
-    add_option!(with_lenient, lenient, bool);
-    add_option!(with_analyzer, analyzer, String);
-    add_option!(with_boost, boost, f64);
-    add_option!(with_operator, operator, String);
-    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
-    add_option!(with_fuzziness, fuzziness, Fuzziness);
-    add_option!(with_prefix_length, prefix_length, u64);
-    add_option!(with_max_expansions, max_expansions, u64);
-    add_option!(with_rewrite, rewrite, String);
-    add_option!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
-    add_option!(with_slop, slop, i64);
-
-    fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-        optional_add!(m, self.match_type, "type");
-        optional_add!(m, self.cutoff_frequency, "cutoff_frequency");
-        optional_add!(m, self.lenient, "lenient");
-        optional_add!(m, self.analyzer, "analyzer");
-        optional_add!(m, self.boost, "boost");
-        optional_add!(m, self.operator, "operator");
-        optional_add!(m, self.minimum_should_match, "minimum_should_match");
-        optional_add!(m, self.fuzziness, "fuzziness");
-        optional_add!(m, self.prefix_length, "prefix_length");
-        optional_add!(m, self.max_expansions, "max_expansions");
-        optional_add!(m, self.rewrite, "rewrite");
-        optional_add!(m, self.zero_terms_query, "zero_terms_query");
-        optional_add!(m, self.slop, "slop");
-    }
+    add_option!(with_type, "type", MatchType);
+    add_option!(with_cutoff_frequency, "cutoff_frequency", f64);
+    add_option!(with_lenient, "lenient", bool);
+    add_option!(with_analyzer, "analyzer", String);
+    add_option!(with_boost, "boost", f64);
+    add_option!(with_operator, "operator", String);
+    add_option!(with_minimum_should_match, "minimum_should_match", MinimumShouldMatch);
+    add_option!(with_fuzziness, "fuzziness", Fuzziness);
+    add_option!(with_prefix_length, "prefix_length", u64);
+    add_option!(with_max_expansions, "max_expansions", u64);
+    add_option!(with_rewrite, "rewrite", String);
+    add_option!(with_zero_terms_query, "zero_terms_query", ZeroTermsQuery);
+    add_option!(with_slop, "slop", i64);
 
     build!(Match);
 }
@@ -387,13 +359,7 @@ impl MatchQuery {
 impl ToJson for MatchQuery {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-
-        inner.insert("query".to_owned(),
-                     self.query.to_json());
-
-        self.add_optionals(&mut inner);
-        d.insert(self.field.clone(), Json::Object(inner));
+        d.insert(self.field.clone(), self.options.to_json());
         Json::Object(d)
     }
 }
@@ -401,80 +367,45 @@ impl ToJson for MatchQuery {
 /// Multi Match Query
 #[derive(Debug, Default)]
 pub struct MultiMatchQuery {
-    fields: Vec<String>,
-    query: JsonVal,
-    match_type: Option<MatchQueryType>,
-    tie_breaker: Option<f64>,
-    analyzer: Option<String>,
-    boost: Option<f64>,
-    operator: Option<String>,
-    minimum_should_match: Option<MinimumShouldMatch>,
-    fuzziness: Option<Fuzziness>,
-    prefix_length: Option<u64>,
-    max_expansions: Option<u64>,
-    rewrite: Option<String>,
-    zero_terms_query: Option<ZeroTermsQuery>,
-    cutoff_frequency: Option<f64>,
-    slop: Option<i64>
+    options: Options
 }
 
 impl Query {
     pub fn build_multi_match<A, B>(fields: A, query: B) -> MultiMatchQuery
         where A: Into<Vec<String>>,
               B: Into<JsonVal> {
+        let mut options = Options::new();
+        options.insert("fields".to_owned(), fields.into().to_json());
+        options.insert("query".to_owned(), query.into().to_json());
         MultiMatchQuery {
-            fields: fields.into(),
-            query: query.into(),
-            ..Default::default()
+            options: options
         }
     }
 }
 
 impl MultiMatchQuery {
-    add_option!(with_type, match_type, MatchQueryType);
-    add_option!(with_tie_breaker, tie_breaker, f64);
-    add_option!(with_analyzer, analyzer, String);
-    add_option!(with_boost, boost, f64);
-    add_option!(with_operator, operator, String);
-    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
-    add_option!(with_fuzziness, fuzziness, Fuzziness);
-    add_option!(with_prefix_length, prefix_length, u64);
-    add_option!(with_max_expansions, max_expansions, u64);
-    add_option!(with_rewrite, rewrite, String);
-    add_option!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
-    add_option!(with_cutoff_frequency, cutoff_frequency, f64);
-    add_option!(with_slop, slop, i64);
-
-    fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-        optional_add!(m, self.match_type, "type");
-        optional_add!(m, self.analyzer, "analyzer");
-        optional_add!(m, self.boost, "boost");
-        optional_add!(m, self.operator, "operator");
-        optional_add!(m, self.minimum_should_match, "minimum_should_match");
-        optional_add!(m, self.fuzziness, "fuzziness");
-        optional_add!(m, self.prefix_length, "prefix_length");
-        optional_add!(m, self.max_expansions, "max_expansions");
-        optional_add!(m, self.rewrite, "rewrite");
-        optional_add!(m, self.zero_terms_query, "zero_terms_query");
-        optional_add!(m, self.cutoff_frequency, "cutoff_frequency");
-        optional_add!(m, self.slop, "slop");
-    }
+    add_option!(with_type, "type", MatchQueryType);
+    add_option!(with_tie_breaker, "tie_breaker", f64);
+    add_option!(with_analyzer, "analyzer", String);
+    add_option!(with_boost, "boost", f64);
+    add_option!(with_operator, "operator", String);
+    add_option!(with_minimum_should_match, "minimum_should_match", MinimumShouldMatch);
+    add_option!(with_fuzziness, "fuzziness", Fuzziness);
+    add_option!(with_prefix_length, "prefix_length", u64);
+    add_option!(with_max_expansions, "max_expansions", u64);
+    add_option!(with_rewrite, "rewrite", String);
+    add_option!(with_zero_terms_query, "zero_terms_query", ZeroTermsQuery);
+    add_option!(with_cutoff_frequency, "cutoff_frequency", f64);
+    add_option!(with_slop, "slop", i64);
 
     build!(MultiMatch);
 }
 
 impl ToJson for MultiMatchQuery {
     fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("fields".to_owned(),
-                 self.fields.to_json());
-        d.insert("query".to_owned(),
-                 self.query.to_json());
-        self.add_optionals(&mut d);
-        Json::Object(d)
+        self.options.to_json()
     }
 }
-
 
 // Old queries - TODO: move or delete these
 
