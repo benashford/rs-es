@@ -46,6 +46,15 @@ macro_rules! add_option {
     )
 }
 
+/// Build the `build` function for each builder struct
+macro_rules! build {
+    ($t:ident) => (
+        pub fn build(self) -> Query {
+            Query::$t(self)
+        }
+    )
+}
+
 // Miscellaneous types required by queries go here
 
 // Enums
@@ -278,9 +287,7 @@ impl Query {
 impl MatchAllQuery {
     add_option!(with_boost, boost, f64);
 
-    pub fn build(self) -> Query {
-        Query::MatchAll(self)
-    }
+    build!(MatchAll);
 }
 
 impl ToJson for MatchAllQuery {
@@ -350,9 +357,7 @@ impl MatchQuery {
         optional_add!(m, self.zero_terms_query, "zero_terms_query");
     }
 
-    pub fn build(self) -> Query {
-        Query::Match(self)
-    }
+    build!(Match);
 }
 
 impl ToJson for MatchQuery {
