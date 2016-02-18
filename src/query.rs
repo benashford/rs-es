@@ -256,9 +256,8 @@ impl ToJson for Function {
 pub enum Query {
     MatchAll(MatchAllQuery),
     Match(MatchQuery),
-
-    // TODO: below this line, not yet converted
     MultiMatch(MultiMatchQuery),
+    // TODO: below this line, not yet converted
     Bool(BoolQuery),
     Boosting(BoostingQuery),
     Common(CommonQuery),
