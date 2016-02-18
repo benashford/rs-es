@@ -20,7 +20,7 @@
 //! duplication so this file is in progress of being converted into hand-edited
 //! code.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use rustc_serialize::json::{Json, ToJson};
 
@@ -292,7 +292,7 @@ pub enum Query {
 
 // Specific query types go here
 
-type Options = BTreeMap<String, Json>;
+type Options = HashMap<String, Json>;
 
 /// Match all query
 
