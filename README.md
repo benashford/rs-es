@@ -416,7 +416,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 8. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html
 9. Add significant-terms aggregation (esp., if made a permanent feature): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
 10. Add IP Range aggregation (complex due to changing response type): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-iprange-aggregation.html
-11. Reduce repetition in aggregations.rs
+11. Reduce repetition in aggregations.rs and/or differences with the Query DSL
 12. Reduce repetition around `from` functions when parsing `buckets` attribute.
 13. Check for over-dependency on macros parsing from JSON
 14. Consistency on when builder objects take ownership, vs. borrow a reference to some data.
