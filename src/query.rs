@@ -38,9 +38,9 @@ use util::StrJoin;
 /// This package is full of builder interfaces, with much repeated code for adding
 /// optional fields.  This macro removes much of the repetition.
 macro_rules! add_option {
-    ($n:ident, $e:expr, $t:ty) => (
+    ($n:ident, $e:ident, $t:ty) => (
         pub fn $n<T: Into<$t>>(mut self, val: T) -> Self {
-            self.options.insert($e.to_owned(), val.into().to_json());
+            self.$e = Some(val.into());
             self
         }
     )
@@ -292,13 +292,11 @@ pub enum Query {
 
 // Specific query types go here
 
-type Options = HashMap<String, Json>;
-
 /// Match all query
 
 #[derive(Debug, Default)]
 pub struct MatchAllQuery {
-    options: Options
+    boost: Option<f64>,
 }
 
 impl Query {
@@ -308,14 +306,18 @@ impl Query {
 }
 
 impl MatchAllQuery {
-    add_option!(with_boost, "boost", f64);
+    add_option!(with_boost, boost, f64);
 
     build!(MatchAll);
 }
 
 impl ToJson for MatchAllQuery {
     fn to_json(&self) -> Json {
-        self.options.to_json()
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        optional_add!(inner, self.boost, "boost");
+        d.insert("match_all".to_owned(), Json::Object(inner));
+        Json::Object(d)
     }
 }
 
@@ -324,34 +326,46 @@ impl ToJson for MatchAllQuery {
 #[derive(Debug, Default)]
 pub struct MatchQuery {
     field: String,
-    options: Options
+    query: JsonVal,
+    match_type: Option<MatchType>,
+    cutoff_frequency: Option<f64>,
+    lenient: Option<bool>,
+    analyzer: Option<String>,
+    boost: Option<f64>,
+    operator: Option<String>,
+    minimum_should_match: Option<MinimumShouldMatch>,
+    fuzziness: Option<Fuzziness>,
+    prefix_length: Option<u64>,
+    max_expansions: Option<u64>,
+    rewrite: Option<String>,
+    zero_terms_query: Option<ZeroTermsQuery>,
+    slop: Option<i64>
 }
 
 impl Query {
     pub fn build_match<A: Into<String>, B: Into<JsonVal>>(field: A, query: B) -> MatchQuery {
-        let mut options = Options::new();
-        options.insert("query".to_owned(), query.into().to_json());
         MatchQuery {
             field: field.into(),
-            options: options
+            query: query.into(),
+            ..Default::default()
         }
     }
 }
 
 impl MatchQuery {
-    add_option!(with_type, "type", MatchType);
-    add_option!(with_cutoff_frequency, "cutoff_frequency", f64);
-    add_option!(with_lenient, "lenient", bool);
-    add_option!(with_analyzer, "analyzer", String);
-    add_option!(with_boost, "boost", f64);
-    add_option!(with_operator, "operator", String);
-    add_option!(with_minimum_should_match, "minimum_should_match", MinimumShouldMatch);
-    add_option!(with_fuzziness, "fuzziness", Fuzziness);
-    add_option!(with_prefix_length, "prefix_length", u64);
-    add_option!(with_max_expansions, "max_expansions", u64);
-    add_option!(with_rewrite, "rewrite", String);
-    add_option!(with_zero_terms_query, "zero_terms_query", ZeroTermsQuery);
-    add_option!(with_slop, "slop", i64);
+    add_option!(with_type, match_type, MatchType);
+    add_option!(with_cutoff_frequency, cutoff_frequency, f64);
+    add_option!(with_lenient, lenient, bool);
+    add_option!(with_analyzer, analyzer, String);
+    add_option!(with_boost, boost, f64);
+    add_option!(with_operator, operator, String);
+    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_option!(with_fuzziness, fuzziness, Fuzziness);
+    add_option!(with_prefix_length, prefix_length, u64);
+    add_option!(with_max_expansions, max_expansions, u64);
+    add_option!(with_rewrite, rewrite, String);
+    add_option!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
+    add_option!(with_slop, slop, i64);
 
     build!(Match);
 }
@@ -359,7 +373,22 @@ impl MatchQuery {
 impl ToJson for MatchQuery {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        d.insert(self.field.clone(), self.options.to_json());
+        let mut inner = BTreeMap::new();
+        inner.insert("query".to_owned(), self.query.to_json());
+        optional_add!(inner, self.match_type, "type");
+        optional_add!(inner, self.cutoff_frequency, "cutoff_frequency");
+        optional_add!(inner, self.lenient, "lenient");
+        optional_add!(inner, self.analyzer, "analyzer");
+        optional_add!(inner, self.boost, "boost");
+        optional_add!(inner, self.operator, "operator");
+        optional_add!(inner, self.minimum_should_match, "minimum_should_match");
+        optional_add!(inner, self.fuzziness, "fuzziness");
+        optional_add!(inner, self.prefix_length, "prefix_length");
+        optional_add!(inner, self.max_expansions, "max_expansions");
+        optional_add!(inner, self.rewrite, "rewrite");
+        optional_add!(inner, self.zero_terms_query, "zero_terms_query");
+        optional_add!(inner, self.slop, "slop");
+        d.insert(self.field.clone(), Json::Object(inner));
         Json::Object(d)
     }
 }
@@ -367,43 +396,72 @@ impl ToJson for MatchQuery {
 /// Multi Match Query
 #[derive(Debug, Default)]
 pub struct MultiMatchQuery {
-    options: Options
+    fields: Vec<String>,
+    query: JsonVal,
+    match_type: Option<MatchQueryType>,
+    tie_breaker: Option<f64>,
+    analyzer: Option<String>,
+    boost: Option<f64>,
+    operator: Option<String>,
+    minimum_should_match: Option<MinimumShouldMatch>,
+    fuzziness: Option<Fuzziness>,
+    prefix_length: Option<u64>,
+    max_expansions: Option<u64>,
+    rewrite: Option<String>,
+    zero_terms_query: Option<ZeroTermsQuery>,
+    cutoff_frequency: Option<f64>,
+    slop: Option<i64>
 }
 
 impl Query {
     pub fn build_multi_match<A, B>(fields: A, query: B) -> MultiMatchQuery
         where A: Into<Vec<String>>,
               B: Into<JsonVal> {
-        let mut options = Options::new();
-        options.insert("fields".to_owned(), fields.into().to_json());
-        options.insert("query".to_owned(), query.into().to_json());
         MultiMatchQuery {
-            options: options
+            fields: fields.into(),
+            query: query.into(),
+            ..Default::default()
         }
     }
 }
 
 impl MultiMatchQuery {
-    add_option!(with_type, "type", MatchQueryType);
-    add_option!(with_tie_breaker, "tie_breaker", f64);
-    add_option!(with_analyzer, "analyzer", String);
-    add_option!(with_boost, "boost", f64);
-    add_option!(with_operator, "operator", String);
-    add_option!(with_minimum_should_match, "minimum_should_match", MinimumShouldMatch);
-    add_option!(with_fuzziness, "fuzziness", Fuzziness);
-    add_option!(with_prefix_length, "prefix_length", u64);
-    add_option!(with_max_expansions, "max_expansions", u64);
-    add_option!(with_rewrite, "rewrite", String);
-    add_option!(with_zero_terms_query, "zero_terms_query", ZeroTermsQuery);
-    add_option!(with_cutoff_frequency, "cutoff_frequency", f64);
-    add_option!(with_slop, "slop", i64);
+    add_option!(with_type, match_type, MatchQueryType);
+    add_option!(with_tie_breaker, tie_breaker, f64);
+    add_option!(with_analyzer, analyzer, String);
+    add_option!(with_boost, boost, f64);
+    add_option!(with_operator, operator, String);
+    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_option!(with_fuzziness, fuzziness, Fuzziness);
+    add_option!(with_prefix_length, prefix_length, u64);
+    add_option!(with_max_expansions, max_expansions, u64);
+    add_option!(with_rewrite, rewrite, String);
+    add_option!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
+    add_option!(with_cutoff_frequency, cutoff_frequency, f64);
+    add_option!(with_slop, slop, i64);
 
     build!(MultiMatch);
 }
 
 impl ToJson for MultiMatchQuery {
     fn to_json(&self) -> Json {
-        self.options.to_json()
+        let mut d = BTreeMap::new();
+        d.insert("fields".to_owned(), self.fields.to_json());
+        d.insert("query".to_owned(), self.query.to_json());
+        optional_add!(d, self.match_type, "type");
+        optional_add!(d, self.tie_breaker, "tie_breaker");
+        optional_add!(d, self.analyzer, "analyzer");
+        optional_add!(d, self.boost, "boost");
+        optional_add!(d, self.operator, "operator");
+        optional_add!(d, self.minimum_should_match, "minimum_should_match");
+        optional_add!(d, self.fuzziness, "fuzziness");
+        optional_add!(d, self.prefix_length, "prefix_length");
+        optional_add!(d, self.max_expansions, "max_expansions");
+        optional_add!(d, self.rewrite, "rewrite");
+        optional_add!(d, self.zero_terms_query, "zero_terms_query");
+        optional_add!(d, self.cutoff_frequency, "cutoff_frequency");
+        optional_add!(d, self.slop, "slop");
+        Json::Object(d)
     }
 }
 
