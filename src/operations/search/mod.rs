@@ -189,12 +189,12 @@ impl ToJson for SortField {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
 
-        optional_add!(inner, self.order, "order");
-        optional_add!(inner, self.mode, "mode");
-        optional_add!(inner, self.nested_path, "nested_path");
-        optional_add!(inner, self.nested_filter, "nested_filter");
-        optional_add!(inner, self.missing, "missing");
-        optional_add!(inner, self.unmapped_type, "unmapped_type");
+        optional_add!(self, inner, order);
+        optional_add!(self, inner, mode);
+        optional_add!(self, inner, nested_path);
+        optional_add!(self, inner, nested_filter);
+        optional_add!(self, inner, missing);
+        optional_add!(self, inner, unmapped_type);
 
         d.insert(self.field.clone(), Json::Object(inner));
         Json::Object(d)
@@ -252,10 +252,10 @@ impl ToJson for GeoDistance {
 
         inner.insert(self.field.clone(), self.location.to_json());
 
-        optional_add!(inner, self.order, "order");
-        optional_add!(inner, self.unit, "unit");
-        optional_add!(inner, self.mode, "mode");
-        optional_add!(inner, self.distance_type, "distance_type");
+        optional_add!(self, inner, order);
+        optional_add!(self, inner, unit);
+        optional_add!(self, inner, mode);
+        optional_add!(self, inner, distance_type);
 
         d.insert("_geo_distance".to_owned(), Json::Object(inner));
         Json::Object(d)
@@ -556,15 +556,15 @@ impl<'a> ToJson for SearchQueryOperationBody<'a> {
         let mut d = BTreeMap::new();
         d.insert("from".to_owned(), self.from.to_json());
         d.insert("size".to_owned(), self.size.to_json());
-        optional_add!(d, self.query, "query");
-        optional_add!(d, self.timeout, "timeout");
-        optional_add!(d, self.terminate_after, "terminate_after");
-        optional_add!(d, self.stats, "stats");
-        optional_add!(d, self.min_score, "min_score");
-        optional_add!(d, self.sort, "sort");
-        optional_add!(d, self.track_scores, "track_scores");
-        optional_add!(d, self.source, "_source");
-        optional_add!(d, self.aggs, "aggs");
+        optional_add!(self, d, query);
+        optional_add!(self, d, timeout);
+        optional_add!(self, d, terminate_after);
+        optional_add!(self, d, stats);
+        optional_add!(self, d, min_score);
+        optional_add!(self, d, sort);
+        optional_add!(self, d, track_scores);
+        optional_add!(self, d, source, "_source");
+        optional_add!(self, d, aggs);
         Json::Object(d)
     }
 }

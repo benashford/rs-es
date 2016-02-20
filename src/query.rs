@@ -242,8 +242,8 @@ impl ToJson for Function {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         // TODO - implement body
-//         optional_add!(d, self.filter, "filter");
-//         optional_add!(d, self.weight, "weight");
+//         optional_add!(self, d, filter);
+//         optional_add!(self, d, weight);
 //         d.insert(self.function.name(), self.function.to_json());
          Json::Object(d)
      }
@@ -315,7 +315,7 @@ impl ToJson for MatchAllQuery {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
-        optional_add!(inner, self.boost, "boost");
+        optional_add!(self, inner, boost);
         d.insert("match_all".to_owned(), Json::Object(inner));
         Json::Object(d)
     }
@@ -375,19 +375,19 @@ impl ToJson for MatchQuery {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
         inner.insert("query".to_owned(), self.query.to_json());
-        optional_add!(inner, self.match_type, "type");
-        optional_add!(inner, self.cutoff_frequency, "cutoff_frequency");
-        optional_add!(inner, self.lenient, "lenient");
-        optional_add!(inner, self.analyzer, "analyzer");
-        optional_add!(inner, self.boost, "boost");
-        optional_add!(inner, self.operator, "operator");
-        optional_add!(inner, self.minimum_should_match, "minimum_should_match");
-        optional_add!(inner, self.fuzziness, "fuzziness");
-        optional_add!(inner, self.prefix_length, "prefix_length");
-        optional_add!(inner, self.max_expansions, "max_expansions");
-        optional_add!(inner, self.rewrite, "rewrite");
-        optional_add!(inner, self.zero_terms_query, "zero_terms_query");
-        optional_add!(inner, self.slop, "slop");
+        optional_add!(self, inner, match_type);
+        optional_add!(self, inner, cutoff_frequency);
+        optional_add!(self, inner, lenient);
+        optional_add!(self, inner, analyzer);
+        optional_add!(self, inner, boost);
+        optional_add!(self, inner, operator);
+        optional_add!(self, inner, minimum_should_match);
+        optional_add!(self, inner, fuzziness);
+        optional_add!(self, inner, prefix_length);
+        optional_add!(self, inner, max_expansions);
+        optional_add!(self, inner, rewrite);
+        optional_add!(self, inner, zero_terms_query);
+        optional_add!(self, inner, slop);
         d.insert(self.field.clone(), Json::Object(inner));
         Json::Object(d)
     }
@@ -448,19 +448,19 @@ impl ToJson for MultiMatchQuery {
         let mut d = BTreeMap::new();
         d.insert("fields".to_owned(), self.fields.to_json());
         d.insert("query".to_owned(), self.query.to_json());
-        optional_add!(d, self.match_type, "type");
-        optional_add!(d, self.tie_breaker, "tie_breaker");
-        optional_add!(d, self.analyzer, "analyzer");
-        optional_add!(d, self.boost, "boost");
-        optional_add!(d, self.operator, "operator");
-        optional_add!(d, self.minimum_should_match, "minimum_should_match");
-        optional_add!(d, self.fuzziness, "fuzziness");
-        optional_add!(d, self.prefix_length, "prefix_length");
-        optional_add!(d, self.max_expansions, "max_expansions");
-        optional_add!(d, self.rewrite, "rewrite");
-        optional_add!(d, self.zero_terms_query, "zero_terms_query");
-        optional_add!(d, self.cutoff_frequency, "cutoff_frequency");
-        optional_add!(d, self.slop, "slop");
+        optional_add!(self, d, match_type);
+        optional_add!(self, d, tie_breaker);
+        optional_add!(self, d, analyzer);
+        optional_add!(self, d, boost);
+        optional_add!(self, d, operator);
+        optional_add!(self, d, minimum_should_match);
+        optional_add!(self, d, fuzziness);
+        optional_add!(self, d, prefix_length);
+        optional_add!(self, d, max_expansions);
+        optional_add!(self, d, rewrite);
+        optional_add!(self, d, zero_terms_query);
+        optional_add!(self, d, cutoff_frequency);
+        optional_add!(self, d, slop);
         Json::Object(d)
     }
 }
@@ -1630,15 +1630,15 @@ impl Query {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.must, "must");
+                      // optional_add!(self, m, self.must, "must");
 
-                      optional_add!(m, self.must_not, "must_not");
+                      // optional_add!(self, m, self.must_not, "must_not");
 
-                      optional_add!(m, self.should, "should");
+                      // optional_add!(self, m, self.should, "should");
 
-                      optional_add!(m, self.minimum_should_match, "minimum_should_match");
+                      // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
 
-                      optional_add!(m, self.boost, "boost");
+                      // optional_add!(self, m, self.boost, "boost");
 
               }
 
@@ -1701,11 +1701,11 @@ impl Query {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.positive, "positive");
+                      // optional_add!(self, m, self.positive, "positive");
 
-                      optional_add!(m, self.negative, "negative");
+                      // optional_add!(self, m, self.negative, "negative");
 
-                      optional_add!(m, self.negative_boost, "negative_boost");
+                      // optional_add!(self, m, self.negative_boost, "negative_boost");
 
               }
 
@@ -1808,19 +1808,19 @@ impl Query {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.cutoff_frequency, "cutoff_frequency");
+                      // optional_add!(self, m, self.cutoff_frequency, "cutoff_frequency");
 
-                      optional_add!(m, self.low_freq_operator, "low_freq_operator");
+                      // optional_add!(self, m, self.low_freq_operator, "low_freq_operator");
 
-                      optional_add!(m, self.high_freq_operator, "high_freq_operator");
+                      // optional_add!(self, m, self.high_freq_operator, "high_freq_operator");
 
-                      optional_add!(m, self.minimum_should_match, "minimum_should_match");
+                      // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
 
-                      optional_add!(m, self.boost, "boost");
+                      // optional_add!(self, m, self.boost, "boost");
 
-                      optional_add!(m, self.analyzer, "analyzer");
+                      // optional_add!(self, m, self.analyzer, "analyzer");
 
-                      optional_add!(m, self.disable_coord, "disable_coord");
+                      // optional_add!(self, m, self.disable_coord, "disable_coord");
 
               }
 
@@ -1875,9 +1875,9 @@ impl ToJson for CommonQuery {
 
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-                      optional_add!(m, self.query, "query");
+                      // optional_add!(self, m, self.query, "query");
 
-                      optional_add!(m, self.boost, "boost");
+                      // optional_add!(self, m, self.boost, "boost");
 
               }
 
@@ -1935,9 +1935,9 @@ impl ToJson for CommonQuery {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.tie_breaker, "tie_breaker");
+                      // optional_add!(self, m, self.tie_breaker, "tie_breaker");
 
-                      optional_add!(m, self.boost, "boost");
+                      // optional_add!(self, m, self.boost, "boost");
 
               }
 
@@ -2065,19 +2065,19 @@ impl ToJson for Strategy {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.fields, "fields");
+                      // optional_add!(self, m, self.fields, "fields");
 
-                      optional_add!(m, self.ignore_tf, "ignore_tf");
+                      // optional_add!(self, m, self.ignore_tf, "ignore_tf");
 
-                      optional_add!(m, self.max_query_terms, "max_query_terms");
+                      // optional_add!(self, m, self.max_query_terms, "max_query_terms");
 
-                      optional_add!(m, self.fuzziness, "fuzziness");
+                      // optional_add!(self, m, self.fuzziness, "fuzziness");
 
-                      optional_add!(m, self.prefix_length, "prefix_length");
+                      // optional_add!(self, m, self.prefix_length, "prefix_length");
 
-                      optional_add!(m, self.boost, "boost");
+                      // optional_add!(self, m, self.boost, "boost");
 
-                      optional_add!(m, self.analyzer, "analyzer");
+                      // optional_add!(self, m, self.analyzer, "analyzer");
 
               }
 
@@ -2178,17 +2178,17 @@ impl ToJson for Strategy {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.ignore_tf, "ignore_tf");
+                      // optional_add!(self, m, self.ignore_tf, "ignore_tf");
 
-                      optional_add!(m, self.max_query_terms, "max_query_terms");
+                      // optional_add!(self, m, self.max_query_terms, "max_query_terms");
 
-                      optional_add!(m, self.fuzziness, "fuzziness");
+                      // optional_add!(self, m, self.fuzziness, "fuzziness");
 
-                      optional_add!(m, self.prefix_length, "prefix_length");
+                      // optional_add!(self, m, self.prefix_length, "prefix_length");
 
-                      optional_add!(m, self.boost, "boost");
+                      // optional_add!(self, m, self.boost, "boost");
 
-                      optional_add!(m, self.analyzer, "analyzer");
+                      // optional_add!(self, m, self.analyzer, "analyzer");
 
               }
 
@@ -2288,17 +2288,17 @@ impl ToJson for Strategy {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.query, "query");
+                      // optional_add!(self, m, self.query, "query");
 
-                      optional_add!(m, self.boost, "boost");
+                      // optional_add!(self, m, self.boost, "boost");
 
-                      optional_add!(m, self.max_boost, "max_boost");
+                      // optional_add!(self, m, self.max_boost, "max_boost");
 
-                      optional_add!(m, self.score_mode, "score_mode");
+                      // optional_add!(self, m, self.score_mode, "score_mode");
 
-                      optional_add!(m, self.boost_mode, "boost_mode");
+                      // optional_add!(self, m, self.boost_mode, "boost_mode");
 
-                      optional_add!(m, self.min_score, "min_score");
+                      // optional_add!(self, m, self.min_score, "min_score");
 
               }
 
@@ -2493,13 +2493,13 @@ impl ToJson for Strategy {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.boost, "boost");
+                      // optional_add!(self, m, self.boost, "boost");
 
-                      optional_add!(m, self.fuzziness, "fuzziness");
+                      // optional_add!(self, m, self.fuzziness, "fuzziness");
 
-                      optional_add!(m, self.prefix_length, "prefix_length");
+                      // optional_add!(self, m, self.prefix_length, "prefix_length");
 
-                      optional_add!(m, self.max_expansions, "max_expansions");
+                      // optional_add!(self, m, self.max_expansions, "max_expansions");
 
               }
 
@@ -2635,9 +2635,9 @@ impl ToJson for IndexedShape {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.shape, "shape");
+                      // optional_add!(self, m, self.shape, "shape");
 
-                      optional_add!(m, self.indexed_shape, "indexed_shape");
+                      // optional_add!(self, m, self.indexed_shape, "indexed_shape");
 
               }
 
@@ -2711,11 +2711,11 @@ impl ToJson for IndexedShape {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.score_mode, "score_mode");
+                      // optional_add!(self, m, self.score_mode, "score_mode");
 
-                      optional_add!(m, self.min_children, "min_children");
+                      // optional_add!(self, m, self.min_children, "min_children");
 
-                      optional_add!(m, self.max_children, "max_children");
+                      // optional_add!(self, m, self.max_children, "max_children");
 
               }
 
@@ -2774,7 +2774,7 @@ impl ToJson for IndexedShape {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.score_mode, "score_mode");
+                  //optional_add!(self, m, self.score_mode, "score_mode");
 
               }
 
@@ -2829,7 +2829,7 @@ impl ToJson for IndexedShape {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.doc_type, "type");
+//                      optional_add!(self, m, self.doc_type, "type");
 
               }
 
@@ -2899,11 +2899,11 @@ impl ToJson for IndexedShape {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.index, "index");
+                      // optional_add!(self, m, self.index, "index");
 
-                      optional_add!(m, self.indices, "indices");
+                      // optional_add!(self, m, self.indices, "indices");
 
-                      optional_add!(m, self.no_match_query, "no_match_query");
+                      // optional_add!(self, m, self.no_match_query, "no_match_query");
 
               }
 
@@ -2970,8 +2970,8 @@ impl ToJson for Doc {
         d.insert("_index".to_owned(), self.index.to_json());
         d.insert("_type".to_owned(), self.doc_type.to_json());
 
-        optional_add!(d, self.doc, "doc");
-        optional_add!(d, self.id, "_id");
+        // optional_add!(self, d, self.doc, "doc");
+        // optional_add!(self, d, self.id, "_id");
 
         Json::Object(d)
     }
@@ -3132,37 +3132,37 @@ impl ToJson for Doc {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.fields, "fields");
+                      // optional_add!(self, m, self.fields, "fields");
 
-                      optional_add!(m, self.like_text, "like_text");
+                      // optional_add!(self, m, self.like_text, "like_text");
 
-                      optional_add!(m, self.ids, "ids");
+                      // optional_add!(self, m, self.ids, "ids");
 
-                      optional_add!(m, self.docs, "docs");
+                      // optional_add!(self, m, self.docs, "docs");
 
-                      optional_add!(m, self.max_query_terms, "max_query_terms");
+                      // optional_add!(self, m, self.max_query_terms, "max_query_terms");
 
-                      optional_add!(m, self.min_term_freq, "min_term_freq");
+                      // optional_add!(self, m, self.min_term_freq, "min_term_freq");
 
-                      optional_add!(m, self.min_doc_freq, "min_doc_freq");
+                      // optional_add!(self, m, self.min_doc_freq, "min_doc_freq");
 
-                      optional_add!(m, self.max_doc_freq, "max_doc_freq");
+                      // optional_add!(self, m, self.max_doc_freq, "max_doc_freq");
 
-                      optional_add!(m, self.min_word_length, "min_word_length");
+                      // optional_add!(self, m, self.min_word_length, "min_word_length");
 
-                      optional_add!(m, self.max_word_length, "max_word_length");
+                      // optional_add!(self, m, self.max_word_length, "max_word_length");
 
-                      optional_add!(m, self.stop_words, "stop_words");
+                      // optional_add!(self, m, self.stop_words, "stop_words");
 
-                      optional_add!(m, self.analyzer, "analyzer");
+                      // optional_add!(self, m, self.analyzer, "analyzer");
 
-                      optional_add!(m, self.minimum_should_match, "minimum_should_match");
+                      // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
 
-                      optional_add!(m, self.boost_terms, "boost_terms");
+                      // optional_add!(self, m, self.boost_terms, "boost_terms");
 
-                      optional_add!(m, self.include, "include");
+                      // optional_add!(self, m, self.include, "include");
 
-                      optional_add!(m, self.boost, "boost");
+                      // optional_add!(self, m, self.boost, "boost");
 
               }
 
@@ -3215,7 +3215,7 @@ impl ToJson for Doc {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.score_mode, "score_mode");
+                  //optional_add!(self, m, self.score_mode, "score_mode");
 
               }
 
@@ -3283,9 +3283,9 @@ impl ToJson for Doc {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.boost, "boost");
+                      // optional_add!(self, m, self.boost, "boost");
 
-                      optional_add!(m, self.rewrite, "rewrite");
+                      // optional_add!(self, m, self.rewrite, "rewrite");
 
               }
 
@@ -3517,41 +3517,41 @@ impl ToJson for Rewrite {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.default_field, "default_field");
+                      // optional_add!(self, m, self.default_field, "default_field");
 
-                      optional_add!(m, self.default_operator, "default_operator");
+                      // optional_add!(self, m, self.default_operator, "default_operator");
 
-                      optional_add!(m, self.analyzer, "analyzer");
+                      // optional_add!(self, m, self.analyzer, "analyzer");
 
-                      optional_add!(m, self.allow_leading_wildcard, "allow_leading_wildcard");
+                      // optional_add!(self, m, self.allow_leading_wildcard, "allow_leading_wildcard");
 
-                      optional_add!(m, self.lowercase_expanded_terms, "lowercase_expanded_terms");
+                      // optional_add!(self, m, self.lowercase_expanded_terms, "lowercase_expanded_terms");
 
-                      optional_add!(m, self.enable_position_increments, "enable_position_increments");
+                      // optional_add!(self, m, self.enable_position_increments, "enable_position_increments");
 
-                      optional_add!(m, self.fuzzy_max_expansions, "fuzzy_max_expansions");
+                      // optional_add!(self, m, self.fuzzy_max_expansions, "fuzzy_max_expansions");
 
-                      optional_add!(m, self.fuzziness, "fuzziness");
+                      // optional_add!(self, m, self.fuzziness, "fuzziness");
 
-                      optional_add!(m, self.fuzzy_prefix_length, "fuzzy_prefix_length");
+                      // optional_add!(self, m, self.fuzzy_prefix_length, "fuzzy_prefix_length");
 
-                      optional_add!(m, self.phrase_slop, "phrase_slop");
+                      // optional_add!(self, m, self.phrase_slop, "phrase_slop");
 
-                      optional_add!(m, self.boost, "boost");
+                      // optional_add!(self, m, self.boost, "boost");
 
-                      optional_add!(m, self.analyze_wildcard, "analyze_wildcard");
+                      // optional_add!(self, m, self.analyze_wildcard, "analyze_wildcard");
 
-                      optional_add!(m, self.auto_generate_phrase_queries, "auto_generate_phrase_queries");
+                      // optional_add!(self, m, self.auto_generate_phrase_queries, "auto_generate_phrase_queries");
 
-                      optional_add!(m, self.max_determined_states, "max_determined_states");
+                      // optional_add!(self, m, self.max_determined_states, "max_determined_states");
 
-                      optional_add!(m, self.minimum_should_match, "minimum_should_match");
+                      // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
 
-                      optional_add!(m, self.lenient, "lenient");
+                      // optional_add!(self, m, self.lenient, "lenient");
 
-                      optional_add!(m, self.locale, "locale");
+                      // optional_add!(self, m, self.locale, "locale");
 
-                      optional_add!(m, self.time_zone, "time_zone");
+                      // optional_add!(self, m, self.time_zone, "time_zone");
 
               }
 
@@ -3666,21 +3666,21 @@ impl ToJson for Rewrite {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.fields, "fields");
+                      // optional_add!(self, m, self.fields, "fields");
 
-                      optional_add!(m, self.default_operator, "default_operator");
+                      // optional_add!(self, m, self.default_operator, "default_operator");
 
-                      optional_add!(m, self.analyzer, "analyzer");
+                      // optional_add!(self, m, self.analyzer, "analyzer");
 
-                      optional_add!(m, self.flags, "flags");
+                      // optional_add!(self, m, self.flags, "flags");
 
-                      optional_add!(m, self.lowercase_expanded_terms, "lowercase_expanded_terms");
+                      // optional_add!(self, m, self.lowercase_expanded_terms, "lowercase_expanded_terms");
 
-                      optional_add!(m, self.locale, "locale");
+                      // optional_add!(self, m, self.locale, "locale");
 
-                      optional_add!(m, self.lenient, "lenient");
+                      // optional_add!(self, m, self.lenient, "lenient");
 
-                      optional_add!(m, self.minimum_should_match, "minimum_should_match");
+                      // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
 
               }
 
@@ -3786,19 +3786,19 @@ impl ToJson for Rewrite {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.gte, "gte");
+                  optional_add!(self, m, gte);
 
-                      optional_add!(m, self.gt, "gt");
+                  optional_add!(self, m, gt);
 
-                      optional_add!(m, self.lte, "lte");
+                  optional_add!(self, m, lte);
 
-                      optional_add!(m, self.lt, "lt");
+                  optional_add!(self, m, lt);
 
-                      optional_add!(m, self.boost, "boost");
+                  optional_add!(self, m, boost);
 
-                      optional_add!(m, self.time_zone, "time_zone");
+                  optional_add!(self, m, time_zone);
 
-                      optional_add!(m, self.format, "format");
+                  optional_add!(self, m, format);
 
               }
 
@@ -3872,11 +3872,11 @@ impl ToJson for Rewrite {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.boost, "boost");
+                      // optional_add!(self, m, self.boost, "boost");
 
-                      optional_add!(m, self.flags, "flags");
+                      // optional_add!(self, m, self.flags, "flags");
 
-                      optional_add!(m, self.max_determined_states, "max_determined_states");
+                      // optional_add!(self, m, self.max_determined_states, "max_determined_states");
 
               }
 
@@ -4081,9 +4081,9 @@ impl ToJson for Flags {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.in_order, "in_order");
+                      // optional_add!(self, m, self.in_order, "in_order");
 
-                      optional_add!(m, self.collect_payloads, "collect_payloads");
+                      // optional_add!(self, m, self.collect_payloads, "collect_payloads");
 
               }
 
@@ -4160,11 +4160,11 @@ impl ToJson for Flags {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.pre, "pre");
+                      // optional_add!(self, m, self.pre, "pre");
 
-                      optional_add!(m, self.post, "post");
+                      // optional_add!(self, m, self.post, "post");
 
-                      optional_add!(m, self.dist, "dist");
+                      // optional_add!(self, m, self.dist, "dist");
 
               }
 
@@ -4264,7 +4264,7 @@ impl ToJson for Flags {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.boost, "boost");
+                  //optional_add!(self, m, self.boost, "boost");
 
               }
 
@@ -4323,7 +4323,7 @@ impl ToJson for Flags {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.boost, "boost");
+                  //optional_add!(self, m, self.boost, "boost");
 
               }
 
@@ -4382,7 +4382,7 @@ impl ToJson for Flags {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.minimum_should_match, "minimum_should_match");
+                  //optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
 
               }
 
@@ -4434,7 +4434,7 @@ impl ToJson for TermsQuery {
               #[allow(dead_code, unused_variables)]
               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      optional_add!(m, self.boost, "boost");
+                  //optional_add!(self, m, self.boost, "boost");
 
               }
 
@@ -4514,18 +4514,18 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.filters, "filters");
+//                       optional_add!(self, m, self.filters, "filters");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -4610,22 +4610,22 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.must, "must");
+//                       optional_add!(self, m, self.must, "must");
 
-//                       optional_add!(m, self.must_not, "must_not");
+//                       optional_add!(self, m, self.must_not, "must_not");
 
-//                       optional_add!(m, self.should, "should");
+//                       optional_add!(self, m, self.should, "should");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -4692,11 +4692,11 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -4770,11 +4770,11 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -4862,20 +4862,20 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.distance_type, "distance_type");
+//                       optional_add!(self, m, self.distance_type, "distance_type");
 
-//                       optional_add!(m, self.optimize_bbox, "optimize_bbox");
+//                       optional_add!(self, m, self.optimize_bbox, "optimize_bbox");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -5003,11 +5003,11 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -5093,20 +5093,20 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.shape, "shape");
+//                       optional_add!(self, m, self.shape, "shape");
 
-//                       optional_add!(m, self.indexed_shape, "indexed_shape");
+//                       optional_add!(self, m, self.indexed_shape, "indexed_shape");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -5193,20 +5193,20 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.precision, "precision");
+//                       optional_add!(self, m, self.precision, "precision");
 
-//                       optional_add!(m, self.neighbors, "neighbors");
+//                       optional_add!(self, m, self.neighbors, "neighbors");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -5322,24 +5322,24 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.query, "query");
+//                       optional_add!(self, m, self.query, "query");
 
-//                       optional_add!(m, self.filter, "filter");
+//                       optional_add!(self, m, self.filter, "filter");
 
-//                       optional_add!(m, self.min_children, "min_children");
+//                       optional_add!(self, m, self.min_children, "min_children");
 
-//                       optional_add!(m, self.max_children, "max_children");
+//                       optional_add!(self, m, self.max_children, "max_children");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -5422,20 +5422,20 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.query, "query");
+//                       optional_add!(self, m, self.query, "query");
 
-//                       optional_add!(m, self.filter, "filter");
+//                       optional_add!(self, m, self.filter, "filter");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -5509,18 +5509,18 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.doc_type, "type");
+//                       optional_add!(self, m, self.doc_type, "type");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -5617,24 +5617,24 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.index, "index");
+//                       optional_add!(self, m, self.index, "index");
 
-//                       optional_add!(m, self.indices, "indices");
+//                       optional_add!(self, m, self.indices, "indices");
 
-//                       optional_add!(m, self.filter, "filter");
+//                       optional_add!(self, m, self.filter, "filter");
 
-//                       optional_add!(m, self.no_match_filter, "no_match_filter");
+//                       optional_add!(self, m, self.no_match_filter, "no_match_filter");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -5717,11 +5717,11 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -5801,20 +5801,20 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.existence, "existence");
+//                       optional_add!(self, m, self.existence, "existence");
 
-//                       optional_add!(m, self.null_value, "null_value");
+//                       optional_add!(self, m, self.null_value, "null_value");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -5901,20 +5901,20 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.score_mode, "score_mode");
+//                       optional_add!(self, m, self.score_mode, "score_mode");
 
-//                       optional_add!(m, self.join, "join");
+//                       optional_add!(self, m, self.join, "join");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -5987,11 +5987,11 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -6061,11 +6061,11 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -6139,11 +6139,11 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -6210,11 +6210,11 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -6342,30 +6342,30 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.gte, "gte");
+//                       optional_add!(self, m, self.gte, "gte");
 
-//                       optional_add!(m, self.gt, "gt");
+//                       optional_add!(self, m, self.gt, "gt");
 
-//                       optional_add!(m, self.lte, "lte");
+//                       optional_add!(self, m, self.lte, "lte");
 
-//                       optional_add!(m, self.lt, "lt");
+//                       optional_add!(self, m, self.lt, "lt");
 
-//                       optional_add!(m, self.boost, "boost");
+//                       optional_add!(self, m, self.boost, "boost");
 
-//                       optional_add!(m, self.time_zone, "time_zone");
+//                       optional_add!(self, m, self.time_zone, "time_zone");
 
-//                       optional_add!(m, self.format, "format");
+//                       optional_add!(self, m, self.format, "format");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -6461,22 +6461,22 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.boost, "boost");
+//                       optional_add!(self, m, self.boost, "boost");
 
-//                       optional_add!(m, self.flags, "flags");
+//                       optional_add!(self, m, self.flags, "flags");
 
-//                       optional_add!(m, self.max_determined_states, "max_determined_states");
+//                       optional_add!(self, m, self.max_determined_states, "max_determined_states");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -6553,18 +6553,18 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.params, "params");
+//                       optional_add!(self, m, self.params, "params");
 
 //               }
 
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -6638,11 +6638,11 @@ impl ToJson for TermsQuery {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self._cache, "_cache");
+//                       optional_add!(self, m, self._cache, "_cache");
 
-//                       optional_add!(m, self._cache_key, "_cache_key");
+//                       optional_add!(self, m, self._cache_key, "_cache_key");
 
-//                       optional_add!(m, self._name, "_name");
+//                       optional_add!(self, m, self._name, "_name");
 
 //               }
 
@@ -6718,18 +6718,18 @@ impl ToJson for TermsQuery {
           //     #[allow(dead_code, unused_variables)]
           //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-          //             optional_add!(m, self.execution, "execution");
+          //             optional_add!(self, m, self.execution, "execution");
 
           //     }
 
           //     #[allow(dead_code, unused_variables)]
           //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-          //             optional_add!(m, self._cache, "_cache");
+          //             optional_add!(self, m, self._cache, "_cache");
 
-          //             optional_add!(m, self._cache_key, "_cache_key");
+          //             optional_add!(self, m, self._cache_key, "_cache_key");
 
-          //             optional_add!(m, self._name, "_name");
+          //             optional_add!(self, m, self._name, "_name");
 
           //     }
 
@@ -6867,11 +6867,11 @@ impl ToJson for TermsQuery {
         //       #[allow(dead_code, unused_variables)]
         //       fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-        //               optional_add!(m, self._cache, "_cache");
+        //               optional_add!(self, m, self._cache, "_cache");
 
-        //               optional_add!(m, self._cache_key, "_cache_key");
+        //               optional_add!(self, m, self._cache_key, "_cache_key");
 
-        //               optional_add!(m, self._name, "_name");
+        //               optional_add!(self, m, self._name, "_name");
 
         //       }
 
@@ -7179,9 +7179,9 @@ impl ToJson for TermsQuery {
         //       #[allow(dead_code, unused_variables)]
         //       fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-        //               optional_add!(m, self.lang, "lang");
+        //               optional_add!(self, m, self.lang, "lang");
 
-        //               optional_add!(m, self.params, "params");
+        //               optional_add!(self, m, self.params, "params");
 
         //       }
 
@@ -7283,9 +7283,9 @@ impl ToJson for TermsQuery {
           //     #[allow(dead_code, unused_variables)]
           //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-          //             optional_add!(m, self.factor, "factor");
+          //             optional_add!(self, m, self.factor, "factor");
 
-          //             optional_add!(m, self.modifier, "modifier");
+          //             optional_add!(self, m, self.modifier, "modifier");
 
           //     }
 
@@ -7453,13 +7453,13 @@ impl ToJson for TermsQuery {
           //     #[allow(dead_code, unused_variables)]
           //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-          //             optional_add!(m, self.scale, "scale");
+          //             optional_add!(self, m, self.scale, "scale");
 
-          //             optional_add!(m, self.offset, "offset");
+          //             optional_add!(self, m, self.offset, "offset");
 
-          //             optional_add!(m, self.decay, "decay");
+          //             optional_add!(self, m, self.decay, "decay");
 
-          //             optional_add!(m, self.multi_value_mode, "multi_value_mode");
+          //             optional_add!(self, m, self.multi_value_mode, "multi_value_mode");
 
           //     }
 
@@ -7536,11 +7536,11 @@ impl ToJson for Origin {
 //                 let mut d = BTreeMap::new();
 //                 let mut inner = BTreeMap::new();
 //                 inner.insert("origin".to_owned(), self.origin.to_json());
-//                 optional_add!(inner, self.scale, "scale");
-//                 optional_add!(inner, self.decay, "decay");
-//                 optional_add!(inner, self.offset, "offset");
+//                 optional_add!(self, inner, self.scale, "scale");
+//                 optional_add!(self, inner, self.decay, "decay");
+//                 optional_add!(self, inner, self.offset, "offset");
 //                 d.insert(self.field.clone(), Json::Object(inner));
-//                 optional_add!(d, self.multi_value_mode, "multi_value_mode");
+//                 optional_add!(self, d, self.multi_value_mode, "multi_value_mode");
 //                 Json::Object(d)
 //             }
 //         }
@@ -7646,13 +7646,13 @@ impl ToJson for Origin {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.scale, "scale");
+//                       optional_add!(self, m, self.scale, "scale");
 
-//                       optional_add!(m, self.offset, "offset");
+//                       optional_add!(self, m, self.offset, "offset");
 
-//                       optional_add!(m, self.decay, "decay");
+//                       optional_add!(self, m, self.decay, "decay");
 
-//                       optional_add!(m, self.multi_value_mode, "multi_value_mode");
+//                       optional_add!(self, m, self.multi_value_mode, "multi_value_mode");
 
 //               }
 
@@ -7723,13 +7723,13 @@ impl ToJson for Origin {
 //               #[allow(dead_code, unused_variables)]
 //               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-//                       optional_add!(m, self.scale, "scale");
+//                       optional_add!(self, m, self.scale, "scale");
 
-//                       optional_add!(m, self.offset, "offset");
+//                       optional_add!(self, m, self.offset, "offset");
 
-//                       optional_add!(m, self.decay, "decay");
+//                       optional_add!(self, m, self.decay, "decay");
 
-//                       optional_add!(m, self.multi_value_mode, "multi_value_mode");
+//                       optional_add!(self, m, self.multi_value_mode, "multi_value_mode");
 
 //               }
 

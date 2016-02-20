@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ben Ashford
+ * Copyright 2015-2016 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,17 @@ use std::iter::Iterator;
 //
 // This is a recurring pattern when creating JSON.
 macro_rules! optional_add {
-    ($map:ident, $sn:expr, $field:expr, $val: ident, $ex:expr) => {
-        match $sn {
+    ($slf:ident, $map:ident, $sn:ident, $field:expr, $val: ident, $ex:expr) => {
+        match $slf.$sn {
             Some(ref $val) => { $map.insert($field.to_owned(), $ex); }
             _              => ()
         }
     };
-    ($map:ident, $sn:expr, $field:expr) => {
-        optional_add!($map, $sn, $field, value, value.to_json());
+    ($slf:ident, $map:ident, $sn:ident, $field:expr) => {
+        optional_add!($slf, $map, $sn, $field, value, value.to_json());
+    };
+    ($slf:ident, $map:ident, $sn:ident) => {
+        optional_add!($slf, $map, $sn, stringify!($sn));
     };
 }
 
