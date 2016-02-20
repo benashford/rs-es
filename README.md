@@ -443,7 +443,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 37. Avoid calls to `.to_json()` in cases where `Json::Whatever(thing)` would do instead.
 38. Tidy-up/standardise logging.
 
-## Licence
+## License
 
 ```
    Copyright 2015-2016 Ben Ashford
