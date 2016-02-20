@@ -602,49 +602,6 @@ impl<'a> Query<'a> {
 
                   // }
 
-                  pub fn build_common<A: Into<JsonVal>>(
-
-                         query: A
-                     ) -> CommonQuery {
-
-                         CommonQuery {
-
-                                 query:
-                                                     query.into()
-                                                 ,
-
-                                 cutoff_frequency:
-                                                     None
-                                                 ,
-
-                                 low_freq_operator:
-                                                     None
-                                                 ,
-
-                                 high_freq_operator:
-                                                     None
-                                                 ,
-
-                                 minimum_should_match:
-                                                     None
-                                                 ,
-
-                                 boost:
-                                                     None
-                                                 ,
-
-                                 analyzer:
-                                                     None
-                                                 ,
-
-                                 disable_coord:
-                                                     None
-
-
-                          }
-
-                  }
-
                   // pub fn build_constant_score(
                   //    ) -> ConstantScoreQuery {
 
