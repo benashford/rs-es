@@ -412,6 +412,8 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 4. Implement scripting changes: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_scripting_changes.html
 5. Upgrade the targeted version of ElasticSearch from 1.6 to 2.2, paying attention to the changelogs: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking-changes-2.0.html
 6. Documentation
+6. Tests
+7. Stop panicking on unexpected JSON, etc., to guard against surprises with future versions; return a result instead.
 7. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
 8. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html
 9. Add significant-terms aggregation (esp., if made a permanent feature): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
@@ -430,7 +432,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 22. Implement Update API.
 23. Implement Multi Get API
 24. Implement Term Vectors and Multi termvectors API
-25. Test coverage.
 26. Performance (ensure use of persistent HTTP connections, etc.).
 27. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
 28. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
