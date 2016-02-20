@@ -39,7 +39,7 @@ use util::StrJoin;
 /// optional fields.  This macro removes much of the repetition.
 macro_rules! add_option {
     ($n:ident, $e:ident, $t:ty) => (
-        pub fn $n<T: Into<$t>>(mut self, val: T) -> Self {
+        pub fn $n<T: Into<$t>>(&'a mut self, val: T) -> &'a mut Self {
             self.$e = Some(val.into());
             self
         }
@@ -49,7 +49,7 @@ macro_rules! add_option {
 /// Build the `build` function for each builder struct
 macro_rules! build {
     ($t:ident) => (
-        pub fn build(self) -> Query {
+        pub fn build(&'a self) -> Query<'a> {
             Query::$t(self)
         }
     )
@@ -253,41 +253,45 @@ impl ToJson for Function {
 
 // TODO: Filters and Queries are merged, ensure all filters are included in this enum
 #[derive(Debug)]
-pub enum Query {
-    MatchAll(MatchAllQuery),
-    Match(MatchQuery),
-    MultiMatch(MultiMatchQuery),
+pub enum Query<'a> {
+    MatchAll(&'a MatchAllQuery),
+    Match(&'a MatchQuery),
+    MultiMatch(&'a MultiMatchQuery),
+
+    // TODO: put back in sequence
+    Range(&'a RangeQuery),
+
     // TODO: below this line, not yet converted
-    Bool(BoolQuery),
-    Boosting(BoostingQuery),
-    Common(CommonQuery),
-    ConstantScore(ConstantScoreQuery),
-    DisMax(DisMaxQuery),
-    FuzzyLikeThis(FuzzyLikeThisQuery),
-    FuzzyLikeThisField(FuzzyLikeThisFieldQuery),
-    FunctionScore(FunctionScoreQuery),
-    Fuzzy(FuzzyQuery),
-    GeoShape(GeoShapeQuery),
-    HasChild(HasChildQuery),
-    HasParent(HasParentQuery),
-    Ids(IdsQuery),
-    Indices(IndicesQuery),
-    MoreLikeThis(MoreLikeThisQuery),
-    Nested(NestedQuery),
-    Prefix(PrefixQuery),
-    QueryString(QueryStringQuery),
-    SimpleQueryString(SimpleQueryStringQuery),
-    Range(RangeQuery),
-    Regexp(RegexpQuery),
-    SpanFirst(SpanFirstQuery),
-    SpanMulti(SpanMultiQuery),
-    SpanNear(SpanNearQuery),
-    SpanNot(SpanNotQuery),
-    SpanOr(SpanOrQuery),
-    SpanTerm(SpanTermQuery),
-    Term(TermQuery),
-    Terms(TermsQuery),
-    Wildcard(WildcardQuery)
+//    Bool(BoolQuery),
+//    Boosting(BoostingQuery),
+//    Common(CommonQuery),
+//    ConstantScore(ConstantScoreQuery),
+//    DisMax(DisMaxQuery),
+//    FuzzyLikeThis(FuzzyLikeThisQuery),
+//    FuzzyLikeThisField(FuzzyLikeThisFieldQuery),
+//    FunctionScore(FunctionScoreQuery),
+//    Fuzzy(FuzzyQuery),
+//    GeoShape(GeoShapeQuery),
+//    HasChild(HasChildQuery),
+//    HasParent(HasParentQuery),
+//    Ids(IdsQuery),
+//    Indices(IndicesQuery),
+//    MoreLikeThis(MoreLikeThisQuery),
+//    Nested(NestedQuery),
+//    Prefix(PrefixQuery),
+//    QueryString(QueryStringQuery),
+//    SimpleQueryString(SimpleQueryStringQuery),
+
+//    Regexp(RegexpQuery),
+//    SpanFirst(SpanFirstQuery),
+//    SpanMulti(SpanMultiQuery),
+//    SpanNear(SpanNearQuery),
+//    SpanNot(SpanNotQuery),
+//    SpanOr(SpanOrQuery<'a>),
+//    SpanTerm(SpanTermQuery),
+//    Term(TermQuery),
+//    Terms(TermsQuery)
+//    Wildcard(WildcardQuery)
 }
 
 // Specific query types go here
@@ -299,13 +303,13 @@ pub struct MatchAllQuery {
     boost: Option<f64>,
 }
 
-impl Query {
+impl<'a> Query<'a> {
     pub fn build_match_all() -> MatchAllQuery {
         MatchAllQuery::default()
     }
 }
 
-impl MatchAllQuery {
+impl<'a> MatchAllQuery {
     add_option!(with_boost, boost, f64);
 
     build!(MatchAll);
@@ -342,7 +346,7 @@ pub struct MatchQuery {
     slop: Option<i64>
 }
 
-impl Query {
+impl<'a> Query<'a> {
     pub fn build_match<A: Into<String>, B: Into<JsonVal>>(field: A, query: B) -> MatchQuery {
         MatchQuery {
             field: field.into(),
@@ -352,7 +356,7 @@ impl Query {
     }
 }
 
-impl MatchQuery {
+impl<'a> MatchQuery {
     add_option!(with_type, match_type, MatchType);
     add_option!(with_cutoff_frequency, cutoff_frequency, f64);
     add_option!(with_lenient, lenient, bool);
@@ -413,7 +417,7 @@ pub struct MultiMatchQuery {
     slop: Option<i64>
 }
 
-impl Query {
+impl<'a> Query<'a> {
     pub fn build_multi_match<A, B>(fields: A, query: B) -> MultiMatchQuery
         where A: Into<Vec<String>>,
               B: Into<JsonVal> {
@@ -425,7 +429,7 @@ impl Query {
     }
 }
 
-impl MultiMatchQuery {
+impl<'a> MultiMatchQuery {
     add_option!(with_type, match_type, MatchQueryType);
     add_option!(with_tie_breaker, tie_breaker, f64);
     add_option!(with_analyzer, analyzer, String);
@@ -465,29 +469,84 @@ impl ToJson for MultiMatchQuery {
     }
 }
 
+// TODO: put in proper sequence
+
+/// Range query
+#[derive(Debug, Default)]
+pub struct RangeQuery {
+    field: String,
+    gte: Option<JsonVal>,
+    gt: Option<JsonVal>,
+    lte: Option<JsonVal>,
+    lt: Option<JsonVal>,
+    boost: Option<f64>,
+    time_zone: Option<String>,
+    format: Option<String>
+}
+
+impl<'a> Query<'a> {
+    pub fn build_range<A>(field: A) -> RangeQuery
+        where A: Into<String> {
+        RangeQuery {
+            field: field.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl<'a> RangeQuery {
+    add_option!(with_gte, gte, JsonVal);
+    add_option!(with_gt, gt, JsonVal);
+    add_option!(with_lte, lte, JsonVal);
+    add_option!(with_lt, lt, JsonVal);
+    add_option!(with_boost, boost, f64);
+    add_option!(with_time_zone, time_zone, String);
+    add_option!(with_format, format, String);
+
+    build!(Range);
+}
+
+impl ToJson for RangeQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+
+        optional_add!(self, inner, gte);
+        optional_add!(self, inner, gt);
+        optional_add!(self, inner, lte);
+        optional_add!(self, inner, lt);
+        optional_add!(self, inner, boost);
+        optional_add!(self, inner, time_zone);
+        optional_add!(self, inner, format);
+
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
 // Old queries - TODO: move or delete these
 
-impl Query {
-                  pub fn build_boosting(
-                     ) -> BoostingQuery {
+impl<'a> Query<'a> {
+                  // pub fn build_boosting(
+                  //    ) -> BoostingQuery {
 
-                         BoostingQuery {
+                  //        BoostingQuery {
 
-                                 positive:
-                                                     None
-                                                 ,
+                  //                positive:
+                  //                                    None
+                  //                                ,
 
-                                 negative:
-                                                     None
-                                                 ,
+                  //                negative:
+                  //                                    None
+                  //                                ,
 
-                                 negative_boost:
-                                                     None
+                  //                negative_boost:
+                  //                                    None
 
 
-                          }
+                  //         }
 
-                  }
+                  // }
 
                   pub fn build_common<A: Into<JsonVal>>(
 
@@ -532,45 +591,45 @@ impl Query {
 
                   }
 
-                  pub fn build_constant_score(
-                     ) -> ConstantScoreQuery {
+                  // pub fn build_constant_score(
+                  //    ) -> ConstantScoreQuery {
 
-                         ConstantScoreQuery {
+                  //        ConstantScoreQuery {
 
-                                 query:
-                                                     None
-                                                 ,
+                  //                query:
+                  //                                    None
+                  //                                ,
 
-                                 boost:
-                                                     None
-
-
-                          }
-
-                  }
-
-                  pub fn build_dis_max<A: Into<Vec<Query>>>(
-
-                         queries: A
-                     ) -> DisMaxQuery {
-
-                         DisMaxQuery {
-
-                                 tie_breaker:
-                                                     None
-                                                 ,
-
-                                 boost:
-                                                     None
-                                                 ,
-
-                                 queries:
-                                                     queries.into()
+                  //                boost:
+                  //                                    None
 
 
-                          }
+                  //         }
 
-                  }
+                  // }
+
+                  // pub fn build_dis_max<A: Into<Vec<Query>>>(
+
+                  //        queries: A
+                  //    ) -> DisMaxQuery {
+
+                  //        DisMaxQuery {
+
+                  //                tie_breaker:
+                  //                                    None
+                  //                                ,
+
+                  //                boost:
+                  //                                    None
+                  //                                ,
+
+                  //                queries:
+                  //                                    queries.into()
+
+
+                  //         }
+
+                  // }
 
                   pub fn build_fuzzy_like_this<A: Into<String>>(
 
@@ -660,44 +719,44 @@ impl Query {
 
                   }
 
-                  pub fn build_function_score<A: Into<Vec<Function>>>(
+                  // pub fn build_function_score<A: Into<Vec<Function>>>(
 
-                         functions: A
-                     ) -> FunctionScoreQuery {
+                  //        functions: A
+                  //    ) -> FunctionScoreQuery {
 
-                         FunctionScoreQuery {
+                  //        FunctionScoreQuery {
 
-                                 query:
-                                                     None
-                                                 ,
+                  //                query:
+                  //                                    None
+                  //                                ,
 
-                                 boost:
-                                                     None
-                                                 ,
+                  //                boost:
+                  //                                    None
+                  //                                ,
 
-                                 functions:
-                                                     functions.into()
-                                                 ,
+                  //                functions:
+                  //                                    functions.into()
+                  //                                ,
 
-                                 max_boost:
-                                                     None
-                                                 ,
+                  //                max_boost:
+                  //                                    None
+                  //                                ,
 
-                                 score_mode:
-                                                     None
-                                                 ,
+                  //                score_mode:
+                  //                                    None
+                  //                                ,
 
-                                 boost_mode:
-                                                     None
-                                                 ,
+                  //                boost_mode:
+                  //                                    None
+                  //                                ,
 
-                                 min_score:
-                                                     None
+                  //                min_score:
+                  //                                    None
 
 
-                          }
+                  //         }
 
-                  }
+                  // }
 
                   pub fn build_fuzzy<A: Into<String>,B: Into<String>>(
 
@@ -759,63 +818,63 @@ impl Query {
 
                   }
 
-                  pub fn build_has_child<A: Into<String>,B: Into<Box<Query>>>(
+                  // pub fn build_has_child<A: Into<String>,B: Into<Box<Query>>>(
 
-                         doc_type: A,
+                  //        doc_type: A,
 
-                         query: B
-                     ) -> HasChildQuery {
+                  //        query: B
+                  //    ) -> HasChildQuery {
 
-                         HasChildQuery {
+                  //        HasChildQuery {
 
-                                 doc_type:
-                                                     doc_type.into()
-                                                 ,
+                  //                doc_type:
+                  //                                    doc_type.into()
+                  //                                ,
 
-                                 query:
-                                                     query.into()
-                                                 ,
+                  //                query:
+                  //                                    query.into()
+                  //                                ,
 
-                                 score_mode:
-                                                     None
-                                                 ,
+                  //                score_mode:
+                  //                                    None
+                  //                                ,
 
-                                 min_children:
-                                                     None
-                                                 ,
+                  //                min_children:
+                  //                                    None
+                  //                                ,
 
-                                 max_children:
-                                                     None
-
-
-                          }
-
-                  }
-
-                  pub fn build_has_parent<A: Into<String>,B: Into<Box<Query>>>(
-
-                         parent_type: A,
-
-                         query: B
-                     ) -> HasParentQuery {
-
-                         HasParentQuery {
-
-                                 parent_type:
-                                                     parent_type.into()
-                                                 ,
-
-                                 query:
-                                                     query.into()
-                                                 ,
-
-                                 score_mode:
-                                                     None
+                  //                max_children:
+                  //                                    None
 
 
-                          }
+                  //         }
 
-                  }
+                  // }
+
+                  // pub fn build_has_parent<A: Into<String>,B: Into<Box<Query>>>(
+
+                  //        parent_type: A,
+
+                  //        query: B
+                  //    ) -> HasParentQuery {
+
+                  //        HasParentQuery {
+
+                  //                parent_type:
+                  //                                    parent_type.into()
+                  //                                ,
+
+                  //                query:
+                  //                                    query.into()
+                  //                                ,
+
+                  //                score_mode:
+                  //                                    None
+
+
+                  //         }
+
+                  // }
 
                   pub fn build_ids<A: Into<Vec<String>>>(
 
@@ -836,32 +895,32 @@ impl Query {
 
                   }
 
-                  pub fn build_indices<A: Into<Box<Query>>>(
+                  // pub fn build_indices<A: Into<Box<Query>>>(
 
-                         query: A
-                     ) -> IndicesQuery {
+                  //        query: A
+                  //    ) -> IndicesQuery {
 
-                         IndicesQuery {
+                  //        IndicesQuery {
 
-                                 index:
-                                                     None
-                                                 ,
+                  //                index:
+                  //                                    None
+                  //                                ,
 
-                                 indices:
-                                                     None
-                                                 ,
+                  //                indices:
+                  //                                    None
+                  //                                ,
 
-                                 query:
-                                                     query.into()
-                                                 ,
+                  //                query:
+                  //                                    query.into()
+                  //                                ,
 
-                                 no_match_query:
-                                                     None
+                  //                no_match_query:
+                  //                                    None
 
 
-                          }
+                  //         }
 
-                  }
+                  // }
 
                   pub fn build_more_like_this(
                      ) -> MoreLikeThisQuery {
@@ -936,30 +995,30 @@ impl Query {
 
                   }
 
-                  pub fn build_nested<A: Into<String>,B: Into<Box<Query>>>(
+                  // pub fn build_nested<A: Into<String>,B: Into<Box<Query>>>(
 
-                         path: A,
+                  //        path: A,
 
-                         query: B
-                     ) -> NestedQuery {
+                  //        query: B
+                  //    ) -> NestedQuery {
 
-                         NestedQuery {
+                  //        NestedQuery {
 
-                                 path:
-                                                     path.into()
-                                                 ,
+                  //                path:
+                  //                                    path.into()
+                  //                                ,
 
-                                 score_mode:
-                                                     None
-                                                 ,
+                  //                score_mode:
+                  //                                    None
+                  //                                ,
 
-                                 query:
-                                                     query.into()
+                  //                query:
+                  //                                    query.into()
 
 
-                          }
+                  //         }
 
-                  }
+                  // }
 
                   pub fn build_prefix<A: Into<String>,B: Into<String>>(
 
@@ -1124,49 +1183,6 @@ impl Query {
 
                   }
 
-                  pub fn build_range<A: Into<String>>(
-
-                         field: A
-                     ) -> RangeQuery {
-
-                         RangeQuery {
-
-                                 field:
-                                                     field.into()
-                                                 ,
-
-                                 gte:
-                                                     None
-                                                 ,
-
-                                 gt:
-                                                     None
-                                                 ,
-
-                                 lte:
-                                                     None
-                                                 ,
-
-                                 lt:
-                                                     None
-                                                 ,
-
-                                 boost:
-                                                     None
-                                                 ,
-
-                                 time_zone:
-                                                     None
-                                                 ,
-
-                                 format:
-                                                     None
-
-
-                          }
-
-                  }
-
                   pub fn build_regexp<A: Into<String>,B: Into<String>>(
 
                          field: A,
@@ -1200,118 +1216,118 @@ impl Query {
 
                   }
 
-                  pub fn build_span_first<A: Into<Box<Query>>,B: Into<i64>>(
+                  // pub fn build_span_first<A: Into<Box<Query>>,B: Into<i64>>(
 
-                         span_match: A,
+                  //        span_match: A,
 
-                         end: B
-                     ) -> SpanFirstQuery {
+                  //        end: B
+                  //    ) -> SpanFirstQuery {
 
-                         SpanFirstQuery {
+                  //        SpanFirstQuery {
 
-                                 span_match:
-                                                     span_match.into()
-                                                 ,
+                  //                span_match:
+                  //                                    span_match.into()
+                  //                                ,
 
-                                 end:
-                                                     end.into()
-
-
-                          }
-
-                  }
-
-                  pub fn build_span_multi<A: Into<Box<Query>>>(
-
-                         span_match: A
-                     ) -> SpanMultiQuery {
-
-                         SpanMultiQuery {
-
-                                 span_match:
-                                                     span_match.into()
+                  //                end:
+                  //                                    end.into()
 
 
-                          }
+                  //         }
 
-                  }
+                  // }
 
-                  pub fn build_span_near<A: Into<Vec<Query>>,B: Into<i64>>(
+                  // pub fn build_span_multi<A: Into<Box<Query>>>(
 
-                         clauses: A,
+                  //        span_match: A
+                  //    ) -> SpanMultiQuery {
 
-                         slop: B
-                     ) -> SpanNearQuery {
+                  //        SpanMultiQuery {
 
-                         SpanNearQuery {
-
-                                 clauses:
-                                                     clauses.into()
-                                                 ,
-
-                                 slop:
-                                                     slop.into()
-                                                 ,
-
-                                 in_order:
-                                                     None
-                                                 ,
-
-                                 collect_payloads:
-                                                     None
+                  //                span_match:
+                  //                                    span_match.into()
 
 
-                          }
+                  //         }
 
-                  }
+                  // }
 
-                  pub fn build_span_not<A: Into<Box<Query>>,B: Into<Box<Query>>>(
+                  // pub fn build_span_near<A: Into<Vec<Query>>,B: Into<i64>>(
 
-                         include: A,
+                  //        clauses: A,
 
-                         exclude: B
-                     ) -> SpanNotQuery {
+                  //        slop: B
+                  //    ) -> SpanNearQuery {
 
-                         SpanNotQuery {
+                  //        SpanNearQuery {
 
-                                 include:
-                                                     include.into()
-                                                 ,
+                  //                clauses:
+                  //                                    clauses.into()
+                  //                                ,
 
-                                 exclude:
-                                                     exclude.into()
-                                                 ,
+                  //                slop:
+                  //                                    slop.into()
+                  //                                ,
 
-                                 pre:
-                                                     None
-                                                 ,
+                  //                in_order:
+                  //                                    None
+                  //                                ,
 
-                                 post:
-                                                     None
-                                                 ,
-
-                                 dist:
-                                                     None
+                  //                collect_payloads:
+                  //                                    None
 
 
-                          }
+                  //         }
 
-                  }
+                  // }
 
-                  pub fn build_span_or<A: Into<Vec<Query>>>(
+                  // pub fn build_span_not<A: Into<Box<Query>>,B: Into<Box<Query>>>(
 
-                         clauses: A
-                     ) -> SpanOrQuery {
+                  //        include: A,
 
-                         SpanOrQuery {
+                  //        exclude: B
+                  //    ) -> SpanNotQuery {
 
-                                 clauses:
-                                                     clauses.into()
+                  //        SpanNotQuery {
+
+                  //                include:
+                  //                                    include.into()
+                  //                                ,
+
+                  //                exclude:
+                  //                                    exclude.into()
+                  //                                ,
+
+                  //                pre:
+                  //                                    None
+                  //                                ,
+
+                  //                post:
+                  //                                    None
+                  //                                ,
+
+                  //                dist:
+                  //                                    None
 
 
-                          }
+                  //         }
 
-                  }
+                  // }
+
+                  // pub fn build_span_or<A: Into<Vec<Query>>>(
+
+                  //        clauses: A
+                  //    ) -> SpanOrQuery {
+
+                  //        SpanOrQuery {
+
+                  //                clauses:
+                  //                                    clauses.into()
+
+
+                  //         }
+
+                  // }
 
                   pub fn build_span_term<A: Into<String>,B: Into<JsonVal>>(
 
@@ -1415,142 +1431,137 @@ impl Query {
 
           }
 
-          impl ToJson for Query {
+          impl<'a> ToJson for Query<'a> {
               fn to_json(&self) -> Json {
                   let mut d = BTreeMap::<String, Json>::new();
                   match self {
+                      &Query::MatchAll(q) => {
+                          d.insert("match_all".to_owned(), q.to_json());
+                      },
+                      &Query::Match(q) => {
+                          d.insert("match".to_owned(), q.to_json());
+                      },
+                      &Query::MultiMatch(q) => {
+                          d.insert("multi_match".to_owned(), q.to_json());
+                      },
+                      &Query::Range(ref q) => {
+                          d.insert("range".to_owned(), q.to_json());
+                      },
 
-                          &Query::MatchAll(ref q) => {
-                              d.insert("match_all".to_owned(), q.to_json());
-                          },
+                      // &Query::Bool(ref q) => {
+                      //     d.insert("bool".to_owned(), q.to_json());
+                      // },
+                      // &Query::Boosting(ref q) => {
+                      //     d.insert("boosting".to_owned(), q.to_json());
+                      // },
 
-                          &Query::Match(ref q) => {
-                              d.insert("match".to_owned(), q.to_json());
-                          },
+                          // &Query::Common(ref q) => {
+                          //     d.insert("common".to_owned(), q.to_json());
+                          // },
 
-                          &Query::MultiMatch(ref q) => {
-                              d.insert("multi_match".to_owned(), q.to_json());
-                          },
+                          // &Query::ConstantScore(ref q) => {
+                          //     d.insert("constant_score".to_owned(), q.to_json());
+                          // },
 
-                          &Query::Bool(ref q) => {
-                              d.insert("bool".to_owned(), q.to_json());
-                          },
+                          // &Query::DisMax(ref q) => {
+                          //     d.insert("dis_max".to_owned(), q.to_json());
+                          // },
 
-                          &Query::Boosting(ref q) => {
-                              d.insert("boosting".to_owned(), q.to_json());
-                          },
+                          // &Query::FuzzyLikeThis(ref q) => {
+                          //     d.insert("fuzzy_like_this".to_owned(), q.to_json());
+                          // },
 
-                          &Query::Common(ref q) => {
-                              d.insert("common".to_owned(), q.to_json());
-                          },
+                          // &Query::FuzzyLikeThisField(ref q) => {
+                          //     d.insert("fuzzy_like_this_field".to_owned(), q.to_json());
+                          // },
 
-                          &Query::ConstantScore(ref q) => {
-                              d.insert("constant_score".to_owned(), q.to_json());
-                          },
+                          // &Query::FunctionScore(ref q) => {
+                          //     d.insert("function_score".to_owned(), q.to_json());
+                          // },
 
-                          &Query::DisMax(ref q) => {
-                              d.insert("dis_max".to_owned(), q.to_json());
-                          },
+                          // &Query::Fuzzy(ref q) => {
+                          //     d.insert("fuzzy".to_owned(), q.to_json());
+                          // },
 
-                          &Query::FuzzyLikeThis(ref q) => {
-                              d.insert("fuzzy_like_this".to_owned(), q.to_json());
-                          },
+                          // &Query::GeoShape(ref q) => {
+                          //     d.insert("geo_shape".to_owned(), q.to_json());
+                          // },
 
-                          &Query::FuzzyLikeThisField(ref q) => {
-                              d.insert("fuzzy_like_this_field".to_owned(), q.to_json());
-                          },
+                          // &Query::HasChild(ref q) => {
+                          //     d.insert("has_child".to_owned(), q.to_json());
+                          // },
 
-                          &Query::FunctionScore(ref q) => {
-                              d.insert("function_score".to_owned(), q.to_json());
-                          },
+                          // &Query::HasParent(ref q) => {
+                          //     d.insert("has_parent".to_owned(), q.to_json());
+                          // },
 
-                          &Query::Fuzzy(ref q) => {
-                              d.insert("fuzzy".to_owned(), q.to_json());
-                          },
+                          // &Query::Ids(ref q) => {
+                          //     d.insert("ids".to_owned(), q.to_json());
+                          // },
 
-                          &Query::GeoShape(ref q) => {
-                              d.insert("geo_shape".to_owned(), q.to_json());
-                          },
+                          // &Query::Indices(ref q) => {
+                          //     d.insert("indices".to_owned(), q.to_json());
+                          // },
 
-                          &Query::HasChild(ref q) => {
-                              d.insert("has_child".to_owned(), q.to_json());
-                          },
+                          // &Query::MoreLikeThis(ref q) => {
+                          //     d.insert("more_like_this".to_owned(), q.to_json());
+                          // },
 
-                          &Query::HasParent(ref q) => {
-                              d.insert("has_parent".to_owned(), q.to_json());
-                          },
+                          // &Query::Nested(ref q) => {
+                          //     d.insert("nested".to_owned(), q.to_json());
+                          // },
 
-                          &Query::Ids(ref q) => {
-                              d.insert("ids".to_owned(), q.to_json());
-                          },
+                          // &Query::Prefix(ref q) => {
+                          //     d.insert("prefix".to_owned(), q.to_json());
+                          // },
 
-                          &Query::Indices(ref q) => {
-                              d.insert("indices".to_owned(), q.to_json());
-                          },
+                          // &Query::QueryString(ref q) => {
+                          //     d.insert("query_string".to_owned(), q.to_json());
+                          // },
 
-                          &Query::MoreLikeThis(ref q) => {
-                              d.insert("more_like_this".to_owned(), q.to_json());
-                          },
+                          // &Query::SimpleQueryString(ref q) => {
+                          //     d.insert("simple_query_string".to_owned(), q.to_json());
+                          // },
 
-                          &Query::Nested(ref q) => {
-                              d.insert("nested".to_owned(), q.to_json());
-                          },
+                          // &Query::Regexp(ref q) => {
+                          //     d.insert("regexp".to_owned(), q.to_json());
+                          // },
 
-                          &Query::Prefix(ref q) => {
-                              d.insert("prefix".to_owned(), q.to_json());
-                          },
+                          // &Query::SpanFirst(ref q) => {
+                          //     d.insert("span_first".to_owned(), q.to_json());
+                          // },
 
-                          &Query::QueryString(ref q) => {
-                              d.insert("query_string".to_owned(), q.to_json());
-                          },
+                          // &Query::SpanMulti(ref q) => {
+                          //     d.insert("span_multi".to_owned(), q.to_json());
+                          // },
 
-                          &Query::SimpleQueryString(ref q) => {
-                              d.insert("simple_query_string".to_owned(), q.to_json());
-                          },
+                          // &Query::SpanNear(ref q) => {
+                          //     d.insert("span_near".to_owned(), q.to_json());
+                          // },
 
-                          &Query::Range(ref q) => {
-                              d.insert("range".to_owned(), q.to_json());
-                          },
+                          // &Query::SpanNot(ref q) => {
+                          //     d.insert("span_not".to_owned(), q.to_json());
+                          // },
 
-                          &Query::Regexp(ref q) => {
-                              d.insert("regexp".to_owned(), q.to_json());
-                          },
+                          // &Query::SpanOr(ref q) => {
+                          //     d.insert("span_or".to_owned(), q.to_json());
+                          // },
 
-                          &Query::SpanFirst(ref q) => {
-                              d.insert("span_first".to_owned(), q.to_json());
-                          },
+                          // &Query::SpanTerm(ref q) => {
+                          //     d.insert("span_term".to_owned(), q.to_json());
+                          // },
 
-                          &Query::SpanMulti(ref q) => {
-                              d.insert("span_multi".to_owned(), q.to_json());
-                          },
+                          // &Query::Term(ref q) => {
+                          //     d.insert("term".to_owned(), q.to_json());
+                          // },
 
-                          &Query::SpanNear(ref q) => {
-                              d.insert("span_near".to_owned(), q.to_json());
-                          },
+                          // &Query::Terms(ref q) => {
+                          //     d.insert("terms".to_owned(), q.to_json());
+                          // },
 
-                          &Query::SpanNot(ref q) => {
-                              d.insert("span_not".to_owned(), q.to_json());
-                          },
-
-                          &Query::SpanOr(ref q) => {
-                              d.insert("span_or".to_owned(), q.to_json());
-                          },
-
-                          &Query::SpanTerm(ref q) => {
-                              d.insert("span_term".to_owned(), q.to_json());
-                          },
-
-                          &Query::Term(ref q) => {
-                              d.insert("term".to_owned(), q.to_json());
-                          },
-
-                          &Query::Terms(ref q) => {
-                              d.insert("terms".to_owned(), q.to_json());
-                          },
-
-                          &Query::Wildcard(ref q) => {
-                              d.insert("wildcard".to_owned(), q.to_json());
-                          }
+                          // &Query::Wildcard(ref q) => {
+                          //     d.insert("wildcard".to_owned(), q.to_json());
+                          // }
 
                   }
                   Json::Object(d)
@@ -1574,160 +1585,160 @@ impl Query {
 
 
 
-          #[derive(Debug)]
-          pub struct BoolQuery {
+        //   #[derive(Debug)]
+        //   pub struct BoolQuery {
 
-                  must:
-                                         Option<Vec<Query>>
-                                      ,
+        //           must:
+        //                                  Option<Vec<Query>>
+        //                               ,
 
-                  must_not:
-                                         Option<Vec<Query>>
-                                      ,
+        //           must_not:
+        //                                  Option<Vec<Query>>
+        //                               ,
 
-                  should:
-                                         Option<Vec<Query>>
-                                      ,
+        //           should:
+        //                                  Option<Vec<Query>>
+        //                               ,
 
-                  minimum_should_match:
-                                         Option<MinimumShouldMatch>
-                                      ,
+        //           minimum_should_match:
+        //                                  Option<MinimumShouldMatch>
+        //                               ,
 
-                  boost:
-                                         Option<f64>
-
-
-          }
-
-          impl BoolQuery {
-
-                  pub fn with_must<T: Into<Vec<Query>>>(mut self, value: T) -> Self {
-                      self.must = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_must_not<T: Into<Vec<Query>>>(mut self, value: T) -> Self {
-                      self.must_not = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_should<T: Into<Vec<Query>>>(mut self, value: T) -> Self {
-                      self.should = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
-                      self.minimum_should_match = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
+        //           boost:
+        //                                  Option<f64>
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+        //   }
 
-                      // optional_add!(self, m, self.must, "must");
+        //   impl BoolQuery {
 
-                      // optional_add!(self, m, self.must_not, "must_not");
+        //           pub fn with_must<T: Into<Vec<Query>>>(mut self, value: T) -> Self {
+        //               self.must = Some(value.into());
+        //               self
+        //           }
 
-                      // optional_add!(self, m, self.should, "should");
+        //           pub fn with_must_not<T: Into<Vec<Query>>>(mut self, value: T) -> Self {
+        //               self.must_not = Some(value.into());
+        //               self
+        //           }
 
-                      // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
+        //           pub fn with_should<T: Into<Vec<Query>>>(mut self, value: T) -> Self {
+        //               self.should = Some(value.into());
+        //               self
+        //           }
 
-                      // optional_add!(self, m, self.boost, "boost");
+        //           pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
+        //               self.minimum_should_match = Some(value.into());
+        //               self
+        //           }
 
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::Bool(self)
-              }
-          }
-
-        impl ToJson for BoolQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+        //           pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+        //               self.boost = Some(value.into());
+        //               self
+        //           }
 
 
-          #[derive(Debug)]
-          pub struct BoostingQuery {
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                  positive:
-                                         Option<Box<Query>>
-                                      ,
+        //               // optional_add!(self, m, self.must, "must");
 
-                  negative:
-                                         Option<Box<Query>>
-                                      ,
+        //               // optional_add!(self, m, self.must_not, "must_not");
 
-                  negative_boost:
-                                         Option<f64>
+        //               // optional_add!(self, m, self.should, "should");
+
+        //               // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
+
+        //               // optional_add!(self, m, self.boost, "boost");
+
+        //       }
+
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+        //       }
+
+        //       pub fn build(self) -> Query {
+        //           Query::Bool(self)
+        //       }
+        //   }
+
+        // impl ToJson for BoolQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
-          }
+          // #[derive(Debug)]
+          // pub struct BoostingQuery {
 
-          impl BoostingQuery {
+          //         positive:
+          //                                Option<Box<Query>>
+          //                             ,
 
-                  pub fn with_positive<T: Into<Box<Query>>>(mut self, value: T) -> Self {
-                      self.positive = Some(value.into());
-                      self
-                  }
+          //         negative:
+          //                                Option<Box<Query>>
+          //                             ,
 
-                  pub fn with_negative<T: Into<Box<Query>>>(mut self, value: T) -> Self {
-                      self.negative = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_negative_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.negative_boost = Some(value.into());
-                      self
-                  }
+          //         negative_boost:
+          //                                Option<f64>
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          // }
 
-                      // optional_add!(self, m, self.positive, "positive");
+          // impl BoostingQuery {
 
-                      // optional_add!(self, m, self.negative, "negative");
+          //         pub fn with_positive<T: Into<Box<Query>>>(mut self, value: T) -> Self {
+          //             self.positive = Some(value.into());
+          //             self
+          //         }
 
-                      // optional_add!(self, m, self.negative_boost, "negative_boost");
+          //         pub fn with_negative<T: Into<Box<Query>>>(mut self, value: T) -> Self {
+          //             self.negative = Some(value.into());
+          //             self
+          //         }
 
-              }
+          //         pub fn with_negative_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.negative_boost = Some(value.into());
+          //             self
+          //         }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-              }
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-              pub fn build(self) -> Query {
-                  Query::Boosting(self)
-              }
-          }
+          //             // optional_add!(self, m, self.positive, "positive");
 
-        impl ToJson for BoostingQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+          //             // optional_add!(self, m, self.negative, "negative");
 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+          //             // optional_add!(self, m, self.negative_boost, "negative_boost");
+
+          //     }
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //     }
+
+          //     pub fn build(self) -> Query {
+          //         Query::Boosting(self)
+          //     }
+          // }
+
+        // impl ToJson for BoostingQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
           #[derive(Debug)]
@@ -1767,202 +1778,202 @@ impl Query {
 
           }
 
-          impl CommonQuery {
+          // impl CommonQuery {
 
-                  pub fn with_cutoff_frequency<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.cutoff_frequency = Some(value.into());
-                      self
-                  }
+          //         pub fn with_cutoff_frequency<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.cutoff_frequency = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_low_freq_operator<T: Into<String>>(mut self, value: T) -> Self {
-                      self.low_freq_operator = Some(value.into());
-                      self
-                  }
+          //         pub fn with_low_freq_operator<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.low_freq_operator = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_high_freq_operator<T: Into<String>>(mut self, value: T) -> Self {
-                      self.high_freq_operator = Some(value.into());
-                      self
-                  }
+          //         pub fn with_high_freq_operator<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.high_freq_operator = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
-                      self.minimum_should_match = Some(value.into());
-                      self
-                  }
+          //         pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
+          //             self.minimum_should_match = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
+          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
-                      self.analyzer = Some(value.into());
-                      self
-                  }
+          //         pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.analyzer = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_disable_coord<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.disable_coord = Some(value.into());
-                      self
-                  }
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-                      // optional_add!(self, m, self.cutoff_frequency, "cutoff_frequency");
-
-                      // optional_add!(self, m, self.low_freq_operator, "low_freq_operator");
-
-                      // optional_add!(self, m, self.high_freq_operator, "high_freq_operator");
-
-                      // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
-
-                      // optional_add!(self, m, self.boost, "boost");
-
-                      // optional_add!(self, m, self.analyzer, "analyzer");
-
-                      // optional_add!(self, m, self.disable_coord, "disable_coord");
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::Common(self)
-              }
-          }
+          //         pub fn with_disable_coord<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.disable_coord = Some(value.into());
+          //             self
+          //         }
 
 
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-impl ToJson for CommonQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        inner.insert("query".to_owned(), self.query.to_json());
-        self.add_optionals(&mut inner);
-        d.insert("body".to_owned(), inner.to_json());
-        Json::Object(d)
-    }
-}
+          //             // optional_add!(self, m, self.cutoff_frequency, "cutoff_frequency");
 
-          #[derive(Debug)]
-          pub struct ConstantScoreQuery {
+          //             // optional_add!(self, m, self.low_freq_operator, "low_freq_operator");
 
-                  query:
-                                         Option<Box<Query>>
-                                      ,
+          //             // optional_add!(self, m, self.high_freq_operator, "high_freq_operator");
 
-                  boost:
-                                         Option<f64>
+          //             // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
 
+          //             // optional_add!(self, m, self.boost, "boost");
 
-          }
+          //             // optional_add!(self, m, self.analyzer, "analyzer");
 
-          impl ConstantScoreQuery {
+          //             // optional_add!(self, m, self.disable_coord, "disable_coord");
 
-                  pub fn with_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
-                      self.query = Some(value.into());
-                      self
-                  }
+          //     }
 
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //     }
+
+          //     pub fn build(self) -> Query {
+          //         Query::Common(self)
+          //     }
+          // }
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-                      // optional_add!(self, m, self.query, "query");
 
-                      // optional_add!(self, m, self.boost, "boost");
+// impl ToJson for CommonQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
+//         inner.insert("query".to_owned(), self.query.to_json());
+//         self.add_optionals(&mut inner);
+//         d.insert("body".to_owned(), inner.to_json());
+//         Json::Object(d)
+//     }
+// }
 
-              }
+          // #[derive(Debug)]
+          // pub struct ConstantScoreQuery {
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //         query:
+          //                                Option<Box<Query>>
+          //                             ,
 
-              }
-
-              pub fn build(self) -> Query {
-                  Query::ConstantScore(self)
-              }
-          }
-
-        impl ToJson for ConstantScoreQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+          //         boost:
+          //                                Option<f64>
 
 
-          #[derive(Debug)]
-          pub struct DisMaxQuery {
+          // }
 
-                  tie_breaker:
-                                         Option<f64>
-                                      ,
+          // impl ConstantScoreQuery {
 
-                  boost:
-                                         Option<f64>
-                                      ,
+          //         pub fn with_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
+          //             self.query = Some(value.into());
+          //             self
+          //         }
 
-                  queries:
-                                         Vec<Query>
-
-
-          }
-
-          impl DisMaxQuery {
-
-                  pub fn with_tie_breaker<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.tie_breaker = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
+          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost = Some(value.into());
+          //             self
+          //         }
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //             // optional_add!(self, m, self.query, "query");
 
-                      // optional_add!(self, m, self.tie_breaker, "tie_breaker");
+          //             // optional_add!(self, m, self.boost, "boost");
 
-                      // optional_add!(self, m, self.boost, "boost");
+          //     }
 
-              }
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     }
 
-              }
+          //     pub fn build(self) -> Query {
+          //         Query::ConstantScore(self)
+          //     }
+          // }
 
-              pub fn build(self) -> Query {
-                  Query::DisMax(self)
-              }
-          }
+        // impl ToJson for ConstantScoreQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
 
-        impl ToJson for DisMaxQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
-                  d.insert("queries".to_owned(),
-                           self.queries.to_json());
 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+          // #[derive(Debug)]
+          // pub struct DisMaxQuery {
+
+          //         tie_breaker:
+          //                                Option<f64>
+          //                             ,
+
+          //         boost:
+          //                                Option<f64>
+          //                             ,
+
+          //         queries:
+          //                                Vec<Query>
+
+
+          // }
+
+          // impl DisMaxQuery {
+
+          //         pub fn with_tie_breaker<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.tie_breaker = Some(value.into());
+          //             self
+          //         }
+
+          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost = Some(value.into());
+          //             self
+          //         }
+
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //             // optional_add!(self, m, self.tie_breaker, "tie_breaker");
+
+          //             // optional_add!(self, m, self.boost, "boost");
+
+          //     }
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //     }
+
+          //     pub fn build(self) -> Query {
+          //         Query::DisMax(self)
+          //     }
+          // }
+
+        // impl ToJson for DisMaxQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+
+        //           d.insert("queries".to_owned(),
+        //                    self.queries.to_json());
+
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 #[derive(Debug)]
 pub enum Strategy {
@@ -2024,85 +2035,85 @@ impl ToJson for Strategy {
 
           }
 
-          impl FuzzyLikeThisQuery {
+          // impl FuzzyLikeThisQuery {
 
-                  pub fn with_fields<T: Into<Vec<String>>>(mut self, value: T) -> Self {
-                      self.fields = Some(value.into());
-                      self
-                  }
+          //         pub fn with_fields<T: Into<Vec<String>>>(mut self, value: T) -> Self {
+          //             self.fields = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_ignore_tf<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.ignore_tf = Some(value.into());
-                      self
-                  }
+          //         pub fn with_ignore_tf<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.ignore_tf = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_max_query_terms<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.max_query_terms = Some(value.into());
-                      self
-                  }
+          //         pub fn with_max_query_terms<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.max_query_terms = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_fuzziness<T: Into<Fuzziness>>(mut self, value: T) -> Self {
-                      self.fuzziness = Some(value.into());
-                      self
-                  }
+          //         pub fn with_fuzziness<T: Into<Fuzziness>>(mut self, value: T) -> Self {
+          //             self.fuzziness = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_prefix_length<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.prefix_length = Some(value.into());
-                      self
-                  }
+          //         pub fn with_prefix_length<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.prefix_length = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
+          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
-                      self.analyzer = Some(value.into());
-                      self
-                  }
+          //         pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.analyzer = Some(value.into());
+          //             self
+          //         }
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      // optional_add!(self, m, self.fields, "fields");
+          //             // optional_add!(self, m, self.fields, "fields");
 
-                      // optional_add!(self, m, self.ignore_tf, "ignore_tf");
+          //             // optional_add!(self, m, self.ignore_tf, "ignore_tf");
 
-                      // optional_add!(self, m, self.max_query_terms, "max_query_terms");
+          //             // optional_add!(self, m, self.max_query_terms, "max_query_terms");
 
-                      // optional_add!(self, m, self.fuzziness, "fuzziness");
+          //             // optional_add!(self, m, self.fuzziness, "fuzziness");
 
-                      // optional_add!(self, m, self.prefix_length, "prefix_length");
+          //             // optional_add!(self, m, self.prefix_length, "prefix_length");
 
-                      // optional_add!(self, m, self.boost, "boost");
+          //             // optional_add!(self, m, self.boost, "boost");
 
-                      // optional_add!(self, m, self.analyzer, "analyzer");
+          //             // optional_add!(self, m, self.analyzer, "analyzer");
 
-              }
+          //     }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-              }
+          //     }
 
-              pub fn build(self) -> Query {
-                  Query::FuzzyLikeThis(self)
-              }
-          }
+          //     pub fn build(self) -> Query {
+          //         Query::FuzzyLikeThis(self)
+          //     }
+          // }
 
-        impl ToJson for FuzzyLikeThisQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+        // impl ToJson for FuzzyLikeThisQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
 
-                  d.insert("like_text".to_owned(),
-                           self.like_text.to_json());
+        //           d.insert("like_text".to_owned(),
+        //                    self.like_text.to_json());
 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
           #[derive(Debug)]
@@ -2142,175 +2153,175 @@ impl ToJson for Strategy {
 
           }
 
-          impl FuzzyLikeThisFieldQuery {
+          // impl FuzzyLikeThisFieldQuery {
 
-                  pub fn with_ignore_tf<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.ignore_tf = Some(value.into());
-                      self
-                  }
+          //         pub fn with_ignore_tf<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.ignore_tf = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_max_query_terms<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.max_query_terms = Some(value.into());
-                      self
-                  }
+          //         pub fn with_max_query_terms<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.max_query_terms = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_fuzziness<T: Into<Fuzziness>>(mut self, value: T) -> Self {
-                      self.fuzziness = Some(value.into());
-                      self
-                  }
+          //         pub fn with_fuzziness<T: Into<Fuzziness>>(mut self, value: T) -> Self {
+          //             self.fuzziness = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_prefix_length<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.prefix_length = Some(value.into());
-                      self
-                  }
+          //         pub fn with_prefix_length<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.prefix_length = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
+          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
-                      self.analyzer = Some(value.into());
-                      self
-                  }
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-                      // optional_add!(self, m, self.ignore_tf, "ignore_tf");
-
-                      // optional_add!(self, m, self.max_query_terms, "max_query_terms");
-
-                      // optional_add!(self, m, self.fuzziness, "fuzziness");
-
-                      // optional_add!(self, m, self.prefix_length, "prefix_length");
-
-                      // optional_add!(self, m, self.boost, "boost");
-
-                      // optional_add!(self, m, self.analyzer, "analyzer");
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::FuzzyLikeThisField(self)
-              }
-          }
-
-        impl ToJson for FuzzyLikeThisFieldQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
+          //         pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.analyzer = Some(value.into());
+          //             self
+          //         }
 
 
-                  inner.insert("like_text".to_owned(),
-                               self.like_text.to_json());
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+          //             // optional_add!(self, m, self.ignore_tf, "ignore_tf");
 
+          //             // optional_add!(self, m, self.max_query_terms, "max_query_terms");
 
-          #[derive(Debug)]
-          pub struct FunctionScoreQuery {
+          //             // optional_add!(self, m, self.fuzziness, "fuzziness");
 
-                  query:
-                                         Option<Box<Query>>
-                                      ,
+          //             // optional_add!(self, m, self.prefix_length, "prefix_length");
 
-                  boost:
-                                         Option<f64>
-                                      ,
+          //             // optional_add!(self, m, self.boost, "boost");
 
-                  functions:
-                                         Vec<Function>
-                                      ,
+          //             // optional_add!(self, m, self.analyzer, "analyzer");
 
-                  max_boost:
-                                         Option<f64>
-                                      ,
+          //     }
 
-                  score_mode:
-                                         Option<ScoreMode>
-                                      ,
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                  boost_mode:
-                                         Option<BoostMode>
-                                      ,
+          //     }
 
-                  min_score:
-                                         Option<f64>
+          //     pub fn build(self) -> Query {
+          //         Query::FuzzyLikeThisField(self)
+          //     }
+          // }
+
+        // impl ToJson for FuzzyLikeThisFieldQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+        //         let mut inner = BTreeMap::new();
 
 
-          }
+        //           inner.insert("like_text".to_owned(),
+        //                        self.like_text.to_json());
 
-          impl FunctionScoreQuery {
-
-                  pub fn with_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
-                      self.query = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_max_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.max_boost = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
-                      self.score_mode = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_boost_mode<T: Into<BoostMode>>(mut self, value: T) -> Self {
-                      self.boost_mode = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_min_score<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.min_score = Some(value.into());
-                      self
-                  }
+        //         self.add_optionals(&mut inner);
+        //         d.insert(self.field.clone(), Json::Object(inner));
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          // #[derive(Debug)]
+          // pub struct FunctionScoreQuery {
 
-                      // optional_add!(self, m, self.query, "query");
+          //         query:
+          //                                Option<Box<Query>>
+          //                             ,
 
-                      // optional_add!(self, m, self.boost, "boost");
+          //         boost:
+          //                                Option<f64>
+          //                             ,
 
-                      // optional_add!(self, m, self.max_boost, "max_boost");
+          //         functions:
+          //                                Vec<Function>
+          //                             ,
 
-                      // optional_add!(self, m, self.score_mode, "score_mode");
+          //         max_boost:
+          //                                Option<f64>
+          //                             ,
 
-                      // optional_add!(self, m, self.boost_mode, "boost_mode");
+          //         score_mode:
+          //                                Option<ScoreMode>
+          //                             ,
 
-                      // optional_add!(self, m, self.min_score, "min_score");
+          //         boost_mode:
+          //                                Option<BoostMode>
+          //                             ,
 
-              }
+          //         min_score:
+          //                                Option<f64>
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-              }
+          // }
 
-              pub fn build(self) -> Query {
-                  Query::FunctionScore(self)
-              }
-          }
+          // impl FunctionScoreQuery {
+
+          //         pub fn with_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
+          //             self.query = Some(value.into());
+          //             self
+          //         }
+
+          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost = Some(value.into());
+          //             self
+          //         }
+
+          //         pub fn with_max_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.max_boost = Some(value.into());
+          //             self
+          //         }
+
+          //         pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
+          //             self.score_mode = Some(value.into());
+          //             self
+          //         }
+
+          //         pub fn with_boost_mode<T: Into<BoostMode>>(mut self, value: T) -> Self {
+          //             self.boost_mode = Some(value.into());
+          //             self
+          //         }
+
+          //         pub fn with_min_score<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.min_score = Some(value.into());
+          //             self
+          //         }
+
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //             // optional_add!(self, m, self.query, "query");
+
+          //             // optional_add!(self, m, self.boost, "boost");
+
+          //             // optional_add!(self, m, self.max_boost, "max_boost");
+
+          //             // optional_add!(self, m, self.score_mode, "score_mode");
+
+          //             // optional_add!(self, m, self.boost_mode, "boost_mode");
+
+          //             // optional_add!(self, m, self.min_score, "min_score");
+
+          //     }
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //     }
+
+          //     pub fn build(self) -> Query {
+          //         Query::FunctionScore(self)
+          //     }
+          // }
 
 
         #[derive(Debug)]
@@ -2424,18 +2435,18 @@ impl ToJson for Strategy {
         }
 
 
-        impl ToJson for FunctionScoreQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+        // impl ToJson for FunctionScoreQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
 
-                  d.insert("functions".to_owned(),
-                           self.functions.to_json());
+        //           d.insert("functions".to_owned(),
+        //                    self.functions.to_json());
 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
           #[derive(Debug)]
@@ -2467,67 +2478,67 @@ impl ToJson for Strategy {
 
           }
 
-          impl FuzzyQuery {
+          // impl FuzzyQuery {
 
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
+          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_fuzziness<T: Into<Fuzziness>>(mut self, value: T) -> Self {
-                      self.fuzziness = Some(value.into());
-                      self
-                  }
+          //         pub fn with_fuzziness<T: Into<Fuzziness>>(mut self, value: T) -> Self {
+          //             self.fuzziness = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_prefix_length<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.prefix_length = Some(value.into());
-                      self
-                  }
+          //         pub fn with_prefix_length<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.prefix_length = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_max_expansions<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.max_expansions = Some(value.into());
-                      self
-                  }
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-                      // optional_add!(self, m, self.boost, "boost");
-
-                      // optional_add!(self, m, self.fuzziness, "fuzziness");
-
-                      // optional_add!(self, m, self.prefix_length, "prefix_length");
-
-                      // optional_add!(self, m, self.max_expansions, "max_expansions");
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::Fuzzy(self)
-              }
-          }
-
-        impl ToJson for FuzzyQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
+          //         pub fn with_max_expansions<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.max_expansions = Some(value.into());
+          //             self
+          //         }
 
 
-                  inner.insert("value".to_owned(),
-                               self.value.to_json());
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+          //             // optional_add!(self, m, self.boost, "boost");
+
+          //             // optional_add!(self, m, self.fuzziness, "fuzziness");
+
+          //             // optional_add!(self, m, self.prefix_length, "prefix_length");
+
+          //             // optional_add!(self, m, self.max_expansions, "max_expansions");
+
+          //     }
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //     }
+
+          //     pub fn build(self) -> Query {
+          //         Query::Fuzzy(self)
+          //     }
+          // }
+
+        // impl ToJson for FuzzyQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+        //         let mut inner = BTreeMap::new();
+
+
+        //           inner.insert("value".to_owned(),
+        //                        self.value.to_json());
+
+        //         self.add_optionals(&mut inner);
+        //         d.insert(self.field.clone(), Json::Object(inner));
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
 // Required for GeoShape
@@ -2619,190 +2630,190 @@ impl ToJson for IndexedShape {
 
           }
 
-          impl GeoShapeQuery {
+          // impl GeoShapeQuery {
 
-                  pub fn with_shape<T: Into<Shape>>(mut self, value: T) -> Self {
-                      self.shape = Some(value.into());
-                      self
-                  }
+          //         pub fn with_shape<T: Into<Shape>>(mut self, value: T) -> Self {
+          //             self.shape = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_indexed_shape<T: Into<IndexedShape>>(mut self, value: T) -> Self {
-                      self.indexed_shape = Some(value.into());
-                      self
-                  }
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-                      // optional_add!(self, m, self.shape, "shape");
-
-                      // optional_add!(self, m, self.indexed_shape, "indexed_shape");
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::GeoShape(self)
-              }
-          }
-
-        impl ToJson for GeoShapeQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
+          //         pub fn with_indexed_shape<T: Into<IndexedShape>>(mut self, value: T) -> Self {
+          //             self.indexed_shape = Some(value.into());
+          //             self
+          //         }
 
 
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //             // optional_add!(self, m, self.shape, "shape");
+
+          //             // optional_add!(self, m, self.indexed_shape, "indexed_shape");
+
+          //     }
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //     }
+
+          //     pub fn build(self) -> Query {
+          //         Query::GeoShape(self)
+          //     }
+          // }
+
+        // impl ToJson for GeoShapeQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+        //         let mut inner = BTreeMap::new();
 
 
-          #[derive(Debug)]
-          pub struct HasChildQuery {
-
-                  doc_type:
-                                         String
-                                      ,
-
-                  query:
-                                         Box<Query>
-                                      ,
-
-                  score_mode:
-                                         Option<ScoreMode>
-                                      ,
-
-                  min_children:
-                                         Option<u64>
-                                      ,
-
-                  max_children:
-                                         Option<u64>
+        //         self.add_optionals(&mut inner);
+        //         d.insert(self.field.clone(), Json::Object(inner));
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
-          }
+          // #[derive(Debug)]
+          // pub struct HasChildQuery {
 
-          impl HasChildQuery {
+          //         doc_type:
+          //                                String
+          //                             ,
 
-                  pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
-                      self.score_mode = Some(value.into());
-                      self
-                  }
+          //         query:
+          //                                Box<Query>
+          //                             ,
 
-                  pub fn with_min_children<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.min_children = Some(value.into());
-                      self
-                  }
+          //         score_mode:
+          //                                Option<ScoreMode>
+          //                             ,
 
-                  pub fn with_max_children<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.max_children = Some(value.into());
-                      self
-                  }
+          //         min_children:
+          //                                Option<u64>
+          //                             ,
 
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-                      // optional_add!(self, m, self.score_mode, "score_mode");
-
-                      // optional_add!(self, m, self.min_children, "min_children");
-
-                      // optional_add!(self, m, self.max_children, "max_children");
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::HasChild(self)
-              }
-          }
-
-        impl ToJson for HasChildQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-
-                  d.insert("type".to_owned(),
-                           self.doc_type.to_json());
-
-                  d.insert("query".to_owned(),
-                           self.query.to_json());
-
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+          //         max_children:
+          //                                Option<u64>
 
 
-          #[derive(Debug)]
-          pub struct HasParentQuery {
+          // }
 
-                  parent_type:
-                                         String
-                                      ,
+          // impl HasChildQuery {
 
-                  query:
-                                         Box<Query>
-                                      ,
+          //         pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
+          //             self.score_mode = Some(value.into());
+          //             self
+          //         }
 
-                  score_mode:
-                                         Option<ScoreMode>
+          //         pub fn with_min_children<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.min_children = Some(value.into());
+          //             self
+          //         }
 
-
-          }
-
-          impl HasParentQuery {
-
-                  pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
-                      self.score_mode = Some(value.into());
-                      self
-                  }
+          //         pub fn with_max_children<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.max_children = Some(value.into());
+          //             self
+          //         }
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                  //optional_add!(self, m, self.score_mode, "score_mode");
+          //             // optional_add!(self, m, self.score_mode, "score_mode");
 
-              }
+          //             // optional_add!(self, m, self.min_children, "min_children");
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //             // optional_add!(self, m, self.max_children, "max_children");
 
-              }
+          //     }
 
-              pub fn build(self) -> Query {
-                  Query::HasParent(self)
-              }
-          }
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-        impl ToJson for HasParentQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+          //     }
 
-                  d.insert("parent_type".to_owned(),
-                           self.parent_type.to_json());
+          //     pub fn build(self) -> Query {
+          //         Query::HasChild(self)
+          //     }
+          // }
 
-                  d.insert("query".to_owned(),
-                           self.query.to_json());
+        // impl ToJson for HasChildQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+        //           d.insert("type".to_owned(),
+        //                    self.doc_type.to_json());
+
+        //           d.insert("query".to_owned(),
+        //                    self.query.to_json());
+
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
+
+
+          // #[derive(Debug)]
+          // pub struct HasParentQuery {
+
+          //         parent_type:
+          //                                String
+          //                             ,
+
+          //         query:
+          //                                Box<Query>
+          //                             ,
+
+          //         score_mode:
+          //                                Option<ScoreMode>
+
+
+          // }
+
+          // impl HasParentQuery {
+
+          //         pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
+          //             self.score_mode = Some(value.into());
+          //             self
+          //         }
+
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //         //optional_add!(self, m, self.score_mode, "score_mode");
+
+          //     }
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //     }
+
+          //     pub fn build(self) -> Query {
+          //         Query::HasParent(self)
+          //     }
+          // }
+ 
+        // impl ToJson for HasParentQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+
+        //           d.insert("parent_type".to_owned(),
+        //                    self.parent_type.to_json());
+
+        //           d.insert("query".to_owned(),
+        //                    self.query.to_json());
+
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
           #[derive(Debug)]
@@ -2818,117 +2829,117 @@ impl ToJson for IndexedShape {
 
           }
 
-          impl IdsQuery {
+//           impl IdsQuery {
 
-                  pub fn with_type<T: Into<OneOrMany<String>>>(mut self, value: T) -> Self {
-                      self.doc_type = Some(value.into());
-                      self
-                  }
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-//                      optional_add!(self, m, self.doc_type, "type");
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::Ids(self)
-              }
-          }
-
-        impl ToJson for IdsQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-
-                  d.insert("values".to_owned(),
-                           self.values.to_json());
-
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+//                   pub fn with_type<T: Into<OneOrMany<String>>>(mut self, value: T) -> Self {
+//                       self.doc_type = Some(value.into());
+//                       self
+//                   }
 
 
-          #[derive(Debug)]
-          pub struct IndicesQuery {
+//               #[allow(dead_code, unused_variables)]
+//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                  index:
-                                         Option<String>
-                                      ,
+// //                      optional_add!(self, m, self.doc_type, "type");
 
-                  indices:
-                                         Option<Vec<String>>
-                                      ,
+//               }
 
-                  query:
-                                         Box<Query>
-                                      ,
+//               #[allow(dead_code, unused_variables)]
+//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                  no_match_query:
-                                         Option<Box<Query>>
+//               }
 
+//               pub fn build(self) -> Query {
+//                   Query::Ids(self)
+//               }
+//           }
 
-          }
+        // impl ToJson for IdsQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
 
-          impl IndicesQuery {
+        //           d.insert("values".to_owned(),
+        //                    self.values.to_json());
 
-                  pub fn with_index<T: Into<String>>(mut self, value: T) -> Self {
-                      self.index = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_indices<T: Into<Vec<String>>>(mut self, value: T) -> Self {
-                      self.indices = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_no_match_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
-                      self.no_match_query = Some(value.into());
-                      self
-                  }
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          // #[derive(Debug)]
+          // pub struct IndicesQuery {
 
-                      // optional_add!(self, m, self.index, "index");
+          //         index:
+          //                                Option<String>
+          //                             ,
 
-                      // optional_add!(self, m, self.indices, "indices");
+          //         indices:
+          //                                Option<Vec<String>>
+          //                             ,
 
-                      // optional_add!(self, m, self.no_match_query, "no_match_query");
+          //         query:
+          //                                Box<Query>
+          //                             ,
 
-              }
+          //         no_match_query:
+          //                                Option<Box<Query>>
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-              }
+          // }
 
-              pub fn build(self) -> Query {
-                  Query::Indices(self)
-              }
-          }
+          // impl IndicesQuery {
 
-        impl ToJson for IndicesQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+          //         pub fn with_index<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.index = Some(value.into());
+          //             self
+          //         }
 
-                  d.insert("query".to_owned(),
-                           self.query.to_json());
+          //         pub fn with_indices<T: Into<Vec<String>>>(mut self, value: T) -> Self {
+          //             self.indices = Some(value.into());
+          //             self
+          //         }
 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+          //         pub fn with_no_match_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
+          //             self.no_match_query = Some(value.into());
+          //             self
+          //         }
+
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //             // optional_add!(self, m, self.index, "index");
+
+          //             // optional_add!(self, m, self.indices, "indices");
+
+          //             // optional_add!(self, m, self.no_match_query, "no_match_query");
+
+          //     }
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //     }
+
+          //     pub fn build(self) -> Query {
+          //         Query::Indices(self)
+          //     }
+          // }
+
+        // impl ToJson for IndicesQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+
+        //           d.insert("query".to_owned(),
+        //                    self.query.to_json());
+
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
 // A document can be provided as an example
@@ -3046,204 +3057,204 @@ impl ToJson for Doc {
 
           }
 
-          impl MoreLikeThisQuery {
+          // impl MoreLikeThisQuery {
 
-                  pub fn with_fields<T: Into<Vec<String>>>(mut self, value: T) -> Self {
-                      self.fields = Some(value.into());
-                      self
-                  }
+          //         pub fn with_fields<T: Into<Vec<String>>>(mut self, value: T) -> Self {
+          //             self.fields = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_like_text<T: Into<String>>(mut self, value: T) -> Self {
-                      self.like_text = Some(value.into());
-                      self
-                  }
+          //         pub fn with_like_text<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.like_text = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_ids<T: Into<Vec<String>>>(mut self, value: T) -> Self {
-                      self.ids = Some(value.into());
-                      self
-                  }
+          //         pub fn with_ids<T: Into<Vec<String>>>(mut self, value: T) -> Self {
+          //             self.ids = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_docs<T: Into<Vec<Doc>>>(mut self, value: T) -> Self {
-                      self.docs = Some(value.into());
-                      self
-                  }
+          //         pub fn with_docs<T: Into<Vec<Doc>>>(mut self, value: T) -> Self {
+          //             self.docs = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_max_query_terms<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.max_query_terms = Some(value.into());
-                      self
-                  }
+          //         pub fn with_max_query_terms<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.max_query_terms = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_min_term_freq<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.min_term_freq = Some(value.into());
-                      self
-                  }
+          //         pub fn with_min_term_freq<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.min_term_freq = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_min_doc_freq<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.min_doc_freq = Some(value.into());
-                      self
-                  }
+          //         pub fn with_min_doc_freq<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.min_doc_freq = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_max_doc_freq<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.max_doc_freq = Some(value.into());
-                      self
-                  }
+          //         pub fn with_max_doc_freq<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.max_doc_freq = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_min_word_length<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.min_word_length = Some(value.into());
-                      self
-                  }
+          //         pub fn with_min_word_length<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.min_word_length = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_max_word_length<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.max_word_length = Some(value.into());
-                      self
-                  }
+          //         pub fn with_max_word_length<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.max_word_length = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_stop_words<T: Into<Vec<String>>>(mut self, value: T) -> Self {
-                      self.stop_words = Some(value.into());
-                      self
-                  }
+          //         pub fn with_stop_words<T: Into<Vec<String>>>(mut self, value: T) -> Self {
+          //             self.stop_words = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
-                      self.analyzer = Some(value.into());
-                      self
-                  }
+          //         pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.analyzer = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
-                      self.minimum_should_match = Some(value.into());
-                      self
-                  }
+          //         pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
+          //             self.minimum_should_match = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_boost_terms<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost_terms = Some(value.into());
-                      self
-                  }
+          //         pub fn with_boost_terms<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost_terms = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_include<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.include = Some(value.into());
-                      self
-                  }
+          //         pub fn with_include<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.include = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-                      // optional_add!(self, m, self.fields, "fields");
-
-                      // optional_add!(self, m, self.like_text, "like_text");
-
-                      // optional_add!(self, m, self.ids, "ids");
-
-                      // optional_add!(self, m, self.docs, "docs");
-
-                      // optional_add!(self, m, self.max_query_terms, "max_query_terms");
-
-                      // optional_add!(self, m, self.min_term_freq, "min_term_freq");
-
-                      // optional_add!(self, m, self.min_doc_freq, "min_doc_freq");
-
-                      // optional_add!(self, m, self.max_doc_freq, "max_doc_freq");
-
-                      // optional_add!(self, m, self.min_word_length, "min_word_length");
-
-                      // optional_add!(self, m, self.max_word_length, "max_word_length");
-
-                      // optional_add!(self, m, self.stop_words, "stop_words");
-
-                      // optional_add!(self, m, self.analyzer, "analyzer");
-
-                      // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
-
-                      // optional_add!(self, m, self.boost_terms, "boost_terms");
-
-                      // optional_add!(self, m, self.include, "include");
-
-                      // optional_add!(self, m, self.boost, "boost");
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::MoreLikeThis(self)
-              }
-          }
-
-        impl ToJson for MoreLikeThisQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost = Some(value.into());
+          //             self
+          //         }
 
 
-          #[derive(Debug)]
-          pub struct NestedQuery {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                  path:
-                                         String
-                                      ,
+          //             // optional_add!(self, m, self.fields, "fields");
 
-                  score_mode:
-                                         Option<ScoreMode>
-                                      ,
+          //             // optional_add!(self, m, self.like_text, "like_text");
 
-                  query:
-                                         Box<Query>
+          //             // optional_add!(self, m, self.ids, "ids");
+
+          //             // optional_add!(self, m, self.docs, "docs");
+
+          //             // optional_add!(self, m, self.max_query_terms, "max_query_terms");
+
+          //             // optional_add!(self, m, self.min_term_freq, "min_term_freq");
+
+          //             // optional_add!(self, m, self.min_doc_freq, "min_doc_freq");
+
+          //             // optional_add!(self, m, self.max_doc_freq, "max_doc_freq");
+
+          //             // optional_add!(self, m, self.min_word_length, "min_word_length");
+
+          //             // optional_add!(self, m, self.max_word_length, "max_word_length");
+
+          //             // optional_add!(self, m, self.stop_words, "stop_words");
+
+          //             // optional_add!(self, m, self.analyzer, "analyzer");
+
+          //             // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
+
+          //             // optional_add!(self, m, self.boost_terms, "boost_terms");
+
+          //             // optional_add!(self, m, self.include, "include");
+
+          //             // optional_add!(self, m, self.boost, "boost");
+
+          //     }
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //     }
+
+          //     pub fn build(self) -> Query {
+          //         Query::MoreLikeThis(self)
+          //     }
+          // }
+
+        // impl ToJson for MoreLikeThisQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
-          }
+          // #[derive(Debug)]
+          // pub struct NestedQuery {
 
-          impl NestedQuery {
+          //         path:
+          //                                String
+          //                             ,
 
-                  pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
-                      self.score_mode = Some(value.into());
-                      self
-                  }
+          //         score_mode:
+          //                                Option<ScoreMode>
+          //                             ,
+
+          //         query:
+          //                                Box<Query>
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          // }
 
-                  //optional_add!(self, m, self.score_mode, "score_mode");
+          // impl NestedQuery {
 
-              }
+          //         pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
+          //             self.score_mode = Some(value.into());
+          //             self
+          //         }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-              }
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-              pub fn build(self) -> Query {
-                  Query::Nested(self)
-              }
-          }
+          //         //optional_add!(self, m, self.score_mode, "score_mode");
 
-        impl ToJson for NestedQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+          //     }
 
-                  d.insert("path".to_owned(),
-                           self.path.to_json());
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                  d.insert("query".to_owned(),
-                           self.query.to_json());
+          //     }
 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+          //     pub fn build(self) -> Query {
+          //         Query::Nested(self)
+          //     }
+          // }
+
+        // impl ToJson for NestedQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+
+        //           d.insert("path".to_owned(),
+        //                    self.path.to_json());
+
+        //           d.insert("query".to_owned(),
+        //                    self.query.to_json());
+
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
           #[derive(Debug)]
@@ -3267,37 +3278,37 @@ impl ToJson for Doc {
 
           }
 
-          impl PrefixQuery {
+          // impl PrefixQuery {
 
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
+          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_rewrite<T: Into<Rewrite>>(mut self, value: T) -> Self {
-                      self.rewrite = Some(value.into());
-                      self
-                  }
+          //         pub fn with_rewrite<T: Into<Rewrite>>(mut self, value: T) -> Self {
+          //             self.rewrite = Some(value.into());
+          //             self
+          //         }
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      // optional_add!(self, m, self.boost, "boost");
+          //             // optional_add!(self, m, self.boost, "boost");
 
-                      // optional_add!(self, m, self.rewrite, "rewrite");
+          //             // optional_add!(self, m, self.rewrite, "rewrite");
 
-              }
+          //     }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-              }
+          //     }
 
-              pub fn build(self) -> Query {
-                  Query::Prefix(self)
-              }
-          }
+          //     pub fn build(self) -> Query {
+          //         Query::Prefix(self)
+          //     }
+          // }
 
 
 #[derive(Debug)]
@@ -3323,21 +3334,21 @@ impl ToJson for Rewrite {
     }
 }
 
-        impl ToJson for PrefixQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
+        // impl ToJson for PrefixQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+        //         let mut inner = BTreeMap::new();
 
 
-                  inner.insert("value".to_owned(),
-                               self.value.to_json());
+        //           inner.insert("value".to_owned(),
+        //                        self.value.to_json());
 
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+        //         self.add_optionals(&mut inner);
+        //         d.insert(self.field.clone(), Json::Object(inner));
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
           #[derive(Debug)]
@@ -3421,162 +3432,162 @@ impl ToJson for Rewrite {
 
           }
 
-          impl QueryStringQuery {
+          // impl QueryStringQuery {
 
-                  pub fn with_default_field<T: Into<String>>(mut self, value: T) -> Self {
-                      self.default_field = Some(value.into());
-                      self
-                  }
+          //         pub fn with_default_field<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.default_field = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_default_operator<T: Into<String>>(mut self, value: T) -> Self {
-                      self.default_operator = Some(value.into());
-                      self
-                  }
+          //         pub fn with_default_operator<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.default_operator = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
-                      self.analyzer = Some(value.into());
-                      self
-                  }
+          //         pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.analyzer = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_allow_leading_wildcard<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.allow_leading_wildcard = Some(value.into());
-                      self
-                  }
+          //         pub fn with_allow_leading_wildcard<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.allow_leading_wildcard = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_lowercase_expanded_terms<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.lowercase_expanded_terms = Some(value.into());
-                      self
-                  }
+          //         pub fn with_lowercase_expanded_terms<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.lowercase_expanded_terms = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_enable_position_increments<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.enable_position_increments = Some(value.into());
-                      self
-                  }
+          //         pub fn with_enable_position_increments<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.enable_position_increments = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_fuzzy_max_expansions<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.fuzzy_max_expansions = Some(value.into());
-                      self
-                  }
+          //         pub fn with_fuzzy_max_expansions<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.fuzzy_max_expansions = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_fuzziness<T: Into<Fuzziness>>(mut self, value: T) -> Self {
-                      self.fuzziness = Some(value.into());
-                      self
-                  }
+          //         pub fn with_fuzziness<T: Into<Fuzziness>>(mut self, value: T) -> Self {
+          //             self.fuzziness = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_fuzzy_prefix_length<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.fuzzy_prefix_length = Some(value.into());
-                      self
-                  }
+          //         pub fn with_fuzzy_prefix_length<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.fuzzy_prefix_length = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_phrase_slop<T: Into<i64>>(mut self, value: T) -> Self {
-                      self.phrase_slop = Some(value.into());
-                      self
-                  }
+          //         pub fn with_phrase_slop<T: Into<i64>>(mut self, value: T) -> Self {
+          //             self.phrase_slop = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
+          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_analyze_wildcard<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.analyze_wildcard = Some(value.into());
-                      self
-                  }
+          //         pub fn with_analyze_wildcard<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.analyze_wildcard = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_auto_generate_phrase_queries<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.auto_generate_phrase_queries = Some(value.into());
-                      self
-                  }
+          //         pub fn with_auto_generate_phrase_queries<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.auto_generate_phrase_queries = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_max_determined_states<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.max_determined_states = Some(value.into());
-                      self
-                  }
+          //         pub fn with_max_determined_states<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.max_determined_states = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
-                      self.minimum_should_match = Some(value.into());
-                      self
-                  }
+          //         pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
+          //             self.minimum_should_match = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_lenient<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.lenient = Some(value.into());
-                      self
-                  }
+          //         pub fn with_lenient<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.lenient = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_locale<T: Into<String>>(mut self, value: T) -> Self {
-                      self.locale = Some(value.into());
-                      self
-                  }
+          //         pub fn with_locale<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.locale = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_time_zone<T: Into<String>>(mut self, value: T) -> Self {
-                      self.time_zone = Some(value.into());
-                      self
-                  }
+          //         pub fn with_time_zone<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.time_zone = Some(value.into());
+          //             self
+          //         }
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      // optional_add!(self, m, self.default_field, "default_field");
+          //             // optional_add!(self, m, self.default_field, "default_field");
 
-                      // optional_add!(self, m, self.default_operator, "default_operator");
+          //             // optional_add!(self, m, self.default_operator, "default_operator");
 
-                      // optional_add!(self, m, self.analyzer, "analyzer");
+          //             // optional_add!(self, m, self.analyzer, "analyzer");
 
-                      // optional_add!(self, m, self.allow_leading_wildcard, "allow_leading_wildcard");
+          //             // optional_add!(self, m, self.allow_leading_wildcard, "allow_leading_wildcard");
 
-                      // optional_add!(self, m, self.lowercase_expanded_terms, "lowercase_expanded_terms");
+          //             // optional_add!(self, m, self.lowercase_expanded_terms, "lowercase_expanded_terms");
 
-                      // optional_add!(self, m, self.enable_position_increments, "enable_position_increments");
+          //             // optional_add!(self, m, self.enable_position_increments, "enable_position_increments");
 
-                      // optional_add!(self, m, self.fuzzy_max_expansions, "fuzzy_max_expansions");
+          //             // optional_add!(self, m, self.fuzzy_max_expansions, "fuzzy_max_expansions");
 
-                      // optional_add!(self, m, self.fuzziness, "fuzziness");
+          //             // optional_add!(self, m, self.fuzziness, "fuzziness");
 
-                      // optional_add!(self, m, self.fuzzy_prefix_length, "fuzzy_prefix_length");
+          //             // optional_add!(self, m, self.fuzzy_prefix_length, "fuzzy_prefix_length");
 
-                      // optional_add!(self, m, self.phrase_slop, "phrase_slop");
+          //             // optional_add!(self, m, self.phrase_slop, "phrase_slop");
 
-                      // optional_add!(self, m, self.boost, "boost");
+          //             // optional_add!(self, m, self.boost, "boost");
 
-                      // optional_add!(self, m, self.analyze_wildcard, "analyze_wildcard");
+          //             // optional_add!(self, m, self.analyze_wildcard, "analyze_wildcard");
 
-                      // optional_add!(self, m, self.auto_generate_phrase_queries, "auto_generate_phrase_queries");
+          //             // optional_add!(self, m, self.auto_generate_phrase_queries, "auto_generate_phrase_queries");
 
-                      // optional_add!(self, m, self.max_determined_states, "max_determined_states");
+          //             // optional_add!(self, m, self.max_determined_states, "max_determined_states");
 
-                      // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
+          //             // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
 
-                      // optional_add!(self, m, self.lenient, "lenient");
+          //             // optional_add!(self, m, self.lenient, "lenient");
 
-                      // optional_add!(self, m, self.locale, "locale");
+          //             // optional_add!(self, m, self.locale, "locale");
 
-                      // optional_add!(self, m, self.time_zone, "time_zone");
+          //             // optional_add!(self, m, self.time_zone, "time_zone");
 
-              }
+          //     }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-              }
+          //     }
 
-              pub fn build(self) -> Query {
-                  Query::QueryString(self)
-              }
-          }
+          //     pub fn build(self) -> Query {
+          //         Query::QueryString(self)
+          //     }
+          // }
 
-        impl ToJson for QueryStringQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
+        // impl ToJson for QueryStringQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
 
-                  d.insert("query".to_owned(),
-                           self.query.to_json());
+        //           d.insert("query".to_owned(),
+        //                    self.query.to_json());
 
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
           #[derive(Debug)]
@@ -3620,210 +3631,94 @@ impl ToJson for Rewrite {
 
           }
 
-          impl SimpleQueryStringQuery {
+          // impl SimpleQueryStringQuery {
 
-                  pub fn with_fields<T: Into<Vec<String>>>(mut self, value: T) -> Self {
-                      self.fields = Some(value.into());
-                      self
-                  }
+          //         pub fn with_fields<T: Into<Vec<String>>>(mut self, value: T) -> Self {
+          //             self.fields = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_default_operator<T: Into<String>>(mut self, value: T) -> Self {
-                      self.default_operator = Some(value.into());
-                      self
-                  }
+          //         pub fn with_default_operator<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.default_operator = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
-                      self.analyzer = Some(value.into());
-                      self
-                  }
+          //         pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.analyzer = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_flags<T: Into<String>>(mut self, value: T) -> Self {
-                      self.flags = Some(value.into());
-                      self
-                  }
+          //         pub fn with_flags<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.flags = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_lowercase_expanded_terms<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.lowercase_expanded_terms = Some(value.into());
-                      self
-                  }
+          //         pub fn with_lowercase_expanded_terms<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.lowercase_expanded_terms = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_locale<T: Into<String>>(mut self, value: T) -> Self {
-                      self.locale = Some(value.into());
-                      self
-                  }
+          //         pub fn with_locale<T: Into<String>>(mut self, value: T) -> Self {
+          //             self.locale = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_lenient<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.lenient = Some(value.into());
-                      self
-                  }
+          //         pub fn with_lenient<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.lenient = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
-                      self.minimum_should_match = Some(value.into());
-                      self
-                  }
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-                      // optional_add!(self, m, self.fields, "fields");
-
-                      // optional_add!(self, m, self.default_operator, "default_operator");
-
-                      // optional_add!(self, m, self.analyzer, "analyzer");
-
-                      // optional_add!(self, m, self.flags, "flags");
-
-                      // optional_add!(self, m, self.lowercase_expanded_terms, "lowercase_expanded_terms");
-
-                      // optional_add!(self, m, self.locale, "locale");
-
-                      // optional_add!(self, m, self.lenient, "lenient");
-
-                      // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::SimpleQueryString(self)
-              }
-          }
-
-        impl ToJson for SimpleQueryStringQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-
-                  d.insert("query".to_owned(),
-                           self.query.to_json());
-
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+          //         pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
+          //             self.minimum_should_match = Some(value.into());
+          //             self
+          //         }
 
 
-          #[derive(Debug)]
-          pub struct RangeQuery {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                  field:
-                                         String
-                                      ,
+          //             // optional_add!(self, m, self.fields, "fields");
 
-                  gte:
-                                         Option<JsonVal>
-                                      ,
+          //             // optional_add!(self, m, self.default_operator, "default_operator");
 
-                  gt:
-                                         Option<JsonVal>
-                                      ,
+          //             // optional_add!(self, m, self.analyzer, "analyzer");
 
-                  lte:
-                                         Option<JsonVal>
-                                      ,
+          //             // optional_add!(self, m, self.flags, "flags");
 
-                  lt:
-                                         Option<JsonVal>
-                                      ,
+          //             // optional_add!(self, m, self.lowercase_expanded_terms, "lowercase_expanded_terms");
 
-                  boost:
-                                         Option<f64>
-                                      ,
+          //             // optional_add!(self, m, self.locale, "locale");
 
-                  time_zone:
-                                         Option<String>
-                                      ,
+          //             // optional_add!(self, m, self.lenient, "lenient");
 
-                  format:
-                                         Option<String>
+          //             // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
 
+          //     }
 
-          }
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-          impl RangeQuery {
+          //     }
 
-                  pub fn with_gte<T: Into<JsonVal>>(mut self, value: T) -> Self {
-                      self.gte = Some(value.into());
-                      self
-                  }
+          //     pub fn build(self) -> Query {
+          //         Query::SimpleQueryString(self)
+          //     }
+          // }
 
-                  pub fn with_gt<T: Into<JsonVal>>(mut self, value: T) -> Self {
-                      self.gt = Some(value.into());
-                      self
-                  }
+        // impl ToJson for SimpleQueryStringQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
 
-                  pub fn with_lte<T: Into<JsonVal>>(mut self, value: T) -> Self {
-                      self.lte = Some(value.into());
-                      self
-                  }
+        //           d.insert("query".to_owned(),
+        //                    self.query.to_json());
 
-                  pub fn with_lt<T: Into<JsonVal>>(mut self, value: T) -> Self {
-                      self.lt = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_time_zone<T: Into<String>>(mut self, value: T) -> Self {
-                      self.time_zone = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_format<T: Into<String>>(mut self, value: T) -> Self {
-                      self.format = Some(value.into());
-                      self
-                  }
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-                  optional_add!(self, m, gte);
-
-                  optional_add!(self, m, gt);
-
-                  optional_add!(self, m, lte);
-
-                  optional_add!(self, m, lt);
-
-                  optional_add!(self, m, boost);
-
-                  optional_add!(self, m, time_zone);
-
-                  optional_add!(self, m, format);
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::Range(self)
-              }
-          }
-
-        impl ToJson for RangeQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
-
-
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
 
 
           #[derive(Debug)]
@@ -3851,44 +3746,44 @@ impl ToJson for Rewrite {
 
           }
 
-          impl RegexpQuery {
+          // impl RegexpQuery {
 
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
+          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_flags<T: Into<Flags>>(mut self, value: T) -> Self {
-                      self.flags = Some(value.into());
-                      self
-                  }
+          //         pub fn with_flags<T: Into<Flags>>(mut self, value: T) -> Self {
+          //             self.flags = Some(value.into());
+          //             self
+          //         }
 
-                  pub fn with_max_determined_states<T: Into<u64>>(mut self, value: T) -> Self {
-                      self.max_determined_states = Some(value.into());
-                      self
-                  }
+          //         pub fn with_max_determined_states<T: Into<u64>>(mut self, value: T) -> Self {
+          //             self.max_determined_states = Some(value.into());
+          //             self
+          //         }
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      // optional_add!(self, m, self.boost, "boost");
+          //             // optional_add!(self, m, self.boost, "boost");
 
-                      // optional_add!(self, m, self.flags, "flags");
+          //             // optional_add!(self, m, self.flags, "flags");
 
-                      // optional_add!(self, m, self.max_determined_states, "max_determined_states");
+          //             // optional_add!(self, m, self.max_determined_states, "max_determined_states");
 
-              }
+          //     }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-              }
+          //     }
 
-              pub fn build(self) -> Query {
-                  Query::Regexp(self)
-              }
-          }
+          //     pub fn build(self) -> Query {
+          //         Query::Regexp(self)
+          //     }
+          // }
 
 
 #[derive(Debug)]
@@ -3938,302 +3833,301 @@ impl ToJson for Flags {
     }
 }
 
-        impl ToJson for RegexpQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
+        // impl ToJson for RegexpQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+        //         let mut inner = BTreeMap::new();
 
 
-                  inner.insert("value".to_owned(),
-                               self.value.to_json());
+        //           inner.insert("value".to_owned(),
+        //                        self.value.to_json());
 
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+        //         self.add_optionals(&mut inner);
+        //         d.insert(self.field.clone(), Json::Object(inner));
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
+
+
+        //   #[derive(Debug)]
+        //   pub struct SpanFirstQuery {
+
+        //           span_match:
+        //                                  Box<Query>
+        //                               ,
+
+        //           end:
+        //                                  i64
+
+
+        //   }
+
+        //   impl SpanFirstQuery {
+
+
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+        //       }
+
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+        //       }
+
+        //       pub fn build(self) -> Query {
+        //           Query::SpanFirst(self)
+        //       }
+        //   }
+
+        // impl ToJson for SpanFirstQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+
+        //           d.insert("match".to_owned(),
+        //                    self.span_match.to_json());
+
+        //           d.insert("end".to_owned(),
+        //                    self.end.to_json());
+
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
+
+
+        //   #[derive(Debug)]
+        //   pub struct SpanMultiQuery {
+
+        //           span_match:
+        //                                  Box<Query>
+
+
+        //   }
+
+        //   impl SpanMultiQuery {
+
+
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+        //       }
+
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+        //       }
+
+        //       pub fn build(self) -> Query {
+        //           Query::SpanMulti(self)
+        //       }
+        //   }
+
+        // impl ToJson for SpanMultiQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+
+        //           d.insert("match".to_owned(),
+        //                    self.span_match.to_json());
+
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
+
+
+          // #[derive(Debug)]
+          // pub struct SpanNearQuery {
+
+          //         clauses:
+          //                                Vec<Query>
+          //                             ,
+
+          //         slop:
+          //                                i64
+          //                             ,
+
+          //         in_order:
+          //                                Option<bool>
+          //                             ,
+
+          //         collect_payloads:
+          //                                Option<bool>
+
+
+          // }
+
+          // impl SpanNearQuery {
+
+          //         pub fn with_in_order<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.in_order = Some(value.into());
+          //             self
+          //         }
+
+          //         pub fn with_collect_payloads<T: Into<bool>>(mut self, value: T) -> Self {
+          //             self.collect_payloads = Some(value.into());
+          //             self
+          //         }
+
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //             // optional_add!(self, m, self.in_order, "in_order");
+
+          //             // optional_add!(self, m, self.collect_payloads, "collect_payloads");
+
+          //     }
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //     }
+
+          //     pub fn build(self) -> Query {
+          //         Query::SpanNear(self)
+          //     }
+          // }
+
+        // impl ToJson for SpanNearQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+
+        //           d.insert("clauses".to_owned(),
+        //                    self.clauses.to_json());
+
+        //           d.insert("slop".to_owned(),
+        //                    self.slop.to_json());
+
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
+
+
+          // #[derive(Debug)]
+          // pub struct SpanNotQuery {
+
+          //         include:
+          //                                Box<Query>
+          //                             ,
+
+          //         exclude:               Box<Query>
+          //                             ,
+
+          //         pre:
+          //                                Option<i64>
+          //                             ,
+
+          //         post:
+          //                                Option<i64>
+          //                             ,
+
+          //         dist:
+          //                                Option<i64>
+
+
+          // }
+
+          // impl SpanNotQuery {
+
+          //         pub fn with_pre<T: Into<i64>>(mut self, value: T) -> Self {
+          //             self.pre = Some(value.into());
+          //             self
+          //         }
+
+          //         pub fn with_post<T: Into<i64>>(mut self, value: T) -> Self {
+          //             self.post = Some(value.into());
+          //             self
+          //         }
+
+          //         pub fn with_dist<T: Into<i64>>(mut self, value: T) -> Self {
+          //             self.dist = Some(value.into());
+          //             self
+          //         }
+
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //             // optional_add!(self, m, self.pre, "pre");
+
+          //             // optional_add!(self, m, self.post, "post");
+
+          //             // optional_add!(self, m, self.dist, "dist");
+
+          //     }
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //     }
+
+          //     pub fn build(self) -> Query {
+          //         Query::SpanNot(self)
+          //     }
+          // }
+
+        // impl ToJson for SpanNotQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+
+        //           d.insert("include".to_owned(),
+        //                    self.include.to_json());
+
+        //           d.insert("exclude".to_owned(),
+        //                    self.exclude.to_json());
+
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
           #[derive(Debug)]
-          pub struct SpanFirstQuery {
-
-                  span_match:
-                                         Box<Query>
-                                      ,
-
-                  end:
-                                         i64
-
-
-          }
-
-          impl SpanFirstQuery {
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::SpanFirst(self)
-              }
-          }
-
-        impl ToJson for SpanFirstQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-
-                  d.insert("match".to_owned(),
-                           self.span_match.to_json());
-
-                  d.insert("end".to_owned(),
-                           self.end.to_json());
-
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
-
-
-          #[derive(Debug)]
-          pub struct SpanMultiQuery {
-
-                  span_match:
-                                         Box<Query>
-
-
-          }
-
-          impl SpanMultiQuery {
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::SpanMulti(self)
-              }
-          }
-
-        impl ToJson for SpanMultiQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-
-                  d.insert("match".to_owned(),
-                           self.span_match.to_json());
-
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
-
-
-          #[derive(Debug)]
-          pub struct SpanNearQuery {
+          pub struct SpanOrQuery<'a> {
 
                   clauses:
-                                         Vec<Query>
-                                      ,
-
-                  slop:
-                                         i64
-                                      ,
-
-                  in_order:
-                                         Option<bool>
-                                      ,
-
-                  collect_payloads:
-                                         Option<bool>
+                                         Vec<Query<'a>>
 
 
           }
 
-          impl SpanNearQuery {
-
-                  pub fn with_in_order<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.in_order = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_collect_payloads<T: Into<bool>>(mut self, value: T) -> Self {
-                      self.collect_payloads = Some(value.into());
-                      self
-                  }
+          // impl SpanOrQuery {
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                      // optional_add!(self, m, self.in_order, "in_order");
+          //     }
 
-                      // optional_add!(self, m, self.collect_payloads, "collect_payloads");
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-              }
+          //     }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     pub fn build(self) -> Query {
+          //         Query::SpanOr(self)
+          //     }
+          // }
 
-              }
+        // impl<'a> ToJson for SpanOrQuery<'a> {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
 
-              pub fn build(self) -> Query {
-                  Query::SpanNear(self)
-              }
-          }
+        //           d.insert("clauses".to_owned(),
+        //                    self.clauses.to_json());
 
-        impl ToJson for SpanNearQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-
-                  d.insert("clauses".to_owned(),
-                           self.clauses.to_json());
-
-                  d.insert("slop".to_owned(),
-                           self.slop.to_json());
-
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
-
-
-          #[derive(Debug)]
-          pub struct SpanNotQuery {
-
-                  include:
-                                         Box<Query>
-                                      ,
-
-                  exclude:
-                                         Box<Query>
-                                      ,
-
-                  pre:
-                                         Option<i64>
-                                      ,
-
-                  post:
-                                         Option<i64>
-                                      ,
-
-                  dist:
-                                         Option<i64>
-
-
-          }
-
-          impl SpanNotQuery {
-
-                  pub fn with_pre<T: Into<i64>>(mut self, value: T) -> Self {
-                      self.pre = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_post<T: Into<i64>>(mut self, value: T) -> Self {
-                      self.post = Some(value.into());
-                      self
-                  }
-
-                  pub fn with_dist<T: Into<i64>>(mut self, value: T) -> Self {
-                      self.dist = Some(value.into());
-                      self
-                  }
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-                      // optional_add!(self, m, self.pre, "pre");
-
-                      // optional_add!(self, m, self.post, "post");
-
-                      // optional_add!(self, m, self.dist, "dist");
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::SpanNot(self)
-              }
-          }
-
-        impl ToJson for SpanNotQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-
-                  d.insert("include".to_owned(),
-                           self.include.to_json());
-
-                  d.insert("exclude".to_owned(),
-                           self.exclude.to_json());
-
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
-
-
-          #[derive(Debug)]
-          pub struct SpanOrQuery {
-
-                  clauses:
-                                         Vec<Query>
-
-
-          }
-
-          impl SpanOrQuery {
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::SpanOr(self)
-              }
-          }
-
-        impl ToJson for SpanOrQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-
-                  d.insert("clauses".to_owned(),
-                           self.clauses.to_json());
-
-                self.add_optionals(&mut d);
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+        //         self.add_optionals(&mut d);
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
           #[derive(Debug)]
@@ -4253,46 +4147,46 @@ impl ToJson for Flags {
 
           }
 
-          impl SpanTermQuery {
+          // impl SpanTermQuery {
 
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-                  //optional_add!(self, m, self.boost, "boost");
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::SpanTerm(self)
-              }
-          }
-
-        impl ToJson for SpanTermQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
+          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost = Some(value.into());
+          //             self
+          //         }
 
 
-                  inner.insert("value".to_owned(),
-                               self.value.to_json());
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+          //         //optional_add!(self, m, self.boost, "boost");
+
+          //     }
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //     }
+
+          //     pub fn build(self) -> Query {
+          //         Query::SpanTerm(self)
+          //     }
+          // }
+
+        // impl ToJson for SpanTermQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+        //         let mut inner = BTreeMap::new();
+
+
+        //           inner.insert("value".to_owned(),
+        //                        self.value.to_json());
+
+        //         self.add_optionals(&mut inner);
+        //         d.insert(self.field.clone(), Json::Object(inner));
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
           #[derive(Debug)]
@@ -4312,46 +4206,46 @@ impl ToJson for Flags {
 
           }
 
-          impl TermQuery {
+          // impl TermQuery {
 
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-                  //optional_add!(self, m, self.boost, "boost");
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::Term(self)
-              }
-          }
-
-        impl ToJson for TermQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
+          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+          //             self.boost = Some(value.into());
+          //             self
+          //         }
 
 
-                  inner.insert("value".to_owned(),
-                               self.value.to_json());
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+          //         //optional_add!(self, m, self.boost, "boost");
+
+          //     }
+
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+          //     }
+
+          //     pub fn build(self) -> Query {
+          //         Query::Term(self)
+          //     }
+          // }
+
+        // impl ToJson for TermQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+        //         let mut inner = BTreeMap::new();
+
+
+        //           inner.insert("value".to_owned(),
+        //                        self.value.to_json());
+
+        //         self.add_optionals(&mut inner);
+        //         d.insert(self.field.clone(), Json::Object(inner));
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
           #[derive(Debug)]
@@ -4371,30 +4265,30 @@ impl ToJson for Flags {
 
           }
 
-          impl TermsQuery {
+          // impl TermsQuery {
 
-                  pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
-                      self.minimum_should_match = Some(value.into());
-                      self
-                  }
+          //         pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
+          //             self.minimum_should_match = Some(value.into());
+          //             self
+          //         }
 
 
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                  //optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
+          //         //optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
 
-              }
+          //     }
 
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+          //     #[allow(dead_code, unused_variables)]
+          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-              }
+          //     }
 
-              pub fn build(self) -> Query {
-                  Query::Terms(self)
-              }
-          }
+          //     pub fn build(self) -> Query {
+          //         Query::Terms(self)
+          //     }
+          // }
 
 
 impl ToJson for TermsQuery {
@@ -4423,46 +4317,46 @@ impl ToJson for TermsQuery {
 
           }
 
-          impl WildcardQuery {
+        //   impl WildcardQuery {
 
-                  pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-                      self.boost = Some(value.into());
-                      self
-                  }
-
-
-              #[allow(dead_code, unused_variables)]
-              fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-                  //optional_add!(self, m, self.boost, "boost");
-
-              }
-
-              #[allow(dead_code, unused_variables)]
-              fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-              }
-
-              pub fn build(self) -> Query {
-                  Query::Wildcard(self)
-              }
-          }
-
-        impl ToJson for WildcardQuery {
-            fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                let mut inner = BTreeMap::new();
+        //           pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
+        //               self.boost = Some(value.into());
+        //               self
+        //           }
 
 
-                  inner.insert("value".to_owned(),
-                               self.value.to_json());
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
 
-                self.add_optionals(&mut inner);
-                d.insert(self.field.clone(), Json::Object(inner));
-                self.add_core_optionals(&mut d);
-                Json::Object(d)
-            }
-        }
+        //           //optional_add!(self, m, self.boost, "boost");
+
+        //       }
+
+        //       #[allow(dead_code, unused_variables)]
+        //       fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
+
+        //       }
+
+        //       pub fn build(self) -> Query {
+        //           Query::Wildcard(self)
+        //       }
+        //   }
+
+        // impl ToJson for WildcardQuery {
+        //     fn to_json(&self) -> Json {
+        //         let mut d = BTreeMap::new();
+        //         let mut inner = BTreeMap::new();
+
+
+        //           inner.insert("value".to_owned(),
+        //                        self.value.to_json());
+
+        //         self.add_optionals(&mut inner);
+        //         d.insert(self.field.clone(), Json::Object(inner));
+        //         self.add_core_optionals(&mut d);
+        //         Json::Object(d)
+        //     }
+        // }
 
 
 // Filters
