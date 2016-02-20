@@ -255,8 +255,11 @@ impl ToJson for Function {
 #[derive(Debug)]
 pub enum Query<'a> {
     MatchAll(&'a MatchAllQuery),
+
+    // Full-text queries
     Match(&'a MatchQuery),
     MultiMatch(&'a MultiMatchQuery),
+    Common(&'a CommonQuery),
 
     // TODO: put back in sequence
     Range(&'a RangeQuery),
@@ -264,7 +267,6 @@ pub enum Query<'a> {
     // TODO: below this line, not yet converted
 //    Bool(BoolQuery),
 //    Boosting(BoostingQuery),
-//    Common(CommonQuery),
 //    ConstantScore(ConstantScoreQuery),
 //    DisMax(DisMaxQuery),
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
@@ -465,6 +467,58 @@ impl ToJson for MultiMatchQuery {
         optional_add!(self, d, zero_terms_query);
         optional_add!(self, d, cutoff_frequency);
         optional_add!(self, d, slop);
+        Json::Object(d)
+    }
+}
+
+/// Common terms query
+#[derive(Debug, Default)]
+pub struct CommonQuery {
+    query: JsonVal,
+    cutoff_frequency: Option<f64>,
+    low_freq_operator: Option<String>,
+    high_freq_operator: Option<String>,
+    minimum_should_match: Option<MinimumShouldMatch>,
+    boost: Option<f64>,
+    analyzer: Option<String>,
+    disable_coord: Option<bool>
+}
+
+impl<'a> Query<'a> {
+    pub fn build_common<A>(query: A) -> CommonQuery
+        where A: Into<JsonVal> {
+        CommonQuery {
+            query: query.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl<'a> CommonQuery {
+    add_option!(with_cutoff_frequency, cutoff_frequency, f64);
+    add_option!(with_low_freq_operator, low_freq_operator, String);
+    add_option!(with_high_freq_operator, high_freq_operator, String);
+    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_option!(with_boost, boost, f64);
+    add_option!(with_analyzer, analyzer, String);
+    add_option!(with_disable_coord, disable_coord, bool);
+
+    build!(Common);
+}
+
+impl ToJson for CommonQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        inner.insert("query".to_owned(), self.query.to_json());
+        optional_add!(self, inner, cutoff_frequency);
+        optional_add!(self, inner, low_freq_operator);
+        optional_add!(self, inner, high_freq_operator);
+        optional_add!(self, inner, minimum_should_match);
+        optional_add!(self, inner, boost);
+        optional_add!(self, inner, analyzer);
+        optional_add!(self, inner, disable_coord);
+        d.insert("body".to_owned(), Json::Object(inner));
         Json::Object(d)
     }
 }
@@ -1444,7 +1498,10 @@ impl<'a> Query<'a> {
                       &Query::MultiMatch(q) => {
                           d.insert("multi_match".to_owned(), q.to_json());
                       },
-                      &Query::Range(ref q) => {
+                      &Query::Common(q) => {
+                          d.insert("common".to_owned(), q.to_json());
+                      },
+                      &Query::Range(q) => {
                           d.insert("range".to_owned(), q.to_json());
                       },
 
@@ -1741,122 +1798,6 @@ impl<'a> Query<'a> {
         // }
 
 
-          #[derive(Debug)]
-          pub struct CommonQuery {
-
-                  query:
-                                         JsonVal
-                                      ,
-
-                  cutoff_frequency:
-                                         Option<f64>
-                                      ,
-
-                  low_freq_operator:
-                                         Option<String>
-                                      ,
-
-                  high_freq_operator:
-                                         Option<String>
-                                      ,
-
-                  minimum_should_match:
-                                         Option<MinimumShouldMatch>
-                                      ,
-
-                  boost:
-                                         Option<f64>
-                                      ,
-
-                  analyzer:
-                                         Option<String>
-                                      ,
-
-                  disable_coord:
-                                         Option<bool>
-
-
-          }
-
-          // impl CommonQuery {
-
-          //         pub fn with_cutoff_frequency<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.cutoff_frequency = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_low_freq_operator<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.low_freq_operator = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_high_freq_operator<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.high_freq_operator = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
-          //             self.minimum_should_match = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.boost = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.analyzer = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_disable_coord<T: Into<bool>>(mut self, value: T) -> Self {
-          //             self.disable_coord = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             // optional_add!(self, m, self.cutoff_frequency, "cutoff_frequency");
-
-          //             // optional_add!(self, m, self.low_freq_operator, "low_freq_operator");
-
-          //             // optional_add!(self, m, self.high_freq_operator, "high_freq_operator");
-
-          //             // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
-
-          //             // optional_add!(self, m, self.boost, "boost");
-
-          //             // optional_add!(self, m, self.analyzer, "analyzer");
-
-          //             // optional_add!(self, m, self.disable_coord, "disable_coord");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::Common(self)
-          //     }
-          // }
-
-
-
-// impl ToJson for CommonQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-//         inner.insert("query".to_owned(), self.query.to_json());
-//         self.add_optionals(&mut inner);
-//         d.insert("body".to_owned(), inner.to_json());
-//         Json::Object(d)
-//     }
-// }
 
           // #[derive(Debug)]
           // pub struct ConstantScoreQuery {
