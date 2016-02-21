@@ -501,6 +501,23 @@ pub mod tests {
     }
 
     #[test]
+    fn test_query_dsl() {
+        let query = Query::build_filtered(
+            Filter::build_bool()
+                .with_must(vec![Filter::build_term("field_a",
+                                                   "value").build(),
+                                Filter::build_range("field_b")
+                                .with_gte(5)
+                                .with_lt(10)
+                                .build()])
+                .build())
+            .with_query(Query::build_query_string("some value").build())
+            .build();
+        let json = query.to_json().to_string();
+        assert_eq!("{\"filtered\":{\"filter\":{\"bool\":{\"must\":[{\"term\":{\"field_a\":\"value\"}},{\"range\":{\"field_b\":{\"gte\":5,\"lt\":10}}}]}},\"query\":{\"query_string\":{\"query\":\"some value\"}}}}", json);
+    }
+
+    #[test]
     fn test_bulk() {
         let index_name = "test_bulk";
         let mut client = make_client();
