@@ -251,7 +251,8 @@ let query = Query::build_filtered(
                                     Filter::build_range("field_b")
                                         .with_gte(5)
                                         .with_lt(10)
-                                        .build()]))
+                                        .build()])
+                    .build())
                 .with_query(Query::build_query_string("some value").build())
                 .build();
 ```
