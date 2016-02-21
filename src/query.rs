@@ -284,6 +284,9 @@ pub enum Query<'a> {
     QueryString(&'a QueryStringQuery),
     SimpleQueryString(&'a SimpleQueryStringQuery),
 
+    // Term level queries
+    Term(&'a TermQuery),
+
     // TODO: put back in sequence
     Range(&'a RangeQuery),
 
@@ -312,7 +315,7 @@ pub enum Query<'a> {
 //    SpanNot(SpanNotQuery),
 //    SpanOr(SpanOrQuery<'a>),
 //    SpanTerm(SpanTermQuery),
-//    Term(TermQuery),
+
 //    Terms(TermsQuery)
 //    Wildcard(WildcardQuery)
 }
@@ -339,6 +342,9 @@ impl<'a> ToJson for Query<'a> {
             },
             &Query::SimpleQueryString(q) => {
                 d.insert("simple_query_string".to_owned(), q.to_json());
+            },
+            &Query::Term(q) => {
+                d.insert("term".to_owned(), q.to_json());
             },
             &Query::Range(q) => {
                 d.insert("range".to_owned(), q.to_json());
@@ -751,6 +757,45 @@ impl ToJson for SimpleQueryStringQuery {
         optional_add!(self, d, locale);
         optional_add!(self, d, lenient);
         optional_add!(self, d, minimum_should_match);
+        Json::Object(d)
+    }
+}
+
+/// Term query
+#[derive(Debug, Default)]
+pub struct TermQuery {
+    field: String,
+    value: JsonVal,
+    boost: Option<f64>
+}
+
+impl<'a> Query<'a> {
+    pub fn build_term<A, B>(field: A, value: B) -> TermQuery
+        where A: Into<String>,
+              B: Into<JsonVal> {
+        TermQuery {
+            field: field.into(),
+            value: value.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl<'a> TermQuery {
+    add_option!(with_boost, boost, f64);
+
+    build!(Term);
+}
+
+impl ToJson for TermQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+
+        inner.insert("value".to_owned(), self.value.to_json());
+        optional_add!(self, inner, boost);
+
+        d.insert(self.field.clone(), Json::Object(inner));
         Json::Object(d)
     }
 }
@@ -1446,31 +1491,6 @@ impl<'a> Query<'a> {
                      ) -> SpanTermQuery {
 
                          SpanTermQuery {
-
-                                 field:
-                                                     field.into()
-                                                 ,
-
-                                 value:
-                                                     value.into()
-                                                 ,
-
-                                 boost:
-                                                     None
-
-
-                          }
-
-                  }
-
-                  pub fn build_term<A: Into<String>,B: Into<JsonVal>>(
-
-                         field: A,
-
-                         value: B
-                     ) -> TermQuery {
-
-                         TermQuery {
 
                                  field:
                                                      field.into()
@@ -3680,63 +3700,6 @@ impl ToString for Flag {
         // }
 
 
-          #[derive(Debug)]
-          pub struct TermQuery {
-
-                  field:
-                                         String
-                                      ,
-
-                  value:
-                                         JsonVal
-                                      ,
-
-                  boost:
-                                         Option<f64>
-
-
-          }
-
-          // impl TermQuery {
-
-          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.boost = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //         //optional_add!(self, m, self.boost, "boost");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::Term(self)
-          //     }
-          // }
-
-        // impl ToJson for TermQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-        //         let mut inner = BTreeMap::new();
-
-
-        //           inner.insert("value".to_owned(),
-        //                        self.value.to_json());
-
-        //         self.add_optionals(&mut inner);
-        //         d.insert(self.field.clone(), Json::Object(inner));
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
 
 
           #[derive(Debug)]
