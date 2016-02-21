@@ -261,6 +261,7 @@ pub enum Query<'a> {
     MultiMatch(&'a MultiMatchQuery),
     Common(&'a CommonQuery),
     QueryString(&'a QueryStringQuery),
+    SimpleQueryString(&'a SimpleQueryStringQuery),
 
     // TODO: put back in sequence
     Range(&'a RangeQuery),
@@ -282,7 +283,6 @@ pub enum Query<'a> {
 //    MoreLikeThis(MoreLikeThisQuery),
 //    Nested(NestedQuery),
 //    Prefix(PrefixQuery),
-//    SimpleQueryString(SimpleQueryStringQuery),
 
 //    Regexp(RegexpQuery),
 //    SpanFirst(SpanFirstQuery),
@@ -315,6 +315,9 @@ impl<'a> ToJson for Query<'a> {
             },
             &Query::QueryString(q) => {
                 d.insert("query_string".to_owned(), q.to_json());
+            },
+            &Query::SimpleQueryString(q) => {
+                d.insert("simple_query_string".to_owned(), q.to_json());
             },
             &Query::Range(q) => {
                 d.insert("range".to_owned(), q.to_json());
@@ -635,6 +638,57 @@ impl ToJson for QueryStringQuery {
         optional_add!(self, d, locale);
         optional_add!(self, d, time_zone);
         optional_add!(self, d, use_dis_max);
+        Json::Object(d)
+    }
+}
+
+/// SimpleQueryString query
+#[derive(Debug, Default)]
+pub struct SimpleQueryStringQuery {
+    query: String,
+    fields: Option<Vec<String>>,
+    default_operator: Option<String>,
+    analyzer: Option<String>,
+    flags: Option<String>,
+    lowercase_expanded_terms: Option<bool>,
+    locale: Option<String>,
+    lenient: Option<bool>,
+    minimum_should_match: Option<MinimumShouldMatch>
+}
+
+impl<'a> Query<'a> {
+    pub fn build_simple_query_string<A: Into<String>>(query: A) -> SimpleQueryStringQuery {
+        SimpleQueryStringQuery {
+            query: query.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl<'a> SimpleQueryStringQuery {
+    add_option!(with_fields, fields, Vec<String>);
+    add_option!(with_default_operator, default_operator, String);
+    add_option!(with_analyzer, analyzer, String);
+    add_option!(with_flags, flags, String);
+    add_option!(with_lowercase_expanded_terms, lowercase_expanded_terms, bool);
+    add_option!(with_locale, locale, String);
+    add_option!(with_lenient, lenient, bool);
+    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+
+    build!(SimpleQueryString);
+}
+
+impl ToJson for SimpleQueryStringQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("query".to_owned(), self.query.to_json());
+        optional_add!(self, d, fields);
+        optional_add!(self, d, analyzer);
+        optional_add!(self, d, flags);
+        optional_add!(self, d, lowercase_expanded_terms);
+        optional_add!(self, d, locale);
+        optional_add!(self, d, lenient);
+        optional_add!(self, d, minimum_should_match);
         Json::Object(d)
     }
 }
@@ -1169,53 +1223,6 @@ impl<'a> Query<'a> {
                                                  ,
 
                                  rewrite:
-                                                     None
-
-
-                          }
-
-                  }
-
-                  pub fn build_simple_query_string<A: Into<String>>(
-
-                         query: A
-                     ) -> SimpleQueryStringQuery {
-
-                         SimpleQueryStringQuery {
-
-                                 query:
-                                                     query.into()
-                                                 ,
-
-                                 fields:
-                                                     None
-                                                 ,
-
-                                 default_operator:
-                                                     None
-                                                 ,
-
-                                 analyzer:
-                                                     None
-                                                 ,
-
-                                 flags:
-                                                     None
-                                                 ,
-
-                                 lowercase_expanded_terms:
-                                                     None
-                                                 ,
-
-                                 locale:
-                                                     None
-                                                 ,
-
-                                 lenient:
-                                                     None
-                                                 ,
-
-                                 minimum_should_match:
                                                      None
 
 
@@ -3137,138 +3144,6 @@ impl ToJson for Rewrite {
         //         Json::Object(d)
         //     }
         // }
-
-
-
-
-          #[derive(Debug)]
-          pub struct SimpleQueryStringQuery {
-
-                  query:
-                                         String
-                                      ,
-
-                  fields:
-                                         Option<Vec<String>>
-                                      ,
-
-                  default_operator:
-                                         Option<String>
-                                      ,
-
-                  analyzer:
-                                         Option<String>
-                                      ,
-
-                  flags:
-                                         Option<String>
-                                      ,
-
-                  lowercase_expanded_terms:
-                                         Option<bool>
-                                      ,
-
-                  locale:
-                                         Option<String>
-                                      ,
-
-                  lenient:
-                                         Option<bool>
-                                      ,
-
-                  minimum_should_match:
-                                         Option<MinimumShouldMatch>
-
-
-          }
-
-          // impl SimpleQueryStringQuery {
-
-          //         pub fn with_fields<T: Into<Vec<String>>>(mut self, value: T) -> Self {
-          //             self.fields = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_default_operator<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.default_operator = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.analyzer = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_flags<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.flags = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_lowercase_expanded_terms<T: Into<bool>>(mut self, value: T) -> Self {
-          //             self.lowercase_expanded_terms = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_locale<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.locale = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_lenient<T: Into<bool>>(mut self, value: T) -> Self {
-          //             self.lenient = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
-          //             self.minimum_should_match = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             // optional_add!(self, m, self.fields, "fields");
-
-          //             // optional_add!(self, m, self.default_operator, "default_operator");
-
-          //             // optional_add!(self, m, self.analyzer, "analyzer");
-
-          //             // optional_add!(self, m, self.flags, "flags");
-
-          //             // optional_add!(self, m, self.lowercase_expanded_terms, "lowercase_expanded_terms");
-
-          //             // optional_add!(self, m, self.locale, "locale");
-
-          //             // optional_add!(self, m, self.lenient, "lenient");
-
-          //             // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::SimpleQueryString(self)
-          //     }
-          // }
-
-        // impl ToJson for SimpleQueryStringQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //           d.insert("query".to_owned(),
-        //                    self.query.to_json());
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
-
 
 
 
