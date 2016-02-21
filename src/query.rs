@@ -260,6 +260,7 @@ pub enum Query<'a> {
     Match(&'a MatchQuery),
     MultiMatch(&'a MultiMatchQuery),
     Common(&'a CommonQuery),
+    QueryString(&'a QueryStringQuery),
 
     // TODO: put back in sequence
     Range(&'a RangeQuery),
@@ -281,7 +282,6 @@ pub enum Query<'a> {
 //    MoreLikeThis(MoreLikeThisQuery),
 //    Nested(NestedQuery),
 //    Prefix(PrefixQuery),
-//    QueryString(QueryStringQuery),
 //    SimpleQueryString(SimpleQueryStringQuery),
 
 //    Regexp(RegexpQuery),
@@ -294,6 +294,34 @@ pub enum Query<'a> {
 //    Term(TermQuery),
 //    Terms(TermsQuery)
 //    Wildcard(WildcardQuery)
+}
+
+/// Convert a Query to Json
+impl<'a> ToJson for Query<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::<String, Json>::new();
+        match self {
+            &Query::MatchAll(q) => {
+                d.insert("match_all".to_owned(), q.to_json());
+            },
+            &Query::Match(q) => {
+                d.insert("match".to_owned(), q.to_json());
+            },
+            &Query::MultiMatch(q) => {
+                d.insert("multi_match".to_owned(), q.to_json());
+            },
+            &Query::Common(q) => {
+                d.insert("common".to_owned(), q.to_json());
+            },
+            &Query::QueryString(q) => {
+                d.insert("query_string".to_owned(), q.to_json());
+            },
+            &Query::Range(q) => {
+                d.insert("range".to_owned(), q.to_json());
+            }
+        }
+        Json::Object(d)
+    }
 }
 
 // Specific query types go here
@@ -519,6 +547,94 @@ impl ToJson for CommonQuery {
         optional_add!(self, inner, analyzer);
         optional_add!(self, inner, disable_coord);
         d.insert("body".to_owned(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
+/// Query string query
+#[derive(Debug, Default)]
+pub struct QueryStringQuery {
+    query: String,
+    default_field: Option<String>,
+    fields: Option<Vec<String>>,
+    default_operator: Option<String>,
+    analyzer: Option<String>,
+    allow_leading_wildcard: Option<bool>,
+    lowercase_expanded_terms: Option<bool>,
+    enable_position_increments: Option<bool>,
+    fuzzy_max_expansions: Option<u64>,
+    fuzziness: Option<Fuzziness>,
+    fuzzy_prefix_length: Option<u64>,
+    phrase_slop: Option<i64>,
+    boost: Option<f64>,
+    analyze_wildcard: Option<bool>,
+    auto_generate_phrase_queries: Option<bool>,
+    max_determined_states: Option<u64>,
+    minimum_should_match: Option<MinimumShouldMatch>,
+    lenient: Option<bool>,
+    locale: Option<String>,
+    time_zone: Option<String>,
+    use_dis_max: Option<bool>
+}
+
+impl<'a> Query<'a> {
+    pub fn build_query_string<A: Into<String>>(query: A) -> QueryStringQuery {
+        QueryStringQuery {
+            query: query.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl<'a> QueryStringQuery {
+    add_option!(with_default_field, default_field, String);
+    add_option!(with_fields, fields, Vec<String>);
+    add_option!(with_default_operator, default_operator, String);
+    add_option!(with_analyzer, analyzer, String);
+    add_option!(with_allow_leading_wildcard, allow_leading_wildcard, bool);
+    add_option!(with_lowercase_expanded_terms, lowercase_expanded_terms, bool);
+    add_option!(with_enable_position_increments, enable_position_increments, bool);
+    add_option!(with_fuzzy_max_expansions, fuzzy_max_expansions, u64);
+    add_option!(with_fuzziness, fuzziness, Fuzziness);
+    add_option!(with_fuzzy_prefix_length, fuzzy_prefix_length, u64);
+    add_option!(with_phrase_slop, phrase_slop, i64);
+    add_option!(with_boost, boost, f64);
+    add_option!(with_analyze_wildcard, analyze_wildcard, bool);
+    add_option!(with_auto_generate_phrase_queries, auto_generate_phrase_queries, bool);
+    add_option!(with_max_determined_states, max_determined_states, u64);
+    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_option!(with_lenient, lenient, bool);
+    add_option!(with_locale, locale, String);
+    add_option!(with_time_zone, time_zone, String);
+    add_option!(with_use_dis_max, use_dis_max, bool);
+
+    build!(QueryString);
+}
+
+impl ToJson for QueryStringQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("query".to_owned(), self.query.to_json());
+        optional_add!(self, d, default_field);
+        optional_add!(self, d, fields);
+        optional_add!(self, d, default_operator);
+        optional_add!(self, d, analyzer);
+        optional_add!(self, d, allow_leading_wildcard);
+        optional_add!(self, d, lowercase_expanded_terms);
+        optional_add!(self, d, enable_position_increments);
+        optional_add!(self, d, fuzzy_max_expansions);
+        optional_add!(self, d, fuzziness);
+        optional_add!(self, d, fuzzy_prefix_length);
+        optional_add!(self, d, phrase_slop);
+        optional_add!(self, d, boost);
+        optional_add!(self, d, analyze_wildcard);
+        optional_add!(self, d, auto_generate_phrase_queries);
+        optional_add!(self, d, max_determined_states);
+        optional_add!(self, d, minimum_should_match);
+        optional_add!(self, d, lenient);
+        optional_add!(self, d, locale);
+        optional_add!(self, d, time_zone);
+        optional_add!(self, d, use_dis_max);
         Json::Object(d)
     }
 }
@@ -1060,93 +1176,6 @@ impl<'a> Query<'a> {
 
                   }
 
-                  pub fn build_query_string<A: Into<String>>(
-
-                         query: A
-                     ) -> QueryStringQuery {
-
-                         QueryStringQuery {
-
-                                 query:
-                                                     query.into()
-                                                 ,
-
-                                 default_field:
-                                                     None
-                                                 ,
-
-                                 default_operator:
-                                                     None
-                                                 ,
-
-                                 analyzer:
-                                                     None
-                                                 ,
-
-                                 allow_leading_wildcard:
-                                                     None
-                                                 ,
-
-                                 lowercase_expanded_terms:
-                                                     None
-                                                 ,
-
-                                 enable_position_increments:
-                                                     None
-                                                 ,
-
-                                 fuzzy_max_expansions:
-                                                     None
-                                                 ,
-
-                                 fuzziness:
-                                                     None
-                                                 ,
-
-                                 fuzzy_prefix_length:
-                                                     None
-                                                 ,
-
-                                 phrase_slop:
-                                                     None
-                                                 ,
-
-                                 boost:
-                                                     None
-                                                 ,
-
-                                 analyze_wildcard:
-                                                     None
-                                                 ,
-
-                                 auto_generate_phrase_queries:
-                                                     None
-                                                 ,
-
-                                 max_determined_states:
-                                                     None
-                                                 ,
-
-                                 minimum_should_match:
-                                                     None
-                                                 ,
-
-                                 lenient:
-                                                     None
-                                                 ,
-
-                                 locale:
-                                                     None
-                                                 ,
-
-                                 time_zone:
-                                                     None
-
-
-                          }
-
-                  }
-
                   pub fn build_simple_query_string<A: Into<String>>(
 
                          query: A
@@ -1442,145 +1471,6 @@ impl<'a> Query<'a> {
 
           }
 
-          impl<'a> ToJson for Query<'a> {
-              fn to_json(&self) -> Json {
-                  let mut d = BTreeMap::<String, Json>::new();
-                  match self {
-                      &Query::MatchAll(q) => {
-                          d.insert("match_all".to_owned(), q.to_json());
-                      },
-                      &Query::Match(q) => {
-                          d.insert("match".to_owned(), q.to_json());
-                      },
-                      &Query::MultiMatch(q) => {
-                          d.insert("multi_match".to_owned(), q.to_json());
-                      },
-                      &Query::Common(q) => {
-                          d.insert("common".to_owned(), q.to_json());
-                      },
-                      &Query::Range(q) => {
-                          d.insert("range".to_owned(), q.to_json());
-                      },
-
-                      // &Query::Bool(ref q) => {
-                      //     d.insert("bool".to_owned(), q.to_json());
-                      // },
-                      // &Query::Boosting(ref q) => {
-                      //     d.insert("boosting".to_owned(), q.to_json());
-                      // },
-
-                          // &Query::Common(ref q) => {
-                          //     d.insert("common".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::ConstantScore(ref q) => {
-                          //     d.insert("constant_score".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::DisMax(ref q) => {
-                          //     d.insert("dis_max".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::FuzzyLikeThis(ref q) => {
-                          //     d.insert("fuzzy_like_this".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::FuzzyLikeThisField(ref q) => {
-                          //     d.insert("fuzzy_like_this_field".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::FunctionScore(ref q) => {
-                          //     d.insert("function_score".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::Fuzzy(ref q) => {
-                          //     d.insert("fuzzy".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::GeoShape(ref q) => {
-                          //     d.insert("geo_shape".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::HasChild(ref q) => {
-                          //     d.insert("has_child".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::HasParent(ref q) => {
-                          //     d.insert("has_parent".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::Ids(ref q) => {
-                          //     d.insert("ids".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::Indices(ref q) => {
-                          //     d.insert("indices".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::MoreLikeThis(ref q) => {
-                          //     d.insert("more_like_this".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::Nested(ref q) => {
-                          //     d.insert("nested".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::Prefix(ref q) => {
-                          //     d.insert("prefix".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::QueryString(ref q) => {
-                          //     d.insert("query_string".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::SimpleQueryString(ref q) => {
-                          //     d.insert("simple_query_string".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::Regexp(ref q) => {
-                          //     d.insert("regexp".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::SpanFirst(ref q) => {
-                          //     d.insert("span_first".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::SpanMulti(ref q) => {
-                          //     d.insert("span_multi".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::SpanNear(ref q) => {
-                          //     d.insert("span_near".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::SpanNot(ref q) => {
-                          //     d.insert("span_not".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::SpanOr(ref q) => {
-                          //     d.insert("span_or".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::SpanTerm(ref q) => {
-                          //     d.insert("span_term".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::Term(ref q) => {
-                          //     d.insert("term".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::Terms(ref q) => {
-                          //     d.insert("terms".to_owned(), q.to_json());
-                          // },
-
-                          // &Query::Wildcard(ref q) => {
-                          //     d.insert("wildcard".to_owned(), q.to_json());
-                          // }
-
-                  }
-                  Json::Object(d)
-              }
-          }
 
 // Match queries
 
@@ -2696,7 +2586,7 @@ impl ToJson for IndexedShape {
           //         Query::HasParent(self)
           //     }
           // }
- 
+
         // impl ToJson for HasParentQuery {
         //     fn to_json(&self) -> Json {
         //         let mut d = BTreeMap::new();
@@ -3249,243 +3139,6 @@ impl ToJson for Rewrite {
         // }
 
 
-          #[derive(Debug)]
-          pub struct QueryStringQuery {
-
-                  query:
-                                         String
-                                      ,
-
-                  default_field:
-                                         Option<String>
-                                      ,
-
-                  default_operator:
-                                         Option<String>
-                                      ,
-
-                  analyzer:
-                                         Option<String>
-                                      ,
-
-                  allow_leading_wildcard:
-                                         Option<bool>
-                                      ,
-
-                  lowercase_expanded_terms:
-                                         Option<bool>
-                                      ,
-
-                  enable_position_increments:
-                                         Option<bool>
-                                      ,
-
-                  fuzzy_max_expansions:
-                                         Option<u64>
-                                      ,
-
-                  fuzziness:
-                                         Option<Fuzziness>
-                                      ,
-
-                  fuzzy_prefix_length:
-                                         Option<u64>
-                                      ,
-
-                  phrase_slop:
-                                         Option<i64>
-                                      ,
-
-                  boost:
-                                         Option<f64>
-                                      ,
-
-                  analyze_wildcard:
-                                         Option<bool>
-                                      ,
-
-                  auto_generate_phrase_queries:
-                                         Option<bool>
-                                      ,
-
-                  max_determined_states:
-                                         Option<u64>
-                                      ,
-
-                  minimum_should_match:
-                                         Option<MinimumShouldMatch>
-                                      ,
-
-                  lenient:
-                                         Option<bool>
-                                      ,
-
-                  locale:
-                                         Option<String>
-                                      ,
-
-                  time_zone:
-                                         Option<String>
-
-
-          }
-
-          // impl QueryStringQuery {
-
-          //         pub fn with_default_field<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.default_field = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_default_operator<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.default_operator = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.analyzer = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_allow_leading_wildcard<T: Into<bool>>(mut self, value: T) -> Self {
-          //             self.allow_leading_wildcard = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_lowercase_expanded_terms<T: Into<bool>>(mut self, value: T) -> Self {
-          //             self.lowercase_expanded_terms = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_enable_position_increments<T: Into<bool>>(mut self, value: T) -> Self {
-          //             self.enable_position_increments = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_fuzzy_max_expansions<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.fuzzy_max_expansions = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_fuzziness<T: Into<Fuzziness>>(mut self, value: T) -> Self {
-          //             self.fuzziness = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_fuzzy_prefix_length<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.fuzzy_prefix_length = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_phrase_slop<T: Into<i64>>(mut self, value: T) -> Self {
-          //             self.phrase_slop = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.boost = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_analyze_wildcard<T: Into<bool>>(mut self, value: T) -> Self {
-          //             self.analyze_wildcard = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_auto_generate_phrase_queries<T: Into<bool>>(mut self, value: T) -> Self {
-          //             self.auto_generate_phrase_queries = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_max_determined_states<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.max_determined_states = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
-          //             self.minimum_should_match = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_lenient<T: Into<bool>>(mut self, value: T) -> Self {
-          //             self.lenient = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_locale<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.locale = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_time_zone<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.time_zone = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             // optional_add!(self, m, self.default_field, "default_field");
-
-          //             // optional_add!(self, m, self.default_operator, "default_operator");
-
-          //             // optional_add!(self, m, self.analyzer, "analyzer");
-
-          //             // optional_add!(self, m, self.allow_leading_wildcard, "allow_leading_wildcard");
-
-          //             // optional_add!(self, m, self.lowercase_expanded_terms, "lowercase_expanded_terms");
-
-          //             // optional_add!(self, m, self.enable_position_increments, "enable_position_increments");
-
-          //             // optional_add!(self, m, self.fuzzy_max_expansions, "fuzzy_max_expansions");
-
-          //             // optional_add!(self, m, self.fuzziness, "fuzziness");
-
-          //             // optional_add!(self, m, self.fuzzy_prefix_length, "fuzzy_prefix_length");
-
-          //             // optional_add!(self, m, self.phrase_slop, "phrase_slop");
-
-          //             // optional_add!(self, m, self.boost, "boost");
-
-          //             // optional_add!(self, m, self.analyze_wildcard, "analyze_wildcard");
-
-          //             // optional_add!(self, m, self.auto_generate_phrase_queries, "auto_generate_phrase_queries");
-
-          //             // optional_add!(self, m, self.max_determined_states, "max_determined_states");
-
-          //             // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
-
-          //             // optional_add!(self, m, self.lenient, "lenient");
-
-          //             // optional_add!(self, m, self.locale, "locale");
-
-          //             // optional_add!(self, m, self.time_zone, "time_zone");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::QueryString(self)
-          //     }
-          // }
-
-        // impl ToJson for QueryStringQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //           d.insert("query".to_owned(),
-        //                    self.query.to_json());
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
 
 
           #[derive(Debug)]
