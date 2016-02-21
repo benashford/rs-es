@@ -246,8 +246,29 @@ impl ToJson for Function {
 //         optional_add!(self, d, weight);
 //         d.insert(self.function.name(), self.function.to_json());
          Json::Object(d)
-     }
- }
+    }
+}
+
+/// Flags - multiple operations can take a set of flags, each set is dependent
+/// on the operation in question, but they're all formatted to a similar looking
+/// String
+#[derive(Debug)]
+pub struct Flags<A>(Vec<A>)
+    where A: AsRef<str>;
+
+impl<A> ToJson for Flags<A>
+where A: AsRef<str> {
+    fn to_json(&self) -> Json {
+        Json::String(self.0.iter().join("|"))
+    }
+}
+
+impl<A> From<Vec<A>> for Flags<A>
+where A: AsRef<str> {
+    fn from(from: Vec<A>) -> Self {
+        Flags(from)
+    }
+}
 
 /// Query represents all available queries
 
@@ -642,6 +663,44 @@ impl ToJson for QueryStringQuery {
     }
 }
 
+/// Flags for the SimpleQueryString query
+#[derive(Debug)]
+pub enum SimpleQueryStringFlags {
+    All,
+    None,
+    And,
+    Or,
+    Not,
+    Prefix,
+    Phrase,
+    Precedence,
+    Escape,
+    Whitespace,
+    Fuzzy,
+    Near,
+    Slop
+}
+
+impl AsRef<str> for SimpleQueryStringFlags {
+    fn as_ref(&self) -> &str {
+        match self {
+            &SimpleQueryStringFlags::All => "ALL",
+            &SimpleQueryStringFlags::None => "NONE",
+            &SimpleQueryStringFlags::And => "AND",
+            &SimpleQueryStringFlags::Or => "OR",
+            &SimpleQueryStringFlags::Not => "NOT",
+            &SimpleQueryStringFlags::Prefix => "PREFIX",
+            &SimpleQueryStringFlags::Phrase => "PHRASE",
+            &SimpleQueryStringFlags::Precedence => "PRECEDENCE",
+            &SimpleQueryStringFlags::Escape => "ESCAPE",
+            &SimpleQueryStringFlags::Whitespace => "WHITESPACE",
+            &SimpleQueryStringFlags::Fuzzy => "FUZZY",
+            &SimpleQueryStringFlags::Near => "NEAR",
+            &SimpleQueryStringFlags::Slop => "SLOP"
+        }
+    }
+}
+
 /// SimpleQueryString query
 #[derive(Debug, Default)]
 pub struct SimpleQueryStringQuery {
@@ -649,8 +708,9 @@ pub struct SimpleQueryStringQuery {
     fields: Option<Vec<String>>,
     default_operator: Option<String>,
     analyzer: Option<String>,
-    flags: Option<String>,
+    flags: Option<Flags<SimpleQueryStringFlags>>,
     lowercase_expanded_terms: Option<bool>,
+    analyze_wildcard: Option<bool>,
     locale: Option<String>,
     lenient: Option<bool>,
     minimum_should_match: Option<MinimumShouldMatch>
@@ -669,8 +729,9 @@ impl<'a> SimpleQueryStringQuery {
     add_option!(with_fields, fields, Vec<String>);
     add_option!(with_default_operator, default_operator, String);
     add_option!(with_analyzer, analyzer, String);
-    add_option!(with_flags, flags, String);
+    add_option!(with_flags, flags, Flags<SimpleQueryStringFlags>);
     add_option!(with_lowercase_expanded_terms, lowercase_expanded_terms, bool);
+    add_option!(with_analyze_wildcard, analyze_wildcard, bool);
     add_option!(with_locale, locale, String);
     add_option!(with_lenient, lenient, bool);
     add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
@@ -686,6 +747,7 @@ impl ToJson for SimpleQueryStringQuery {
         optional_add!(self, d, analyzer);
         optional_add!(self, d, flags);
         optional_add!(self, d, lowercase_expanded_terms);
+        optional_add!(self, d, analyze_wildcard);
         optional_add!(self, d, locale);
         optional_add!(self, d, lenient);
         optional_add!(self, d, minimum_should_match);
@@ -1230,38 +1292,38 @@ impl<'a> Query<'a> {
 
                   }
 
-                  pub fn build_regexp<A: Into<String>,B: Into<String>>(
+                  // pub fn build_regexp<A: Into<String>,B: Into<String>>(
 
-                         field: A,
+                  //        field: A,
 
-                         value: B
-                     ) -> RegexpQuery {
+                  //        value: B
+                  //    ) -> RegexpQuery {
 
-                         RegexpQuery {
+                  //        RegexpQuery {
 
-                                 field:
-                                                     field.into()
-                                                 ,
+                  //                field:
+                  //                                    field.into()
+                  //                                ,
 
-                                 value:
-                                                     value.into()
-                                                 ,
+                  //                value:
+                  //                                    value.into()
+                  //                                ,
 
-                                 boost:
-                                                     None
-                                                 ,
+                  //                boost:
+                  //                                    None
+                  //                                ,
 
-                                 flags:
-                                                     None
-                                                 ,
+                  //                flags:
+                  //                                    None
+                  //                                ,
 
-                                 max_determined_states:
-                                                     None
+                  //                max_determined_states:
+                  //                                    None
 
 
-                          }
+                  //         }
 
-                  }
+                  // }
 
                   // pub fn build_span_first<A: Into<Box<Query>>,B: Into<i64>>(
 
@@ -3147,30 +3209,30 @@ impl ToJson for Rewrite {
 
 
 
-          #[derive(Debug)]
-          pub struct RegexpQuery {
+          // #[derive(Debug)]
+          // pub struct RegexpQuery {
 
-                  field:
-                                         String
-                                      ,
+          //         field:
+          //                                String
+          //                             ,
 
-                  value:
-                                         String
-                                      ,
+          //         value:
+          //                                String
+          //                             ,
 
-                  boost:
-                                         Option<f64>
-                                      ,
+          //         boost:
+          //                                Option<f64>
+          //                             ,
 
-                  flags:
-                                         Option<Flags>
-                                      ,
+          //         flags:
+          //                                Option<Flags>
+          //                             ,
 
-                  max_determined_states:
-                                         Option<u64>
+          //         max_determined_states:
+          //                                Option<u64>
 
 
-          }
+          // }
 
           // impl RegexpQuery {
 
@@ -3212,6 +3274,8 @@ impl ToJson for Rewrite {
           // }
 
 
+// TODO: this is a set of flags to one specific operation, and should probably
+// be renamed because of that.
 #[derive(Debug)]
 pub enum Flag {
     All,
@@ -3235,29 +3299,30 @@ impl ToString for Flag {
     }
 }
 
-#[derive(Debug)]
-pub struct Flags {
-    flags: Vec<Flag>
-}
+// TODO: remove due to be being superseded
+// #[derive(Debug)]
+// pub struct Flags {
+//     flags: Vec<Flag>
+// }
 
-impl Flags {
-    pub fn new() -> Flags {
-        Flags {
-            flags: vec![]
-        }
-    }
+// impl Flags {
+//     pub fn new() -> Flags {
+//         Flags {
+//             flags: vec![]
+//         }
+//     }
 
-    pub fn add_flag(mut self, flag: Flag) -> Self {
-        self.flags.push(flag);
-        self
-    }
-}
+//     pub fn add_flag(mut self, flag: Flag) -> Self {
+//         self.flags.push(flag);
+//         self
+//     }
+// }
 
-impl ToJson for Flags {
-    fn to_json(&self) -> Json {
-        Json::String(self.flags.iter().map(|f| f.to_string()).join("|"))
-    }
-}
+// impl ToJson for Flags {
+//     fn to_json(&self) -> Json {
+//         Json::String(self.flags.iter().map(|f| f.to_string()).join("|"))
+//     }
+// }
 
         // impl ToJson for RegexpQuery {
         //     fn to_json(&self) -> Json {
@@ -7085,3 +7150,20 @@ impl ToJson for Origin {
 //         self
 //     }
 // }
+
+#[cfg(test)]
+mod tests {
+    extern crate rustc_serialize;
+
+    use rustc_serialize::json::ToJson;
+
+    use super::{Flags, SimpleQueryStringFlags};
+
+    #[test]
+    fn test_simple_query_string_flags() {
+        let opts = vec![SimpleQueryStringFlags::And, SimpleQueryStringFlags::Not];
+        let flags:Flags<SimpleQueryStringFlags> = opts.into();
+        let json = flags.to_json();
+        assert_eq!("AND|NOT", json.as_string().unwrap());
+    }
+}
