@@ -282,15 +282,17 @@ pub mod tests {
 
     #[derive(Debug, RustcDecodable, RustcEncodable)]
     pub struct TestDocument {
-        pub str_field: String,
-        pub int_field: i64
+        pub str_field:  String,
+        pub int_field:  i64,
+        pub bool_field: bool
     }
 
     impl TestDocument {
         pub fn new() -> TestDocument {
             TestDocument {
                 str_field: "I am a test".to_owned(),
-                int_field: 1
+                int_field: 1,
+                bool_field: true
             }
         }
 
@@ -303,13 +305,19 @@ pub mod tests {
             self.int_field = i;
             self
         }
+
+        pub fn with_bool_field(mut self, b: bool) -> TestDocument {
+            self.bool_field = b;
+            self
+        }
     }
 
     impl ToJson for TestDocument {
         fn to_json(&self) -> Json {
             let mut d = BTreeMap::new();
-            d.insert("str_field".to_owned(), self.str_field.to_json());
-            d.insert("int_field".to_owned(), self.int_field.to_json());
+            d.insert("str_field".to_owned(),  self.str_field.to_json());
+            d.insert("int_field".to_owned(),  self.int_field.to_json());
+            d.insert("bool_field".to_owned(), self.bool_field.to_json());
             Json::Object(d)
         }
     }
@@ -401,7 +409,8 @@ pub mod tests {
         let mut client = make_client();
         clean_db(&mut client, index_name);
         {
-            let doc = TestDocument::new().with_int_field(3);
+            let doc = TestDocument::new().with_int_field(3)
+                                         .with_bool_field(false);
             client
                 .index(index_name, "test_type")
                 .with_id("TEST_GETTING")
@@ -420,6 +429,7 @@ pub mod tests {
             let source:TestDocument = result.source().unwrap();
             assert_eq!(source.str_field, "I am a test");
             assert_eq!(source.int_field, 3);
+            assert_eq!(source.bool_field, false);
         }
     }
 

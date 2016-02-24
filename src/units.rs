@@ -296,7 +296,8 @@ pub enum JsonVal {
     String(String),
     I64(i64),
     U64(u64),
-    F64(f64)
+    F64(f64),
+    Boolean(bool)
 }
 
 impl ToJson for JsonVal {
@@ -305,7 +306,8 @@ impl ToJson for JsonVal {
             &JsonVal::String(ref str) => str.to_json(),
             &JsonVal::I64(i)          => Json::I64(i),
             &JsonVal::U64(u)          => Json::U64(u),
-            &JsonVal::F64(f)          => Json::F64(f)
+            &JsonVal::F64(f)          => Json::F64(f),
+            &JsonVal::Boolean(b)      => Json::Boolean(b)
         }
     }
 }
@@ -323,6 +325,7 @@ from_exp!(i32, JsonVal, from, JsonVal::I64(from as i64));
 from!(i64, JsonVal, I64);
 from_exp!(u32, JsonVal, from, JsonVal::U64(from as u64));
 from!(u64, JsonVal, U64);
+from!(bool, JsonVal, Boolean);
 
 impl<'a> From<&'a Json> for JsonVal {
     fn from(from: &'a Json) -> JsonVal {
@@ -331,7 +334,8 @@ impl<'a> From<&'a Json> for JsonVal {
             &Json::F64(f)        => JsonVal::F64(f),
             &Json::I64(f)        => JsonVal::I64(f),
             &Json::U64(f)        => JsonVal::U64(f),
-            _                    => panic!("Not a String, F64, I64 or U64")
+            &Json::Boolean(b)    => JsonVal::Boolean(b),
+            _                    => panic!("Not a String, F64, I64, U64 or Boolean")
         }
     }
 }
