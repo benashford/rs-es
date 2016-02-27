@@ -527,7 +527,9 @@ bucket_agg!(Global);
 /// Filter aggregation
 #[derive(Debug)]
 pub struct Filter<'a> {
-    filter: &'a query::Query<'a>
+    // TODO - Query is now an enum with a `Box` it might be simpler, with little
+    // side-effects to own it instead
+    filter: &'a query::Query
 }
 
 impl<'a> Filter<'a> {
@@ -549,7 +551,7 @@ bucket_agg!(Filter);
 /// Filters aggregation
 #[derive(Debug)]
 pub struct Filters<'a> {
-    filters: HashMap<&'a str, &'a query::Query<'a>>
+    filters: HashMap<&'a str, &'a query::Query>
 }
 
 impl<'a> Filters<'a> {
@@ -560,8 +562,8 @@ impl<'a> Filters<'a> {
     }
 }
 
-impl<'a> From<Vec<(&'a str, &'a query::Query<'a>)>> for Filters<'a> {
-    fn from(from: Vec<(&'a str, &'a query::Query<'a>)>) -> Filters<'a> {
+impl<'a> From<Vec<(&'a str, &'a query::Query)>> for Filters<'a> {
+    fn from(from: Vec<(&'a str, &'a query::Query)>) -> Filters<'a> {
         let mut filters = HashMap::with_capacity(from.len());
         for (k, v) in from {
             filters.insert(k, v);

@@ -132,19 +132,19 @@ impl<S: Into<String>> From<S> for Missing {
 
 /// Representing sort options for a specific field, can be combined with others
 /// to produce the full sort clause
-pub struct SortField<'a> {
+pub struct SortField {
     field:         String,
     order:         Option<Order>,
     mode:          Option<Mode>,
     nested_path:   Option<String>,
-    nested_filter: Option<Query<'a>>,
+    nested_filter: Option<Query>,
     missing:       Option<Missing>,
     unmapped_type: Option<String>
 }
 
-impl<'a> SortField<'a> {
+impl SortField {
     /// Create a `SortField` for a given `field` and `order`
-    pub fn new<S: Into<String>>(field: S, order: Option<Order>) -> SortField<'a> {
+    pub fn new<S: Into<String>>(field: S, order: Option<Order>) -> SortField {
         SortField {
             field:         field.into(),
             order:         order,
@@ -158,16 +158,16 @@ impl<'a> SortField<'a> {
 
     add_field!(with_mode, mode, Mode);
     add_field!(with_nested_path, nested_path, String);
-    add_field!(with_nested_filter, nested_filter, Query<'a>);
+    add_field!(with_nested_filter, nested_filter, Query);
     add_field!(with_missing, missing, Missing);
     add_field!(with_unmapped_type, unmapped_type, String);
 
-    pub fn build(self) -> SortBy<'a> {
+    pub fn build(self) -> SortBy {
         SortBy::Field(self)
     }
 }
 
-impl<'a> ToString for SortField<'a> {
+impl ToString for SortField {
     fn to_string(&self) -> String {
         let mut s = String::new();
         s.push_str(&self.field);
@@ -184,7 +184,7 @@ impl<'a> ToString for SortField<'a> {
     }
 }
 
-impl<'a> ToJson for SortField<'a> {
+impl ToJson for SortField {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
@@ -240,7 +240,7 @@ impl GeoDistance {
     add_field!(with_mode, mode, Mode);
     add_field!(with_distance_type, distance_type, DistanceType);
 
-    pub fn build<'a>(self) -> SortBy<'a> {
+    pub fn build(self) -> SortBy {
         SortBy::Distance(self)
     }
 }
@@ -293,7 +293,7 @@ impl Script {
         self
     }
 
-    pub fn build<'a>(self) -> SortBy<'a> {
+    pub fn build(self) -> SortBy {
         SortBy::Script(self)
     }
 }
@@ -312,13 +312,13 @@ impl ToJson for Script {
     }
 }
 
-pub enum SortBy<'a> {
-    Field(SortField<'a>),
+pub enum SortBy {
+    Field(SortField),
     Distance(GeoDistance),
     Script(Script)
 }
 
-impl<'a> ToString for SortBy<'a> {
+impl ToString for SortBy {
     fn to_string(&self) -> String {
         match self {
             &SortBy::Field(ref field) => field.to_string(),
@@ -327,7 +327,7 @@ impl<'a> ToString for SortBy<'a> {
     }
 }
 
-impl<'a> ToJson for SortBy<'a> {
+impl ToJson for SortBy {
     fn to_json(&self) -> Json {
         match self {
             &SortBy::Field(ref field)   => field.to_json(),
@@ -338,12 +338,12 @@ impl<'a> ToJson for SortBy<'a> {
 }
 
 /// A full sort clause
-pub struct Sort<'a> {
-    fields: Vec<SortBy<'a>>
+pub struct Sort {
+    fields: Vec<SortBy>
 }
 
-impl<'a> Sort<'a> {
-    pub fn new(fields: Vec<SortBy<'a>>) -> Self {
+impl Sort {
+    pub fn new(fields: Vec<SortBy>) -> Self {
         Sort {
             fields: fields
         }
@@ -389,13 +389,15 @@ impl<'a> Sort<'a> {
 /// let op_val:OptionVal = (&sort).into();
 /// assert_eq!("a:asc,b", op_val.0);
 /// ```
-impl<'a> From<&'a Sort<'a>> for OptionVal {
-    fn from(from: &'a Sort<'a>) -> OptionVal {
+impl<'a> From<&'a Sort> for OptionVal {
+    fn from(from: &'a Sort) -> OptionVal {
+        // TODO - stop requiring `to_string` if `AsRef<str>` could be implemented
+        // instead
         OptionVal(from.fields.iter().map(|f| f.to_string()).join(","))
     }
 }
 
-impl<'a> ToJson for Sort<'a> {
+impl ToJson for Sort {
     fn to_json(&self) -> Json {
         self.fields.to_json()
     }
@@ -518,7 +520,7 @@ impl<'a> ToJson for Source<'a> {
 
 struct SearchQueryOperationBody<'b> {
     /// The query
-    query: Option<&'b Query<'b>>,
+    query: Option<&'b Query>,
 
     /// Timeout
     timeout: Option<&'b str>,
@@ -539,7 +541,7 @@ struct SearchQueryOperationBody<'b> {
     min_score: Option<f64>,
 
     /// Sort fields
-    sort: Option<&'b Sort<'b>>,
+    sort: Option<&'b Sort>,
 
     /// Track scores
     track_scores: Option<bool>,

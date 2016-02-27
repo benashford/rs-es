@@ -40,7 +40,7 @@ use util::StrJoin;
 /// optional fields.  This macro removes much of the repetition.
 macro_rules! add_option {
     ($n:ident, $e:ident, $t:ty) => (
-        pub fn $n<T: Into<$t>>(&'a mut self, val: T) -> &'a mut Self {
+        pub fn $n<T: Into<$t>>(mut self, val: T) -> Self {
             self.$e = Some(val.into());
             self
         }
@@ -50,8 +50,8 @@ macro_rules! add_option {
 /// Build the `build` function for each builder struct
 macro_rules! build {
     ($t:ident) => (
-        pub fn build(&'a self) -> Query<'a> {
-            Query::$t(self)
+        pub fn build(self) -> Query {
+            Query::$t(Box::new(self))
         }
     )
 }
@@ -272,25 +272,28 @@ where A: AsRef<str> {
 }
 
 /// Query represents all available queries
+///
+/// Each value is boxed as Queries can be recursive, they also vary
+/// significantly in size
 
 // TODO: Filters and Queries are merged, ensure all filters are included in this enum
 #[derive(Debug)]
-pub enum Query<'a> {
-    MatchAll(&'a MatchAllQuery),
+pub enum Query {
+    MatchAll(Box<MatchAllQuery>),
 
     // Full-text queries
-    Match(&'a MatchQuery),
-    MultiMatch(&'a MultiMatchQuery),
-    Common(&'a CommonQuery),
-    QueryString(&'a QueryStringQuery),
-    SimpleQueryString(&'a SimpleQueryStringQuery),
+    Match(Box<MatchQuery>),
+    MultiMatch(Box<MultiMatchQuery>),
+    Common(Box<CommonQuery>),
+    QueryString(Box<QueryStringQuery>),
+    SimpleQueryString(Box<SimpleQueryStringQuery>),
 
     // Term level queries
-    Term(&'a TermQuery),
-    Terms(&'a TermsQuery<'a>),
+    Term(Box<TermQuery>),
+    Terms(Box<TermsQuery>),
 
     // TODO: put back in sequence
-    Range(&'a RangeQuery),
+    Range(Box<RangeQuery>),
 
     // TODO: below this line, not yet converted
 //    Bool(BoolQuery),
@@ -322,35 +325,35 @@ pub enum Query<'a> {
 }
 
 /// Convert a Query to Json
-impl<'a> ToJson for Query<'a> {
+impl ToJson for Query {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::<String, Json>::new();
         match self {
-            &Query::MatchAll(q) => {
+            &Query::MatchAll(ref q) => {
                 d.insert("match_all".to_owned(), q.to_json());
             },
-            &Query::Match(q) => {
+            &Query::Match(ref q) => {
                 d.insert("match".to_owned(), q.to_json());
             },
-            &Query::MultiMatch(q) => {
+            &Query::MultiMatch(ref q) => {
                 d.insert("multi_match".to_owned(), q.to_json());
             },
-            &Query::Common(q) => {
+            &Query::Common(ref q) => {
                 d.insert("common".to_owned(), q.to_json());
             },
-            &Query::QueryString(q) => {
+            &Query::QueryString(ref q) => {
                 d.insert("query_string".to_owned(), q.to_json());
             },
-            &Query::SimpleQueryString(q) => {
+            &Query::SimpleQueryString(ref q) => {
                 d.insert("simple_query_string".to_owned(), q.to_json());
             },
-            &Query::Term(q) => {
+            &Query::Term(ref q) => {
                 d.insert("term".to_owned(), q.to_json());
             },
-            &Query::Terms(q) => {
+            &Query::Terms(ref q) => {
                 d.insert("terms".to_owned(), q.to_json());
             },
-            &Query::Range(q) => {
+            &Query::Range(ref q) => {
                 d.insert("range".to_owned(), q.to_json());
             }
         }
@@ -367,7 +370,7 @@ pub struct MatchAllQuery {
     boost: Option<f64>,
 }
 
-impl<'a> Query<'a> {
+impl Query {
     pub fn build_match_all() -> MatchAllQuery {
         MatchAllQuery::default()
     }
@@ -410,7 +413,7 @@ pub struct MatchQuery {
     slop: Option<i64>
 }
 
-impl<'a> Query<'a> {
+impl Query {
     pub fn build_match<A: Into<String>, B: Into<JsonVal>>(field: A, query: B) -> MatchQuery {
         MatchQuery {
             field: field.into(),
@@ -420,7 +423,7 @@ impl<'a> Query<'a> {
     }
 }
 
-impl<'a> MatchQuery {
+impl MatchQuery {
     add_option!(with_type, match_type, MatchType);
     add_option!(with_cutoff_frequency, cutoff_frequency, f64);
     add_option!(with_lenient, lenient, bool);
@@ -481,7 +484,7 @@ pub struct MultiMatchQuery {
     slop: Option<i64>
 }
 
-impl<'a> Query<'a> {
+impl Query {
     pub fn build_multi_match<A, B>(fields: A, query: B) -> MultiMatchQuery
         where A: Into<Vec<String>>,
               B: Into<JsonVal> {
@@ -493,7 +496,7 @@ impl<'a> Query<'a> {
     }
 }
 
-impl<'a> MultiMatchQuery {
+impl MultiMatchQuery {
     add_option!(with_type, match_type, MatchQueryType);
     add_option!(with_tie_breaker, tie_breaker, f64);
     add_option!(with_analyzer, analyzer, String);
@@ -546,7 +549,7 @@ pub struct CommonQuery {
     disable_coord: Option<bool>
 }
 
-impl<'a> Query<'a> {
+impl Query {
     pub fn build_common<A>(query: A) -> CommonQuery
         where A: Into<JsonVal> {
         CommonQuery {
@@ -556,7 +559,7 @@ impl<'a> Query<'a> {
     }
 }
 
-impl<'a> CommonQuery {
+impl CommonQuery {
     add_option!(with_cutoff_frequency, cutoff_frequency, f64);
     add_option!(with_low_freq_operator, low_freq_operator, String);
     add_option!(with_high_freq_operator, high_freq_operator, String);
@@ -611,7 +614,7 @@ pub struct QueryStringQuery {
     use_dis_max: Option<bool>
 }
 
-impl<'a> Query<'a> {
+impl Query {
     pub fn build_query_string<A: Into<String>>(query: A) -> QueryStringQuery {
         QueryStringQuery {
             query: query.into(),
@@ -620,7 +623,7 @@ impl<'a> Query<'a> {
     }
 }
 
-impl<'a> QueryStringQuery {
+impl QueryStringQuery {
     add_option!(with_default_field, default_field, String);
     add_option!(with_fields, fields, Vec<String>);
     add_option!(with_default_operator, default_operator, String);
@@ -726,7 +729,7 @@ pub struct SimpleQueryStringQuery {
     minimum_should_match: Option<MinimumShouldMatch>
 }
 
-impl<'a> Query<'a> {
+impl Query {
     pub fn build_simple_query_string<A: Into<String>>(query: A) -> SimpleQueryStringQuery {
         SimpleQueryStringQuery {
             query: query.into(),
@@ -735,7 +738,7 @@ impl<'a> Query<'a> {
     }
 }
 
-impl<'a> SimpleQueryStringQuery {
+impl SimpleQueryStringQuery {
     add_option!(with_fields, fields, Vec<String>);
     add_option!(with_default_operator, default_operator, String);
     add_option!(with_analyzer, analyzer, String);
@@ -773,7 +776,7 @@ pub struct TermQuery {
     boost: Option<f64>
 }
 
-impl<'a> Query<'a> {
+impl Query {
     pub fn build_term<A, B>(field: A, value: B) -> TermQuery
         where A: Into<String>,
               B: Into<JsonVal> {
@@ -785,7 +788,7 @@ impl<'a> Query<'a> {
     }
 }
 
-impl<'a> TermQuery {
+impl TermQuery {
     add_option!(with_boost, boost, f64);
 
     build!(Term);
@@ -846,66 +849,66 @@ impl ToJson for TermsQueryLookup {
 
 /// TermsQueryIn
 #[derive(Debug)]
-pub enum TermsQueryIn<'a> {
+pub enum TermsQueryIn {
     /// A `Vec` of values
     Values(Vec<JsonVal>),
 
     /// An indirect reference to another document
-    Lookup(&'a TermsQueryLookup)
+    Lookup(TermsQueryLookup)
 }
 
-impl<'a> Default for TermsQueryIn<'a> {
+impl Default for TermsQueryIn {
     fn default() -> Self {
         TermsQueryIn::Values(Default::default())
     }
 }
 
-impl<'a> ToJson for TermsQueryIn<'a> {
+impl ToJson for TermsQueryIn {
     fn to_json(&self) -> Json {
         match self {
             &TermsQueryIn::Values(ref v) => v.to_json(),
-            &TermsQueryIn::Lookup(l) => l.to_json()
+            &TermsQueryIn::Lookup(ref l) => l.to_json()
         }
     }
 }
 
-impl<'a> From<&'a TermsQueryLookup> for TermsQueryIn<'a> {
-    fn from(from: &'a TermsQueryLookup) -> TermsQueryIn<'a> {
+impl From<TermsQueryLookup> for TermsQueryIn {
+    fn from(from: TermsQueryLookup) -> TermsQueryIn {
         TermsQueryIn::Lookup(from)
     }
 }
 
-impl<'a> From<Vec<JsonVal>> for TermsQueryIn<'a> {
-    fn from(from: Vec<JsonVal>) -> TermsQueryIn<'a> {
+impl From<Vec<JsonVal>> for TermsQueryIn {
+    fn from(from: Vec<JsonVal>) -> TermsQueryIn {
         TermsQueryIn::Values(from)
     }
 }
 
-impl<'a, 'b, A> From<&'b [A]> for TermsQueryIn<'a>
+impl<'b, A> From<&'b [A]> for TermsQueryIn
     where A: JsonPotential {
 
-    fn from(from: &'b [A]) -> TermsQueryIn<'a> {
+    fn from(from: &'b [A]) -> TermsQueryIn {
         TermsQueryIn::Values(from.iter().map(|f| f.to_json_val()).collect())
     }
 }
 
-impl<'a, A> From<Vec<A>> for TermsQueryIn<'a>
+impl<A> From<Vec<A>> for TermsQueryIn
     where A: JsonPotential {
 
-    fn from(from: Vec<A>) -> TermsQueryIn<'a> {
+    fn from(from: Vec<A>) -> TermsQueryIn {
         (&from[..]).into()
     }
 }
 
 /// Terms Query
 #[derive(Debug, Default)]
-pub struct TermsQuery<'a> {
+pub struct TermsQuery {
     field: String,
-    values: TermsQueryIn<'a>
+    values: TermsQueryIn
 }
 
-impl<'a> Query<'a> {
-    pub fn build_terms<A>(field: A) -> TermsQuery<'a>
+impl Query {
+    pub fn build_terms<A>(field: A) -> TermsQuery
         where A: Into<String> {
 
         TermsQuery {
@@ -915,9 +918,9 @@ impl<'a> Query<'a> {
     }
 }
 
-impl<'a> TermsQuery<'a> {
-    pub fn with_values<T>(&'a mut self, values: T) -> &'a mut Self
-        where T: Into<TermsQueryIn<'a>> {
+impl TermsQuery {
+    pub fn with_values<T>(mut self, values: T) -> Self
+        where T: Into<TermsQueryIn> {
 
         self.values = values.into();
         self
@@ -926,7 +929,7 @@ impl<'a> TermsQuery<'a> {
     build!(Terms);
 }
 
-impl<'a> ToJson for TermsQuery<'a> {
+impl ToJson for TermsQuery {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         d.insert(self.field.clone(), self.values.to_json());
@@ -949,7 +952,7 @@ pub struct RangeQuery {
     format: Option<String>
 }
 
-impl<'a> Query<'a> {
+impl Query {
     pub fn build_range<A>(field: A) -> RangeQuery
         where A: Into<String> {
         RangeQuery {
@@ -959,7 +962,7 @@ impl<'a> Query<'a> {
     }
 }
 
-impl<'a> RangeQuery {
+impl RangeQuery {
     add_option!(with_gte, gte, JsonVal);
     add_option!(with_gt, gt, JsonVal);
     add_option!(with_lte, lte, JsonVal);
@@ -991,7 +994,7 @@ impl ToJson for RangeQuery {
 
 // Old queries - TODO: move or delete these
 
-impl<'a> Query<'a> {
+impl Query {
                   // pub fn build_boosting(
                   //    ) -> BoostingQuery {
 
@@ -3710,10 +3713,10 @@ impl ToString for Flag {
 
 
           #[derive(Debug)]
-          pub struct SpanOrQuery<'a> {
+          pub struct SpanOrQuery {
 
                   clauses:
-                                         Vec<Query<'a>>
+                                         Vec<Query>
 
 
           }
