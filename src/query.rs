@@ -884,10 +884,10 @@ impl From<Vec<JsonVal>> for TermsQueryIn {
     }
 }
 
-impl<'b, A> From<&'b [A]> for TermsQueryIn
+impl<'a, A> From<&'a [A]> for TermsQueryIn
     where A: JsonPotential {
 
-    fn from(from: &'b [A]) -> TermsQueryIn {
+    fn from(from: &'a [A]) -> TermsQueryIn {
         TermsQueryIn::Values(from.iter().map(|f| f.to_json_val()).collect())
     }
 }
@@ -7193,9 +7193,16 @@ mod tests {
 
     #[test]
     fn test_terms_query() {
-        let mut tq = Query::build_terms("field_name");
-        let terms_query = tq.with_values(vec!["a", "b", "c"]).build();
+        let terms_query = Query::build_terms("field_name")
+            .with_values(vec!["a", "b", "c"])
+            .build();
         assert_eq!("{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
                    terms_query.to_json().to_string());
+
+        let terms_query_2 = Query::build_terms("field_name")
+            .with_values(["a", "b", "c"].as_ref())
+            .build();
+        assert_eq!("{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
+                   terms_query_2.to_json().to_string());
     }
 }
