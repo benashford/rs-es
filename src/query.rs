@@ -7178,7 +7178,7 @@ mod tests {
 
     use rustc_serialize::json::ToJson;
 
-    use super::{Flags, SimpleQueryStringFlags};
+    use super::{Flags, SimpleQueryStringFlags, Query};
 
     #[test]
     fn test_simple_query_string_flags() {
@@ -7186,5 +7186,13 @@ mod tests {
         let flags:Flags<SimpleQueryStringFlags> = opts.into();
         let json = flags.to_json();
         assert_eq!("AND|NOT", json.as_string().unwrap());
+    }
+
+    #[test]
+    fn test_terms_query() {
+        let mut tq = Query::build_terms("field_name");
+        let terms_query = tq.with_values(vec!["a", "b", "c"]).build();
+        assert_eq!("{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
+                   terms_query.to_json().to_string());
     }
 }
