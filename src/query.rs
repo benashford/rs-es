@@ -7181,7 +7181,7 @@ mod tests {
 
     use rustc_serialize::json::ToJson;
 
-    use super::{Flags, SimpleQueryStringFlags, Query};
+    use super::{Flags, SimpleQueryStringFlags, TermsQueryLookup, Query};
 
     #[test]
     fn test_simple_query_string_flags() {
@@ -7204,5 +7204,11 @@ mod tests {
             .build();
         assert_eq!("{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
                    terms_query_2.to_json().to_string());
+
+        let terms_query_3 = Query::build_terms("field_name")
+            .with_values(TermsQueryLookup::new(123, "blah.de.blah").with_index("other"))
+            .build();
+        assert_eq!("{\"terms\":{\"field_name\":{\"id\":123,\"index\":\"other\",\"path\":\"blah.de.blah\"}}}",
+                   terms_query_3.to_json().to_string());
     }
 }
