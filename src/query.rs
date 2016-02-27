@@ -28,6 +28,7 @@ use units::{DistanceType,
             DistanceUnit,
             Duration,
             GeoBox,
+            JsonPotential,
             JsonVal,
             Location,
             OneOrMany};
@@ -286,6 +287,7 @@ pub enum Query<'a> {
 
     // Term level queries
     Term(&'a TermQuery),
+    Terms(&'a TermsQuery<'a>),
 
     // TODO: put back in sequence
     Range(&'a RangeQuery),
@@ -316,7 +318,6 @@ pub enum Query<'a> {
 //    SpanOr(SpanOrQuery<'a>),
 //    SpanTerm(SpanTermQuery),
 
-//    Terms(TermsQuery)
 //    Wildcard(WildcardQuery)
 }
 
@@ -345,6 +346,9 @@ impl<'a> ToJson for Query<'a> {
             },
             &Query::Term(q) => {
                 d.insert("term".to_owned(), q.to_json());
+            },
+            &Query::Terms(q) => {
+                d.insert("terms".to_owned(), q.to_json());
             },
             &Query::Range(q) => {
                 d.insert("range".to_owned(), q.to_json());
@@ -796,6 +800,136 @@ impl ToJson for TermQuery {
         optional_add!(self, inner, boost);
 
         d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
+// Terms query
+/// Terms Query Lookup
+#[derive(Debug, Default)]
+pub struct TermsQueryLookup {
+    index: Option<String>,
+    doc_type: Option<String>,
+    id: JsonVal,
+    path: String,
+    routing: Option<String>
+}
+
+impl<'a> TermsQueryLookup {
+    pub fn new<A, B>(id: A, path: B) -> TermsQueryLookup
+        where A: Into<JsonVal>,
+              B: Into<String> {
+
+        TermsQueryLookup {
+            id: id.into(),
+            path: path.into(),
+            ..Default::default()
+        }
+    }
+
+    add_option!(with_index, index, String);
+    add_option!(with_type, doc_type, String);
+    add_option!(with_routing, routing, String);
+}
+
+impl ToJson for TermsQueryLookup {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("id".to_owned(), self.id.to_json());
+        d.insert("path".to_owned(), self.path.to_json());
+        optional_add!(self, d, index);
+        optional_add!(self, d, doc_type, "type");
+        optional_add!(self, d, routing);
+        Json::Object(d)
+    }
+}
+
+/// TermsQueryIn
+#[derive(Debug)]
+pub enum TermsQueryIn<'a> {
+    /// A `Vec` of values
+    Values(Vec<JsonVal>),
+
+    /// An indirect reference to another document
+    Lookup(&'a TermsQueryLookup)
+}
+
+impl<'a> Default for TermsQueryIn<'a> {
+    fn default() -> Self {
+        TermsQueryIn::Values(Default::default())
+    }
+}
+
+impl<'a> ToJson for TermsQueryIn<'a> {
+    fn to_json(&self) -> Json {
+        match self {
+            &TermsQueryIn::Values(ref v) => v.to_json(),
+            &TermsQueryIn::Lookup(l) => l.to_json()
+        }
+    }
+}
+
+impl<'a> From<&'a TermsQueryLookup> for TermsQueryIn<'a> {
+    fn from(from: &'a TermsQueryLookup) -> TermsQueryIn<'a> {
+        TermsQueryIn::Lookup(from)
+    }
+}
+
+impl<'a> From<Vec<JsonVal>> for TermsQueryIn<'a> {
+    fn from(from: Vec<JsonVal>) -> TermsQueryIn<'a> {
+        TermsQueryIn::Values(from)
+    }
+}
+
+impl<'a, 'b, A> From<&'b [A]> for TermsQueryIn<'a>
+    where A: JsonPotential {
+
+    fn from(from: &'b [A]) -> TermsQueryIn<'a> {
+        TermsQueryIn::Values(from.iter().map(|f| f.to_json_val()).collect())
+    }
+}
+
+impl<'a, A> From<Vec<A>> for TermsQueryIn<'a>
+    where A: JsonPotential {
+
+    fn from(from: Vec<A>) -> TermsQueryIn<'a> {
+        (&from[..]).into()
+    }
+}
+
+/// Terms Query
+#[derive(Debug, Default)]
+pub struct TermsQuery<'a> {
+    field: String,
+    values: TermsQueryIn<'a>
+}
+
+impl<'a> Query<'a> {
+    pub fn build_terms<A>(field: A) -> TermsQuery<'a>
+        where A: Into<String> {
+
+        TermsQuery {
+            field: field.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl<'a> TermsQuery<'a> {
+    pub fn with_values<T>(&'a mut self, values: T) -> &'a mut Self
+        where T: Into<TermsQueryIn<'a>> {
+
+        self.values = values.into();
+        self
+    }
+
+    build!(Terms);
+}
+
+impl<'a> ToJson for TermsQuery<'a> {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert(self.field.clone(), self.values.to_json());
         Json::Object(d)
     }
 }
@@ -1501,31 +1635,6 @@ impl<'a> Query<'a> {
                                                  ,
 
                                  boost:
-                                                     None
-
-
-                          }
-
-                  }
-
-                  pub fn build_terms<A: Into<String>,B: Into<Vec<JsonVal>>>(
-
-                         field: A,
-
-                         values: B
-                     ) -> TermsQuery {
-
-                         TermsQuery {
-
-                                 field:
-                                                     field.into()
-                                                 ,
-
-                                 values:
-                                                     values.into()
-                                                 ,
-
-                                 minimum_should_match:
                                                      None
 
 
@@ -3702,57 +3811,6 @@ impl ToString for Flag {
 
 
 
-          #[derive(Debug)]
-          pub struct TermsQuery {
-
-                  field:
-                                         String
-                                      ,
-
-                  values:
-                                         Vec<JsonVal>
-                                      ,
-
-                  minimum_should_match:
-                                         Option<MinimumShouldMatch>
-
-
-          }
-
-          // impl TermsQuery {
-
-          //         pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
-          //             self.minimum_should_match = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //         //optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::Terms(self)
-          //     }
-          // }
-
-
-impl ToJson for TermsQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert(self.field.clone(), self.values.to_json());
-
-        Json::Object(d)
-    }
-}
 
           #[derive(Debug)]
           pub struct WildcardQuery {

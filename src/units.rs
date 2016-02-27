@@ -289,6 +289,35 @@ impl ToJson for DistanceUnit {
     }
 }
 
+/// A trait for types that can become JsonVals
+pub trait JsonPotential {
+    fn to_json_val(&self) -> JsonVal;
+}
+
+macro_rules! json_potential {
+    ($t:ty) => (
+        impl JsonPotential for $t {
+            fn to_json_val(&self) -> JsonVal {
+                (*self).into()
+            }
+        }
+    )
+}
+
+impl<'a> JsonPotential for &'a str {
+    fn to_json_val(&self) -> JsonVal {
+        (*self).into()
+    }
+}
+
+json_potential!(i64);
+json_potential!(i32);
+json_potential!(u64);
+json_potential!(u32);
+json_potential!(f64);
+json_potential!(f32);
+json_potential!(bool);
+
 /// A Json value that's not a structural thing - i.e. just String, i64 and f64,
 /// no array or object
 #[derive(Debug)]
@@ -326,6 +355,7 @@ impl<'a> From<&'a str> for JsonVal {
     }
 }
 
+from_exp!(f32, JsonVal, from, JsonVal::F64(from as f64));
 from!(f64, JsonVal, F64);
 from_exp!(i32, JsonVal, from, JsonVal::I64(from as i64));
 from!(i64, JsonVal, I64);
