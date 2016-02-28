@@ -279,18 +279,20 @@ pub enum Rewrite {
     ConstantScoreBoolean,
     ConstantScoreFilter,
     TopTerms(i64),
-    TopTermsBoost(i64)
+    TopTermsBoost(i64),
+    TopTermsBlendedFreqs(i64),
 }
 
 impl ToJson for Rewrite {
     fn to_json(&self) -> Json {
         match self {
-            &Rewrite::ConstantScoreAuto    => "constant_score_auto".to_json(),
-            &Rewrite::ScoringBoolean       => "scoring_boolean".to_json(),
+            &Rewrite::ConstantScoreAuto => "constant_score_auto".to_json(),
+            &Rewrite::ScoringBoolean => "scoring_boolean".to_json(),
             &Rewrite::ConstantScoreBoolean => "constant_score_boolean".to_json(),
-            &Rewrite::ConstantScoreFilter  => "constant_score_filter".to_json(),
-            &Rewrite::TopTerms(n)          => format!("top_terms_{}", n).to_json(),
-            &Rewrite::TopTermsBoost(n)     => format!("top_terms_boost_{}", n).to_json()
+            &Rewrite::ConstantScoreFilter => "constant_score_filter".to_json(),
+            &Rewrite::TopTerms(n) => format!("top_terms_{}", n).to_json(),
+            &Rewrite::TopTermsBoost(n) => format!("top_terms_boost_{}", n).to_json(),
+            &Rewrite::TopTermsBlendedFreqs(n) => format!("top_terms_blended_freqs_{}", n).to_json()
         }
     }
 }
