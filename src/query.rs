@@ -291,8 +291,6 @@ pub enum Query {
     // Term level queries
     Term(Box<TermQuery>),
     Terms(Box<TermsQuery>),
-
-    // TODO: put back in sequence
     Range(Box<RangeQuery>),
 
     // TODO: below this line, not yet converted
@@ -936,8 +934,6 @@ impl ToJson for TermsQuery {
         Json::Object(d)
     }
 }
-
-// TODO: put in proper sequence
 
 /// Range query
 #[derive(Debug, Default)]
