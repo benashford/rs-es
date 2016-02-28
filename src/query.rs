@@ -293,6 +293,8 @@ pub enum Query {
     Terms(Box<TermsQuery>),
     Range(Box<RangeQuery>),
     Exists(Box<ExistsQuery>),
+    // Not implementing the Missing query, as it's deprecated, use `must_not` and `Exists`
+    // instead
 
     // TODO: below this line, not yet converted
 //    Bool(BoolQuery),
@@ -5171,102 +5173,6 @@ impl ToString for Flag {
 //         impl ToJson for MatchAllFilter {
 //             fn to_json(&self) -> Json {
 //                 let mut d = BTreeMap::new();
-
-//                 self.add_optionals(&mut d);
-//                 self.add_core_optionals(&mut d);
-//                 Json::Object(d)
-//             }
-//         }
-
-
-//           #[derive(Debug)]
-//           pub struct MissingFilter {
-
-//                   field:
-//                                          String
-//                                       ,
-
-//                   existence:
-//                                          Option<bool>
-//                                       ,
-
-//                   null_value:
-//                                          Option<bool>
-//                                       ,
-
-//                   _cache:
-//                                          Option<bool>
-//                                       ,
-
-//                   _cache_key:
-//                                          Option<String>
-//                                       ,
-
-//                   _name:
-//                                          Option<String>
-
-
-//           }
-
-//           impl MissingFilter {
-
-//                   pub fn with_existence<T: Into<bool>>(mut self, value: T) -> Self {
-//                       self.existence = Some(value.into());
-//                       self
-//                   }
-
-//                   pub fn with_null_value<T: Into<bool>>(mut self, value: T) -> Self {
-//                       self.null_value = Some(value.into());
-//                       self
-//                   }
-
-//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-//                       self._cache = Some(value.into());
-//                       self
-//                   }
-
-//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-//                       self._cache_key = Some(value.into());
-//                       self
-//                   }
-
-//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-//                       self._name = Some(value.into());
-//                       self
-//                   }
-
-
-//               #[allow(dead_code, unused_variables)]
-//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-//                       optional_add!(self, m, self.existence, "existence");
-
-//                       optional_add!(self, m, self.null_value, "null_value");
-
-//               }
-
-//               #[allow(dead_code, unused_variables)]
-//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-//                       optional_add!(self, m, self._cache, "_cache");
-
-//                       optional_add!(self, m, self._cache_key, "_cache_key");
-
-//                       optional_add!(self, m, self._name, "_name");
-
-//               }
-
-//               pub fn build(self) -> Filter {
-//                   Filter::Missing(self)
-//               }
-//           }
-
-//         impl ToJson for MissingFilter {
-//             fn to_json(&self) -> Json {
-//                 let mut d = BTreeMap::new();
-
-//                   d.insert("field".to_owned(),
-//                            self.field.to_json());
 
 //                 self.add_optionals(&mut d);
 //                 self.add_core_optionals(&mut d);
