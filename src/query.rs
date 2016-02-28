@@ -271,6 +271,30 @@ where A: AsRef<str> {
     }
 }
 
+/// Values of the rewrite option used by multi-term queries
+#[derive(Debug)]
+pub enum Rewrite {
+    ConstantScoreAuto,
+    ScoringBoolean,
+    ConstantScoreBoolean,
+    ConstantScoreFilter,
+    TopTerms(i64),
+    TopTermsBoost(i64)
+}
+
+impl ToJson for Rewrite {
+    fn to_json(&self) -> Json {
+        match self {
+            &Rewrite::ConstantScoreAuto    => "constant_score_auto".to_json(),
+            &Rewrite::ScoringBoolean       => "scoring_boolean".to_json(),
+            &Rewrite::ConstantScoreBoolean => "constant_score_boolean".to_json(),
+            &Rewrite::ConstantScoreFilter  => "constant_score_filter".to_json(),
+            &Rewrite::TopTerms(n)          => format!("top_terms_{}", n).to_json(),
+            &Rewrite::TopTermsBoost(n)     => format!("top_terms_boost_{}", n).to_json()
+        }
+    }
+}
+
 /// Query represents all available queries
 ///
 /// Each value is boxed as Queries can be recursive, they also vary
@@ -295,6 +319,7 @@ pub enum Query {
     Exists(Box<ExistsQuery>),
     // Not implementing the Missing query, as it's deprecated, use `must_not` and `Exists`
     // instead
+    Prefix(Box<PrefixQuery>),
 
     // TODO: below this line, not yet converted
 //    Bool(BoolQuery),
@@ -312,7 +337,6 @@ pub enum Query {
 //    Indices(IndicesQuery),
 //    MoreLikeThis(MoreLikeThisQuery),
 //    Nested(NestedQuery),
-//    Prefix(PrefixQuery),
 
 //    Regexp(RegexpQuery),
 //    SpanFirst(SpanFirstQuery),
@@ -356,9 +380,12 @@ impl ToJson for Query {
             },
             &Query::Range(ref q) => {
                 d.insert("range".to_owned(), q.to_json());
-            }
+            },
             &Query::Exists(ref q) => {
                 d.insert("exists".to_owned(), q.to_json());
+            },
+            &Query::Prefix(ref q) => {
+                d.insert("prefix".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -1023,6 +1050,46 @@ impl ToJson for ExistsQuery {
     }
 }
 
+/// Prefix query
+#[derive(Debug, Default)]
+pub struct PrefixQuery {
+    field: String,
+    value: String,
+    boost: Option<f64>,
+    rewrite: Option<Rewrite>
+}
+
+impl Query {
+    pub fn build_prefix<A, B>(field: A, value: B) -> PrefixQuery
+        where A: Into<String>,
+              B: Into<String> {
+        PrefixQuery {
+            field: field.into(),
+            value: value.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl PrefixQuery {
+    add_option!(with_boost, boost, f64);
+    add_option!(with_rewrite, rewrite, Rewrite);
+
+    build!(Prefix);
+}
+
+impl ToJson for PrefixQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        inner.insert("value".to_owned(), self.value.to_json());
+        optional_add!(self, inner, boost);
+        optional_add!(self, inner, rewrite);
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
 // Old queries - TODO: move or delete these
 
 impl Query {
@@ -1475,35 +1542,6 @@ impl Query {
                   //         }
 
                   // }
-
-                  pub fn build_prefix<A: Into<String>,B: Into<String>>(
-
-                         field: A,
-
-                         value: B
-                     ) -> PrefixQuery {
-
-                         PrefixQuery {
-
-                                 field:
-                                                     field.into()
-                                                 ,
-
-                                 value:
-                                                     value.into()
-                                                 ,
-
-                                 boost:
-                                                     None
-                                                 ,
-
-                                 rewrite:
-                                                     None
-
-
-                          }
-
-                  }
 
                   // pub fn build_regexp<A: Into<String>,B: Into<String>>(
 
@@ -3275,101 +3313,6 @@ impl ToJson for Doc {
         //         Json::Object(d)
         //     }
         // }
-
-
-          #[derive(Debug)]
-          pub struct PrefixQuery {
-
-                  field:
-                                         String
-                                      ,
-
-                  value:
-                                         String
-                                      ,
-
-                  boost:
-                                         Option<f64>
-                                      ,
-
-                  rewrite:
-                                         Option<Rewrite>
-
-
-          }
-
-          // impl PrefixQuery {
-
-          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.boost = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_rewrite<T: Into<Rewrite>>(mut self, value: T) -> Self {
-          //             self.rewrite = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             // optional_add!(self, m, self.boost, "boost");
-
-          //             // optional_add!(self, m, self.rewrite, "rewrite");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::Prefix(self)
-          //     }
-          // }
-
-
-#[derive(Debug)]
-pub enum Rewrite {
-    ConstantScoreAuto,
-    ScoringBoolean,
-    ConstantScoreBoolean,
-    ConstantScoreFilter,
-    TopTerms(i64),
-    TopTermsBoost(i64)
-}
-
-impl ToJson for Rewrite {
-    fn to_json(&self) -> Json {
-        match self {
-            &Rewrite::ConstantScoreAuto    => "constant_score_auto".to_json(),
-            &Rewrite::ScoringBoolean       => "scoring_boolean".to_json(),
-            &Rewrite::ConstantScoreBoolean => "constant_score_boolean".to_json(),
-            &Rewrite::ConstantScoreFilter  => "constant_score_filter".to_json(),
-            &Rewrite::TopTerms(n)          => format!("top_terms_{}", n).to_json(),
-            &Rewrite::TopTermsBoost(n)     => format!("top_terms_boost_{}", n).to_json()
-        }
-    }
-}
-
-        // impl ToJson for PrefixQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-        //         let mut inner = BTreeMap::new();
-
-
-        //           inner.insert("value".to_owned(),
-        //                        self.value.to_json());
-
-        //         self.add_optionals(&mut inner);
-        //         d.insert(self.field.clone(), Json::Object(inner));
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
-
 
 
           // #[derive(Debug)]
