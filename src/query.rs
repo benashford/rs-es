@@ -324,6 +324,7 @@ pub enum Query {
     Wildcard(Box<WildcardQuery>),
     Regexp(Box<RegexpQuery>),
     Fuzzy(Box<FuzzyQuery>),
+    Type(Box<TypeQuery>),
 
     // TODO: below this line, not yet converted
 //    Bool(BoolQuery),
@@ -395,6 +396,9 @@ impl ToJson for Query {
             },
             &Query::Fuzzy(ref q) => {
                 d.insert("fuzzy".to_owned(), q.to_json());
+            },
+            &Query::Type(ref q) => {
+                d.insert("type".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -1253,6 +1257,34 @@ impl ToJson for FuzzyQuery {
         optional_add!(self, inner, prefix_length);
         optional_add!(self, inner, max_expansions);
         d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
+/// Type query
+#[derive(Debug)]
+pub struct TypeQuery {
+    value: String
+}
+
+impl Query {
+    pub fn build_type<A>(value: A) -> TypeQuery
+        where A: Into<String> {
+
+        TypeQuery {
+            value: value.into()
+        }
+    }
+}
+
+impl TypeQuery {
+    build!(Type);
+}
+
+impl ToJson for TypeQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("value".to_owned(), self.value.to_json());
         Json::Object(d)
     }
 }
@@ -5900,80 +5932,6 @@ impl ToJson for Doc {
 //         Json::Object(d)
 //     }
 // }
-
-// TODO: determine whether this is used or not
-        //   #[derive(Debug)]
-        //   pub struct TypeFilter {
-
-        //           value:
-        //                                  String
-        //                               ,
-
-        //           _cache:
-        //                                  Option<bool>
-        //                               ,
-
-        //           _cache_key:
-        //                                  Option<String>
-        //                               ,
-
-        //           _name:
-        //                                  Option<String>
-
-
-        //   }
-
-        //   impl TypeFilter {
-
-        //           pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-        //               self._cache = Some(value.into());
-        //               self
-        //           }
-
-        //           pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-        //               self._cache_key = Some(value.into());
-        //               self
-        //           }
-
-        //           pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-        //               self._name = Some(value.into());
-        //               self
-        //           }
-
-
-        //       #[allow(dead_code, unused_variables)]
-        //       fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-        //       }
-
-        //       #[allow(dead_code, unused_variables)]
-        //       fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-        //               optional_add!(self, m, self._cache, "_cache");
-
-        //               optional_add!(self, m, self._cache_key, "_cache_key");
-
-        //               optional_add!(self, m, self._name, "_name");
-
-        //       }
-
-        //       pub fn build(self) -> Filter {
-        //           Filter::Type(self)
-        //       }
-        //   }
-
-        // impl ToJson for TypeFilter {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //           d.insert("value".to_owned(),
-        //                    self.value.to_json());
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
 
 
 // Functions for use in `FunctionScoreQuery`
