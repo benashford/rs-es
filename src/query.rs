@@ -322,7 +322,8 @@ pub enum Query {
     // Not implementing the Missing query, as it's deprecated, use `must_not` and `Exists`
     // instead
     Prefix(Box<PrefixQuery>),
-    Wildcard(Box<WildcardQuery>)
+    Wildcard(Box<WildcardQuery>),
+    Regexp(Box<RegexpQuery>),
 
     // TODO: below this line, not yet converted
 //    Bool(BoolQuery),
@@ -341,7 +342,6 @@ pub enum Query {
 //    MoreLikeThis(MoreLikeThisQuery),
 //    Nested(NestedQuery),
 
-//    Regexp(RegexpQuery),
 //    SpanFirst(SpanFirstQuery),
 //    SpanMulti(SpanMultiQuery),
 //    SpanNear(SpanNearQuery),
@@ -390,6 +390,9 @@ impl ToJson for Query {
             },
             &Query::Wildcard(ref q) => {
                 d.insert("wildcard".to_owned(), q.to_json());
+            },
+            &Query::Regexp(ref q) => {
+                d.insert("regexp".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -1134,6 +1137,78 @@ impl ToJson for WildcardQuery {
     }
 }
 
+// Regexp query
+/// Flags for the Regexp query
+#[derive(Debug)]
+pub enum RegexpQueryFlags {
+    All,
+    Anystring,
+    Complement,
+    Empty,
+    Intersection,
+    Interval,
+    None
+}
+
+impl AsRef<str> for RegexpQueryFlags {
+    fn as_ref(&self) -> &str {
+        match self {
+            &RegexpQueryFlags::All => "ALL",
+            &RegexpQueryFlags::Anystring => "ANYSTRING",
+            &RegexpQueryFlags::Complement => "COMPLEMENT",
+            &RegexpQueryFlags::Empty => "EMPTY",
+            &RegexpQueryFlags::Intersection => "INTERSECTION",
+            &RegexpQueryFlags::Interval => "INTERVAL",
+            &RegexpQueryFlags::None => "NONE"
+        }
+    }
+}
+
+/// Regexp query
+#[derive(Debug, Default)]
+pub struct RegexpQuery {
+    field: String,
+    value: String,
+    boost: Option<f64>,
+    flags: Option<Flags<RegexpQueryFlags>>,
+    max_determined_states: Option<u64>
+}
+
+impl Query {
+    pub fn build_query<A, B>(field: A, value: B) -> RegexpQuery
+        where A: Into<String>,
+              B: Into<String> {
+        RegexpQuery {
+            field: field.into(),
+            value: value.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl RegexpQuery {
+    add_option!(with_boost, boost, f64);
+    add_option!(with_flags, flags, Flags<RegexpQueryFlags>);
+    add_option!(with_max_determined_states, max_determined_states, u64);
+
+    build!(Regexp);
+}
+
+impl ToJson for RegexpQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+
+        inner.insert("value".to_owned(), self.value.to_json());
+        optional_add!(self, inner, boost);
+        optional_add!(self, inner, flags);
+        optional_add!(self, inner, max_determined_states);
+
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
 // Old queries - TODO: move or delete these
 
 impl Query {
@@ -1581,39 +1656,6 @@ impl Query {
 
                   //                query:
                   //                                    query.into()
-
-
-                  //         }
-
-                  // }
-
-                  // pub fn build_regexp<A: Into<String>,B: Into<String>>(
-
-                  //        field: A,
-
-                  //        value: B
-                  //    ) -> RegexpQuery {
-
-                  //        RegexpQuery {
-
-                  //                field:
-                  //                                    field.into()
-                  //                                ,
-
-                  //                value:
-                  //                                    value.into()
-                  //                                ,
-
-                  //                boost:
-                  //                                    None
-                  //                                ,
-
-                  //                flags:
-                  //                                    None
-                  //                                ,
-
-                  //                max_determined_states:
-                  //                                    None
 
 
                   //         }
@@ -3334,136 +3376,6 @@ impl ToJson for Doc {
         // }
 
 
-          // #[derive(Debug)]
-          // pub struct RegexpQuery {
-
-          //         field:
-          //                                String
-          //                             ,
-
-          //         value:
-          //                                String
-          //                             ,
-
-          //         boost:
-          //                                Option<f64>
-          //                             ,
-
-          //         flags:
-          //                                Option<Flags>
-          //                             ,
-
-          //         max_determined_states:
-          //                                Option<u64>
-
-
-          // }
-
-          // impl RegexpQuery {
-
-          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.boost = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_flags<T: Into<Flags>>(mut self, value: T) -> Self {
-          //             self.flags = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_max_determined_states<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.max_determined_states = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             // optional_add!(self, m, self.boost, "boost");
-
-          //             // optional_add!(self, m, self.flags, "flags");
-
-          //             // optional_add!(self, m, self.max_determined_states, "max_determined_states");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::Regexp(self)
-          //     }
-          // }
-
-
-// TODO: this is a set of flags to one specific operation, and should probably
-// be renamed because of that.
-#[derive(Debug)]
-pub enum Flag {
-    All,
-    AnyString,
-    Complement,
-    Intersection,
-    Interval,
-    None
-}
-
-impl ToString for Flag {
-    fn to_string(&self) -> String {
-        match self {
-            &Flag::All => "ALL",
-            &Flag::AnyString => "ANYSTRING",
-            &Flag::Complement => "COMPLEMENT",
-            &Flag::Intersection => "INTERSECTION",
-            &Flag::Interval => "INTERVAL",
-            &Flag::None => "NONE"
-        }.to_owned()
-    }
-}
-
-// TODO: remove due to be being superseded
-// #[derive(Debug)]
-// pub struct Flags {
-//     flags: Vec<Flag>
-// }
-
-// impl Flags {
-//     pub fn new() -> Flags {
-//         Flags {
-//             flags: vec![]
-//         }
-//     }
-
-//     pub fn add_flag(mut self, flag: Flag) -> Self {
-//         self.flags.push(flag);
-//         self
-//     }
-// }
-
-// impl ToJson for Flags {
-//     fn to_json(&self) -> Json {
-//         Json::String(self.flags.iter().map(|f| f.to_string()).join("|"))
-//     }
-// }
-
-        // impl ToJson for RegexpQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-        //         let mut inner = BTreeMap::new();
-
-
-        //           inner.insert("value".to_owned(),
-        //                        self.value.to_json());
-
-        //         self.add_optionals(&mut inner);
-        //         d.insert(self.field.clone(), Json::Object(inner));
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
 
 
         //   #[derive(Debug)]
