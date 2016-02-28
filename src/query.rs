@@ -292,6 +292,7 @@ pub enum Query {
     Term(Box<TermQuery>),
     Terms(Box<TermsQuery>),
     Range(Box<RangeQuery>),
+    Exists(Box<ExistsQuery>),
 
     // TODO: below this line, not yet converted
 //    Bool(BoolQuery),
@@ -353,6 +354,9 @@ impl ToJson for Query {
             },
             &Query::Range(ref q) => {
                 d.insert("range".to_owned(), q.to_json());
+            }
+            &Query::Exists(ref q) => {
+                d.insert("exists".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -984,6 +988,35 @@ impl ToJson for RangeQuery {
         optional_add!(self, inner, format);
 
         d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
+
+/// Exists query
+#[derive(Debug)]
+pub struct ExistsQuery {
+    field: String
+}
+
+impl Query {
+    pub fn build_exists<A>(field: A) -> ExistsQuery
+        where A: Into<String> {
+
+        ExistsQuery {
+            field: field.into()
+        }
+    }
+}
+
+impl ExistsQuery {
+    build!(Exists);
+}
+
+impl ToJson for ExistsQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("field".to_owned(), self.field.to_json());
         Json::Object(d)
     }
 }
