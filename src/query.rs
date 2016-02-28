@@ -322,6 +322,7 @@ pub enum Query {
     // Not implementing the Missing query, as it's deprecated, use `must_not` and `Exists`
     // instead
     Prefix(Box<PrefixQuery>),
+    Wildcard(Box<WildcardQuery>)
 
     // TODO: below this line, not yet converted
 //    Bool(BoolQuery),
@@ -346,9 +347,7 @@ pub enum Query {
 //    SpanNear(SpanNearQuery),
 //    SpanNot(SpanNotQuery),
 //    SpanOr(SpanOrQuery<'a>),
-//    SpanTerm(SpanTermQuery),
-
-//    Wildcard(WildcardQuery)
+//    SpanTerm(SpanTermQuery)
 }
 
 /// Convert a Query to Json
@@ -388,6 +387,9 @@ impl ToJson for Query {
             },
             &Query::Prefix(ref q) => {
                 d.insert("prefix".to_owned(), q.to_json());
+            },
+            &Query::Wildcard(ref q) => {
+                d.insert("wildcard".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -1092,6 +1094,46 @@ impl ToJson for PrefixQuery {
     }
 }
 
+/// Wildcard query
+#[derive(Debug, Default)]
+pub struct WildcardQuery {
+    field: String,
+    value: String,
+    boost: Option<f64>,
+    rewrite: Option<Rewrite>
+}
+
+impl Query {
+    pub fn build_wildcard<A, B>(field: A, value: B) -> WildcardQuery
+        where A: Into<String>,
+              B: Into<String> {
+        WildcardQuery {
+            field: field.into(),
+            value: value.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl WildcardQuery {
+    add_option!(with_boost, boost, f64);
+    add_option!(with_rewrite, rewrite, Rewrite);
+
+    build!(Wildcard);
+}
+
+impl ToJson for WildcardQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        inner.insert("value".to_owned(), self.value.to_json());
+        optional_add!(self, inner, boost);
+        optional_add!(self, inner, rewrite);
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
 // Old queries - TODO: move or delete these
 
 impl Query {
@@ -1699,31 +1741,6 @@ impl Query {
                      ) -> SpanTermQuery {
 
                          SpanTermQuery {
-
-                                 field:
-                                                     field.into()
-                                                 ,
-
-                                 value:
-                                                     value.into()
-                                                 ,
-
-                                 boost:
-                                                     None
-
-
-                          }
-
-                  }
-
-                  pub fn build_wildcard<A: Into<String>,B: Into<String>>(
-
-                         field: A,
-
-                         value: B
-                     ) -> WildcardQuery {
-
-                         WildcardQuery {
 
                                  field:
                                                      field.into()
@@ -3791,63 +3808,6 @@ impl ToString for Flag {
 
 
 
-          #[derive(Debug)]
-          pub struct WildcardQuery {
-
-                  field:
-                                         String
-                                      ,
-
-                  value:
-                                         String
-                                      ,
-
-                  boost:
-                                         Option<f64>
-
-
-          }
-
-        //   impl WildcardQuery {
-
-        //           pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-        //               self.boost = Some(value.into());
-        //               self
-        //           }
-
-
-        //       #[allow(dead_code, unused_variables)]
-        //       fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-        //           //optional_add!(self, m, self.boost, "boost");
-
-        //       }
-
-        //       #[allow(dead_code, unused_variables)]
-        //       fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-        //       }
-
-        //       pub fn build(self) -> Query {
-        //           Query::Wildcard(self)
-        //       }
-        //   }
-
-        // impl ToJson for WildcardQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-        //         let mut inner = BTreeMap::new();
-
-
-        //           inner.insert("value".to_owned(),
-        //                        self.value.to_json());
-
-        //         self.add_optionals(&mut inner);
-        //         d.insert(self.field.clone(), Json::Object(inner));
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
 
 
 // Filters
