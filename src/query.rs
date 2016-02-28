@@ -189,7 +189,6 @@ impl ToJson for MinimumShouldMatch {
 }
 
 /// Fuzziness
-
 #[derive(Debug)]
 pub enum Fuzziness {
     Auto,
@@ -324,6 +323,7 @@ pub enum Query {
     Prefix(Box<PrefixQuery>),
     Wildcard(Box<WildcardQuery>),
     Regexp(Box<RegexpQuery>),
+    Fuzzy(Box<FuzzyQuery>),
 
     // TODO: below this line, not yet converted
 //    Bool(BoolQuery),
@@ -333,7 +333,6 @@ pub enum Query {
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
 //    FuzzyLikeThisField(FuzzyLikeThisFieldQuery),
 //    FunctionScore(FunctionScoreQuery),
-//    Fuzzy(FuzzyQuery),
 //    GeoShape(GeoShapeQuery),
 //    HasChild(HasChildQuery),
 //    HasParent(HasParentQuery),
@@ -393,6 +392,9 @@ impl ToJson for Query {
             },
             &Query::Regexp(ref q) => {
                 d.insert("regexp".to_owned(), q.to_json());
+            },
+            &Query::Fuzzy(ref q) => {
+                d.insert("fuzzy".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -1209,6 +1211,52 @@ impl ToJson for RegexpQuery {
     }
 }
 
+/// Fuzzy query
+#[derive(Debug, Default)]
+pub struct FuzzyQuery {
+    field: String,
+    value: String,
+    boost: Option<f64>,
+    fuzziness: Option<Fuzziness>,
+    prefix_length: Option<u64>,
+    max_expansions: Option<u64>
+}
+
+impl Query {
+    pub fn build_fuzzy<A, B>(field: A, value: B) -> FuzzyQuery
+        where A: Into<String>,
+              B: Into<String> {
+        FuzzyQuery {
+            field: field.into(),
+            value: value.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl FuzzyQuery {
+    add_option!(with_boost, boost, f64);
+    add_option!(with_fuzziness, fuzziness, Fuzziness);
+    add_option!(with_prefix_length, prefix_length, u64);
+    add_option!(with_max_expansions, max_expansions, u64);
+
+    build!(Fuzzy);
+}
+
+impl ToJson for FuzzyQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        inner.insert("value".to_owned(), self.value.to_json());
+        optional_add!(self, inner, boost);
+        optional_add!(self, inner, fuzziness);
+        optional_add!(self, inner, prefix_length);
+        optional_add!(self, inner, max_expansions);
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
 // Old queries - TODO: move or delete these
 
 impl Query {
@@ -1399,43 +1447,6 @@ impl Query {
                   //         }
 
                   // }
-
-                  pub fn build_fuzzy<A: Into<String>,B: Into<String>>(
-
-                         field: A,
-
-                         value: B
-                     ) -> FuzzyQuery {
-
-                         FuzzyQuery {
-
-                                 field:
-                                                     field.into()
-                                                 ,
-
-                                 value:
-                                                     value.into()
-                                                 ,
-
-                                 boost:
-                                                     None
-                                                 ,
-
-                                 fuzziness:
-                                                     None
-                                                 ,
-
-                                 prefix_length:
-                                                     None
-                                                 ,
-
-                                 max_expansions:
-                                                     None
-
-
-                          }
-
-                  }
 
                   pub fn build_geo_shape<A: Into<String>>(
 
@@ -2568,96 +2579,6 @@ impl ToJson for Strategy {
         // }
 
 
-          #[derive(Debug)]
-          pub struct FuzzyQuery {
-
-                  field:
-                                         String
-                                      ,
-
-                  value:
-                                         String
-                                      ,
-
-                  boost:
-                                         Option<f64>
-                                      ,
-
-                  fuzziness:
-                                         Option<Fuzziness>
-                                      ,
-
-                  prefix_length:
-                                         Option<u64>
-                                      ,
-
-                  max_expansions:
-                                         Option<u64>
-
-
-          }
-
-          // impl FuzzyQuery {
-
-          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.boost = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_fuzziness<T: Into<Fuzziness>>(mut self, value: T) -> Self {
-          //             self.fuzziness = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_prefix_length<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.prefix_length = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_max_expansions<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.max_expansions = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             // optional_add!(self, m, self.boost, "boost");
-
-          //             // optional_add!(self, m, self.fuzziness, "fuzziness");
-
-          //             // optional_add!(self, m, self.prefix_length, "prefix_length");
-
-          //             // optional_add!(self, m, self.max_expansions, "max_expansions");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::Fuzzy(self)
-          //     }
-          // }
-
-        // impl ToJson for FuzzyQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-        //         let mut inner = BTreeMap::new();
-
-
-        //           inner.insert("value".to_owned(),
-        //                        self.value.to_json());
-
-        //         self.add_optionals(&mut inner);
-        //         d.insert(self.field.clone(), Json::Object(inner));
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
 
 
 // Required for GeoShape
