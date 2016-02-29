@@ -325,6 +325,7 @@ pub enum Query {
     Regexp(Box<RegexpQuery>),
     Fuzzy(Box<FuzzyQuery>),
     Type(Box<TypeQuery>),
+    Ids(Box<IdsQuery>)
 
     // TODO: below this line, not yet converted
 //    Bool(BoolQuery),
@@ -337,7 +338,7 @@ pub enum Query {
 //    GeoShape(GeoShapeQuery),
 //    HasChild(HasChildQuery),
 //    HasParent(HasParentQuery),
-//    Ids(IdsQuery),
+
 //    Indices(IndicesQuery),
 //    MoreLikeThis(MoreLikeThisQuery),
 //    Nested(NestedQuery),
@@ -399,6 +400,9 @@ impl ToJson for Query {
             },
             &Query::Type(ref q) => {
                 d.insert("type".to_owned(), q.to_json());
+            },
+            &Query::Ids(ref q) => {
+                d.insert("ids".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -1289,6 +1293,39 @@ impl ToJson for TypeQuery {
     }
 }
 
+/// Ids query
+#[derive(Debug, Default)]
+pub struct IdsQuery {
+    doc_type: Option<OneOrMany<String>>,
+    values: Vec<JsonVal>
+}
+
+impl Query {
+    pub fn build_ids<A>(values: A) -> IdsQuery
+        where A: Into<Vec<JsonVal>> {
+
+        IdsQuery {
+            values: values.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl IdsQuery {
+    add_option!(with_type, doc_type, OneOrMany<String>);
+
+    build!(Ids);
+}
+
+impl ToJson for IdsQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("values".to_owned(), self.values.to_json());
+        optional_add!(self, d, doc_type, "type");
+        Json::Object(d)
+    }
+}
+
 // Old queries - TODO: move or delete these
 
 impl Query {
@@ -1560,25 +1597,6 @@ impl Query {
                   //         }
 
                   // }
-
-                  pub fn build_ids<A: Into<Vec<String>>>(
-
-                         values: A
-                     ) -> IdsQuery {
-
-                         IdsQuery {
-
-                                 doc_type:
-                                                     None
-                                                 ,
-
-                                 values:
-                                                     values.into()
-
-
-                          }
-
-                  }
 
                   // pub fn build_indices<A: Into<Box<Query>>>(
 
@@ -2888,56 +2906,6 @@ impl ToJson for IndexedShape {
         // }
 
 
-          #[derive(Debug)]
-          pub struct IdsQuery {
-
-                  doc_type:
-                                         Option<OneOrMany<String>>
-                                      ,
-
-                  values:
-                                         Vec<String>
-
-
-          }
-
-//           impl IdsQuery {
-
-//                   pub fn with_type<T: Into<OneOrMany<String>>>(mut self, value: T) -> Self {
-//                       self.doc_type = Some(value.into());
-//                       self
-//                   }
-
-
-//               #[allow(dead_code, unused_variables)]
-//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-// //                      optional_add!(self, m, self.doc_type, "type");
-
-//               }
-
-//               #[allow(dead_code, unused_variables)]
-//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-//               }
-
-//               pub fn build(self) -> Query {
-//                   Query::Ids(self)
-//               }
-//           }
-
-        // impl ToJson for IdsQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //           d.insert("values".to_owned(),
-        //                    self.values.to_json());
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
 
 
           // #[derive(Debug)]
