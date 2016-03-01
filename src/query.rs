@@ -329,9 +329,9 @@ pub enum Query {
 
     // Compound queries
     ConstantScore(Box<ConstantScoreQuery>),
+    Bool(Box<BoolQuery>),
 
     // TODO: below this line, not yet converted
-//    Bool(BoolQuery),
 //    Boosting(BoostingQuery),
 //    DisMax(DisMaxQuery),
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
@@ -414,6 +414,9 @@ impl ToJson for Query {
             },
             &Query::ConstantScore(ref q) => {
                 d.insert("constant_score".to_owned(), q.to_json());
+            },
+            &Query::Bool(ref q) => {
+                d.insert("bool".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -1366,6 +1369,50 @@ impl ToJson for ConstantScoreQuery {
         let mut d = BTreeMap::new();
         d.insert("query".to_owned(), self.query.to_json());
         optional_add!(self, d, boost);
+        Json::Object(d)
+    }
+}
+
+/// Bool query
+#[derive(Debug, Default)]
+pub struct BoolQuery {
+    must: Option<OneOrMany<Query>>,
+    filter: Option<Query>,
+    should: Option<OneOrMany<Query>>,
+    must_not: Option<OneOrMany<Query>>,
+    minimum_should_match: Option<MinimumShouldMatch>,
+    boost: Option<f64>,
+    disable_coord: Option<bool>
+}
+
+impl Query {
+    pub fn build_bool() -> BoolQuery {
+        Default::default()
+    }
+}
+
+impl BoolQuery {
+    add_option!(with_must, must, OneOrMany<Query>);
+    add_option!(with_filter, filter, Query);
+    add_option!(with_should, should, OneOrMany<Query>);
+    add_option!(with_must_not, must_not, OneOrMany<Query>);
+    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_option!(with_boost, boost, f64);
+    add_option!(with_disable_coord, disable_coord, bool);
+
+    build!(Bool);
+}
+
+impl ToJson for BoolQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        optional_add!(self, d, must);
+        optional_add!(self, d, filter);
+        optional_add!(self, d, should);
+        optional_add!(self, d, must_not);
+        optional_add!(self, d, minimum_should_match);
+        optional_add!(self, d, boost);
+        optional_add!(self, d, disable_coord);
         Json::Object(d)
     }
 }
