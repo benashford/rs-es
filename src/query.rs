@@ -330,10 +330,10 @@ pub enum Query {
     // Compound queries
     ConstantScore(Box<ConstantScoreQuery>),
     Bool(Box<BoolQuery>),
+    DisMax(Box<DisMaxQuery>),
 
     // TODO: below this line, not yet converted
 //    Boosting(BoostingQuery),
-//    DisMax(DisMaxQuery),
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
 //    FuzzyLikeThisField(FuzzyLikeThisFieldQuery),
 //    FunctionScore(FunctionScoreQuery),
@@ -417,6 +417,9 @@ impl ToJson for Query {
             },
             &Query::Bool(ref q) => {
                 d.insert("bool".to_owned(), q.to_json());
+            },
+            &Query::DisMax(ref q) => {
+                d.insert("dis_max".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -1417,6 +1420,42 @@ impl ToJson for BoolQuery {
     }
 }
 
+/// DisMax query
+#[derive(Debug, Default)]
+pub struct DisMaxQuery {
+    tie_breaker: Option<f64>,
+    boost: Option<f64>,
+    queries: Vec<Query>
+}
+
+impl Query {
+    pub fn build_dis_max<A>(queries: A) -> DisMaxQuery
+        where A: Into<Vec<Query>> {
+
+        DisMaxQuery {
+            queries: queries.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl DisMaxQuery {
+    add_option!(with_tie_breaker, tie_breaker, f64);
+    add_option!(with_boost, boost, f64);
+
+    build!(DisMax);
+}
+
+impl ToJson for DisMaxQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("queries".to_owned(), self.queries.to_json());
+        optional_add!(self, d, tie_breaker);
+        optional_add!(self, d, boost);
+        Json::Object(d)
+    }
+}
+
 // Old queries - TODO: move or delete these
 
 impl Query {
@@ -1435,29 +1474,6 @@ impl Query {
 
                   //                negative_boost:
                   //                                    None
-
-
-                  //         }
-
-                  // }
-
-                  // pub fn build_dis_max<A: Into<Vec<Query>>>(
-
-                  //        queries: A
-                  //    ) -> DisMaxQuery {
-
-                  //        DisMaxQuery {
-
-                  //                tie_breaker:
-                  //                                    None
-                  //                                ,
-
-                  //                boost:
-                  //                                    None
-                  //                                ,
-
-                  //                queries:
-                  //                                    queries.into()
 
 
                   //         }
@@ -2114,67 +2130,7 @@ impl Query {
 
 
 
-          // #[derive(Debug)]
-          // pub struct DisMaxQuery {
 
-          //         tie_breaker:
-          //                                Option<f64>
-          //                             ,
-
-          //         boost:
-          //                                Option<f64>
-          //                             ,
-
-          //         queries:
-          //                                Vec<Query>
-
-
-          // }
-
-          // impl DisMaxQuery {
-
-          //         pub fn with_tie_breaker<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.tie_breaker = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.boost = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             // optional_add!(self, m, self.tie_breaker, "tie_breaker");
-
-          //             // optional_add!(self, m, self.boost, "boost");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::DisMax(self)
-          //     }
-          // }
-
-        // impl ToJson for DisMaxQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //           d.insert("queries".to_owned(),
-        //                    self.queries.to_json());
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
 
 #[derive(Debug)]
 pub enum Strategy {
