@@ -325,12 +325,14 @@ pub enum Query {
     Regexp(Box<RegexpQuery>),
     Fuzzy(Box<FuzzyQuery>),
     Type(Box<TypeQuery>),
-    Ids(Box<IdsQuery>)
+    Ids(Box<IdsQuery>),
+
+    // Compound queries
+    ConstantScore(Box<ConstantScoreQuery>),
 
     // TODO: below this line, not yet converted
 //    Bool(BoolQuery),
 //    Boosting(BoostingQuery),
-//    ConstantScore(ConstantScoreQuery),
 //    DisMax(DisMaxQuery),
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
 //    FuzzyLikeThisField(FuzzyLikeThisFieldQuery),
@@ -349,6 +351,12 @@ pub enum Query {
 //    SpanNot(SpanNotQuery),
 //    SpanOr(SpanOrQuery<'a>),
 //    SpanTerm(SpanTermQuery)
+}
+
+impl Default for Query {
+    fn default() -> Query {
+        Query::MatchAll(Default::default())
+    }
 }
 
 /// Convert a Query to Json
@@ -403,6 +411,9 @@ impl ToJson for Query {
             },
             &Query::Ids(ref q) => {
                 d.insert("ids".to_owned(), q.to_json());
+            },
+            &Query::ConstantScore(ref q) => {
+                d.insert("constant_score".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -1326,6 +1337,39 @@ impl ToJson for IdsQuery {
     }
 }
 
+/// Constant score query
+#[derive(Debug, Default)]
+pub struct ConstantScoreQuery {
+    query: Query,
+    boost: Option<f64>
+}
+
+impl Query {
+    pub fn build_constant_score<A>(query: A) -> ConstantScoreQuery
+        where A: Into<Query> {
+
+        ConstantScoreQuery {
+            query: query.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl ConstantScoreQuery {
+    add_option!(with_boost, boost, f64);
+
+    build!(ConstantScore);
+}
+
+impl ToJson for ConstantScoreQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("query".to_owned(), self.query.to_json());
+        optional_add!(self, d, boost);
+        Json::Object(d)
+    }
+}
+
 // Old queries - TODO: move or delete these
 
 impl Query {
@@ -1343,23 +1387,6 @@ impl Query {
                   //                                ,
 
                   //                negative_boost:
-                  //                                    None
-
-
-                  //         }
-
-                  // }
-
-                  // pub fn build_constant_score(
-                  //    ) -> ConstantScoreQuery {
-
-                  //        ConstantScoreQuery {
-
-                  //                query:
-                  //                                    None
-                  //                                ,
-
-                  //                boost:
                   //                                    None
 
 
@@ -2038,59 +2065,6 @@ impl Query {
 
 
 
-          // #[derive(Debug)]
-          // pub struct ConstantScoreQuery {
-
-          //         query:
-          //                                Option<Box<Query>>
-          //                             ,
-
-          //         boost:
-          //                                Option<f64>
-
-
-          // }
-
-          // impl ConstantScoreQuery {
-
-          //         pub fn with_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
-          //             self.query = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.boost = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-          //             // optional_add!(self, m, self.query, "query");
-
-          //             // optional_add!(self, m, self.boost, "boost");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::ConstantScore(self)
-          //     }
-          // }
-
-        // impl ToJson for ConstantScoreQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
 
 
           // #[derive(Debug)]
