@@ -39,6 +39,7 @@ pub mod query;
 pub mod units;
 
 use hyper::status::StatusCode;
+use hyper::header::{Headers, Authorization, Basic};
 
 use rustc_serialize::Encodable;
 use rustc_serialize::json::{self, Json};
@@ -103,7 +104,8 @@ pub fn do_req(resp: &mut hyper::client::response::Response)
 /// See the specific operations and their builder objects for details.
 pub struct Client {
     base_url:    String,
-    http_client: hyper::Client
+    http_client: hyper::Client,
+    headers:     Headers
 }
 
 /// Create a HTTP function for the given method (GET/PUT/POST/DELETE)
@@ -113,7 +115,10 @@ macro_rules! es_op {
               -> Result<(StatusCode, Option<Json>), EsError> {
             info!("Doing {} on {}", stringify!($n), url);
             let url = self.full_url(url);
-            let mut result = try!(self.http_client.$cn(&url).send());
+            let mut result = try!(self.http_client
+                                    .$cn(&url)
+                                    .headers(self.headers.clone())
+                                    .send());
             do_req(&mut result)
         }
     }
@@ -132,6 +137,7 @@ macro_rules! es_body_op {
                 let url = self.full_url(url);
                 let mut result = try!(self.http_client
                                       .$cn(&url)
+                                      .headers(self.headers.clone())
                                       .body(&json_string)
                                       .send());
 
@@ -145,8 +151,31 @@ impl Client {
     pub fn new(host: &str, port: u32) -> Client {
         Client {
             base_url:    format!("http://{}:{}", host, port),
-            http_client: hyper::Client::new()
+            http_client: hyper::Client::new(),
+            headers:     Self::auth_from_host(host)
         }
+    }
+
+    /// Add headers for the basic authentication to every request
+    /// when given host's format is `USER:PASS@HOST`.
+    fn auth_from_host(host: &str) -> Headers {
+        let mut headers = Headers::new();
+
+        let tokens = host.split('@').collect::<Vec<&str>>();
+        if tokens.len() == 2 {
+            let auth = tokens[0].split(':').collect::<Vec<&str>>();
+
+            headers.set(
+               Authorization(
+                   Basic {
+                       username: auth[0].to_owned(),
+                       password: Some(auth[1].to_owned())
+                   }
+               )
+            );
+        }
+
+        headers
     }
 
     /// Take a nearly complete ElasticSearch URL, and stick the host/port part
