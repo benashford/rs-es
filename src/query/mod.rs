@@ -20,7 +20,7 @@
 //! duplication so this file is in progress of being converted into hand-edited
 //! code.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
@@ -34,33 +34,17 @@ use units::{DistanceType,
             OneOrMany};
 use util::StrJoin;
 
-// Helper macros
+#[macro_use]
+mod common;
 
-/// This package is full of builder interfaces, with much repeated code for adding
-/// optional fields.  This macro removes much of the repetition.
-macro_rules! add_option {
-    ($n:ident, $e:ident, $t:ty) => (
-        pub fn $n<T: Into<$t>>(mut self, val: T) -> Self {
-            self.$e = Some(val.into());
-            self
-        }
-    )
-}
-
-/// Build the `build` function for each builder struct
-macro_rules! build {
-    ($t:ident) => (
-        pub fn build(self) -> Query {
-            Query::$t(Box::new(self))
-        }
-    )
-}
+pub mod functions;
 
 // Miscellaneous types required by queries go here
 
 // Enums
 
 /// MatchType - the type of Match query
+/// TODO: should be moved out of crate root
 #[derive(Debug)]
 pub enum MatchType {
     Boolean,
@@ -79,6 +63,7 @@ impl ToJson for MatchType {
 }
 
 /// MatchQueryType - the type of the multi Match Query
+/// TODO: should be moved out of crate root
 #[derive(Debug)]
 pub enum MatchQueryType {
     BestFields,
@@ -232,7 +217,7 @@ impl ToJson for ZeroTermsQuery {
 /// Function
 #[derive(Debug)]
 pub enum Function {
-    ScriptScore(ScriptScoreFunction),
+    ScriptScore(functions::ScriptScore),
     // TODO - implement the rest of these
     //    Weight(WeightFunction),
     //    RandomScore(RandomScoreFunction),
@@ -248,57 +233,6 @@ impl ToJson for Function {
                 d.insert("script_score".to_owned(), q.to_json());
             }
         }
-        Json::Object(d)
-    }
-}
-
-/// ScriptScore function
-#[derive(Debug, Default)]
-pub struct ScriptScoreFunction {
-    lang: Option<String>,
-    params: HashMap<String, JsonVal>,
-    inline: String
-}
-
-impl Function {
-    pub fn build_script_score<A>(script: A) -> ScriptScoreFunction
-        where A: Into<String> {
-
-        ScriptScoreFunction {
-            inline: script.into(),
-            ..Default::default()
-        }
-    }
-}
-
-impl ScriptScoreFunction {
-    add_option!(with_lang, lang, String);
-
-    pub fn with_params<A>(mut self, params: A) -> Self
-        where A: IntoIterator<Item=(String, JsonVal)> {
-
-        self.params.extend(params);
-        self
-    }
-
-    pub fn add_param<A, B>(mut self, key: A, value: B) -> Self
-        where A: Into<String>,
-              B: Into<JsonVal> {
-        self.params.insert(key.into(), value.into());
-        self
-    }
-
-    pub fn build(self) -> Function {
-        Function::ScriptScore(self)
-    }
-}
-
-impl ToJson for ScriptScoreFunction {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("inline".to_owned(), self.inline.to_json());
-        d.insert("params".to_owned(), self.params.to_json());
-        optional_add!(self, d, lang);
         Json::Object(d)
     }
 }
@@ -6331,7 +6265,7 @@ mod tests {
 
     use rustc_serialize::json::ToJson;
 
-    use super::{Flags, SimpleQueryStringFlags, TermsQueryLookup, Query};
+    use super::{Flags, Function, SimpleQueryStringFlags, TermsQueryLookup, Query};
 
     #[test]
     fn test_simple_query_string_flags() {
@@ -6360,5 +6294,17 @@ mod tests {
             .build();
         assert_eq!("{\"terms\":{\"field_name\":{\"id\":123,\"index\":\"other\",\"path\":\"blah.de.blah\"}}}",
                    terms_query_3.to_json().to_string());
+    }
+
+    #[test]
+    fn test_function_score_query() {
+        let function_score_query = Query::build_function_score()
+            .with_function(Function::build_script_score("this_is_a_script")
+                           .with_lang("made_up")
+                           .add_param("A", 12)
+                           .build())
+            .build();
+        assert_eq!("{\"function_score\":{\"functions\":[{\"script_score\":{\"inline\":\"this_is_a_script\",\"lang\":\"made_up\",\"params\":{\"A\":12}}}]}}",
+                   function_score_query.to_json().to_string());
     }
 }
