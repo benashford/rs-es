@@ -231,23 +231,79 @@ impl ToJson for ZeroTermsQuery {
 
 /// Function
 #[derive(Debug)]
-pub struct Function {
-    // TODO : implement specific fields
-    //     filter: Option<Filter>,
-    //     function: Func,
-    weight: Option<f64>
+pub enum Function {
+    ScriptScore(ScriptScoreFunction),
+    // TODO - implement the rest of these
+    //    Weight(WeightFunction),
+    //    RandomScore(RandomScoreFunction),
+    //    FieldValueFactor(FieldValueFactorFunction),
+    //    Decay(DecayFunction)
 }
 
 impl ToJson for Function {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        // TODO - implement body
-//         optional_add!(self, d, filter);
-//         optional_add!(self, d, weight);
-//         d.insert(self.function.name(), self.function.to_json());
-         Json::Object(d)
+        match self {
+            &Function::ScriptScore(ref q) => {
+                d.insert("script_score".to_owned(), q.to_json());
+            }
+        }
+        Json::Object(d)
     }
 }
+
+/// ScriptScore function
+#[derive(Debug, Default)]
+pub struct ScriptScoreFunction {
+    lang: Option<String>,
+    params: HashMap<String, JsonVal>,
+    inline: String
+}
+
+impl Function {
+    pub fn build_script_score<A>(script: A) -> ScriptScoreFunction
+        where A: Into<String> {
+
+        ScriptScoreFunction {
+            inline: script.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl ScriptScoreFunction {
+    add_option!(with_lang, lang, String);
+
+    pub fn with_params<A>(mut self, params: A) -> Self
+        where A: IntoIterator<Item=(String, JsonVal)> {
+
+        self.params.extend(params);
+        self
+    }
+
+    pub fn add_param<A, B>(mut self, key: A, value: B) -> Self
+        where A: Into<String>,
+              B: Into<JsonVal> {
+        self.params.insert(key.into(), value.into());
+        self
+    }
+
+    pub fn build(self) -> Function {
+        Function::ScriptScore(self)
+    }
+}
+
+impl ToJson for ScriptScoreFunction {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("inline".to_owned(), self.inline.to_json());
+        d.insert("params".to_owned(), self.params.to_json());
+        optional_add!(self, d, lang);
+        Json::Object(d)
+    }
+}
+
+// Flags
 
 /// Flags - multiple operations can take a set of flags, each set is dependent
 /// on the operation in question, but they're all formatted to a similar looking
@@ -331,12 +387,12 @@ pub enum Query {
     ConstantScore(Box<ConstantScoreQuery>),
     Bool(Box<BoolQuery>),
     DisMax(Box<DisMaxQuery>),
+    FunctionScore(Box<FunctionScoreQuery>),
 
     // TODO: below this line, not yet converted
 //    Boosting(BoostingQuery),
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
 //    FuzzyLikeThisField(FuzzyLikeThisFieldQuery),
-//    FunctionScore(FunctionScoreQuery),
 //    GeoShape(GeoShapeQuery),
 //    HasChild(HasChildQuery),
 //    HasParent(HasParentQuery),
@@ -420,6 +476,9 @@ impl ToJson for Query {
             },
             &Query::DisMax(ref q) => {
                 d.insert("dis_max".to_owned(), q.to_json());
+            },
+            &Query::FunctionScore(ref q) => {
+                d.insert("function_score".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -1456,6 +1515,59 @@ impl ToJson for DisMaxQuery {
     }
 }
 
+/// Function Score query
+#[derive(Debug, Default)]
+pub struct FunctionScoreQuery {
+    query: Option<Query>,
+    boost: Option<f64>,
+    functions: Vec<Function>,
+    max_boost: Option<f64>,
+    score_mode: Option<ScoreMode>,
+    boost_mode: Option<BoostMode>,
+    min_score: Option<f64>
+}
+
+impl Query {
+    pub fn build_function_score() -> FunctionScoreQuery {
+        Default::default()
+    }
+}
+
+impl FunctionScoreQuery {
+    add_option!(with_query, query, Query);
+    add_option!(with_boost, boost, f64);
+    add_option!(with_max_boost, max_boost, f64);
+    add_option!(with_score_mode, score_mode, ScoreMode);
+    add_option!(with_boost_mode, boost_mode, BoostMode);
+    add_option!(with_min_score, min_score, f64);
+
+    pub fn with_functions<A: Into<Vec<Function>>>(mut self, functions: A) -> Self {
+        self.functions = functions.into();
+        self
+    }
+
+    pub fn with_function<A: Into<Function>>(mut self, function: A) -> Self {
+        self.functions = vec![function.into()];
+        self
+    }
+
+    build!(FunctionScore);
+}
+
+impl ToJson for FunctionScoreQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("functions".to_owned(), self.functions.to_json());
+        optional_add!(self, d, query);
+        optional_add!(self, d, boost);
+        optional_add!(self, d, max_boost);
+        optional_add!(self, d, score_mode);
+        optional_add!(self, d, boost_mode);
+        optional_add!(self, d, min_score);
+        Json::Object(d)
+    }
+}
+
 // Old queries - TODO: move or delete these
 
 impl Query {
@@ -1567,45 +1679,6 @@ impl Query {
                           }
 
                   }
-
-                  // pub fn build_function_score<A: Into<Vec<Function>>>(
-
-                  //        functions: A
-                  //    ) -> FunctionScoreQuery {
-
-                  //        FunctionScoreQuery {
-
-                  //                query:
-                  //                                    None
-                  //                                ,
-
-                  //                boost:
-                  //                                    None
-                  //                                ,
-
-                  //                functions:
-                  //                                    functions.into()
-                  //                                ,
-
-                  //                max_boost:
-                  //                                    None
-                  //                                ,
-
-                  //                score_mode:
-                  //                                    None
-                  //                                ,
-
-                  //                boost_mode:
-                  //                                    None
-                  //                                ,
-
-                  //                min_score:
-                  //                                    None
-
-
-                  //         }
-
-                  // }
 
                   pub fn build_geo_shape<A: Into<String>>(
 
@@ -2387,98 +2460,6 @@ impl ToJson for Strategy {
         // }
 
 
-          // #[derive(Debug)]
-          // pub struct FunctionScoreQuery {
-
-          //         query:
-          //                                Option<Box<Query>>
-          //                             ,
-
-          //         boost:
-          //                                Option<f64>
-          //                             ,
-
-          //         functions:
-          //                                Vec<Function>
-          //                             ,
-
-          //         max_boost:
-          //                                Option<f64>
-          //                             ,
-
-          //         score_mode:
-          //                                Option<ScoreMode>
-          //                             ,
-
-          //         boost_mode:
-          //                                Option<BoostMode>
-          //                             ,
-
-          //         min_score:
-          //                                Option<f64>
-
-
-          // }
-
-          // impl FunctionScoreQuery {
-
-          //         pub fn with_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
-          //             self.query = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.boost = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_max_boost<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.max_boost = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
-          //             self.score_mode = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_boost_mode<T: Into<BoostMode>>(mut self, value: T) -> Self {
-          //             self.boost_mode = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_min_score<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.min_score = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             // optional_add!(self, m, self.query, "query");
-
-          //             // optional_add!(self, m, self.boost, "boost");
-
-          //             // optional_add!(self, m, self.max_boost, "max_boost");
-
-          //             // optional_add!(self, m, self.score_mode, "score_mode");
-
-          //             // optional_add!(self, m, self.boost_mode, "boost_mode");
-
-          //             // optional_add!(self, m, self.min_score, "min_score");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::FunctionScore(self)
-          //     }
-          // }
 
 
         #[derive(Debug)]
@@ -5877,413 +5858,6 @@ impl ToJson for Doc {
 //         Json::Object(d)
 //     }
 // }
-
-
-// Functions for use in `FunctionScoreQuery`
-
-        // #[derive(Debug)]
-        // pub enum Func {
-
-        //         ScriptScore(ScriptScoreFunc)
-        //         ,
-
-        //         RandomScore(RandomScoreFunc)
-        //         ,
-
-        //         FieldValueFactor(FieldValueFactorFunc)
-        //         ,
-
-        //         Linear(LinearFunc)
-        //         ,
-
-        //         Exp(ExpFunc)
-        //         ,
-
-        //         Gauss(GaussFunc)
-
-
-        // }
-
-        // impl Func {
-
-        //         pub fn build_script_score<A: Into<String>>(
-
-        //               script: A
-
-        //         ) -> ScriptScoreFunc {
-        //            ScriptScoreFunc {
-
-        //                   script:
-        //                                      script.into()
-        //                                   ,
-
-        //                   lang:
-        //                                      None
-        //                                   ,
-
-        //                   params:
-        //                                      None
-
-
-        //            }
-        //         }
-
-        //         pub fn build_random_score<A: Into<u64>>(
-
-        //               seed: A
-
-        //         ) -> RandomScoreFunc {
-        //            RandomScoreFunc {
-
-        //                   seed:
-        //                                      seed.into()
-
-
-        //            }
-        //         }
-
-        //         pub fn build_field_value_factor<A: Into<String>>(
-
-        //               field: A
-
-        //         ) -> FieldValueFactorFunc {
-        //            FieldValueFactorFunc {
-
-        //                   field:
-        //                                      field.into()
-        //                                   ,
-
-        //                   factor:
-        //                                      None
-        //                                   ,
-
-        //                   modifier:
-        //                                      None
-
-
-        //            }
-        //         }
-
-        //         pub fn build_linear<A: Into<String>,B: Into<Origin>>(
-
-        //               field: A,
-
-        //               origin: B
-
-        //         ) -> LinearFunc {
-        //            LinearFunc {
-
-        //                   field:
-        //                                      field.into()
-        //                                   ,
-
-        //                   origin:
-        //                                      origin.into()
-        //                                   ,
-
-        //                   scale:
-        //                                      None
-        //                                   ,
-
-        //                   offset:
-        //                                      None
-        //                                   ,
-
-        //                   decay:
-        //                                      None
-        //                                   ,
-
-        //                   multi_value_mode:
-        //                                      None
-
-
-        //            }
-        //         }
-
-        //         pub fn build_exp<A: Into<String>,B: Into<Origin>>(
-
-        //               field: A,
-
-        //               origin: B
-
-        //         ) -> ExpFunc {
-        //            ExpFunc {
-
-        //                   field:
-        //                                      field.into()
-        //                                   ,
-
-        //                   origin:
-        //                                      origin.into()
-        //                                   ,
-
-        //                   scale:
-        //                                      None
-        //                                   ,
-
-        //                   offset:
-        //                                      None
-        //                                   ,
-
-        //                   decay:
-        //                                      None
-        //                                   ,
-
-        //                   multi_value_mode:
-        //                                      None
-
-
-        //            }
-        //         }
-
-        //         pub fn build_gauss<A: Into<String>,B: Into<Origin>>(
-
-        //               field: A,
-
-        //               origin: B
-
-        //         ) -> GaussFunc {
-        //            GaussFunc {
-
-        //                   field:
-        //                                      field.into()
-        //                                   ,
-
-        //                   origin:
-        //                                      origin.into()
-        //                                   ,
-
-        //                   scale:
-        //                                      None
-        //                                   ,
-
-        //                   offset:
-        //                                      None
-        //                                   ,
-
-        //                   decay:
-        //                                      None
-        //                                   ,
-
-        //                   multi_value_mode:
-        //                                      None
-
-
-        //            }
-        //         }
-
-
-        //     fn name(&self) -> String {
-        //         match self {
-
-        //                 &Func::ScriptScore(_) => "script_score"
-        //                 ,
-
-        //                 &Func::RandomScore(_) => "random_score"
-        //                 ,
-
-        //                 &Func::FieldValueFactor(_) => "field_value_factor"
-        //                 ,
-
-        //                 &Func::Linear(_) => "linear"
-        //                 ,
-
-        //                 &Func::Exp(_) => "exp"
-        //                 ,
-
-        //                 &Func::Gauss(_) => "gauss"
-
-
-        //         }.to_owned()
-        //     }
-        // }
-
-        // impl ToJson for Func {
-        //     fn to_json(&self) -> Json {
-        //         match self {
-
-        //                 &Func::ScriptScore(ref inner)
-        //                 => inner.to_json()
-        //                 ,
-
-        //                 &Func::RandomScore(ref inner)
-        //                 => inner.to_json()
-        //                 ,
-
-        //                 &Func::FieldValueFactor(ref inner)
-        //                 => inner.to_json()
-        //                 ,
-
-        //                 &Func::Linear(ref inner)
-        //                 => inner.to_json()
-        //                 ,
-
-        //                 &Func::Exp(ref inner)
-        //                 => inner.to_json()
-        //                 ,
-
-        //                 &Func::Gauss(ref inner)
-        //                 => inner.to_json()
-
-
-        //         }
-        //     }
-        // }
-
-
-        //   #[derive(Debug)]
-        //   pub struct ScriptScoreFunc {
-
-        //           script:
-        //                                  String
-        //                               ,
-
-        //           lang:
-        //                                  Option<String>
-        //                               ,
-
-        //           params:
-        //                                  Option<BTreeMap<String, JsonVal>>
-
-
-        //   }
-
-        //   impl ScriptScoreFunc {
-
-        //           pub fn with_lang<T: Into<String>>(mut self, value: T) -> Self {
-        //               self.lang = Some(value.into());
-        //               self
-        //           }
-
-        //           pub fn with_params<T: Into<BTreeMap<String, JsonVal>>>(mut self, value: T) -> Self {
-        //               self.params = Some(value.into());
-        //               self
-        //           }
-
-
-        //       #[allow(dead_code, unused_variables)]
-        //       fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-        //               optional_add!(self, m, self.lang, "lang");
-
-        //               optional_add!(self, m, self.params, "params");
-
-        //       }
-
-        //       #[allow(dead_code, unused_variables)]
-        //       fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-        //       }
-
-        //       pub fn build(self) -> Func {
-        //           Func::ScriptScore(self)
-        //       }
-        //   }
-
-        // impl ToJson for ScriptScoreFunc {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //           d.insert("script".to_owned(),
-        //                    self.script.to_json());
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
-
-
-        //   #[derive(Debug)]
-        //   pub struct RandomScoreFunc {
-
-        //           seed:
-        //                                  u64
-
-
-        //   }
-
-        //   impl RandomScoreFunc {
-
-
-        //       #[allow(dead_code, unused_variables)]
-        //       fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-        //       }
-
-        //       #[allow(dead_code, unused_variables)]
-        //       fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-        //       }
-
-        //       pub fn build(self) -> Func {
-        //           Func::RandomScore(self)
-        //       }
-        //   }
-
-        // impl ToJson for RandomScoreFunc {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //           d.insert("seed".to_owned(),
-        //                    self.seed.to_json());
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
-
-
-          // #[derive(Debug)]
-          // pub struct FieldValueFactorFunc {
-
-          //         field:
-          //                                String
-          //                             ,
-
-          //         factor:
-          //                                Option<f64>
-          //                             ,
-
-          //         modifier:
-          //                                Option<Modifier>
-
-
-          // }
-
-          // impl FieldValueFactorFunc {
-
-          //         pub fn with_factor<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.factor = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_modifier<T: Into<Modifier>>(mut self, value: T) -> Self {
-          //             self.modifier = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             optional_add!(self, m, self.factor, "factor");
-
-          //             optional_add!(self, m, self.modifier, "modifier");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Func {
-          //         Func::FieldValueFactor(self)
-          //     }
-          // }
-
 
         #[derive(Debug)]
         pub enum Modifier {
