@@ -1,5 +1,12 @@
 language: rust
 
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - ruby
+
 rust:
   - stable
   - beta
@@ -7,10 +14,6 @@ rust:
 
 services:
   - elasticsearch
-
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y ruby
 
 # As recommended here: http://docs.travis-ci.com/user/database-setup/#ElasticSearch
 before_script:
