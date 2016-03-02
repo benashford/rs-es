@@ -12,6 +12,10 @@ Versions up-to and including 0.2 of `rs-es` targetted ElasticSearch 1.6.x.  Star
 
 Please note, due a minor breaking change between Rust 1.5 and 1.6 the 0.1.x releases of `rs-es` only work with Rust 1.5 or earlier, the 0.2.x releases only work with Rust 1.6 or later.
 
+### Contributing and compatibility
+
+The HEAD of `master` is currently the development branch for 0.3.0, for any fixes etc. the current 0.2.x release, please open a pull request against the `0.2-releases` branch.  For contributions for ongoing development, please open a pull request against `master`.
+
 ## Documentation
 
 [Full documentation for `rs-es`](http://benashford.github.io/rs-es/rs_es/index.html).  The rest of this document consists of an introduction.
@@ -237,6 +241,8 @@ let hits:Vec<DocType> = result.hits.hits().unwrap();
 ```
 
 ### The Query DSL
+
+WARNING: In the forthcoming 0.3.0 release of `rs-es` there will be breaking changes here.  This is due to changes in ElasticSearch in the 2.0 series.  Essentially the difference between queries and filters is being removed as they will be context sensitive instead.  As such examples here might need subtle changes to work with 0.3.  E.g. `Filter::build_range("field_name")` will become `Query::build_range("field_name").  This README will be updated when these changes are made.
 
 ElasticSearch offers a [rich DSL for searches](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl.html).  It is JSON based, and therefore very easy to use and composable if using from a dynamic language (e.g. [Ruby](https://github.com/elastic/elasticsearch-ruby/tree/master/elasticsearch-dsl#features-overview)); but Rust, being a staticly-typed language, things are different.  The `rs_es::query` module defines a set of builder objects which can be similarly composed to the same ends.
 
