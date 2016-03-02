@@ -1,5 +1,7 @@
 language: rust
 
+sudo: false
+
 addons:
   apt:
     packages:
@@ -7,6 +9,7 @@ addons:
       - libelf-dev
       - libdw-dev
       - binutils-dev # optional: only required for the --verify flag of coveralls
+      - ruby
 
 rust:
   - stable
@@ -14,10 +17,8 @@ rust:
   - nightly
 
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y ruby
-  - curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/2.0.2/elasticsearch-2.0.2.deb && sudo dpkg -i --force-confnew elasticsearch-2.0.2.deb
-  - sudo service elasticsearch start
+  - curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/zip/elasticsearch/2.0.2/elasticsearch-2.0.2.zip && unzip elasticsearch-2.0.2.zip
+  - elasticsearch-2.0.2/bin/elasticsearch > /tmp/es.log &
 
 # As recommended here: http://docs.travis-ci.com/user/database-setup/#ElasticSearch
 before_script:
