@@ -219,8 +219,8 @@ impl ToJson for ZeroTermsQuery {
 pub enum Function {
     ScriptScore(functions::ScriptScore),
     Weight(functions::Weight),
+    RandomScore(functions::RandomScore),
     // TODO - implement the rest of these
-    //    RandomScore(RandomScoreFunction),
     //    FieldValueFactor(FieldValueFactorFunction),
     //    Decay(DecayFunction)
 }
@@ -234,6 +234,9 @@ impl ToJson for Function {
             },
             &Function::Weight(ref q) => {
                 d.insert("weight".to_owned(), q.to_json());
+            },
+            &Function::RandomScore(ref q) => {
+                d.insert("random_score".to_owned(), q.to_json());
             }
         }
         Json::Object(d)

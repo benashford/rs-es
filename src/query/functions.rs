@@ -92,3 +92,21 @@ impl ToJson for Weight {
         self.0.to_json()
     }
 }
+
+/// Random score function
+#[derive(Debug, Default)]
+pub struct RandomScore(i64);
+
+impl Function {
+    pub fn build_random_score<A>(seed: A) -> RandomScore
+        where A: Into<i64> {
+
+        RandomScore(seed.into())
+    }
+}
+
+impl ToJson for RandomScore {
+    fn to_json(&self) -> Json {
+        self.0.to_json()
+    }
+}
