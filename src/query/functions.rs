@@ -74,3 +74,21 @@ impl ToJson for ScriptScore {
         Json::Object(d)
     }
 }
+
+/// Weight function
+#[derive(Debug, Default)]
+pub struct Weight(f64);
+
+impl Function {
+    pub fn build_weight<A>(weight: A) -> Weight
+        where A: Into<f64> {
+
+        Weight(weight.into())
+    }
+}
+
+impl ToJson for Weight {
+    fn to_json(&self) -> Json {
+        self.0.to_json()
+    }
+}
