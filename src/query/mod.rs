@@ -220,8 +220,8 @@ pub enum Function {
     ScriptScore(functions::ScriptScore),
     Weight(functions::Weight),
     RandomScore(functions::RandomScore),
+    FieldValueFactor(functions::FieldValueFactor),
     // TODO - implement the rest of these
-    //    FieldValueFactor(FieldValueFactorFunction),
     //    Decay(DecayFunction)
 }
 
@@ -237,6 +237,9 @@ impl ToJson for Function {
             },
             &Function::RandomScore(ref q) => {
                 d.insert("random_score".to_owned(), q.to_json());
+            },
+            &Function::FieldValueFactor(ref q) => {
+                d.insert("field_value_factor".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -5799,88 +5802,6 @@ impl ToJson for Doc {
 //     }
 // }
 
-        #[derive(Debug)]
-        pub enum Modifier {
-
-                None
-                ,
-
-                Log
-                ,
-
-                Log1p
-                ,
-
-                Log2p
-                ,
-
-                Ln
-                ,
-
-                Ln1p
-                ,
-
-                Ln2p
-                ,
-
-                Square
-                ,
-
-                Sqrt
-                ,
-
-                Reciprocal
-
-
-        }
-
-        impl ToJson for Modifier {
-            fn to_json(&self) -> Json {
-                match self {
-
-                        &Modifier::None
-                        => "none".to_json()
-                        ,
-
-                        &Modifier::Log
-                        => "log".to_json()
-                        ,
-
-                        &Modifier::Log1p
-                        => "log1p".to_json()
-                        ,
-
-                        &Modifier::Log2p
-                        => "log2p".to_json()
-                        ,
-
-                        &Modifier::Ln
-                        => "ln".to_json()
-                        ,
-
-                        &Modifier::Ln1p
-                        => "ln1p".to_json()
-                        ,
-
-                        &Modifier::Ln2p
-                        => "ln2p".to_json()
-                        ,
-
-                        &Modifier::Square
-                        => "square".to_json()
-                        ,
-
-                        &Modifier::Sqrt
-                        => "sqrt".to_json()
-                        ,
-
-                        &Modifier::Reciprocal
-                        => "reciprocal".to_json()
-
-
-                }
-            }
-        }
 
 
         // impl ToJson for FieldValueFactorFunc {
