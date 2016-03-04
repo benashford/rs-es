@@ -40,6 +40,7 @@ mod common;
 pub mod compound;
 pub mod full_text;
 pub mod functions;
+pub mod geo;
 pub mod joining;
 pub mod term;
 
@@ -253,10 +254,12 @@ pub enum Query {
     HasChild(Box<joining::HasChildQuery>),
     HasParent(Box<joining::HasParentQuery>),
 
+    // Geo queries
+    GeoShape(Box<geo::GeoShapeQuery>)
+
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
 //    FuzzyLikeThisField(FuzzyLikeThisFieldQuery),
-//    GeoShape(GeoShapeQuery),
 
 //    Indices(IndicesQuery),
 //    MoreLikeThis(MoreLikeThisQuery),
@@ -354,6 +357,9 @@ impl ToJson for Query {
             },
             &Query::HasParent(ref q) => {
                 d.insert("has_parent".to_owned(), q.to_json());
+            },
+            &Query::GeoShape(ref q) => {
+                d.insert("geo_shape".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -475,29 +481,6 @@ impl Query {
                                                  ,
 
                                  analyzer:
-                                                     None
-
-
-                          }
-
-                  }
-
-                  pub fn build_geo_shape<A: Into<String>>(
-
-                         field: A
-                     ) -> GeoShapeQuery {
-
-                         GeoShapeQuery {
-
-                                 field:
-                                                     field.into()
-                                                 ,
-
-                                 shape:
-                                                     None
-                                                 ,
-
-                                 indexed_shape:
                                                      None
 
 
@@ -1071,140 +1054,6 @@ impl ToJson for Strategy {
 
         //           inner.insert("like_text".to_owned(),
         //                        self.like_text.to_json());
-
-        //         self.add_optionals(&mut inner);
-        //         d.insert(self.field.clone(), Json::Object(inner));
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
-
-// Required for GeoShape
-
-#[derive(Debug)]
-pub struct Shape {
-    shape_type: String,
-    coordinates: Vec<(f64, f64)>
-}
-
-impl Shape {
-    pub fn new<A: Into<String>>(shape_type: A, coordinates: Vec<(f64, f64)>) -> Shape {
-        Shape {
-            shape_type:  shape_type.into(),
-            coordinates: coordinates
-        }
-    }
-}
-
-impl ToJson for Shape {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-
-        inner.insert("type".to_owned(), self.shape_type.to_json());
-
-        let coordinates:Vec<Vec<f64>> = self.coordinates
-            .iter()
-            .map (|&(a, b)| vec![a, b])
-            .collect();
-        inner.insert("coordinates".to_owned(), coordinates.to_json());
-
-        d.insert("shape".to_owned(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
-
-#[derive(Debug)]
-pub struct IndexedShape {
-    id:       String,
-    doc_type: String,
-    index:    String,
-    path:     String
-}
-
-impl IndexedShape {
-    pub fn new<A, B, C, D>(id: A, doc_type: B, index: C, path: D) -> IndexedShape
-        where A: Into<String>,
-              B: Into<String>,
-              C: Into<String>,
-              D: Into<String>
-    {
-        IndexedShape {
-            id: id.into(),
-            doc_type: doc_type.into(),
-            index: index.into(),
-            path: path.into()
-        }
-    }
-}
-
-impl ToJson for IndexedShape {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        inner.insert("id".to_owned(), self.id.to_json());
-        inner.insert("type".to_owned(), self.doc_type.to_json());
-        inner.insert("index".to_owned(), self.index.to_json());
-        inner.insert("path".to_owned(), self.path.to_json());
-        d.insert("indexed_shape".to_owned(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
-
-          #[derive(Debug)]
-          pub struct GeoShapeQuery {
-
-                  field:
-                                         String
-                                      ,
-
-                  shape:
-                                         Option<Shape>
-                                      ,
-
-                  indexed_shape:
-                                         Option<IndexedShape>
-
-
-          }
-
-          // impl GeoShapeQuery {
-
-          //         pub fn with_shape<T: Into<Shape>>(mut self, value: T) -> Self {
-          //             self.shape = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_indexed_shape<T: Into<IndexedShape>>(mut self, value: T) -> Self {
-          //             self.indexed_shape = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             // optional_add!(self, m, self.shape, "shape");
-
-          //             // optional_add!(self, m, self.indexed_shape, "indexed_shape");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::GeoShape(self)
-          //     }
-          // }
-
-        // impl ToJson for GeoShapeQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-        //         let mut inner = BTreeMap::new();
-
 
         //         self.add_optionals(&mut inner);
         //         d.insert(self.field.clone(), Json::Object(inner));
