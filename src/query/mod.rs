@@ -272,6 +272,7 @@ where A: AsRef<str> {
 }
 
 /// Values of the rewrite option used by multi-term queries
+/// TODO: should probably exist somewhere more specific
 #[derive(Debug)]
 pub enum Rewrite {
     ConstantScoreAuto,
