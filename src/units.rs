@@ -209,12 +209,12 @@ impl ToJson for GeoBox {
 /// A non-specific holder for an option which can either be a single thing, or
 /// multiple instances of that thing.
 #[derive(Debug)]
-pub enum OneOrMany<T: ToJson> {
+pub enum OneOrMany<T> {
     One(T),
     Many(Vec<T>)
 }
 
-impl<T: Default + ToJson> Default for OneOrMany<T> {
+impl<T: Default> Default for OneOrMany<T> {
     fn default() -> Self {
         OneOrMany::One(Default::default())
     }
