@@ -219,6 +219,8 @@ impl ToJson for Type {
 }
 
 /// Geo Distance query
+///
+/// TODO: Specific full unit test for querying with a generated query from here
 #[derive(Debug, Default)]
 pub struct GeoDistanceQuery {
     field: String,
@@ -258,12 +260,10 @@ impl GeoDistanceQuery {
 impl ToJson for GeoDistanceQuery {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        inner.insert("location".to_owned(), self.location.to_json());
-        inner.insert("distance".to_owned(), self.distance.to_json());
-        optional_add!(self, inner, distance_type);
-        optional_add!(self, inner, optimize_bbox);
-        d.insert(self.field.clone(), Json::Object(inner));
+        d.insert("distance".to_owned(), self.distance.to_json());
+        optional_add!(self, d, distance_type);
+        optional_add!(self, d, optimize_bbox);
+        d.insert(self.field.clone(), self.location.to_json());
         optional_add!(self, d, coerce);
         optional_add!(self, d, ignore_malformed);
         Json::Object(d)

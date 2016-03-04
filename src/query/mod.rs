@@ -258,6 +258,8 @@ pub enum Query {
     GeoShape(Box<geo::GeoShapeQuery>),
     GeoBoundingBox(Box<geo::GeoBoundingBoxQuery>),
     GeoDistance(Box<geo::GeoDistanceQuery>),
+    // TODO: implement me - pending changes to range query
+    //GeoDistanceRange(Box<geo::GeoDistanceRangeQuery>)
 
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),

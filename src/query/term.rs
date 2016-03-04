@@ -220,6 +220,8 @@ impl ToJson for TermsQuery {
 }
 
 /// Range query
+/// TODO: Check all possible combinations: gt, gte, lte, lt, from, to, include_upper, include_lower
+/// and share with other range queries
 #[derive(Debug, Default)]
 pub struct RangeQuery {
     field: String,
