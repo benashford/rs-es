@@ -222,6 +222,7 @@ pub enum Query {
     // Not implementing the Or query, as it's deprecated, use `bool` instead.
     // Not implementing the Filtered query, as it's deprecated.
     // Not implementing the Limit query, as it's deprecated.
+    Nested(Box<compound::NestedQuery>),
 
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
@@ -232,7 +233,6 @@ pub enum Query {
 
 //    Indices(IndicesQuery),
 //    MoreLikeThis(MoreLikeThisQuery),
-//    Nested(NestedQuery),
 
 //    SpanFirst(SpanFirstQuery),
 //    SpanMulti(SpanMultiQuery),
@@ -318,6 +318,9 @@ impl ToJson for Query {
             },
             &Query::Indices(ref q) => {
                 d.insert("indices".to_owned(), q.to_json());
+            },
+            &Query::Nested(ref q) => {
+                d.insert("nested".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -600,31 +603,6 @@ impl Query {
                           }
 
                   }
-
-                  // pub fn build_nested<A: Into<String>,B: Into<Box<Query>>>(
-
-                  //        path: A,
-
-                  //        query: B
-                  //    ) -> NestedQuery {
-
-                  //        NestedQuery {
-
-                  //                path:
-                  //                                    path.into()
-                  //                                ,
-
-                  //                score_mode:
-                  //                                    None
-                  //                                ,
-
-                  //                query:
-                  //                                    query.into()
-
-
-                  //         }
-
-                  // }
 
                   // pub fn build_span_first<A: Into<Box<Query>>,B: Into<i64>>(
 
@@ -1655,68 +1633,6 @@ impl ToJson for Doc {
         //         Json::Object(d)
         //     }
         // }
-
-
-          // #[derive(Debug)]
-          // pub struct NestedQuery {
-
-          //         path:
-          //                                String
-          //                             ,
-
-          //         score_mode:
-          //                                Option<ScoreMode>
-          //                             ,
-
-          //         query:
-          //                                Box<Query>
-
-
-          // }
-
-          // impl NestedQuery {
-
-          //         pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
-          //             self.score_mode = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //         //optional_add!(self, m, self.score_mode, "score_mode");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::Nested(self)
-          //     }
-          // }
-
-        // impl ToJson for NestedQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //           d.insert("path".to_owned(),
-        //                    self.path.to_json());
-
-        //           d.insert("query".to_owned(),
-        //                    self.query.to_json());
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
-
-
-
 
         //   #[derive(Debug)]
         //   pub struct SpanFirstQuery {

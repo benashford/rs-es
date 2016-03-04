@@ -326,3 +326,39 @@ impl ToJson for NoMatchQuery {
         }
     }
 }
+
+/// Nested query
+#[derive(Debug, Default)]
+pub struct NestedQuery {
+    path: String,
+    score_mode: Option<ScoreMode>,
+    query: Query
+}
+
+impl Query {
+    pub fn build_nested<A, B>(path: A, query: B) -> NestedQuery
+        where A: Into<String>,
+              B: Into<Query> {
+        NestedQuery {
+            path: path.into(),
+            query: query.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl NestedQuery {
+    add_option!(with_score_mode, score_mode, ScoreMode);
+
+    build!(Nested);
+}
+
+impl ToJson for NestedQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("path".to_owned(), self.path.to_json());
+        d.insert("query".to_owned(), self.query.to_json());
+        optional_add!(self, d, score_mode);
+        Json::Object(d)
+    }
+}
