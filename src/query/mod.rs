@@ -216,7 +216,12 @@ pub enum Query {
     DisMax(Box<compound::DisMaxQuery>),
     FunctionScore(Box<compound::FunctionScoreQuery>),
     Boosting(Box<compound::BoostingQuery>),
-    Indices(Box<compound::IndicesQuery>)
+    Indices(Box<compound::IndicesQuery>),
+    // Not implementing the And query, as it's deprecated, use `bool` instead.
+    // Not implementing the Not query, as it's deprecated
+    // Not implementing the Or query, as it's deprecated, use `bool` instead.
+    // Not implementing the Filtered query, as it's deprecated.
+    // Not implementing the Limit query, as it's deprecated.
 
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
