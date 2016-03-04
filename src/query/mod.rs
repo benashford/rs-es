@@ -255,7 +255,8 @@ pub enum Query {
     HasParent(Box<joining::HasParentQuery>),
 
     // Geo queries
-    GeoShape(Box<geo::GeoShapeQuery>)
+    GeoShape(Box<geo::GeoShapeQuery>),
+    GeoBoundingBox(Box<geo::GeoBoundingBoxQuery>),
 
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
@@ -360,6 +361,9 @@ impl ToJson for Query {
             },
             &Query::GeoShape(ref q) => {
                 d.insert("geo_shape".to_owned(), q.to_json());
+            },
+            &Query::GeoBoundingBox(ref q) => {
+                d.insert("geo_bounding_box".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -1916,80 +1920,6 @@ impl ToJson for Doc {
 //         }
 
 
-//           #[derive(Debug)]
-//           pub struct GeoBoundingBoxFilter {
-
-//                   field:
-//                                          String
-//                                       ,
-
-//                   geo_box:
-//                                          GeoBox
-//                                       ,
-
-//                   _cache:
-//                                          Option<bool>
-//                                       ,
-
-//                   _cache_key:
-//                                          Option<String>
-//                                       ,
-
-//                   _name:
-//                                          Option<String>
-
-
-//           }
-
-//           impl GeoBoundingBoxFilter {
-
-//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-//                       self._cache = Some(value.into());
-//                       self
-//                   }
-
-//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-//                       self._cache_key = Some(value.into());
-//                       self
-//                   }
-
-//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-//                       self._name = Some(value.into());
-//                       self
-//                   }
-
-
-//               #[allow(dead_code, unused_variables)]
-//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-//               }
-
-//               #[allow(dead_code, unused_variables)]
-//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-//                       optional_add!(self, m, self._cache, "_cache");
-
-//                       optional_add!(self, m, self._cache_key, "_cache_key");
-
-//                       optional_add!(self, m, self._name, "_name");
-
-//               }
-
-//               pub fn build(self) -> Filter {
-//                   Filter::GeoBoundingBox(self)
-//               }
-//           }
-
-
-// impl ToJson for GeoBoundingBoxFilter {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert(self.field.clone(), self.geo_box.to_json());
-//         self.add_optionals(&mut d);
-//         self.add_core_optionals(&mut d);
-//         Json::Object(d)
-//     }
-// }
 
 //           #[derive(Debug)]
 //           pub struct GeoDistanceFilter {

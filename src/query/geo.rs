@@ -20,6 +20,8 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
+use ::units::GeoBox;
+
 use super::Query;
 
 /// Or
@@ -155,6 +157,36 @@ impl ToJson for IndexedShape {
         inner.insert("index".to_owned(), self.index.to_json());
         inner.insert("path".to_owned(), self.path.to_json());
         d.insert("indexed_shape".to_owned(), Json::Object(inner));
+        Json::Object(d)
+    }
+}
+
+/// Geo Bounding Box Query
+#[derive(Debug)]
+pub struct GeoBoundingBoxQuery {
+    field: String,
+    geo_box: GeoBox,
+}
+
+impl Query {
+    pub fn build_geo_bounding_box<A, B>(field: A, geo_box: B) -> GeoBoundingBoxQuery
+        where A: Into<String>,
+              B: Into<GeoBox> {
+        GeoBoundingBoxQuery {
+            field: field.into(),
+            geo_box: geo_box.into()
+        }
+    }
+}
+
+impl GeoBoundingBoxQuery {
+    build!(GeoBoundingBox);
+}
+
+impl ToJson for GeoBoundingBoxQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert(self.field.clone(), self.geo_box.to_json());
         Json::Object(d)
     }
 }
