@@ -270,3 +270,59 @@ impl ToJson for BoostingQuery {
         Json::Object(d)
     }
 }
+
+/// Indices query
+#[derive(Debug, Default)]
+pub struct IndicesQuery {
+    indices: OneOrMany<String>,
+    query: Query,
+    no_match_query: Option<NoMatchQuery>
+}
+
+impl Query {
+    pub fn build_indices<A, B>(indices: A, query: B) -> IndicesQuery
+        where A: Into<OneOrMany<String>>,
+              B: Into<Query> {
+        IndicesQuery {
+            indices: indices.into(),
+            query: query.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl IndicesQuery {
+    add_option!(with_no_match_query, no_match_query, NoMatchQuery);
+
+    build!(Indices);
+}
+
+impl ToJson for IndicesQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert("indices".to_owned(), self.indices.to_json());
+        d.insert("query".to_owned(), self.query.to_json());
+        optional_add!(self, d, no_match_query);
+        Json::Object(d)
+    }
+}
+
+/// Options for the `no_match_query` option of IndicesQuery
+#[derive(Debug)]
+pub enum NoMatchQuery {
+    None,
+    All,
+    Query(Query)
+}
+
+from_exp!(Query, NoMatchQuery, from, NoMatchQuery::Query(from));
+
+impl ToJson for NoMatchQuery {
+    fn to_json(&self) -> Json {
+        match self {
+            &NoMatchQuery::None => "none".to_json(),
+            &NoMatchQuery::All => "all".to_json(),
+            &NoMatchQuery::Query(ref q) => q.to_json()
+        }
+    }
+}

@@ -215,7 +215,8 @@ pub enum Query {
     Bool(Box<compound::BoolQuery>),
     DisMax(Box<compound::DisMaxQuery>),
     FunctionScore(Box<compound::FunctionScoreQuery>),
-    Boosting(Box<compound::BoostingQuery>)
+    Boosting(Box<compound::BoostingQuery>),
+    Indices(Box<compound::IndicesQuery>)
 
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
@@ -309,6 +310,9 @@ impl ToJson for Query {
             },
             &Query::Boosting(ref q) => {
                 d.insert("boosting".to_owned(), q.to_json());
+            },
+            &Query::Indices(ref q) => {
+                d.insert("indices".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -518,32 +522,6 @@ impl Query {
 
                   // }
 
-                  // pub fn build_indices<A: Into<Box<Query>>>(
-
-                  //        query: A
-                  //    ) -> IndicesQuery {
-
-                  //        IndicesQuery {
-
-                  //                index:
-                  //                                    None
-                  //                                ,
-
-                  //                indices:
-                  //                                    None
-                  //                                ,
-
-                  //                query:
-                  //                                    query.into()
-                  //                                ,
-
-                  //                no_match_query:
-                  //                                    None
-
-
-                  //         }
-
-                  // }
 
                   pub fn build_more_like_this(
                      ) -> MoreLikeThisQuery {
@@ -1417,83 +1395,6 @@ impl ToJson for IndexedShape {
         //         Json::Object(d)
         //     }
         // }
-
-
-
-
-          // #[derive(Debug)]
-          // pub struct IndicesQuery {
-
-          //         index:
-          //                                Option<String>
-          //                             ,
-
-          //         indices:
-          //                                Option<Vec<String>>
-          //                             ,
-
-          //         query:
-          //                                Box<Query>
-          //                             ,
-
-          //         no_match_query:
-          //                                Option<Box<Query>>
-
-
-          // }
-
-          // impl IndicesQuery {
-
-          //         pub fn with_index<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.index = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_indices<T: Into<Vec<String>>>(mut self, value: T) -> Self {
-          //             self.indices = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_no_match_query<T: Into<Box<Query>>>(mut self, value: T) -> Self {
-          //             self.no_match_query = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             // optional_add!(self, m, self.index, "index");
-
-          //             // optional_add!(self, m, self.indices, "indices");
-
-          //             // optional_add!(self, m, self.no_match_query, "no_match_query");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::Indices(self)
-          //     }
-          // }
-
-        // impl ToJson for IndicesQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //           d.insert("query".to_owned(),
-        //                    self.query.to_json());
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
-
 
 // A document can be provided as an example
 #[derive(Debug)]
@@ -3314,25 +3215,6 @@ impl ToJson for Doc {
 //               }
 //           }
 
-
-// #[derive(Debug)]
-// pub enum NoMatchFilter {
-//     None,
-//     All,
-//     Filter(Box<Filter>)
-// }
-
-// from_exp!(Filter, NoMatchFilter, from, NoMatchFilter::Filter(Box::new(from)));
-
-// impl ToJson for NoMatchFilter {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &NoMatchFilter::None               => "none".to_json(),
-//             &NoMatchFilter::All                => "all".to_json(),
-//             &NoMatchFilter::Filter(ref filter) => filter.to_json()
-//         }
-//     }
-// }
 
 //         impl ToJson for IndicesFilter {
 //             fn to_json(&self) -> Json {

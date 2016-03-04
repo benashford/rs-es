@@ -214,6 +214,12 @@ pub enum OneOrMany<T: ToJson> {
     Many(Vec<T>)
 }
 
+impl<T: Default + ToJson> Default for OneOrMany<T> {
+    fn default() -> Self {
+        OneOrMany::One(Default::default())
+    }
+}
+
 impl<T: ToJson> From<T> for OneOrMany<T> {
     fn from(from: T) -> OneOrMany<T> {
         OneOrMany::One(from)
