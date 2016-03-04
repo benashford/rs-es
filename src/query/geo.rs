@@ -20,7 +20,7 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
-use ::units::GeoBox;
+use ::units::{Distance, DistanceType, GeoBox, Location};
 
 use super::Query;
 
@@ -215,5 +215,75 @@ impl ToJson for Type {
             &Type::Indexed => "indexed",
             &Type::Memory => "memory"
         }.to_json()
+    }
+}
+
+/// Geo Distance query
+#[derive(Debug, Default)]
+pub struct GeoDistanceQuery {
+    field: String,
+    location: Location,
+    distance: Distance,
+    distance_type: Option<DistanceType>,
+    optimize_bbox: Option<OptimizeBbox>,
+    coerce: Option<bool>,
+    ignore_malformed: Option<bool>
+}
+
+impl Query {
+    pub fn build_geo_distance<A, B, C>(field: A,
+                                       location: B,
+                                       distance: C) -> GeoDistanceQuery
+        where A: Into<String>,
+              B: Into<Location>,
+              C: Into<Distance> {
+        GeoDistanceQuery {
+            field: field.into(),
+            location: location.into(),
+            distance: distance.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl GeoDistanceQuery {
+    add_option!(with_distance_type, distance_type, DistanceType);
+    add_option!(with_optimize_bbox, optimize_bbox, OptimizeBbox);
+    add_option!(with_coerce, coerce, bool);
+    add_option!(with_ignore_malformed, ignore_malformed, bool);
+
+    build!(GeoDistance);
+}
+
+impl ToJson for GeoDistanceQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        inner.insert("location".to_owned(), self.location.to_json());
+        inner.insert("distance".to_owned(), self.distance.to_json());
+        optional_add!(self, inner, distance_type);
+        optional_add!(self, inner, optimize_bbox);
+        d.insert(self.field.clone(), Json::Object(inner));
+        optional_add!(self, d, coerce);
+        optional_add!(self, d, ignore_malformed);
+        Json::Object(d)
+    }
+}
+
+/// Options for `optimize_bbox`
+#[derive(Debug)]
+pub enum OptimizeBbox {
+    Memory,
+    Indexed,
+    None
+}
+
+impl ToJson for OptimizeBbox {
+    fn to_json(&self) -> Json {
+        match self {
+            &OptimizeBbox::Memory => "memory".to_json(),
+            &OptimizeBbox::Indexed => "indexed".to_json(),
+            &OptimizeBbox::None => "none".to_json()
+        }
     }
 }

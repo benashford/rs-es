@@ -134,6 +134,12 @@ pub enum Location {
     GeoHash(String)
 }
 
+impl Default for Location {
+    fn default() -> Location {
+        Location::LatLon(0f64, 0f64)
+    }
+}
+
 impl<'a> From<&'a Json> for Location {
     fn from(from: &'a Json) -> Location {
         Location::LatLon(
@@ -279,6 +285,12 @@ pub enum DistanceUnit {
     NauticalMile
 }
 
+impl Default for DistanceUnit {
+    fn default() -> DistanceUnit {
+        DistanceUnit::Kilometer
+    }
+}
+
 impl ToString for DistanceUnit {
     fn to_string(&self) -> String {
         match *self {
@@ -302,7 +314,7 @@ impl ToJson for DistanceUnit {
 }
 
 /// Distance, both an amount and a unit
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Distance {
      amt: f64,
      unit: DistanceUnit

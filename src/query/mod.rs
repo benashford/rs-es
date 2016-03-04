@@ -257,6 +257,7 @@ pub enum Query {
     // Geo queries
     GeoShape(Box<geo::GeoShapeQuery>),
     GeoBoundingBox(Box<geo::GeoBoundingBoxQuery>),
+    GeoDistance(Box<geo::GeoDistanceQuery>),
 
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
@@ -364,6 +365,9 @@ impl ToJson for Query {
             },
             &Query::GeoBoundingBox(ref q) => {
                 d.insert("geo_bounding_box".to_owned(), q.to_json());
+            },
+            &Query::GeoDistance(ref q) => {
+                d.insert("geo_distance".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -1921,42 +1925,6 @@ impl ToJson for Doc {
 
 
 
-//           #[derive(Debug)]
-//           pub struct GeoDistanceFilter {
-
-//                   field:
-//                                          String
-//                                       ,
-
-//                   location:
-//                                          Location
-//                                       ,
-
-//                   distance:
-//                                          Distance
-//                                       ,
-
-//                   distance_type:
-//                                          Option<DistanceType>
-//                                       ,
-
-//                   optimize_bbox:
-//                                          Option<OptimizeBbox>
-//                                       ,
-
-//                   _cache:
-//                                          Option<bool>
-//                                       ,
-
-//                   _cache_key:
-//                                          Option<String>
-//                                       ,
-
-//                   _name:
-//                                          Option<String>
-
-
-//           }
 
 //           impl GeoDistanceFilter {
 
@@ -2013,39 +1981,6 @@ impl ToJson for Doc {
 
 
 
-//         #[derive(Debug)]
-//         pub enum OptimizeBbox {
-
-//                 Memory
-//                 ,
-
-//                 Indexed
-//                 ,
-
-//                 None
-
-
-//         }
-
-//         impl ToJson for OptimizeBbox {
-//             fn to_json(&self) -> Json {
-//                 match self {
-
-//                         &OptimizeBbox::Memory
-//                         => "memory".to_json()
-//                         ,
-
-//                         &OptimizeBbox::Indexed
-//                         => "indexed".to_json()
-//                         ,
-
-//                         &OptimizeBbox::None
-//                         => "none".to_json()
-
-
-//                 }
-//             }
-//         }
 
 
 // impl ToJson for GeoDistanceFilter {
