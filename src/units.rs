@@ -289,6 +289,28 @@ impl ToJson for DistanceUnit {
     }
 }
 
+/// Distance, both an amount and a unit
+#[derive(Debug)]
+pub struct Distance {
+     amt: f64,
+     unit: DistanceUnit
+}
+
+impl Distance {
+    pub fn new(amt: f64, unit: DistanceUnit) -> Distance {
+        Distance {
+            amt:  amt,
+            unit: unit
+        }
+    }
+}
+
+impl ToJson for Distance {
+    fn to_json(&self) -> Json {
+        Json::String(format!("{}{}", self.amt, self.unit.to_string()))
+    }
+}
+
 /// A trait for types that can become JsonVals
 pub trait JsonPotential {
     fn to_json_val(&self) -> JsonVal;
