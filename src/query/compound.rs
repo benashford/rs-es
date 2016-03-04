@@ -238,3 +238,35 @@ impl ToJson for FunctionScoreQuery {
         Json::Object(d)
     }
 }
+
+/// Boosting query
+#[derive(Debug, Default)]
+pub struct BoostingQuery {
+    positive: Option<Query>,
+    negative: Option<Query>,
+    negative_boost: Option<f64>
+}
+
+impl Query {
+    pub fn build_boosting() -> BoostingQuery {
+        Default::default()
+    }
+}
+
+impl BoostingQuery {
+    add_option!(with_positive, positive, Query);
+    add_option!(with_negative, negative, Query);
+    add_option!(with_negative_boost, negative_boost, f64);
+
+    build!(Boosting);
+}
+
+impl ToJson for BoostingQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        optional_add!(self, d, positive);
+        optional_add!(self, d, negative);
+        optional_add!(self, d, negative_boost);
+        Json::Object(d)
+    }
+}

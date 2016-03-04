@@ -215,9 +215,9 @@ pub enum Query {
     Bool(Box<compound::BoolQuery>),
     DisMax(Box<compound::DisMaxQuery>),
     FunctionScore(Box<compound::FunctionScoreQuery>),
+    Boosting(Box<compound::BoostingQuery>)
 
     // TODO: below this line, not yet converted
-//    Boosting(BoostingQuery),
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
 //    FuzzyLikeThisField(FuzzyLikeThisFieldQuery),
 //    GeoShape(GeoShapeQuery),
@@ -306,6 +306,9 @@ impl ToJson for Query {
             },
             &Query::FunctionScore(ref q) => {
                 d.insert("function_score".to_owned(), q.to_json());
+            },
+            &Query::Boosting(ref q) => {
+                d.insert("boosting".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -346,27 +349,6 @@ impl ToJson for MatchAllQuery {
 // Old queries - TODO: move or delete these
 
 impl Query {
-                  // pub fn build_boosting(
-                  //    ) -> BoostingQuery {
-
-                  //        BoostingQuery {
-
-                  //                positive:
-                  //                                    None
-                  //                                ,
-
-                  //                negative:
-                  //                                    None
-                  //                                ,
-
-                  //                negative_boost:
-                  //                                    None
-
-
-                  //         }
-
-                  // }
-
                   pub fn build_fuzzy_like_this<A: Into<String>>(
 
                          like_text: A
@@ -906,78 +888,6 @@ impl Query {
         //         Json::Object(d)
         //     }
         // }
-
-
-          // #[derive(Debug)]
-          // pub struct BoostingQuery {
-
-          //         positive:
-          //                                Option<Box<Query>>
-          //                             ,
-
-          //         negative:
-          //                                Option<Box<Query>>
-          //                             ,
-
-          //         negative_boost:
-          //                                Option<f64>
-
-
-          // }
-
-          // impl BoostingQuery {
-
-          //         pub fn with_positive<T: Into<Box<Query>>>(mut self, value: T) -> Self {
-          //             self.positive = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_negative<T: Into<Box<Query>>>(mut self, value: T) -> Self {
-          //             self.negative = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_negative_boost<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.negative_boost = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             // optional_add!(self, m, self.positive, "positive");
-
-          //             // optional_add!(self, m, self.negative, "negative");
-
-          //             // optional_add!(self, m, self.negative_boost, "negative_boost");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::Boosting(self)
-          //     }
-          // }
-
-        // impl ToJson for BoostingQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
-
-
-
-
-
 
 
 #[derive(Debug)]
