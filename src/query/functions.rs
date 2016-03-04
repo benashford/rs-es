@@ -22,7 +22,39 @@ use rustc_serialize::json::{Json, ToJson};
 
 use ::units::{Distance, Duration, JsonVal, Location};
 
-use super::Function;
+/// Function
+#[derive(Debug)]
+pub enum Function {
+    ScriptScore(ScriptScore),
+    Weight(Weight),
+    RandomScore(RandomScore),
+    FieldValueFactor(FieldValueFactor),
+    Decay(Decay)
+}
+
+impl ToJson for Function {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        match self {
+            &Function::ScriptScore(ref q) => {
+                d.insert("script_score".to_owned(), q.to_json());
+            },
+            &Function::Weight(ref q) => {
+                d.insert("weight".to_owned(), q.to_json());
+            },
+            &Function::RandomScore(ref q) => {
+                d.insert("random_score".to_owned(), q.to_json());
+            },
+            &Function::FieldValueFactor(ref q) => {
+                d.insert("field_value_factor".to_owned(), q.to_json());
+            },
+            &Function::Decay(ref q) => {
+                q.add_to_json(&mut d);
+            }
+        }
+        Json::Object(d)
+    }
+}
 
 /// ScriptScore function
 #[derive(Debug, Default)]

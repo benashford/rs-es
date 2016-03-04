@@ -37,6 +37,7 @@ use util::StrJoin;
 #[macro_use]
 mod common;
 
+pub mod compound;
 pub mod full_text;
 pub mod functions;
 pub mod term;
@@ -155,42 +156,6 @@ impl ToJson for Fuzziness {
     }
 }
 
-// Functions
-
-/// Function
-#[derive(Debug)]
-pub enum Function {
-    ScriptScore(functions::ScriptScore),
-    Weight(functions::Weight),
-    RandomScore(functions::RandomScore),
-    FieldValueFactor(functions::FieldValueFactor),
-    Decay(functions::Decay)
-}
-
-impl ToJson for Function {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        match self {
-            &Function::ScriptScore(ref q) => {
-                d.insert("script_score".to_owned(), q.to_json());
-            },
-            &Function::Weight(ref q) => {
-                d.insert("weight".to_owned(), q.to_json());
-            },
-            &Function::RandomScore(ref q) => {
-                d.insert("random_score".to_owned(), q.to_json());
-            },
-            &Function::FieldValueFactor(ref q) => {
-                d.insert("field_value_factor".to_owned(), q.to_json());
-            },
-            &Function::Decay(ref q) => {
-                q.add_to_json(&mut d);
-            }
-        }
-        Json::Object(d)
-    }
-}
-
 // Flags
 
 /// Flags - multiple operations can take a set of flags, each set is dependent
@@ -246,10 +211,10 @@ pub enum Query {
     Ids(Box<term::IdsQuery>),
 
     // Compound queries
-    ConstantScore(Box<ConstantScoreQuery>),
-    Bool(Box<BoolQuery>),
-    DisMax(Box<DisMaxQuery>),
-    FunctionScore(Box<FunctionScoreQuery>),
+    ConstantScore(Box<compound::ConstantScoreQuery>),
+    Bool(Box<compound::BoolQuery>),
+    DisMax(Box<compound::DisMaxQuery>),
+    FunctionScore(Box<compound::FunctionScoreQuery>),
 
     // TODO: below this line, not yet converted
 //    Boosting(BoostingQuery),
@@ -374,172 +339,6 @@ impl ToJson for MatchAllQuery {
         let mut inner = BTreeMap::new();
         optional_add!(self, inner, boost);
         d.insert("match_all".to_owned(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
-
-/// Constant score query
-#[derive(Debug, Default)]
-pub struct ConstantScoreQuery {
-    query: Query,
-    boost: Option<f64>
-}
-
-impl Query {
-    pub fn build_constant_score<A>(query: A) -> ConstantScoreQuery
-        where A: Into<Query> {
-
-        ConstantScoreQuery {
-            query: query.into(),
-            ..Default::default()
-        }
-    }
-}
-
-impl ConstantScoreQuery {
-    add_option!(with_boost, boost, f64);
-
-    build!(ConstantScore);
-}
-
-impl ToJson for ConstantScoreQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("query".to_owned(), self.query.to_json());
-        optional_add!(self, d, boost);
-        Json::Object(d)
-    }
-}
-
-/// Bool query
-#[derive(Debug, Default)]
-pub struct BoolQuery {
-    must: Option<OneOrMany<Query>>,
-    filter: Option<Query>,
-    should: Option<OneOrMany<Query>>,
-    must_not: Option<OneOrMany<Query>>,
-    minimum_should_match: Option<MinimumShouldMatch>,
-    boost: Option<f64>,
-    disable_coord: Option<bool>
-}
-
-impl Query {
-    pub fn build_bool() -> BoolQuery {
-        Default::default()
-    }
-}
-
-impl BoolQuery {
-    add_option!(with_must, must, OneOrMany<Query>);
-    add_option!(with_filter, filter, Query);
-    add_option!(with_should, should, OneOrMany<Query>);
-    add_option!(with_must_not, must_not, OneOrMany<Query>);
-    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
-    add_option!(with_boost, boost, f64);
-    add_option!(with_disable_coord, disable_coord, bool);
-
-    build!(Bool);
-}
-
-impl ToJson for BoolQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        optional_add!(self, d, must);
-        optional_add!(self, d, filter);
-        optional_add!(self, d, should);
-        optional_add!(self, d, must_not);
-        optional_add!(self, d, minimum_should_match);
-        optional_add!(self, d, boost);
-        optional_add!(self, d, disable_coord);
-        Json::Object(d)
-    }
-}
-
-/// DisMax query
-#[derive(Debug, Default)]
-pub struct DisMaxQuery {
-    tie_breaker: Option<f64>,
-    boost: Option<f64>,
-    queries: Vec<Query>
-}
-
-impl Query {
-    pub fn build_dis_max<A>(queries: A) -> DisMaxQuery
-        where A: Into<Vec<Query>> {
-
-        DisMaxQuery {
-            queries: queries.into(),
-            ..Default::default()
-        }
-    }
-}
-
-impl DisMaxQuery {
-    add_option!(with_tie_breaker, tie_breaker, f64);
-    add_option!(with_boost, boost, f64);
-
-    build!(DisMax);
-}
-
-impl ToJson for DisMaxQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("queries".to_owned(), self.queries.to_json());
-        optional_add!(self, d, tie_breaker);
-        optional_add!(self, d, boost);
-        Json::Object(d)
-    }
-}
-
-/// Function Score query
-#[derive(Debug, Default)]
-pub struct FunctionScoreQuery {
-    query: Option<Query>,
-    boost: Option<f64>,
-    functions: Vec<Function>,
-    max_boost: Option<f64>,
-    score_mode: Option<ScoreMode>,
-    boost_mode: Option<BoostMode>,
-    min_score: Option<f64>
-}
-
-impl Query {
-    pub fn build_function_score() -> FunctionScoreQuery {
-        Default::default()
-    }
-}
-
-impl FunctionScoreQuery {
-    add_option!(with_query, query, Query);
-    add_option!(with_boost, boost, f64);
-    add_option!(with_max_boost, max_boost, f64);
-    add_option!(with_score_mode, score_mode, ScoreMode);
-    add_option!(with_boost_mode, boost_mode, BoostMode);
-    add_option!(with_min_score, min_score, f64);
-
-    pub fn with_functions<A: Into<Vec<Function>>>(mut self, functions: A) -> Self {
-        self.functions = functions.into();
-        self
-    }
-
-    pub fn with_function<A: Into<Function>>(mut self, function: A) -> Self {
-        self.functions = vec![function.into()];
-        self
-    }
-
-    build!(FunctionScore);
-}
-
-impl ToJson for FunctionScoreQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("functions".to_owned(), self.functions.to_json());
-        optional_add!(self, d, query);
-        optional_add!(self, d, boost);
-        optional_add!(self, d, max_boost);
-        optional_add!(self, d, score_mode);
-        optional_add!(self, d, boost_mode);
-        optional_add!(self, d, min_score);
         Json::Object(d)
     }
 }
@@ -1434,136 +1233,6 @@ impl ToJson for Strategy {
         //         Json::Object(d)
         //     }
         // }
-
-
-
-
-        #[derive(Debug)]
-        pub enum ScoreMode {
-
-                Multiply
-                ,
-
-                Sum
-                ,
-
-                Avg
-                ,
-
-                First
-                ,
-
-                Max
-                ,
-
-                Min
-
-
-        }
-
-        impl ToJson for ScoreMode {
-            fn to_json(&self) -> Json {
-                match self {
-
-                        &ScoreMode::Multiply
-                        => "multiply".to_json()
-                        ,
-
-                        &ScoreMode::Sum
-                        => "sum".to_json()
-                        ,
-
-                        &ScoreMode::Avg
-                        => "avg".to_json()
-                        ,
-
-                        &ScoreMode::First
-                        => "first".to_json()
-                        ,
-
-                        &ScoreMode::Max
-                        => "max".to_json()
-                        ,
-
-                        &ScoreMode::Min
-                        => "min".to_json()
-
-
-                }
-            }
-        }
-
-        #[derive(Debug)]
-        pub enum BoostMode {
-
-                Multiply
-                ,
-
-                Replace
-                ,
-
-                Sum
-                ,
-
-                Avg
-                ,
-
-                Max
-                ,
-
-                Min
-
-
-        }
-
-        impl ToJson for BoostMode {
-            fn to_json(&self) -> Json {
-                match self {
-
-                        &BoostMode::Multiply
-                        => "multiply".to_json()
-                        ,
-
-                        &BoostMode::Replace
-                        => "replace".to_json()
-                        ,
-
-                        &BoostMode::Sum
-                        => "sum".to_json()
-                        ,
-
-                        &BoostMode::Avg
-                        => "avg".to_json()
-                        ,
-
-                        &BoostMode::Max
-                        => "max".to_json()
-                        ,
-
-                        &BoostMode::Min
-                        => "min".to_json()
-
-
-                }
-            }
-        }
-
-
-        // impl ToJson for FunctionScoreQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //           d.insert("functions".to_owned(),
-        //                    self.functions.to_json());
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
-
-
-
 
 // Required for GeoShape
 
@@ -4810,8 +4479,9 @@ mod tests {
 
     use rustc_serialize::json::ToJson;
 
-    use super::{Flags, Function, Query};
+    use super::{Flags, Query};
     use super::full_text::SimpleQueryStringFlags;
+    use super::functions::Function;
     use super::term::TermsQueryLookup;
 
     #[test]
