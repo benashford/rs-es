@@ -220,13 +220,13 @@ impl<T: Default> Default for OneOrMany<T> {
     }
 }
 
-impl<T: ToJson> From<T> for OneOrMany<T> {
+impl<T> From<T> for OneOrMany<T> {
     fn from(from: T) -> OneOrMany<T> {
         OneOrMany::One(from)
     }
 }
 
-impl<T: ToJson> From<Vec<T>> for OneOrMany<T> {
+impl<T> From<Vec<T>> for OneOrMany<T> {
     fn from(from: Vec<T>) -> OneOrMany<T> {
         OneOrMany::Many(from)
     }
