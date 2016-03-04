@@ -446,7 +446,7 @@ impl Query {
     }
 }
 
-impl<'a> MatchAllQuery {
+impl MatchAllQuery {
     add_option!(with_boost, boost, f64);
 
     build!(MatchAll);
