@@ -250,13 +250,13 @@ pub enum Query {
 
     // Joining queries
     Nested(Box<joining::NestedQuery>),
+    HasChild(Box<joining::HasChildQuery>),
+    HasParent(Box<joining::HasParentQuery>),
 
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
 //    FuzzyLikeThisField(FuzzyLikeThisFieldQuery),
 //    GeoShape(GeoShapeQuery),
-//    HasChild(HasChildQuery),
-//    HasParent(HasParentQuery),
 
 //    Indices(IndicesQuery),
 //    MoreLikeThis(MoreLikeThisQuery),
@@ -348,6 +348,12 @@ impl ToJson for Query {
             },
             &Query::Nested(ref q) => {
                 d.insert("nested".to_owned(), q.to_json());
+            },
+            &Query::HasChild(ref q) => {
+                d.insert("has_child".to_owned(), q.to_json());
+            },
+            &Query::HasParent(ref q) => {
+                d.insert("has_parent".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -498,65 +504,6 @@ impl Query {
                           }
 
                   }
-
-                  // pub fn build_has_child<A: Into<String>,B: Into<Box<Query>>>(
-
-                  //        doc_type: A,
-
-                  //        query: B
-                  //    ) -> HasChildQuery {
-
-                  //        HasChildQuery {
-
-                  //                doc_type:
-                  //                                    doc_type.into()
-                  //                                ,
-
-                  //                query:
-                  //                                    query.into()
-                  //                                ,
-
-                  //                score_mode:
-                  //                                    None
-                  //                                ,
-
-                  //                min_children:
-                  //                                    None
-                  //                                ,
-
-                  //                max_children:
-                  //                                    None
-
-
-                  //         }
-
-                  // }
-
-                  // pub fn build_has_parent<A: Into<String>,B: Into<Box<Query>>>(
-
-                  //        parent_type: A,
-
-                  //        query: B
-                  //    ) -> HasParentQuery {
-
-                  //        HasParentQuery {
-
-                  //                parent_type:
-                  //                                    parent_type.into()
-                  //                                ,
-
-                  //                query:
-                  //                                    query.into()
-                  //                                ,
-
-                  //                score_mode:
-                  //                                    None
-
-
-                  //         }
-
-                  // }
-
 
                   pub fn build_more_like_this(
                      ) -> MoreLikeThisQuery {
@@ -1266,145 +1213,6 @@ impl ToJson for IndexedShape {
         //     }
         // }
 
-
-          // #[derive(Debug)]
-          // pub struct HasChildQuery {
-
-          //         doc_type:
-          //                                String
-          //                             ,
-
-          //         query:
-          //                                Box<Query>
-          //                             ,
-
-          //         score_mode:
-          //                                Option<ScoreMode>
-          //                             ,
-
-          //         min_children:
-          //                                Option<u64>
-          //                             ,
-
-          //         max_children:
-          //                                Option<u64>
-
-
-          // }
-
-          // impl HasChildQuery {
-
-          //         pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
-          //             self.score_mode = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_min_children<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.min_children = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_max_children<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.max_children = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             // optional_add!(self, m, self.score_mode, "score_mode");
-
-          //             // optional_add!(self, m, self.min_children, "min_children");
-
-          //             // optional_add!(self, m, self.max_children, "max_children");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::HasChild(self)
-          //     }
-          // }
-
-        // impl ToJson for HasChildQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //           d.insert("type".to_owned(),
-        //                    self.doc_type.to_json());
-
-        //           d.insert("query".to_owned(),
-        //                    self.query.to_json());
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
-
-
-          // #[derive(Debug)]
-          // pub struct HasParentQuery {
-
-          //         parent_type:
-          //                                String
-          //                             ,
-
-          //         query:
-          //                                Box<Query>
-          //                             ,
-
-          //         score_mode:
-          //                                Option<ScoreMode>
-
-
-          // }
-
-          // impl HasParentQuery {
-
-          //         pub fn with_score_mode<T: Into<ScoreMode>>(mut self, value: T) -> Self {
-          //             self.score_mode = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //         //optional_add!(self, m, self.score_mode, "score_mode");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::HasParent(self)
-          //     }
-          // }
-
-        // impl ToJson for HasParentQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //           d.insert("parent_type".to_owned(),
-        //                    self.parent_type.to_json());
-
-        //           d.insert("query".to_owned(),
-        //                    self.query.to_json());
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
 
 // A document can be provided as an example
 #[derive(Debug)]
