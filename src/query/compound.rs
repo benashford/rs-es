@@ -22,7 +22,7 @@ use rustc_serialize::json::{Json, ToJson};
 
 use ::units::{JsonVal, OneOrMany};
 
-use super::{MinimumShouldMatch, Query};
+use super::{MinimumShouldMatch, ScoreMode, Query};
 use super::functions::Function;
 
 /// BoostMode
@@ -46,30 +46,6 @@ impl ToJson for BoostMode {
             &BoostMode::Max => "max",
             &BoostMode::Min => "min"
         }.to_json()
-    }
-}
-
-/// ScoreMode
-#[derive(Debug)]
-pub enum ScoreMode {
-    Multiply,
-    Sum,
-    Avg,
-    First,
-    Max,
-    Min
-}
-
-impl ToJson for ScoreMode {
-    fn to_json(&self) -> Json {
-        match self {
-            &ScoreMode::Multiply => "multiply".to_json(),
-            &ScoreMode::Sum => "sum".to_json(),
-            &ScoreMode::Avg => "avg".to_json(),
-            &ScoreMode::First => "first".to_json(),
-            &ScoreMode::Max => "max".to_json(),
-            &ScoreMode::Min => "min".to_json()
-        }
     }
 }
 
@@ -324,41 +300,5 @@ impl ToJson for NoMatchQuery {
             &NoMatchQuery::All => "all".to_json(),
             &NoMatchQuery::Query(ref q) => q.to_json()
         }
-    }
-}
-
-/// Nested query
-#[derive(Debug, Default)]
-pub struct NestedQuery {
-    path: String,
-    score_mode: Option<ScoreMode>,
-    query: Query
-}
-
-impl Query {
-    pub fn build_nested<A, B>(path: A, query: B) -> NestedQuery
-        where A: Into<String>,
-              B: Into<Query> {
-        NestedQuery {
-            path: path.into(),
-            query: query.into(),
-            ..Default::default()
-        }
-    }
-}
-
-impl NestedQuery {
-    add_option!(with_score_mode, score_mode, ScoreMode);
-
-    build!(Nested);
-}
-
-impl ToJson for NestedQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("path".to_owned(), self.path.to_json());
-        d.insert("query".to_owned(), self.query.to_json());
-        optional_add!(self, d, score_mode);
-        Json::Object(d)
     }
 }

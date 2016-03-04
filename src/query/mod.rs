@@ -40,6 +40,7 @@ mod common;
 pub mod compound;
 pub mod full_text;
 pub mod functions;
+pub mod joining;
 pub mod term;
 
 // Miscellaneous types required by queries go here
@@ -179,6 +180,30 @@ where A: AsRef<str> {
     }
 }
 
+/// ScoreMode
+#[derive(Debug)]
+pub enum ScoreMode {
+    Multiply,
+    Sum,
+    Avg,
+    First,
+    Max,
+    Min
+}
+
+impl ToJson for ScoreMode {
+    fn to_json(&self) -> Json {
+        match self {
+            &ScoreMode::Multiply => "multiply".to_json(),
+            &ScoreMode::Sum => "sum".to_json(),
+            &ScoreMode::Avg => "avg".to_json(),
+            &ScoreMode::First => "first".to_json(),
+            &ScoreMode::Max => "max".to_json(),
+            &ScoreMode::Min => "min".to_json()
+        }
+    }
+}
+
 /// Query represents all available queries
 ///
 /// Each value is boxed as Queries can be recursive, they also vary
@@ -222,7 +247,9 @@ pub enum Query {
     // Not implementing the Or query, as it's deprecated, use `bool` instead.
     // Not implementing the Filtered query, as it's deprecated.
     // Not implementing the Limit query, as it's deprecated.
-    Nested(Box<compound::NestedQuery>),
+
+    // Joining queries
+    Nested(Box<joining::NestedQuery>),
 
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
