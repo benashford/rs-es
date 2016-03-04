@@ -414,13 +414,14 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-0. Consider breaking up `src/query.rs` as it is quite large.
 1. Implement changes to the Query API as documented here: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_query_dsl_changes.html
+2. Transcribe this TODO list into specific GitHub issues, for easier management.
 2. Implement search API changes: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_search_changes.html
 3. Implement aggregation changes: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_aggregation_changes.html
 4. Implement scripting changes: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_scripting_changes.html
 5. Upgrade the targeted version of ElasticSearch from 1.6 to 2.2, paying attention to the changelogs: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking-changes-2.0.html
-6. Documentation
+6. Documentation.
+6. Move longer examples from README to the rustdocs instead.
 6. rustc-serialize appears to be deprecated, retrofit `rs-es` to Serde: https://github.com/serde-rs/serde
 6. Tests
 7. Stop panicking on unexpected JSON, etc., to guard against surprises with future versions; return a result instead.
