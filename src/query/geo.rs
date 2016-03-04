@@ -162,10 +162,13 @@ impl ToJson for IndexedShape {
 }
 
 /// Geo Bounding Box Query
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct GeoBoundingBoxQuery {
     field: String,
     geo_box: GeoBox,
+    coerce: Option<bool>,
+    ignore_malformed: Option<bool>,
+    filter_type: Option<Type>
 }
 
 impl Query {
@@ -174,12 +177,17 @@ impl Query {
               B: Into<GeoBox> {
         GeoBoundingBoxQuery {
             field: field.into(),
-            geo_box: geo_box.into()
+            geo_box: geo_box.into(),
+            ..Default::default()
         }
     }
 }
 
 impl GeoBoundingBoxQuery {
+    add_option!(with_coerce, coerce, bool);
+    add_option!(with_ignore_malformed, ignore_malformed, bool);
+    add_option!(with_type, filter_type, Type);
+
     build!(GeoBoundingBox);
 }
 
@@ -187,6 +195,25 @@ impl ToJson for GeoBoundingBoxQuery {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         d.insert(self.field.clone(), self.geo_box.to_json());
+        optional_add!(self, d, coerce);
+        optional_add!(self, d, ignore_malformed);
+        optional_add!(self, d, filter_type, "type");
         Json::Object(d)
+    }
+}
+
+/// Geo Bounding Box filter type
+#[derive(Debug)]
+pub enum Type {
+    Indexed,
+    Memory
+}
+
+impl ToJson for Type {
+    fn to_json(&self) -> Json {
+        match self {
+            &Type::Indexed => "indexed",
+            &Type::Memory => "memory"
+        }.to_json()
     }
 }

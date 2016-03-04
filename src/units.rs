@@ -168,6 +168,12 @@ pub enum GeoBox {
     Vertices(f64, f64, f64, f64)
 }
 
+impl Default for GeoBox {
+    fn default() -> Self {
+        GeoBox::Vertices(0f64, 0f64, 0f64, 0f64)
+    }
+}
+
 impl<'a> From<&'a Json> for GeoBox {
     fn from(from: &'a Json) -> GeoBox {
         GeoBox::Corners(
