@@ -414,6 +414,8 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
+0. Identify and fix duplication in SortBy(Script) and Functions Inline (Query DSL); and Scripted aggregations.
+0. Implement ScriptQuery (Query DSL).
 1. Implement changes to the Query API as documented here: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_query_dsl_changes.html
 2. Transcribe this TODO list into specific GitHub issues, for easier management.
 2. Implement search API changes: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_search_changes.html

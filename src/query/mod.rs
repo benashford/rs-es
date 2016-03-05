@@ -266,6 +266,8 @@ pub enum Query {
 
     // Specialized queries
     MoreLikeThis(Box<specialized::MoreLikeThisQuery>),
+    // TODO: template queries
+    // TODO: Search by script
 
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
