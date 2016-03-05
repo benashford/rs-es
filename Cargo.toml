@@ -19,6 +19,7 @@ name = "rs_es"
 hyper = "^0.7"
 rustc-serialize = "^0.3"
 log = "^0.3"
+maplit = "^0.1"
 
 [dev-dependencies]
 env_logger = "^0.3"

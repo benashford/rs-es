@@ -23,19 +23,6 @@ use ::error::EsError;
 
 pub type Properties = HashMap<String, HashMap<String, String>>;
 
-#[macro_export]
-macro_rules! map(
-    { $($key:expr => $value:expr),+ } => {
-        {
-            let mut m = HashMap::new();
-            $(
-                m.insert($key, $value);
-            )+
-            m
-        }
-     };
-);
-
 /// An indexing operation
 pub struct MappingOperation<'a, 'b> {
     /// The HTTP client that this operation will use
@@ -58,9 +45,9 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
     }
 
     pub fn send(&'b mut self) -> Result<MappingResult, EsError> {
-        let body = map! {
-            "mappings" => map! {
-                "sample" => map! {
+        let body = hashmap! {
+            "mappings" => hashmap! {
+                "sample" => hashmap! {
                     "properties" => self.properties
                 }
             }
@@ -91,13 +78,13 @@ pub mod tests {
 
         client.delete_op(&format!("/{}", index_name)).unwrap();
 
-        let mapping = map! {
-            "created_at".to_owned() => map! {
+        let mapping = hashmap! {
+            "created_at".to_owned() => hashmap! {
                 "type".to_owned() => "date".to_owned(),
                 "format".to_owned() => "epoch_second".to_owned()
             },
 
-            "title".to_owned() => map! {
+            "title".to_owned() => hashmap! {
                 "type".to_owned() => "string".to_owned(),
                 "index".to_owned() => "not_analyzed".to_owned()
             }
