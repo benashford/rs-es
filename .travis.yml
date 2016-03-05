@@ -18,3 +18,7 @@ services:
 # As recommended here: http://docs.travis-ci.com/user/database-setup/#ElasticSearch
 before_script:
   - sleep 10
+
+env:
+  global:
+    - RUST_BACKTRACE=1
