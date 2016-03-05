@@ -31,15 +31,19 @@ pub struct MappingOperation<'a, 'b> {
     /// The index that will be created and eventually mapped
     index:      &'b str,
 
+    /// The type that will be mapped
+    doc_type:   &'b str,
+
     /// The actual mapping
     properties: &'b Properties<'b>
 }
 
 impl<'a, 'b> MappingOperation<'a, 'b> {
-    pub fn new(client: &'a mut Client, index: &'b str, properties: &'b Properties) -> MappingOperation<'a, 'b> {
+    pub fn new(client: &'a mut Client, index: &'b str, doc_type: &'b str, properties: &'b Properties) -> MappingOperation<'a, 'b> {
         MappingOperation {
             client:     client,
             index:      index,
+            doc_type:   doc_type,
             properties: properties
         }
     }
@@ -47,7 +51,7 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
     pub fn send(&'b mut self) -> Result<MappingResult, EsError> {
         let body = hashmap! {
             "mappings" => hashmap! {
-                "sample" => hashmap! {
+                self.doc_type => hashmap! {
                     "properties" => self.properties
                 }
             }
@@ -90,7 +94,7 @@ pub mod tests {
             }
         };
 
-        let result = MappingOperation::new(&mut client, index_name, &mapping).send();
+        let result = MappingOperation::new(&mut client, index_name, "sample", &mapping).send();
         assert!(result.is_ok());
     }
 }
