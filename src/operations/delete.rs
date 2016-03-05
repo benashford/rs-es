@@ -78,6 +78,17 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
                 Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
     }
+
+    /// Like `send`, but returns straight a `bool`ean value that will be true
+    /// if the operation succeed.
+    pub fn execute(&'a mut self) -> bool {
+        let url = format!("/{}/{}/{}{}",
+                          self.index,
+                          self.doc_type,
+                          self.id,
+                          self.options);
+        self.client.delete_op(&url).is_ok()
+    }
 }
 
 /// Result of a DELETE operation
