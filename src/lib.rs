@@ -248,6 +248,22 @@ impl Client {
         DeleteOperation::new(self, index, doc_type, id)
     }
 
+    /// Delete given index
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/2.x/indices-delete-index.html
+    pub fn delete_index<'a>(&'a mut self, index: &'a str) -> Result<GenericResponse, EsError> {
+        let url = format!("/{}/", index);
+        let (status_code, result) = try!(self.delete_op(&url));
+        info!("DELETE INDEX OPERATION STATUS: {:?} RESULT: {:?}", status_code, result);
+
+        match status_code {
+            StatusCode::Ok =>
+                Ok(GenericResponse::from(&result.expect("No Json payload"))),
+            _ =>
+                Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        }
+    }
+
     // Multi-document APIs
 
     /// Bulk
@@ -279,6 +295,19 @@ impl Client {
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-request-body.html
     pub fn search_query<'a>(&'a mut self) -> SearchQueryOperation {
         SearchQueryOperation::new(self)
+    }
+}
+
+#[derive(Debug)]
+pub struct GenericResponse {
+    acknowledged: bool
+}
+
+impl<'a> From<&'a Json> for GenericResponse {
+    fn from(r: &'a Json) -> GenericResponse {
+        GenericResponse {
+            acknowledged: get_json_bool!(r, "acknowledged"),
+        }
     }
 }
 
@@ -432,6 +461,30 @@ pub mod tests {
             assert_eq!(result.doc_type, "test_type");
             assert_eq!(result.id, "TEST_INDEXING_2");
             assert!(result.version >= 1);
+        }
+    }
+
+    #[test]
+    fn test_delete_index() {
+        let index_name = "test_delete_index";
+        let mut client = make_client();
+        clean_db(&mut client, index_name);
+        {
+            let result = client
+                            .index(index_name, "test_type")
+                            .with_doc(&TestDocument::new().with_int_field(1))
+                            .with_ttl(927500)
+                            .send();
+            assert!(result.is_ok());
+        }
+        {
+            let result = client.delete_index(index_name);
+            info!("DELETE INDEX RESULT: {:?}", result);
+
+            assert!(result.is_ok());
+
+            let result_wrapped = result.unwrap();
+            assert!(result_wrapped.acknowledged);
         }
     }
 
