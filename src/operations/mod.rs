@@ -39,6 +39,7 @@ pub mod get;
 pub mod index;
 pub mod search;
 pub mod analyze;
+pub mod mapping;
 
 // Common utility functions
 
