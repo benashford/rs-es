@@ -260,7 +260,8 @@ pub enum Query {
     GeoDistance(Box<geo::GeoDistanceQuery>),
     // TODO: implement me - pending changes to range query
     //GeoDistanceRange(Box<geo::GeoDistanceRangeQuery>)
-    GeoPolygon(Box<geo::GeoPolygonQuery>)
+    GeoPolygon(Box<geo::GeoPolygonQuery>),
+    GeohashCell(Box<geo::GeohashCellQuery>)
 
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
@@ -374,6 +375,9 @@ impl ToJson for Query {
             },
             &Query::GeoPolygon(ref q) => {
                 d.insert("geo_polygon".to_owned(), q.to_json());
+            },
+            &Query::GeohashCell(ref q) => {
+                d.insert("geohash_cell".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -2098,120 +2102,6 @@ impl ToJson for Doc {
 //         }
 
 
-//           #[derive(Debug)]
-//           pub struct GeohashCellFilter {
-
-//                   field:
-//                                          String
-//                                       ,
-
-//                   location:
-//                                          Location
-//                                       ,
-
-//                   precision:
-//                                          Option<Precision>
-//                                       ,
-
-//                   neighbors:
-//                                          Option<bool>
-//                                       ,
-
-//                   _cache:
-//                                          Option<bool>
-//                                       ,
-
-//                   _cache_key:
-//                                          Option<String>
-//                                       ,
-
-//                   _name:
-//                                          Option<String>
-
-
-//           }
-
-//           impl GeohashCellFilter {
-
-//                   pub fn with_precision<T: Into<Precision>>(mut self, value: T) -> Self {
-//                       self.precision = Some(value.into());
-//                       self
-//                   }
-
-//                   pub fn with_neighbors<T: Into<bool>>(mut self, value: T) -> Self {
-//                       self.neighbors = Some(value.into());
-//                       self
-//                   }
-
-//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-//                       self._cache = Some(value.into());
-//                       self
-//                   }
-
-//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-//                       self._cache_key = Some(value.into());
-//                       self
-//                   }
-
-//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-//                       self._name = Some(value.into());
-//                       self
-//                   }
-
-
-//               #[allow(dead_code, unused_variables)]
-//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-//                       optional_add!(self, m, self.precision, "precision");
-
-//                       optional_add!(self, m, self.neighbors, "neighbors");
-
-//               }
-
-//               #[allow(dead_code, unused_variables)]
-//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-//                       optional_add!(self, m, self._cache, "_cache");
-
-//                       optional_add!(self, m, self._cache_key, "_cache_key");
-
-//                       optional_add!(self, m, self._name, "_name");
-
-//               }
-
-//               pub fn build(self) -> Filter {
-//                   Filter::GeohashCell(self)
-//               }
-//           }
-
-
-// #[derive(Debug)]
-// pub enum Precision {
-//     Geohash(u64),
-//     Distance(Distance)
-// }
-
-// from!(u64, Precision, Geohash);
-// from!(Distance, Precision, Distance);
-
-// impl ToJson for Precision {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &Precision::Geohash(geohash_precision) => Json::U64(geohash_precision),
-//             &Precision::Distance(ref distance)     => distance.to_json()
-//         }
-//     }
-// }
-
-// impl ToJson for GeohashCellFilter {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert(self.field.clone(), self.location.to_json());
-//         self.add_optionals(&mut d);
-//         self.add_core_optionals(&mut d);
-//         Json::Object(d)
-//     }
-// }
 
 //           #[derive(Debug)]
 //           pub struct HasChildFilter {

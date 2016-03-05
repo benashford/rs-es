@@ -326,3 +326,65 @@ impl ToJson for GeoPolygonQuery {
         Json::Object(d)
     }
 }
+
+/// Geohash cell query
+#[derive(Debug, Default)]
+pub struct GeohashCellQuery {
+    field: String,
+    location: Location,
+    precision: Option<Precision>,
+    neighbors: Option<bool>,
+}
+
+impl Query {
+    pub fn build_geohash_cell<A, B>(field: A, location: B) -> GeohashCellQuery
+        where A: Into<String>,
+              B: Into<Location> {
+        GeohashCellQuery {
+            field: field.into(),
+            location: location.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl GeohashCellQuery {
+    add_option!(with_precision, precision, Precision);
+    add_option!(with_neighbors, neighbors, bool);
+
+    build!(GeohashCell);
+}
+
+impl ToJson for GeohashCellQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        d.insert(self.field.clone(), self.location.to_json());
+        optional_add!(self, d, precision);
+        optional_add!(self, d, neighbors);
+        Json::Object(d)
+    }
+}
+
+#[derive(Debug)]
+pub enum Precision {
+    Geohash(u64),
+    Distance(Distance)
+}
+
+impl Default for Precision {
+    fn default() -> Self {
+        Precision::Distance(Default::default())
+    }
+}
+
+from!(u64, Precision, Geohash);
+from!(Distance, Precision, Distance);
+
+impl ToJson for Precision {
+    fn to_json(&self) -> Json {
+        match self {
+            &Precision::Geohash(geohash_precision) => Json::U64(geohash_precision),
+            &Precision::Distance(ref distance)     => distance.to_json()
+        }
+    }
+}
