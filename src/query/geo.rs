@@ -287,3 +287,42 @@ impl ToJson for OptimizeBbox {
         }
     }
 }
+
+/// Geo Polygon query
+#[derive(Debug, Default)]
+pub struct GeoPolygonQuery {
+    field: String,
+    points: Vec<Location>,
+    coerce: Option<bool>,
+    ignore_malformed: Option<bool>
+}
+
+impl Query {
+    pub fn build_geo_polygon<A, B>(field: A,
+                                   points: B) -> GeoPolygonQuery
+        where A: Into<String>,
+              B: Into<Vec<Location>> {
+        GeoPolygonQuery {
+            field: field.into(),
+            points: points.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl GeoPolygonQuery {
+    add_option!(with_coerce, coerce, bool);
+    add_option!(with_ignore_malformed, ignore_malformed, bool);
+
+    build!(GeoPolygon);
+}
+
+impl ToJson for GeoPolygonQuery {
+    fn to_json(&self) -> Json {
+        let mut d = BTreeMap::new();
+        let mut inner = BTreeMap::new();
+        inner.insert("points".to_owned(), self.points.to_json());
+        d.insert(self.field.clone(), Json::Object(inner));
+        Json::Object(d)
+    }
+}

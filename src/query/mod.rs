@@ -260,6 +260,7 @@ pub enum Query {
     GeoDistance(Box<geo::GeoDistanceQuery>),
     // TODO: implement me - pending changes to range query
     //GeoDistanceRange(Box<geo::GeoDistanceRangeQuery>)
+    GeoPolygon(Box<geo::GeoPolygonQuery>)
 
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
@@ -285,7 +286,7 @@ impl Default for Query {
 /// Convert a Query to Json
 impl ToJson for Query {
     fn to_json(&self) -> Json {
-        let mut d = BTreeMap::<String, Json>::new();
+        let mut d = BTreeMap::new();
         match self {
             &Query::MatchAll(ref q) => {
                 d.insert("match_all".to_owned(), q.to_json());
@@ -370,6 +371,9 @@ impl ToJson for Query {
             },
             &Query::GeoDistance(ref q) => {
                 d.insert("geo_distance".to_owned(), q.to_json());
+            },
+            &Query::GeoPolygon(ref q) => {
+                d.insert("geo_polygon".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -1996,85 +2000,6 @@ impl ToJson for Doc {
 //     }
 // }
 
-//           #[derive(Debug)]
-//           pub struct GeoPolygonFilter {
-
-//                   field:
-//                                          String
-//                                       ,
-
-//                   points:
-//                                          Vec<Location>
-//                                       ,
-
-//                   _cache:
-//                                          Option<bool>
-//                                       ,
-
-//                   _cache_key:
-//                                          Option<String>
-//                                       ,
-
-//                   _name:
-//                                          Option<String>
-
-
-//           }
-
-//           impl GeoPolygonFilter {
-
-//                   pub fn with_cache<T: Into<bool>>(mut self, value: T) -> Self {
-//                       self._cache = Some(value.into());
-//                       self
-//                   }
-
-//                   pub fn with_cache_key<T: Into<String>>(mut self, value: T) -> Self {
-//                       self._cache_key = Some(value.into());
-//                       self
-//                   }
-
-//                   pub fn with_name<T: Into<String>>(mut self, value: T) -> Self {
-//                       self._name = Some(value.into());
-//                       self
-//                   }
-
-
-//               #[allow(dead_code, unused_variables)]
-//               fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-//               }
-
-//               #[allow(dead_code, unused_variables)]
-//               fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-//                       optional_add!(self, m, self._cache, "_cache");
-
-//                       optional_add!(self, m, self._cache_key, "_cache_key");
-
-//                       optional_add!(self, m, self._name, "_name");
-
-//               }
-
-//               pub fn build(self) -> Filter {
-//                   Filter::GeoPolygon(self)
-//               }
-//           }
-
-//         impl ToJson for GeoPolygonFilter {
-//             fn to_json(&self) -> Json {
-//                 let mut d = BTreeMap::new();
-//                 let mut inner = BTreeMap::new();
-
-
-//                   inner.insert("points".to_owned(),
-//                                self.points.to_json());
-
-//                 self.add_optionals(&mut inner);
-//                 d.insert(self.field.clone(), Json::Object(inner));
-//                 self.add_core_optionals(&mut d);
-//                 Json::Object(d)
-//             }
-//         }
 
 
 //           #[derive(Debug)]
