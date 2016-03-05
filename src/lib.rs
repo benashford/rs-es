@@ -471,10 +471,9 @@ pub mod tests {
         clean_db(&mut client, index_name);
         {
             let result = client
-                            .index(index_name, "test_type")
-                            .with_doc(&TestDocument::new().with_int_field(1))
-                            .with_ttl(927500)
-                            .send();
+                .index(index_name, "test_type")
+                .with_doc(&TestDocument::new().with_int_field(1))
+                .send();
             assert!(result.is_ok());
         }
         {
