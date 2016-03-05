@@ -31,6 +31,9 @@ extern crate hyper;
 extern crate rustc_serialize;
 
 #[macro_use]
+extern crate maplit;
+
+#[macro_use]
 pub mod util;
 
 pub mod error;
