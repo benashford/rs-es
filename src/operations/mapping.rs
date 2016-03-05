@@ -15,6 +15,7 @@
  */
 
 //! Implementation of ElasticSearch Mapping operation
+
 //!
 //! Please note: this will grow and become a full implementation of the ElasticSearch
 //! [Indices API](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
@@ -25,44 +26,40 @@ use std::collections::HashMap;
 use ::Client;
 use ::error::EsError;
 
-pub type Properties<'a> = HashMap<&'a str, HashMap<&'a str, &'a str>>;
+pub type DocType<'a>    = HashMap<&'a str, HashMap<&'a str, &'a str>>;
+pub type DocTypes<'a>   = HashMap<&'a str, DocType<'a>>;
+pub type Mapping<'a>    = HashMap<&'a str, DocTypes<'a>>;
 
 /// An indexing operation
 pub struct MappingOperation<'a, 'b> {
     /// The HTTP client that this operation will use
-    client:     &'a mut Client,
+    client:    &'a mut Client,
 
     /// The index that will be created and eventually mapped
-    index:      &'b str,
+    index:     &'b str,
 
-    /// The type that will be mapped
-    doc_type:   &'b str,
-
-    /// The actual mapping
-    properties: &'b Properties<'b>
+    /// A map containing the doc types and their type mapping
+    doc_types: &'b DocTypes<'b>
 }
 
 impl<'a, 'b> MappingOperation<'a, 'b> {
-    pub fn new(client: &'a mut Client, index: &'b str, doc_type: &'b str, properties: &'b Properties) -> MappingOperation<'a, 'b> {
+    pub fn new(client: &'a mut Client, index: &'b str, doc_types: &'b DocTypes) -> MappingOperation<'a, 'b> {
         MappingOperation {
-            client:     client,
-            index:      index,
-            doc_type:   doc_type,
-            properties: properties
+            client:    client,
+            index:     index,
+            doc_types: doc_types
         }
     }
 
     pub fn send(&'b mut self) -> Result<MappingResult, EsError> {
-        let body = hashmap! {
-            "mappings" => hashmap! {
-                self.doc_type => hashmap! {
-                    "properties" => self.properties
-                }
-            }
-        };
+        let mut mappings: Mapping = HashMap::new();
+        for (type_name, mapping) in self.doc_types.into_iter() {
+            let doc_type = hashmap! { "properties" => mapping.clone() };
+            mappings.insert(type_name, doc_type.to_owned());
+        }
 
-        let url = format!("{}", self.index);
-        let (_, _) = try!(self.client.put_body_op(&url, &body));
+        let url    = format!("{}", self.index);
+        let (_, _) = try!(self.client.put_body_op(&url, &mappings));
         Ok(MappingResult)
     }
 }
@@ -86,19 +83,27 @@ pub mod tests {
 
         client.delete_op(&format!("/{}", index_name)).unwrap();
 
-        let mapping = hashmap! {
-            "created_at" => hashmap! {
-                "type" => "date",
-                "format" => "strict_date_optional_time"
+        let mapping = hashmap! { // DocTypes
+            "post" => hashmap! { // DocType
+                "created_at" => hashmap! {
+                    "type" => "date",
+                    "format" => "date_time"
+                },
+
+                "title" => hashmap! {
+                    "type" => "string",
+                    "index" => "not_analyzed"
+                }
             },
 
-            "title" => hashmap! {
-                "type" => "string",
-                "index" => "not_analyzed"
-            }
+            "author" => hashmap! { // DocType
+                "name" => hashmap! {
+                    "type" => "string",
+                }
+            },
         };
 
-        let result = MappingOperation::new(&mut client, index_name, "sample", &mapping).send();
+        let result = MappingOperation::new(&mut client, index_name, &mapping).send();
         assert!(result.is_ok());
     }
 }
