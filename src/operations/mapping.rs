@@ -25,7 +25,7 @@ use std::collections::HashMap;
 use ::Client;
 use ::error::EsError;
 
-pub type Properties = HashMap<String, HashMap<String, String>>;
+pub type Properties<'a> = HashMap<&'a str, HashMap<&'a str, &'a str>>;
 
 /// An indexing operation
 pub struct MappingOperation<'a, 'b> {
@@ -36,7 +36,7 @@ pub struct MappingOperation<'a, 'b> {
     index:      &'b str,
 
     /// The actual mapping
-    properties: &'b Properties
+    properties: &'b Properties<'b>
 }
 
 impl<'a, 'b> MappingOperation<'a, 'b> {
@@ -83,14 +83,14 @@ pub mod tests {
         client.delete_op(&format!("/{}", index_name)).unwrap();
 
         let mapping = hashmap! {
-            "created_at".to_owned() => hashmap! {
-                "type".to_owned() => "date".to_owned(),
-                "format".to_owned() => "epoch_second".to_owned()
+            "created_at" => hashmap! {
+                "type" => "date",
+                "format" => "strict_date_optional_time"
             },
 
-            "title".to_owned() => hashmap! {
-                "type".to_owned() => "string".to_owned(),
-                "index".to_owned() => "not_analyzed".to_owned()
+            "title" => hashmap! {
+                "type" => "string",
+                "index" => "not_analyzed"
             }
         };
 
