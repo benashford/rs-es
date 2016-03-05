@@ -76,7 +76,7 @@ pub mod tests {
         let index_name = "tests_test_mapping";
         let mut client = ::tests::make_client();
 
-        client.delete_op(&format!("/{}", index_name)).unwrap();
+        client.delete_index(index_name);
 
         let mapping = hashmap! { // DocTypes
             "post" => hashmap! { // DocType
