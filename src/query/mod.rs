@@ -42,6 +42,7 @@ pub mod full_text;
 pub mod functions;
 pub mod geo;
 pub mod joining;
+pub mod specialized;
 pub mod term;
 
 // Miscellaneous types required by queries go here
@@ -261,7 +262,10 @@ pub enum Query {
     // TODO: implement me - pending changes to range query
     //GeoDistanceRange(Box<geo::GeoDistanceRangeQuery>)
     GeoPolygon(Box<geo::GeoPolygonQuery>),
-    GeohashCell(Box<geo::GeohashCellQuery>)
+    GeohashCell(Box<geo::GeohashCellQuery>),
+
+    // Specialized queries
+    MoreLikeThis(Box<specialized::MoreLikeThisQuery>),
 
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
@@ -378,6 +382,9 @@ impl ToJson for Query {
             },
             &Query::GeohashCell(ref q) => {
                 d.insert("geohash_cell".to_owned(), q.to_json());
+            },
+            &Query::MoreLikeThis(ref q) => {
+                d.insert("more_like_this".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
@@ -499,79 +506,6 @@ impl Query {
                                                  ,
 
                                  analyzer:
-                                                     None
-
-
-                          }
-
-                  }
-
-                  pub fn build_more_like_this(
-                     ) -> MoreLikeThisQuery {
-
-                         MoreLikeThisQuery {
-
-                                 fields:
-                                                     None
-                                                 ,
-
-                                 like_text:
-                                                     None
-                                                 ,
-
-                                 ids:
-                                                     None
-                                                 ,
-
-                                 docs:
-                                                     None
-                                                 ,
-
-                                 max_query_terms:
-                                                     None
-                                                 ,
-
-                                 min_term_freq:
-                                                     None
-                                                 ,
-
-                                 min_doc_freq:
-                                                     None
-                                                 ,
-
-                                 max_doc_freq:
-                                                     None
-                                                 ,
-
-                                 min_word_length:
-                                                     None
-                                                 ,
-
-                                 max_word_length:
-                                                     None
-                                                 ,
-
-                                 stop_words:
-                                                     None
-                                                 ,
-
-                                 analyzer:
-                                                     None
-                                                 ,
-
-                                 minimum_should_match:
-                                                     None
-                                                 ,
-
-                                 boost_terms:
-                                                     None
-                                                 ,
-
-                                 include:
-                                                     None
-                                                 ,
-
-                                 boost:
                                                      None
 
 
@@ -1081,260 +1015,7 @@ impl ToJson for Strategy {
         // }
 
 
-// A document can be provided as an example
-#[derive(Debug)]
-pub struct Doc {
-    index:    String,
-    doc_type: String,
-    doc:      Option<Json>,
-    id:       Option<String>
-}
 
-impl Doc {
-    pub fn from_doc<A, B>(index: A, doc_type: B, doc: Json) -> Doc
-        where A: Into<String>, B: Into<String>
-    {
-        Doc {
-            index:    index.into(),
-            doc_type: doc_type.into(),
-            doc:      Some(doc),
-            id:       None
-        }
-    }
-
-    pub fn id<A, B, C>(index: A, doc_type: B, id: C) -> Doc
-        where A: Into<String>, B: Into<String>, C: Into<String>
-    {
-        Doc {
-            index:    index.into(),
-            doc_type: doc_type.into(),
-            doc:      None,
-            id:       Some(id.into())
-        }
-    }
-}
-
-impl ToJson for Doc {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("_index".to_owned(), self.index.to_json());
-        d.insert("_type".to_owned(), self.doc_type.to_json());
-
-        // optional_add!(self, d, self.doc, "doc");
-        // optional_add!(self, d, self.id, "_id");
-
-        Json::Object(d)
-    }
-}
-
-          #[derive(Debug)]
-          pub struct MoreLikeThisQuery {
-
-                  fields:
-                                         Option<Vec<String>>
-                                      ,
-
-                  like_text:
-                                         Option<String>
-                                      ,
-
-                  ids:
-                                         Option<Vec<String>>
-                                      ,
-
-                  docs:
-                                         Option<Vec<Doc>>
-                                      ,
-
-                  max_query_terms:
-                                         Option<u64>
-                                      ,
-
-                  min_term_freq:
-                                         Option<u64>
-                                      ,
-
-                  min_doc_freq:
-                                         Option<u64>
-                                      ,
-
-                  max_doc_freq:
-                                         Option<u64>
-                                      ,
-
-                  min_word_length:
-                                         Option<u64>
-                                      ,
-
-                  max_word_length:
-                                         Option<u64>
-                                      ,
-
-                  stop_words:
-                                         Option<Vec<String>>
-                                      ,
-
-                  analyzer:
-                                         Option<String>
-                                      ,
-
-                  minimum_should_match:
-                                         Option<MinimumShouldMatch>
-                                      ,
-
-                  boost_terms:
-                                         Option<f64>
-                                      ,
-
-                  include:
-                                         Option<bool>
-                                      ,
-
-                  boost:
-                                         Option<f64>
-
-
-          }
-
-          // impl MoreLikeThisQuery {
-
-          //         pub fn with_fields<T: Into<Vec<String>>>(mut self, value: T) -> Self {
-          //             self.fields = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_like_text<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.like_text = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_ids<T: Into<Vec<String>>>(mut self, value: T) -> Self {
-          //             self.ids = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_docs<T: Into<Vec<Doc>>>(mut self, value: T) -> Self {
-          //             self.docs = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_max_query_terms<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.max_query_terms = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_min_term_freq<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.min_term_freq = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_min_doc_freq<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.min_doc_freq = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_max_doc_freq<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.max_doc_freq = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_min_word_length<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.min_word_length = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_max_word_length<T: Into<u64>>(mut self, value: T) -> Self {
-          //             self.max_word_length = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_stop_words<T: Into<Vec<String>>>(mut self, value: T) -> Self {
-          //             self.stop_words = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_analyzer<T: Into<String>>(mut self, value: T) -> Self {
-          //             self.analyzer = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_minimum_should_match<T: Into<MinimumShouldMatch>>(mut self, value: T) -> Self {
-          //             self.minimum_should_match = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_boost_terms<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.boost_terms = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_include<T: Into<bool>>(mut self, value: T) -> Self {
-          //             self.include = Some(value.into());
-          //             self
-          //         }
-
-          //         pub fn with_boost<T: Into<f64>>(mut self, value: T) -> Self {
-          //             self.boost = Some(value.into());
-          //             self
-          //         }
-
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //             // optional_add!(self, m, self.fields, "fields");
-
-          //             // optional_add!(self, m, self.like_text, "like_text");
-
-          //             // optional_add!(self, m, self.ids, "ids");
-
-          //             // optional_add!(self, m, self.docs, "docs");
-
-          //             // optional_add!(self, m, self.max_query_terms, "max_query_terms");
-
-          //             // optional_add!(self, m, self.min_term_freq, "min_term_freq");
-
-          //             // optional_add!(self, m, self.min_doc_freq, "min_doc_freq");
-
-          //             // optional_add!(self, m, self.max_doc_freq, "max_doc_freq");
-
-          //             // optional_add!(self, m, self.min_word_length, "min_word_length");
-
-          //             // optional_add!(self, m, self.max_word_length, "max_word_length");
-
-          //             // optional_add!(self, m, self.stop_words, "stop_words");
-
-          //             // optional_add!(self, m, self.analyzer, "analyzer");
-
-          //             // optional_add!(self, m, self.minimum_should_match, "minimum_should_match");
-
-          //             // optional_add!(self, m, self.boost_terms, "boost_terms");
-
-          //             // optional_add!(self, m, self.include, "include");
-
-          //             // optional_add!(self, m, self.boost, "boost");
-
-          //     }
-
-          //     #[allow(dead_code, unused_variables)]
-          //     fn add_core_optionals(&self, m: &mut BTreeMap<String, Json>) {
-
-          //     }
-
-          //     pub fn build(self) -> Query {
-          //         Query::MoreLikeThis(self)
-          //     }
-          // }
-
-        // impl ToJson for MoreLikeThisQuery {
-        //     fn to_json(&self) -> Json {
-        //         let mut d = BTreeMap::new();
-
-        //         self.add_optionals(&mut d);
-        //         self.add_core_optionals(&mut d);
-        //         Json::Object(d)
-        //     }
-        // }
 
         //   #[derive(Debug)]
         //   pub struct SpanFirstQuery {
