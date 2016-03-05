@@ -15,6 +15,10 @@
  */
 
 //! Implementation of ElasticSearch Mapping operation
+//!
+//! Please note: this will grow and become a full implementation of the ElasticSearch
+//! [Indices API](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
+//! so subtle (potentially breaking) changes will be made to the API when that happens
 
 use std::collections::HashMap;
 
