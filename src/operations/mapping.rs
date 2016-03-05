@@ -25,7 +25,7 @@ use std::collections::HashMap;
 use ::Client;
 use ::error::EsError;
 
-pub type Properties = HashMap<String, HashMap<String, String>>;
+pub type Properties<'a> = HashMap<&'a str, HashMap<&'a str, &'a str>>;
 
 /// An indexing operation
 pub struct MappingOperation<'a, 'b> {
@@ -35,15 +35,19 @@ pub struct MappingOperation<'a, 'b> {
     /// The index that will be created and eventually mapped
     index:      &'b str,
 
+    /// The type that will be mapped
+    doc_type:   &'b str,
+
     /// The actual mapping
-    properties: &'b Properties
+    properties: &'b Properties<'b>
 }
 
 impl<'a, 'b> MappingOperation<'a, 'b> {
-    pub fn new(client: &'a mut Client, index: &'b str, properties: &'b Properties) -> MappingOperation<'a, 'b> {
+    pub fn new(client: &'a mut Client, index: &'b str, doc_type: &'b str, properties: &'b Properties) -> MappingOperation<'a, 'b> {
         MappingOperation {
             client:     client,
             index:      index,
+            doc_type:   doc_type,
             properties: properties
         }
     }
@@ -51,7 +55,7 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
     pub fn send(&'b mut self) -> Result<MappingResult, EsError> {
         let body = hashmap! {
             "mappings" => hashmap! {
-                "sample" => hashmap! {
+                self.doc_type => hashmap! {
                     "properties" => self.properties
                 }
             }
@@ -83,18 +87,18 @@ pub mod tests {
         client.delete_op(&format!("/{}", index_name)).unwrap();
 
         let mapping = hashmap! {
-            "created_at".to_owned() => hashmap! {
-                "type".to_owned() => "date".to_owned(),
-                "format".to_owned() => "epoch_second".to_owned()
+            "created_at" => hashmap! {
+                "type" => "date",
+                "format" => "strict_date_optional_time"
             },
 
-            "title".to_owned() => hashmap! {
-                "type".to_owned() => "string".to_owned(),
-                "index".to_owned() => "not_analyzed".to_owned()
+            "title" => hashmap! {
+                "type" => "string",
+                "index" => "not_analyzed"
             }
         };
 
-        let result = MappingOperation::new(&mut client, index_name, &mapping).send();
+        let result = MappingOperation::new(&mut client, index_name, "sample", &mapping).send();
         assert!(result.is_ok());
     }
 }
