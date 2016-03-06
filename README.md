@@ -388,6 +388,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
+0. Stop emacs doing slow Rust builds, as it interferes with other testing.
 1. Transcribe this TODO list into specific GitHub issues, for easier management.
 2. Documentation.
 3. Move longer examples from README to the rustdocs instead.
