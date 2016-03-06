@@ -251,40 +251,29 @@ The resulting `Query` value can be used in the various search/query functions ex
 
 ```javascript
 {
-    "filtered": {
-        "query": {
-            "query_string": {
-                "query": "some_value"
-            }
-        },
-        "filter": {
-            "bool": {
-                "must": [
-                    {
-                        "term": {
-                            "field_a": "value"
-                        }
-                    },
-                    {
-                        "range": {
-                            "field_b": {
-                                "gte": 5,
-                                "lt": 10
-                            }
+    "filter": {
+        "bool": {
+            "must": [
+                {
+                    "term": {
+                        "field_a": "value"
+                    }
+                },
+                {
+                    "range": {
+                        "field_b": {
+                            "gte": 5,
+                            "lt": 10
                         }
                     }
-                ]
-            }
+                }
+            ]
         }
     }
 }
 ```
 
 The implementation makes much use of [conversion traits](http://benashford.github.io/blog/2015/05/24/rust-traits-for-developer-friendly-libraries/) which are used to keep a lid on the verbosity of using such a builder pattern.
-
-#### Experimental
-
-This implementation of the query DSL is auto-generated and is done so in such a way to allow the generated code to change when necessary.  The template files are [query.rs.erb](templates/query.rs.erb) and [generate_query_dsl.rb](tools/generate_query_dsl.rb).  The experimental warning is recursive, it's likely that the means of generating the query DSL will change due to lessons-learnt implementing the first version.
 
 ### Scan and scroll
 
