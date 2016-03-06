@@ -20,7 +20,7 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
-use ::units::{JsonVal, OneOrMany};
+use ::units::OneOrMany;
 
 use super::{MinimumShouldMatch, ScoreMode, Query};
 use super::functions::Function;

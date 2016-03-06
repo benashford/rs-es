@@ -26,18 +26,6 @@ The HEAD of `master` is currently the development branch for 0.3.0, for any fixe
 
 Available from [crates.io](https://crates.io/crates/rs-es).
 
-### Building from source
-
-Part of the Rust code is generated automatically (`src/query.rs`), this is the implementation of ElasticSearch's [Query DSL](#the-query-dsl) which contains various conventions that would be otherwise tedious to implement manually.  Rust's macros help here, but there is still a lot of redundancy left-over so a Ruby script is used.
-
-#### Pre-requisites
-
-* Ruby - any relatively recent version should work, but it has been specifically tested with 2.1 and 2.2.
-
-#### Build instructions
-
-The code-generation is integreated into Cargo, so usual `cargo test` commands will do the right thing.
-
 ## Design goals
 
 There are two primary goals: 1) to be a full implementation of the ElasticSearch REST API, and 2) to be idiomatic both with ElasticSearch and Rust conventions.
@@ -242,26 +230,21 @@ let hits:Vec<DocType> = result.hits.hits().unwrap();
 
 ### The Query DSL
 
-TODO: changes to Query DSL in 2.0
-
-WARNING: In the forthcoming 0.3.0 release of `rs-es` there will be breaking changes here.  This is due to changes in ElasticSearch in the 2.0 series.  Essentially the difference between queries and filters is being removed as they will be context sensitive instead.  As such examples here might need subtle changes to work with 0.3.  E.g. `Filter::build_range("field_name")` will become `Query::build_range("field_name").  This README will be updated when these changes are made.
+WARNING: In the forthcoming 0.3.0 release of `rs-es` there will be breaking changes here.  This is due to changes in ElasticSearch in the 2.0 series.  Essentially the difference between queries and filters is being removed as they will be context sensitive instead.  As such examples here might need subtle changes to work with 0.3.  E.g. `Filter::build_range("field_name")` will become `Query::build_range("field_name").
 
 ElasticSearch offers a [rich DSL for searches](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl.html).  It is JSON based, and therefore very easy to use and composable if using from a dynamic language (e.g. [Ruby](https://github.com/elastic/elasticsearch-ruby/tree/master/elasticsearch-dsl#features-overview)); but Rust, being a staticly-typed language, things are different.  The `rs_es::query` module defines a set of builder objects which can be similarly composed to the same ends.
 
 For example:
 
 ```rust
-let query = Query::build_filtered(
-                Filter::build_bool()
-                    .with_must(vec![Filter::build_term("field_a",
-                                                       "value").build(),
-                                    Filter::build_range("field_b")
-                                        .with_gte(5)
-                                        .with_lt(10)
-                                        .build()])
-                    .build())
-                .with_query(Query::build_query_string("some value").build())
-                .build();
+let query = Query::build_bool()
+    .with_must(vec![Query::build_term("field_a",
+                                      "value").build(),
+                    Query::build_range("field_b")
+                          .with_gte(5)
+                          .with_lt(10)
+                          .build()])
+    .build();
 ```
 
 The resulting `Query` value can be used in the various search/query functions exposed by [the client](#the-client).  It implements [`ToJson`](http://doc.rust-lang.org/rustc-serialize/rustc_serialize/json/index.html), which in the above example would produce JSON like so:

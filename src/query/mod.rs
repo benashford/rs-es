@@ -16,22 +16,34 @@
 
 //! Implementation of the ElasticSearch Query DSL.
 //!
-//! Previously auto-generated, changes in 2.0 of ElasticSearch have reduced the
-//! duplication so this file is in progress of being converted into hand-edited
-//! code.
+//! ElasticSearch offers a
+//! [rich DSL for searches](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl.html).
+//! It is JSON based, and therefore very easy to use and composable if using from a
+//! dynamic language (e.g.
+//! [Ruby](https://github.com/elastic/elasticsearch-ruby/tree/master/elasticsearch-dsl#features-overview));
+//! but Rust, being a staticly-typed language, things are different.  The `rs_es::query`
+//! module defines a set of builder objects which can be similarly composed to the same
+//! ends.
+//!
+//! For example:
+//!
+//! ```rust
+//! use rs_es::query::Query;
+//!
+//! let query = Query::build_bool()
+//!     .with_must(vec![Query::build_term("field_a",
+//!                                       "value").build(),
+//!                     Query::build_range("field_b")
+//!                           .with_gte(5)
+//!                           .with_lt(10)
+//!                           .build()])
+//!     .build();
+//! ```
 
 use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
-use units::{DistanceType,
-            DistanceUnit,
-            Duration,
-            GeoBox,
-            JsonPotential,
-            JsonVal,
-            Location,
-            OneOrMany};
 use util::StrJoin;
 
 #[macro_use]
