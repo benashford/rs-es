@@ -90,7 +90,9 @@ pub mod tests {
         let index_name = "tests_test_mapping";
         let mut client = ::tests::make_client();
 
-        client.delete_index(index_name).unwrap();
+        // TODO - this fails in many cases (specifically on TravisCI), but we ignore the
+        // failures anyway
+        client.delete_index(index_name);
 
         let mapping = hashmap! { // DocTypes
             "post" => hashmap! { // DocType
