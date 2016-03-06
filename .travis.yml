@@ -30,7 +30,7 @@ script:
     - |
         travis-cargo build &&
         travis-cargo test &&
-        travis-cargo --only nightly test --features nightly --no-default-features
+        travis-cargo --only nightly test -- --features nightly --no-default-features
 
 after_success:
   # measure code coverage and upload to coveralls.io (the verify
