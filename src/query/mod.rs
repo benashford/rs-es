@@ -270,7 +270,14 @@ pub enum Query {
     // TODO: Search by script
 
     // Span queries
-    SpanTerm(Box<term::TermQuery>)
+    SpanTerm(Box<term::TermQuery>),
+    // TODO: Span multi term query
+    // TODO: Span first query
+    // TODO: Span near query
+    // TODO: Span or query
+    // TODO: Span not query
+    // TODO: Span containing query
+    // TODO: Span within query
 
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
