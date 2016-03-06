@@ -269,12 +269,12 @@ pub enum Query {
     // TODO: template queries
     // TODO: Search by script
 
+    // Span queries
+    SpanTerm(Box<term::TermQuery>)
+
     // TODO: below this line, not yet converted
 //    FuzzyLikeThis(FuzzyLikeThisQuery),
 //    FuzzyLikeThisField(FuzzyLikeThisFieldQuery),
-
-//    Indices(IndicesQuery),
-//    MoreLikeThis(MoreLikeThisQuery),
 
 //    SpanFirst(SpanFirstQuery),
 //    SpanMulti(SpanMultiQuery),
@@ -387,6 +387,9 @@ impl ToJson for Query {
             },
             &Query::MoreLikeThis(ref q) => {
                 d.insert("more_like_this".to_owned(), q.to_json());
+            },
+            &Query::SpanTerm(ref q) => {
+                d.insert("span_term".to_owned(), q.to_json());
             }
         }
         Json::Object(d)
