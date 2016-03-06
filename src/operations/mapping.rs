@@ -53,8 +53,10 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
             mappings.insert(type_name, doc_type.to_owned());
         }
 
+        let body = hashmap! { "mappings" => mappings };
+
         let url    = format!("{}", self.index);
-        let (_, _) = try!(self.client.put_body_op(&url, &mappings));
+        let (_, _) = try!(self.client.put_body_op(&url, &body));
         Ok(MappingResult)
     }
 }
@@ -70,6 +72,11 @@ pub mod tests {
     use std::collections::HashMap;
 
     use super::MappingOperation;
+
+    #[derive(Debug, RustcDecodable, RustcEncodable)]
+    pub struct Author {
+        pub name: String
+    }
 
     #[test]
     fn test_mapping() {
@@ -100,5 +107,17 @@ pub mod tests {
 
         let result = MappingOperation::new(&mut client, index_name, &mapping).send();
         assert!(result.is_ok());
+
+        {
+            let result_wrapped = client
+                .index(index_name, "post")
+                .with_doc(&Author { name: "Homu".to_owned() })
+                .send();
+
+            assert!(result_wrapped.is_ok());
+
+            let result = result_wrapped.unwrap();
+            assert!(result.created);
+        }
     }
 }
