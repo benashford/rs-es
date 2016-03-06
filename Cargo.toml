@@ -8,17 +8,28 @@ documentation = "http://benashford.github.io/rs-es/rs_es/index.html"
 description = "Client for the ElasticSearch REST API"
 readme = "README.md"
 keywords = ["elasticsearch", "elastic"]
-
 exclude = ["devbox/**/*", "docker-dev.yml"]
+build = "build.rs"
 
 [lib]
 name = "rs_es"
+
+[features]
+default = ["serde_codegen"]
+nightly = ["serde_macros"]
+
+[build-dependencies]
+serde_codegen = {version = "^0.7", optional = true}
+syntex = "^0.29"
 
 [dependencies]
 hyper = "^0.7"
 rustc-serialize = "^0.3"
 log = "^0.3"
 maplit = "^0.1"
+serde = "^0.7"
+serde_json = "^0.7"
+serde_macros = {version = "^0.7", optional = true}
 
 [dev-dependencies]
 env_logger = "^0.3"
