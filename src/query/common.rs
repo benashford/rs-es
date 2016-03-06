@@ -37,3 +37,26 @@ macro_rules! build {
         }
     )
 }
+
+/// No outer options
+#[derive(Debug, Serialize)]
+pub struct NoOuter;
+
+/// Many QueryDSL objects are structured as {field_name: [map of options]}, with optional
+/// options at the outer layer
+#[derive(Debug, Serialize)]
+pub struct FieldBasedQuery<I, O> {
+    pub field: String,
+    pub inner: I,
+    pub outer: O
+}
+
+impl<I, O> FieldBasedQuery<I, O> {
+    pub fn new(field: String, inner: I, outer: O) -> Self {
+        FieldBasedQuery {
+            field: field,
+            inner: inner,
+            outer: outer
+        }
+    }
+}

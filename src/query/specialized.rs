@@ -67,7 +67,7 @@ impl MoreLikeThisQuery {
     add_option!(with_include, include, bool);
     add_option!(with_boost, boost, f64);
 
-    build!(MoreLikeThis);
+    //build!(MoreLikeThis);
 }
 
 impl ToJson for MoreLikeThisQuery {

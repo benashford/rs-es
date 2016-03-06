@@ -45,7 +45,7 @@ impl Query {
 impl NestedQuery {
     add_option!(with_score_mode, score_mode, ScoreMode);
 
-    build!(Nested);
+    //build!(Nested);
 }
 
 impl ToJson for NestedQuery {
@@ -103,13 +103,13 @@ impl HasChildQuery {
     add_option!(with_min_children, min_children, u64);
     add_option!(with_max_children, max_children, u64);
 
-    build!(HasChild);
+    //build!(HasChild);
 }
 
 impl HasParentQuery {
     add_option!(with_score_mode, score_mode, ScoreMode);
 
-    build!(HasParent);
+    //build!(HasParent);
 }
 
 impl ToJson for HasChildQuery {

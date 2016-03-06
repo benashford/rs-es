@@ -1005,281 +1005,281 @@ mod tests {
         client.refresh().with_indexes(&[index_name]).send().unwrap();
     }
 
-    #[test]
-    fn test_close() {
-        let mut client = ::tests::make_client();
-        let index_name = "tests_test_close";
-        ::tests::clean_db(&mut client, index_name);
-        setup_scan_data(&mut client, index_name);
+    // #[test]
+    // fn test_close() {
+    //     let mut client = ::tests::make_client();
+    //     let index_name = "tests_test_close";
+    //     ::tests::clean_db(&mut client, index_name);
+    //     setup_scan_data(&mut client, index_name);
 
-        let indexes = [index_name];
+    //     let indexes = [index_name];
 
-        let mut scan_result = client.search_query()
-            .with_indexes(&indexes)
-            .with_size(100)
-            .scan(Duration::minutes(1))
-            .unwrap();
+    //     let mut scan_result = client.search_query()
+    //         .with_indexes(&indexes)
+    //         .with_size(100)
+    //         .scan(Duration::minutes(1))
+    //         .unwrap();
 
-        scan_result.scroll(&mut client).unwrap();
+    //     scan_result.scroll(&mut client).unwrap();
 
-        scan_result.close(&mut client).unwrap();
-    }
+    //     scan_result.close(&mut client).unwrap();
+    // }
 
-    #[test]
-    fn test_scan_and_scroll() {
-        let mut client = ::tests::make_client();
-        let index_name = "tests_test_scan_and_scroll";
-        ::tests::clean_db(&mut client, index_name);
-        setup_scan_data(&mut client, index_name);
+    // #[test]
+    // fn test_scan_and_scroll() {
+    //     let mut client = ::tests::make_client();
+    //     let index_name = "tests_test_scan_and_scroll";
+    //     ::tests::clean_db(&mut client, index_name);
+    //     setup_scan_data(&mut client, index_name);
 
-        let indexes = [index_name];
+    //     let indexes = [index_name];
 
-        let mut scan_result = client.search_query()
-            .with_indexes(&indexes)
-            .with_size(100)
-            .scan(Duration::minutes(1))
-            .unwrap();
+    //     let mut scan_result = client.search_query()
+    //         .with_indexes(&indexes)
+    //         .with_size(100)
+    //         .scan(Duration::minutes(1))
+    //         .unwrap();
 
-        assert_eq!(1000, scan_result.hits.total);
-        let mut total = 0;
+    //     assert_eq!(1000, scan_result.hits.total);
+    //     let mut total = 0;
 
-        loop {
-            let page = scan_result.scroll(&mut client).unwrap();
-            let page_total = page.hits.hits.len();
-            total += page_total;
-            if page_total == 0 && total == 1000 {
-                break;
-            }
-            assert!(total <= 1000);
-        }
+    //     loop {
+    //         let page = scan_result.scroll(&mut client).unwrap();
+    //         let page_total = page.hits.hits.len();
+    //         total += page_total;
+    //         if page_total == 0 && total == 1000 {
+    //             break;
+    //         }
+    //         assert!(total <= 1000);
+    //     }
 
-        scan_result.close(&mut client).unwrap();
-    }
+    //     scan_result.close(&mut client).unwrap();
+    // }
 
-    #[test]
-    fn test_scan_and_iterate() {
-        let mut client = ::tests::make_client();
-        let index_name = "tests_test_scan_and_iterate";
-        ::tests::clean_db(&mut client, index_name);
-        setup_scan_data(&mut client, index_name);
+    // #[test]
+    // fn test_scan_and_iterate() {
+    //     let mut client = ::tests::make_client();
+    //     let index_name = "tests_test_scan_and_iterate";
+    //     ::tests::clean_db(&mut client, index_name);
+    //     setup_scan_data(&mut client, index_name);
 
-        let indexes = [index_name];
+    //     let indexes = [index_name];
 
-        let scan_result = client.search_query()
-            .with_indexes(&indexes)
-            .with_size(10)
-            .scan(Duration::minutes(1))
-            .unwrap();
+    //     let scan_result = client.search_query()
+    //         .with_indexes(&indexes)
+    //         .with_size(10)
+    //         .scan(Duration::minutes(1))
+    //         .unwrap();
 
-        assert_eq!(1000, scan_result.hits.total);
+    //     assert_eq!(1000, scan_result.hits.total);
 
-        let hits:Vec<SearchHitsHitsResult> = scan_result.iter(&mut client)
-            .take(200)
-            .map(|hit| hit.unwrap())
-            .collect();
+    //     let hits:Vec<SearchHitsHitsResult> = scan_result.iter(&mut client)
+    //         .take(200)
+    //         .map(|hit| hit.unwrap())
+    //         .collect();
 
-        assert_eq!(200, hits.len());
-    }
+    //     assert_eq!(200, hits.len());
+    // }
 
-    #[test]
-    fn test_source_filter() {
-        let mut client = ::tests::make_client();
-        let index_name = "test_source_filter";
-        ::tests::clean_db(&mut client, index_name);
+    // #[test]
+    // fn test_source_filter() {
+    //     let mut client = ::tests::make_client();
+    //     let index_name = "test_source_filter";
+    //     ::tests::clean_db(&mut client, index_name);
 
-        client.index(index_name, "test").with_doc(&make_document(100)).send().unwrap();
-        client.refresh().with_indexes(&[index_name]).send().unwrap();
+    //     client.index(index_name, "test").with_doc(&make_document(100)).send().unwrap();
+    //     client.refresh().with_indexes(&[index_name]).send().unwrap();
 
-        let mut result = client.search_query()
-            .with_indexes(&[index_name])
-            .with_source(Source::include(&["str_field"]))
-            .send()
-            .unwrap();
+    //     let mut result = client.search_query()
+    //         .with_indexes(&[index_name])
+    //         .with_source(Source::include(&["str_field"]))
+    //         .send()
+    //         .unwrap();
 
-        assert_eq!(1, result.hits.hits.len());
-        let json = result.hits.hits.remove(0).source.unwrap();
+    //     assert_eq!(1, result.hits.hits.len());
+    //     let json = result.hits.hits.remove(0).source.unwrap();
 
-        assert_eq!(true, json.find("str_field").is_some());
-        assert_eq!(false, json.find("int_field").is_some());
-    }
+    //     assert_eq!(true, json.find("str_field").is_some());
+    //     assert_eq!(false, json.find("int_field").is_some());
+    // }
 
-    #[test]
-    fn test_bucket_aggs() {
-        let mut client = ::tests::make_client();
-        let index_name = "test_bucket_aggs";
-        ::tests::clean_db(&mut client, index_name);
+    // #[test]
+    // fn test_bucket_aggs() {
+    //     let mut client = ::tests::make_client();
+    //     let index_name = "test_bucket_aggs";
+    //     ::tests::clean_db(&mut client, index_name);
 
-        client.bulk(&[Action::index(TestDocument::new().with_str_field("A").with_int_field(2)),
-                      Action::index(TestDocument::new().with_str_field("B").with_int_field(3)),
-                      Action::index(TestDocument::new().with_str_field("A").with_int_field(1)),
-                      Action::index(TestDocument::new().with_str_field("B").with_int_field(2))])
-            .with_index(index_name)
-            .with_doc_type("doc_type")
-            .send()
-            .unwrap();
+    //     client.bulk(&[Action::index(TestDocument::new().with_str_field("A").with_int_field(2)),
+    //                   Action::index(TestDocument::new().with_str_field("B").with_int_field(3)),
+    //                   Action::index(TestDocument::new().with_str_field("A").with_int_field(1)),
+    //                   Action::index(TestDocument::new().with_str_field("B").with_int_field(2))])
+    //         .with_index(index_name)
+    //         .with_doc_type("doc_type")
+    //         .send()
+    //         .unwrap();
 
-        client.refresh().with_indexes(&[index_name]).send().unwrap();
+    //     client.refresh().with_indexes(&[index_name]).send().unwrap();
 
-        let aggs = Aggregations::from(("str",
-                                       (Terms::new("str_field").with_order(Order::asc(OrderKey::Term)),
-                                        Aggregations::from(("int",
-                                                            Min::new("int_field"))))));
+    //     let aggs = Aggregations::from(("str",
+    //                                    (Terms::new("str_field").with_order(Order::asc(OrderKey::Term)),
+    //                                     Aggregations::from(("int",
+    //                                                         Min::new("int_field"))))));
 
-        let result = client.search_query()
-            .with_indexes(&[index_name])
-            .with_aggs(&aggs)
-            .send()
-            .unwrap();
+    //     let result = client.search_query()
+    //         .with_indexes(&[index_name])
+    //         .with_aggs(&aggs)
+    //         .send()
+    //         .unwrap();
 
-        let buckets = &result.aggs_ref()
-            .unwrap()
-            .get("str")
-            .unwrap()
-            .as_terms()
-            .unwrap()
-            .buckets;
+    //     let buckets = &result.aggs_ref()
+    //         .unwrap()
+    //         .get("str")
+    //         .unwrap()
+    //         .as_terms()
+    //         .unwrap()
+    //         .buckets;
 
-        let bucket_a = &buckets[0];
-        let bucket_b = &buckets[1];
+    //     let bucket_a = &buckets[0];
+    //     let bucket_b = &buckets[1];
 
-        assert_eq!(2, bucket_a.doc_count);
-        assert_eq!(2, bucket_b.doc_count);
+    //     assert_eq!(2, bucket_a.doc_count);
+    //     assert_eq!(2, bucket_b.doc_count);
 
-        let min_a = &bucket_a.aggs_ref()
-            .unwrap()
-            .get("int")
-            .unwrap()
-            .as_min()
-            .unwrap()
-            .value;
+    //     let min_a = &bucket_a.aggs_ref()
+    //         .unwrap()
+    //         .get("int")
+    //         .unwrap()
+    //         .as_min()
+    //         .unwrap()
+    //         .value;
 
-        let min_b = &bucket_b.aggs_ref()
-            .unwrap()
-            .get("int")
-            .unwrap()
-            .as_min()
-            .unwrap()
-            .value;
+    //     let min_b = &bucket_b.aggs_ref()
+    //         .unwrap()
+    //         .get("int")
+    //         .unwrap()
+    //         .as_min()
+    //         .unwrap()
+    //         .value;
 
-        match min_a {
-            &JsonVal::F64(i) => assert_eq!(1.0, i),
-            _                => panic!("Not an integer")
-        }
-        match min_b {
-            &JsonVal::F64(i) => assert_eq!(2.0, i),
-            _                => panic!("Not an integer")
-        }
-    }
+    //     match min_a {
+    //         &JsonVal::F64(i) => assert_eq!(1.0, i),
+    //         _                => panic!("Not an integer")
+    //     }
+    //     match min_b {
+    //         &JsonVal::F64(i) => assert_eq!(2.0, i),
+    //         _                => panic!("Not an integer")
+    //     }
+    // }
 
-    #[test]
-    fn test_aggs() {
-        let mut client = ::tests::make_client();
-        let index_name = "test_aggs";
-        ::tests::clean_db(&mut client, index_name);
+    // #[test]
+    // fn test_aggs() {
+    //     let mut client = ::tests::make_client();
+    //     let index_name = "test_aggs";
+    //     ::tests::clean_db(&mut client, index_name);
 
-        client.bulk(&[Action::index(TestDocument::new().with_int_field(10)),
-                      Action::index(TestDocument::new().with_int_field(1))])
-            .with_index(index_name)
-            .with_doc_type("doc_type")
-            .send()
-            .unwrap();
+    //     client.bulk(&[Action::index(TestDocument::new().with_int_field(10)),
+    //                   Action::index(TestDocument::new().with_int_field(1))])
+    //         .with_index(index_name)
+    //         .with_doc_type("doc_type")
+    //         .send()
+    //         .unwrap();
 
-        client.refresh().with_indexes(&[index_name]).send().unwrap();
+    //     client.refresh().with_indexes(&[index_name]).send().unwrap();
 
-        let result = client.search_query()
-            .with_indexes(&[index_name])
-            .with_aggs(&Aggregations::from(("min_int_field", Min::new("int_field"))))
-            .send()
-            .unwrap();
+    //     let result = client.search_query()
+    //         .with_indexes(&[index_name])
+    //         .with_aggs(&Aggregations::from(("min_int_field", Min::new("int_field"))))
+    //         .send()
+    //         .unwrap();
 
-        let min = &result.aggs_ref()
-            .unwrap()
-            .get("min_int_field")
-            .unwrap()
-            .as_min()
-            .unwrap()
-            .value;
+    //     let min = &result.aggs_ref()
+    //         .unwrap()
+    //         .get("min_int_field")
+    //         .unwrap()
+    //         .as_min()
+    //         .unwrap()
+    //         .value;
 
-        match min {
-            &JsonVal::F64(i) => assert_eq!(1.0, i),
-            _                => panic!("Not an integer")
-        }
-    }
+    //     match min {
+    //         &JsonVal::F64(i) => assert_eq!(1.0, i),
+    //         _                => panic!("Not an integer")
+    //     }
+    // }
 
-    #[test]
-    fn test_sort() {
-        let mut client = ::tests::make_client();
-        let index_name = "test_sort";
-        ::tests::clean_db(&mut client, index_name);
+    // #[test]
+    // fn test_sort() {
+    //     let mut client = ::tests::make_client();
+    //     let index_name = "test_sort";
+    //     ::tests::clean_db(&mut client, index_name);
 
-        client.bulk(&[Action::index(TestDocument::new().with_str_field("B").with_int_field(10)),
-                      Action::index(TestDocument::new().with_str_field("C").with_int_field(4)),
-                      Action::index(TestDocument::new().with_str_field("A").with_int_field(99))])
-            .with_index(index_name)
-            .with_doc_type("doc_type")
-            .send()
-            .unwrap();
+    //     client.bulk(&[Action::index(TestDocument::new().with_str_field("B").with_int_field(10)),
+    //                   Action::index(TestDocument::new().with_str_field("C").with_int_field(4)),
+    //                   Action::index(TestDocument::new().with_str_field("A").with_int_field(99))])
+    //         .with_index(index_name)
+    //         .with_doc_type("doc_type")
+    //         .send()
+    //         .unwrap();
 
-        client.refresh().with_indexes(&[index_name]).send().unwrap();
+    //     client.refresh().with_indexes(&[index_name]).send().unwrap();
 
-        {
-            let result = client.search_uri()
-                .with_indexes(&[index_name])
-                .with_sort(&Sort::field("str_field"))
-                .send()
-                .unwrap();
+    //     {
+    //         let result = client.search_uri()
+    //             .with_indexes(&[index_name])
+    //             .with_sort(&Sort::field("str_field"))
+    //             .send()
+    //             .unwrap();
 
-            let result_str:Vec<String> = result.hits.hits()
-                .unwrap()
-                .into_iter()
-                .map(|doc:TestDocument| doc.str_field)
-                .collect();
+    //         let result_str:Vec<String> = result.hits.hits()
+    //             .unwrap()
+    //             .into_iter()
+    //             .map(|doc:TestDocument| doc.str_field)
+    //             .collect();
 
-            let expected_result_str:Vec<String> = vec!["A", "B", "C"].into_iter()
-                .map(|x| x.to_owned())
-                .collect();
+    //         let expected_result_str:Vec<String> = vec!["A", "B", "C"].into_iter()
+    //             .map(|x| x.to_owned())
+    //             .collect();
 
-            assert_eq!(expected_result_str, result_str);
-        }
-        {
-            let result = client.search_query()
-                .with_indexes(&[index_name])
-                .with_sort(&Sort::field("str_field"))
-                .send()
-                .unwrap();
+    //         assert_eq!(expected_result_str, result_str);
+    //     }
+    //     {
+    //         let result = client.search_query()
+    //             .with_indexes(&[index_name])
+    //             .with_sort(&Sort::field("str_field"))
+    //             .send()
+    //             .unwrap();
 
-            let result_str:Vec<String> = result.hits.hits()
-                .unwrap()
-                .into_iter()
-                .map(|doc:TestDocument| doc.str_field)
-                .collect();
+    //         let result_str:Vec<String> = result.hits.hits()
+    //             .unwrap()
+    //             .into_iter()
+    //             .map(|doc:TestDocument| doc.str_field)
+    //             .collect();
 
-            let expected_result_str:Vec<String> = vec!["A", "B", "C"].into_iter()
-                .map(|x| x.to_owned())
-                .collect();
+    //         let expected_result_str:Vec<String> = vec!["A", "B", "C"].into_iter()
+    //             .map(|x| x.to_owned())
+    //             .collect();
 
-            assert_eq!(expected_result_str,
-                       result_str);
-        }
-        {
-            let result = client.search_query()
-                .with_indexes(&[index_name])
-                .with_sort(&Sort::field("int_field"))
-                .send()
-                .unwrap();
+    //         assert_eq!(expected_result_str,
+    //                    result_str);
+    //     }
+    //     {
+    //         let result = client.search_query()
+    //             .with_indexes(&[index_name])
+    //             .with_sort(&Sort::field("int_field"))
+    //             .send()
+    //             .unwrap();
 
-            let result_str:Vec<String> = result.hits.hits()
-                .unwrap()
-                .into_iter()
-                .map(|doc:TestDocument| doc.str_field)
-                .collect();
+    //         let result_str:Vec<String> = result.hits.hits()
+    //             .unwrap()
+    //             .into_iter()
+    //             .map(|doc:TestDocument| doc.str_field)
+    //             .collect();
 
-            let expected_result_str:Vec<String> = vec!["C", "B", "A"].into_iter()
-                .map(|x| x.to_owned())
-                .collect();
+    //         let expected_result_str:Vec<String> = vec!["C", "B", "A"].into_iter()
+    //             .map(|x| x.to_owned())
+    //             .collect();
 
-            assert_eq!(expected_result_str,
-                       result_str);
-        }
-    }
+    //         assert_eq!(expected_result_str,
+    //                    result_str);
+    //     }
+    // }
 }

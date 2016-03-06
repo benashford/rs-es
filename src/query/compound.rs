@@ -70,7 +70,7 @@ impl Query {
 impl ConstantScoreQuery {
     add_option!(with_boost, boost, f64);
 
-    build!(ConstantScore);
+    //build!(ConstantScore);
 }
 
 impl ToJson for ConstantScoreQuery {
@@ -109,7 +109,7 @@ impl BoolQuery {
     add_option!(with_boost, boost, f64);
     add_option!(with_disable_coord, disable_coord, bool);
 
-    build!(Bool);
+    //build!(Bool);
 }
 
 impl ToJson for BoolQuery {
@@ -149,7 +149,7 @@ impl DisMaxQuery {
     add_option!(with_tie_breaker, tie_breaker, f64);
     add_option!(with_boost, boost, f64);
 
-    build!(DisMax);
+    //build!(DisMax);
 }
 
 impl ToJson for DisMaxQuery {
@@ -198,7 +198,7 @@ impl FunctionScoreQuery {
         self
     }
 
-    build!(FunctionScore);
+    //build!(FunctionScore);
 }
 
 impl ToJson for FunctionScoreQuery {
@@ -234,7 +234,7 @@ impl BoostingQuery {
     add_option!(with_negative, negative, Query);
     add_option!(with_negative_boost, negative_boost, f64);
 
-    build!(Boosting);
+    //build!(Boosting);
 }
 
 impl ToJson for BoostingQuery {
@@ -270,7 +270,7 @@ impl Query {
 impl IndicesQuery {
     add_option!(with_no_match_query, no_match_query, NoMatchQuery);
 
-    build!(Indices);
+    //build!(Indices);
 }
 
 impl ToJson for IndicesQuery {

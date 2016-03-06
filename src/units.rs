@@ -366,7 +366,7 @@ json_potential!(bool);
 
 /// A Json value that's not a structural thing - i.e. just String, i64 and f64,
 /// no array or object
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum JsonVal {
     String(String),
     I64(i64),

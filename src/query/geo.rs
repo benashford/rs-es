@@ -65,7 +65,7 @@ impl GeoShapeQuery {
         self
     }
 
-    build!(GeoShape);
+    //build!(GeoShape);
 }
 
 impl ToJson for GeoShapeQuery {
@@ -188,7 +188,7 @@ impl GeoBoundingBoxQuery {
     add_option!(with_ignore_malformed, ignore_malformed, bool);
     add_option!(with_type, filter_type, Type);
 
-    build!(GeoBoundingBox);
+    //build!(GeoBoundingBox);
 }
 
 impl ToJson for GeoBoundingBoxQuery {
@@ -254,7 +254,7 @@ impl GeoDistanceQuery {
     add_option!(with_coerce, coerce, bool);
     add_option!(with_ignore_malformed, ignore_malformed, bool);
 
-    build!(GeoDistance);
+    //build!(GeoDistance);
 }
 
 impl ToJson for GeoDistanceQuery {
@@ -314,7 +314,7 @@ impl GeoPolygonQuery {
     add_option!(with_coerce, coerce, bool);
     add_option!(with_ignore_malformed, ignore_malformed, bool);
 
-    build!(GeoPolygon);
+    //build!(GeoPolygon);
 }
 
 impl ToJson for GeoPolygonQuery {
@@ -352,7 +352,7 @@ impl GeohashCellQuery {
     add_option!(with_precision, precision, Precision);
     add_option!(with_neighbors, neighbors, bool);
 
-    build!(GeohashCell);
+    //build!(GeohashCell);
 }
 
 impl ToJson for GeohashCellQuery {

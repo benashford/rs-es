@@ -23,6 +23,7 @@ use rustc_serialize::json::{Json, ToJson};
 use ::units::{JsonPotential, JsonVal, OneOrMany};
 
 use super::{Flags, Fuzziness, Query};
+use super::common::{FieldBasedQuery, NoOuter};
 
 /// Values of the rewrite option used by multi-term queries
 #[derive(Debug)]
@@ -73,7 +74,7 @@ impl Query {
 impl TermQuery {
     add_option!(with_boost, boost, f64);
 
-    build!(Term);
+    //build!(Term);
 }
 
 impl ToJson for TermQuery {
@@ -91,7 +92,7 @@ impl ToJson for TermQuery {
 
 // Terms query
 /// Terms Query Lookup
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct TermsQueryLookup {
     index: Option<String>,
     doc_type: Option<String>,
@@ -130,7 +131,7 @@ impl ToJson for TermsQueryLookup {
 }
 
 /// TermsQueryIn
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum TermsQueryIn {
     /// A `Vec` of values
     Values(Vec<JsonVal>),
@@ -183,20 +184,14 @@ impl<A> From<Vec<A>> for TermsQueryIn
 }
 
 /// Terms Query
-#[derive(Debug, Default)]
-pub struct TermsQuery {
-    field: String,
-    values: TermsQueryIn
-}
+#[derive(Debug, Serialize)]
+pub struct TermsQuery(FieldBasedQuery<TermsQueryIn, NoOuter>);
 
 impl Query {
     pub fn build_terms<A>(field: A) -> TermsQuery
         where A: Into<String> {
 
-        TermsQuery {
-            field: field.into(),
-            ..Default::default()
-        }
+        TermsQuery(FieldBasedQuery::new(field.into(), Default::default(), NoOuter))
     }
 }
 
@@ -204,17 +199,18 @@ impl TermsQuery {
     pub fn with_values<T>(mut self, values: T) -> Self
         where T: Into<TermsQueryIn> {
 
-        self.values = values.into();
+        self.0.inner = values.into();
         self
     }
 
     build!(Terms);
 }
 
+// DEPRECATED
 impl ToJson for TermsQuery {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        d.insert(self.field.clone(), self.values.to_json());
+        d.insert(self.0.field.clone(), self.0.inner.to_json());
         Json::Object(d)
     }
 }
@@ -253,7 +249,7 @@ impl RangeQuery {
     add_option!(with_time_zone, time_zone, String);
     add_option!(with_format, format, String);
 
-    build!(Range);
+//    build!(Range);
 }
 
 impl ToJson for RangeQuery {
@@ -292,7 +288,7 @@ impl Query {
 }
 
 impl ExistsQuery {
-    build!(Exists);
+    //build!(Exists);
 }
 
 impl ToJson for ExistsQuery {
@@ -328,7 +324,7 @@ impl PrefixQuery {
     add_option!(with_boost, boost, f64);
     add_option!(with_rewrite, rewrite, Rewrite);
 
-    build!(Prefix);
+    //build!(Prefix);
 }
 
 impl ToJson for PrefixQuery {
@@ -368,7 +364,7 @@ impl WildcardQuery {
     add_option!(with_boost, boost, f64);
     add_option!(with_rewrite, rewrite, Rewrite);
 
-    build!(Wildcard);
+    //build!(Wildcard);
 }
 
 impl ToJson for WildcardQuery {
@@ -437,7 +433,7 @@ impl RegexpQuery {
     add_option!(with_flags, flags, Flags<RegexpQueryFlags>);
     add_option!(with_max_determined_states, max_determined_states, u64);
 
-    build!(Regexp);
+    //build!(Regexp);
 }
 
 impl ToJson for RegexpQuery {
@@ -484,7 +480,7 @@ impl FuzzyQuery {
     add_option!(with_prefix_length, prefix_length, u64);
     add_option!(with_max_expansions, max_expansions, u64);
 
-    build!(Fuzzy);
+    //build!(Fuzzy);
 }
 
 impl ToJson for FuzzyQuery {
@@ -518,7 +514,7 @@ impl Query {
 }
 
 impl TypeQuery {
-    build!(Type);
+    //build!(Type);
 }
 
 impl ToJson for TypeQuery {
@@ -550,7 +546,7 @@ impl Query {
 impl IdsQuery {
     add_option!(with_type, doc_type, OneOrMany<String>);
 
-    build!(Ids);
+    //build!(Ids);
 }
 
 impl ToJson for IdsQuery {

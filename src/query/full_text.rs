@@ -127,7 +127,7 @@ impl MatchQuery {
     add_option!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
     add_option!(with_slop, slop, i64);
 
-    build!(Match);
+    //build!(Match);
 }
 
 impl ToJson for MatchQuery {
@@ -200,7 +200,7 @@ impl MultiMatchQuery {
     add_option!(with_cutoff_frequency, cutoff_frequency, f64);
     add_option!(with_slop, slop, i64);
 
-    build!(MultiMatch);
+    //build!(MultiMatch);
 }
 
 impl ToJson for MultiMatchQuery {
@@ -257,7 +257,7 @@ impl CommonQuery {
     add_option!(with_analyzer, analyzer, String);
     add_option!(with_disable_coord, disable_coord, bool);
 
-    build!(Common);
+    //build!(Common);
 }
 
 impl ToJson for CommonQuery {
@@ -334,7 +334,7 @@ impl QueryStringQuery {
     add_option!(with_time_zone, time_zone, String);
     add_option!(with_use_dis_max, use_dis_max, bool);
 
-    build!(QueryString);
+    //build!(QueryString);
 }
 
 impl ToJson for QueryStringQuery {
@@ -438,7 +438,7 @@ impl SimpleQueryStringQuery {
     add_option!(with_lenient, lenient, bool);
     add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
 
-    build!(SimpleQueryString);
+    //build!(SimpleQueryString);
 }
 
 impl ToJson for SimpleQueryStringQuery {
