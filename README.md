@@ -18,7 +18,7 @@ The HEAD of `master` is currently the development branch for 0.3.0, for any fixe
 
 ## Documentation
 
-[Full documentation for `rs-es`](http://benashford.github.io/rs-es/rs_es/index.html).  The rest of this document consists of an introduction.
+[Full documentation for `rs-es`](http://benashford.github.io/rs-es/rs_es/index.html), currently accurate for the 0.2.x series.  The rest of this document consists of an introduction, describing 0.3.x.
 
 ## Building and installation
 
