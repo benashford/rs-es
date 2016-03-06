@@ -9,7 +9,6 @@ addons:
       - libelf-dev
       - libdw-dev
       - binutils-dev # optional: only required for the --verify flag of coveralls
-      - ruby
 
 rust:
   - stable

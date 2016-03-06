@@ -134,6 +134,12 @@ pub enum Location {
     GeoHash(String)
 }
 
+impl Default for Location {
+    fn default() -> Location {
+        Location::LatLon(0f64, 0f64)
+    }
+}
+
 impl<'a> From<&'a Json> for Location {
     fn from(from: &'a Json) -> Location {
         Location::LatLon(
@@ -166,6 +172,12 @@ impl ToJson for Location {
 pub enum GeoBox {
     Corners(Location, Location),
     Vertices(f64, f64, f64, f64)
+}
+
+impl Default for GeoBox {
+    fn default() -> Self {
+        GeoBox::Vertices(0f64, 0f64, 0f64, 0f64)
+    }
 }
 
 impl<'a> From<&'a Json> for GeoBox {
@@ -209,18 +221,24 @@ impl ToJson for GeoBox {
 /// A non-specific holder for an option which can either be a single thing, or
 /// multiple instances of that thing.
 #[derive(Debug)]
-pub enum OneOrMany<T: ToJson> {
+pub enum OneOrMany<T> {
     One(T),
     Many(Vec<T>)
 }
 
-impl<T: ToJson> From<T> for OneOrMany<T> {
+impl<T: Default> Default for OneOrMany<T> {
+    fn default() -> Self {
+        OneOrMany::One(Default::default())
+    }
+}
+
+impl<T> From<T> for OneOrMany<T> {
     fn from(from: T) -> OneOrMany<T> {
         OneOrMany::One(from)
     }
 }
 
-impl<T: ToJson> From<Vec<T>> for OneOrMany<T> {
+impl<T> From<Vec<T>> for OneOrMany<T> {
     fn from(from: Vec<T>) -> OneOrMany<T> {
         OneOrMany::Many(from)
     }
@@ -267,6 +285,12 @@ pub enum DistanceUnit {
     NauticalMile
 }
 
+impl Default for DistanceUnit {
+    fn default() -> DistanceUnit {
+        DistanceUnit::Kilometer
+    }
+}
+
 impl ToString for DistanceUnit {
     fn to_string(&self) -> String {
         match *self {
@@ -289,6 +313,57 @@ impl ToJson for DistanceUnit {
     }
 }
 
+/// Distance, both an amount and a unit
+#[derive(Debug, Default)]
+pub struct Distance {
+     amt: f64,
+     unit: DistanceUnit
+}
+
+impl Distance {
+    pub fn new(amt: f64, unit: DistanceUnit) -> Distance {
+        Distance {
+            amt:  amt,
+            unit: unit
+        }
+    }
+}
+
+impl ToJson for Distance {
+    fn to_json(&self) -> Json {
+        Json::String(format!("{}{}", self.amt, self.unit.to_string()))
+    }
+}
+
+/// A trait for types that can become JsonVals
+pub trait JsonPotential {
+    fn to_json_val(&self) -> JsonVal;
+}
+
+macro_rules! json_potential {
+    ($t:ty) => (
+        impl JsonPotential for $t {
+            fn to_json_val(&self) -> JsonVal {
+                (*self).into()
+            }
+        }
+    )
+}
+
+impl<'a> JsonPotential for &'a str {
+    fn to_json_val(&self) -> JsonVal {
+        (*self).into()
+    }
+}
+
+json_potential!(i64);
+json_potential!(i32);
+json_potential!(u64);
+json_potential!(u32);
+json_potential!(f64);
+json_potential!(f32);
+json_potential!(bool);
+
 /// A Json value that's not a structural thing - i.e. just String, i64 and f64,
 /// no array or object
 #[derive(Debug)]
@@ -298,6 +373,12 @@ pub enum JsonVal {
     U64(u64),
     F64(f64),
     Boolean(bool)
+}
+
+impl Default for JsonVal {
+    fn default() -> Self {
+        JsonVal::String(Default::default())
+    }
 }
 
 impl ToJson for JsonVal {
@@ -320,6 +401,7 @@ impl<'a> From<&'a str> for JsonVal {
     }
 }
 
+from_exp!(f32, JsonVal, from, JsonVal::F64(from as f64));
 from!(f64, JsonVal, F64);
 from_exp!(i32, JsonVal, from, JsonVal::I64(from as i64));
 from!(i64, JsonVal, I64);

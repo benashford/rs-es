@@ -26,9 +26,9 @@ use std::collections::HashMap;
 use ::Client;
 use ::error::EsError;
 
-pub type DocType<'a>    = HashMap<&'a str, HashMap<&'a str, &'a str>>;
-pub type DocTypes<'a>   = HashMap<&'a str, DocType<'a>>;
-pub type Mapping<'a>    = HashMap<&'a str, DocTypes<'a>>;
+pub type DocType<'a> = HashMap<&'a str, HashMap<&'a str, &'a str>>;
+pub type DocTypes<'a> = HashMap<&'a str, DocType<'a>>;
+pub type Mapping<'a> = HashMap<&'a str, DocTypes<'a>>;
 
 /// An indexing operation
 pub struct MappingOperation<'a, 'b> {
@@ -43,7 +43,9 @@ pub struct MappingOperation<'a, 'b> {
 }
 
 impl<'a, 'b> MappingOperation<'a, 'b> {
-    pub fn new(client: &'a mut Client, index: &'b str, doc_types: &'b DocTypes) -> MappingOperation<'a, 'b> {
+    pub fn new(client: &'a mut Client,
+               index: &'b str,
+               doc_types: &'b DocTypes) -> MappingOperation<'a, 'b> {
         MappingOperation {
             client:    client,
             index:     index,
@@ -88,6 +90,8 @@ pub mod tests {
         let index_name = "tests_test_mapping";
         let mut client = ::tests::make_client();
 
+        // TODO - this fails in many cases (specifically on TravisCI), but we ignore the
+        // failures anyway
         client.delete_index(index_name);
 
         let mapping = hashmap! { // DocTypes

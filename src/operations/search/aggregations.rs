@@ -244,8 +244,8 @@ impl<'a> ToJson for Percentiles<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         self.fos.add_to_object(&mut d);
-        optional_add!(d, self.percents, "percents");
-        optional_add!(d, self.compression, "compression");
+        optional_add!(self, d, percents);
+        optional_add!(self, d, compression);
         Json::Object(d)
     }
 }
@@ -304,8 +304,8 @@ impl<'a> ToJson for Cardinality<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         self.fos.add_to_object(&mut d);
-        optional_add!(d, self.precision_threshold, "precision_threshold");
-        optional_add!(d, self.rehash, "rehash");
+        optional_add!(self, d, precision_threshold);
+        optional_add!(self, d, rehash);
         Json::Object(d)
     }
 }
@@ -334,7 +334,7 @@ impl<'a> ToJson for GeoBounds<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         d.insert("field".to_owned(), self.field.to_json());
-        optional_add!(d, self.wrap_longitude, "wrap_longitude");
+        optional_add!(self, d, wrap_longitude);
         Json::Object(d)
     }
 }
@@ -402,20 +402,20 @@ impl<'a> ToJson for ScriptedMetric<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         d.insert("map_script".to_owned(), self.map_script.to_json());
-        optional_add!(d, self.init_script, "init_script");
-        optional_add!(d, self.combine_script, "combine_script");
-        optional_add!(d, self.reduce_script, "reduce_script");
-        optional_add!(d, self.params, "params");
-        optional_add!(d, self.reduce_params, "reduce_params");
-        optional_add!(d, self.lang, "lang");
-        optional_add!(d, self.init_script_file, "init_script_file");
-        optional_add!(d, self.init_script_id, "init_script_id");
-        optional_add!(d, self.map_script_file, "map_script_file");
-        optional_add!(d, self.map_script_id, "map_script_id");
-        optional_add!(d, self.combine_script_file, "combine_script_file");
-        optional_add!(d, self.combine_script_id, "combine_script_id");
-        optional_add!(d, self.reduce_script_file, "reduce_script_file");
-        optional_add!(d, self.reduce_script_id, "reduce_script_id");
+        optional_add!(self, d, init_script);
+        optional_add!(self, d, combine_script);
+        optional_add!(self, d, reduce_script);
+        optional_add!(self, d, params);
+        optional_add!(self, d, reduce_params);
+        optional_add!(self, d, lang);
+        optional_add!(self, d, init_script_file);
+        optional_add!(self, d, init_script_id);
+        optional_add!(self, d, map_script_file);
+        optional_add!(self, d, map_script_id);
+        optional_add!(self, d, combine_script_file);
+        optional_add!(self, d, combine_script_id);
+        optional_add!(self, d, reduce_script_file);
+        optional_add!(self, d, reduce_script_id);
         Json::Object(d)
     }
 }
@@ -527,11 +527,13 @@ bucket_agg!(Global);
 /// Filter aggregation
 #[derive(Debug)]
 pub struct Filter<'a> {
-    filter: &'a query::Filter
+    // TODO - Query is now an enum with a `Box` it might be simpler, with little
+    // side-effects to own it instead
+    filter: &'a query::Query
 }
 
 impl<'a> Filter<'a> {
-    pub fn new(filter: &'a query::Filter) -> Filter<'a> {
+    pub fn new(filter: &'a query::Query) -> Filter<'a> {
         Filter {
             filter: filter
         }
@@ -549,19 +551,19 @@ bucket_agg!(Filter);
 /// Filters aggregation
 #[derive(Debug)]
 pub struct Filters<'a> {
-    filters: HashMap<&'a str, &'a query::Filter>
+    filters: HashMap<&'a str, &'a query::Query>
 }
 
 impl<'a> Filters<'a> {
-    pub fn new(filters: HashMap<&'a str, &'a query::Filter>) -> Filters<'a> {
+    pub fn new(filters: HashMap<&'a str, &'a query::Query>) -> Filters<'a> {
         Filters {
             filters: filters
         }
     }
 }
 
-impl<'a> From<Vec<(&'a str, &'a query::Filter)>> for Filters<'a> {
-    fn from(from: Vec<(&'a str, &'a query::Filter)>) -> Filters<'a> {
+impl<'a> From<Vec<(&'a str, &'a query::Query)>> for Filters<'a> {
+    fn from(from: Vec<(&'a str, &'a query::Query)>) -> Filters<'a> {
         let mut filters = HashMap::with_capacity(from.len());
         for (k, v) in from {
             filters.insert(k, v);
@@ -774,9 +776,9 @@ impl<'a> ToJson for Terms<'a> {
         let mut json = BTreeMap::new();
         self.field.add_to_object(&mut json);
 
-        optional_add!(json, self.size, "size");
-        optional_add!(json, self.shard_size, "shard_size");
-        optional_add!(json, self.order, "order");
+        optional_add!(self, json, size);
+        optional_add!(self, json, shard_size);
+        optional_add!(self, json, order);
 
         Json::Object(json)
     }
@@ -812,9 +814,9 @@ impl<'a> ToJson for RangeInst<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
 
-        optional_add!(d, self.from, "from");
-        optional_add!(d, self.to, "to");
-        optional_add!(d, self.key, "key");
+        optional_add!(self, d, from);
+        optional_add!(self, d, to);
+        optional_add!(self, d, key);
 
         Json::Object(d)
     }
@@ -881,8 +883,8 @@ impl<'a> DateRangeInst<'a> {
 impl<'a> ToJson for DateRangeInst<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        optional_add!(d, self.from, "from");
-        optional_add!(d, self.to, "to");
+        optional_add!(self, d, from);
+        optional_add!(self, d, to);
 
         Json::Object(d)
     }
@@ -915,7 +917,7 @@ impl<'a> ToJson for DateRange<'a> {
     fn to_json(&self) -> Json {
         let mut json = BTreeMap::new();
         self.field.add_to_object(&mut json);
-        optional_add!(json, self.format, "format");
+        optional_add!(self, json, format);
         json.insert("ranges".to_owned(), self.ranges.to_json());
         Json::Object(json)
     }
@@ -985,10 +987,10 @@ impl<'a> ToJson for Histogram<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         d.insert("field".to_owned(), self.field.to_json());
-        optional_add!(d, self.interval, "interval");
-        optional_add!(d, self.min_doc_count, "min_doc_count");
-        optional_add!(d, self.extended_bounds, "extended_bounds");
-        optional_add!(d, self.order, "order");
+        optional_add!(self, d, interval);
+        optional_add!(self, d, min_doc_count);
+        optional_add!(self, d, extended_bounds);
+        optional_add!(self, d, order);
 
         Json::Object(d)
     }
@@ -1083,9 +1085,9 @@ impl<'a> ToJson for DateHistogram<'a> {
         let mut d = BTreeMap::new();
         d.insert("field".to_owned(), self.field.to_json());
         d.insert("interval".to_owned(), self.interval.to_json());
-        optional_add!(d, self.time_zone, "time_zone");
-        optional_add!(d, self.offset, "offset");
-        optional_add!(d, self.format, "format");
+        optional_add!(self, d, time_zone);
+        optional_add!(self, d, offset);
+        optional_add!(self, d, format);
 
         Json::Object(d)
     }
@@ -1114,8 +1116,8 @@ impl GeoDistanceInst {
 impl ToJson for GeoDistanceInst {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        optional_add!(d, self.from, "from");
-        optional_add!(d, self.to, "to");
+        optional_add!(self, d, from);
+        optional_add!(self, d, to);
 
         Json::Object(d)
     }
@@ -1159,8 +1161,8 @@ impl<'a> ToJson for GeoDistance<'a> {
         json.insert("origin".to_owned(), self.origin.to_json());
         json.insert("ranges".to_owned(), self.ranges.to_json());
 
-        optional_add!(json, self.unit, "unit");
-        optional_add!(json, self.distance_type, "distance_type");
+        optional_add!(self, json, unit);
+        optional_add!(self, json, distance_type);
 
         Json::Object(json)
     }
@@ -1198,9 +1200,9 @@ impl<'a> ToJson for GeoHash<'a> {
 
         d.insert("field".to_owned(), self.field.to_json());
 
-        optional_add!(d, self.precision, "precision");
-        optional_add!(d, self.size, "size");
-        optional_add!(d, self.shard_size, "shard_size");
+        optional_add!(self, d, precision);
+        optional_add!(self, d, size);
+        optional_add!(self, d, shard_size);
 
         Json::Object(d)
     }

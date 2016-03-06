@@ -63,12 +63,12 @@ impl ToJson for ActionSource {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
 
-        optional_add!(d, self.doc, "doc");
-        optional_add!(d, self.upsert, "upsert");
-        optional_add!(d, self.doc_as_upsert, "doc_as_upsert");
-        optional_add!(d, self.script, "script");
-        optional_add!(d, self.params, "params");
-        optional_add!(d, self.lang, "lang");
+        optional_add!(self, d, doc);
+        optional_add!(self, d, upsert);
+        optional_add!(self, d, doc_as_upsert);
+        optional_add!(self, d, script);
+        optional_add!(self, d, params);
+        optional_add!(self, d, lang);
 
         Json::Object(d)
     }
@@ -241,16 +241,16 @@ impl ToJson for Action {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
 
-        optional_add!(inner, self.index, "_index");
-        optional_add!(inner, self.doc_type, "_type");
-        optional_add!(inner, self.id, "_id");
-        optional_add!(inner, self.version, "_version");
-        optional_add!(inner, self.version_type, "_version_type");
-        optional_add!(inner, self.routing, "_routing");
-        optional_add!(inner, self.parent, "_parent");
-        optional_add!(inner, self.timestamp, "_timestamp");
-        optional_add!(inner, self.ttl, "_ttl");
-        optional_add!(inner, self.retry_on_conflict, "_retry_on_conflict");
+        optional_add!(self, inner, index, "_index");
+        optional_add!(self, inner, doc_type, "_type");
+        optional_add!(self, inner, id, "_id");
+        optional_add!(self, inner, version, "_version");
+        optional_add!(self, inner, version_type, "_version_type");
+        optional_add!(self, inner, routing, "_routing");
+        optional_add!(self, inner, parent, "_parent");
+        optional_add!(self, inner, timestamp, "_timestamp");
+        optional_add!(self, inner, ttl, "_ttl");
+        optional_add!(self, inner, retry_on_conflict, "_retry_on_conflict");
 
         d.insert(self.action.to_string(), Json::Object(inner));
         Json::Object(d)

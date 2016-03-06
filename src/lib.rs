@@ -325,7 +325,7 @@ pub mod tests {
     use super::operations::bulk::Action;
     use super::operations::index::OpType;
 
-    use super::query::{Filter, Query};
+    use super::query::Query;
 
     use super::units::Duration;
 
@@ -585,30 +585,12 @@ pub mod tests {
         let within_range = client
             .search_query()
             .with_indexes(&[index_name])
-            .with_query(&Query::build_filtered(Filter::build_range("int_field")
-                                               .with_gte(2)
-                                               .with_lte(3)
-                                               .build())
+            .with_query(&Query::build_range("int_field")
+                        .with_gte(2)
+                        .with_lte(3)
                         .build())
             .send().unwrap();
         assert_eq!(2, within_range.hits.total);
-    }
-
-    #[test]
-    fn test_query_dsl() {
-        let query = Query::build_filtered(
-            Filter::build_bool()
-                .with_must(vec![Filter::build_term("field_a",
-                                                   "value").build(),
-                                Filter::build_range("field_b")
-                                .with_gte(5)
-                                .with_lt(10)
-                                .build()])
-                .build())
-            .with_query(Query::build_query_string("some value").build())
-            .build();
-        let json = query.to_json().to_string();
-        assert_eq!("{\"filtered\":{\"filter\":{\"bool\":{\"must\":[{\"term\":{\"field_a\":\"value\"}},{\"range\":{\"field_b\":{\"gte\":5,\"lt\":10}}}]}},\"query\":{\"query_string\":{\"query\":\"some value\"}}}}", json);
     }
 
     #[test]

@@ -18,25 +18,13 @@ The HEAD of `master` is currently the development branch for 0.3.0, for any fixe
 
 ## Documentation
 
-[Full documentation for `rs-es`](http://benashford.github.io/rs-es/rs_es/index.html).  The rest of this document consists of an introduction.
+[Full documentation for `rs-es`](http://benashford.github.io/rs-es/rs_es/index.html), currently accurate for the 0.2.x series.  The rest of this document consists of an introduction, describing 0.3.x.
 
 ## Building and installation
 
 ### [crates.io](http://crates.io)
 
 Available from [crates.io](https://crates.io/crates/rs-es).
-
-### Building from source
-
-Part of the Rust code is generated automatically (`src/query.rs`), this is the implementation of ElasticSearch's [Query DSL](#the-query-dsl) which contains various conventions that would be otherwise tedious to implement manually.  Rust's macros help here, but there is still a lot of redundancy left-over so a Ruby script is used.
-
-#### Pre-requisites
-
-* Ruby - any relatively recent version should work, but it has been specifically tested with 2.1 and 2.2.
-
-#### Build instructions
-
-The code-generation is integreated into Cargo, so usual `cargo test` commands will do the right thing.
 
 ## Design goals
 
@@ -242,64 +230,50 @@ let hits:Vec<DocType> = result.hits.hits().unwrap();
 
 ### The Query DSL
 
-WARNING: In the forthcoming 0.3.0 release of `rs-es` there will be breaking changes here.  This is due to changes in ElasticSearch in the 2.0 series.  Essentially the difference between queries and filters is being removed as they will be context sensitive instead.  As such examples here might need subtle changes to work with 0.3.  E.g. `Filter::build_range("field_name")` will become `Query::build_range("field_name").  This README will be updated when these changes are made.
+WARNING: In the forthcoming 0.3.0 release of `rs-es` there will be breaking changes here.  This is due to changes in ElasticSearch in the 2.0 series.  Essentially the difference between queries and filters is being removed as they will be context sensitive instead.  As such examples here might need subtle changes to work with 0.3.  E.g. `Filter::build_range("field_name")` will become `Query::build_range("field_name").
 
 ElasticSearch offers a [rich DSL for searches](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl.html).  It is JSON based, and therefore very easy to use and composable if using from a dynamic language (e.g. [Ruby](https://github.com/elastic/elasticsearch-ruby/tree/master/elasticsearch-dsl#features-overview)); but Rust, being a staticly-typed language, things are different.  The `rs_es::query` module defines a set of builder objects which can be similarly composed to the same ends.
 
 For example:
 
 ```rust
-let query = Query::build_filtered(
-                Filter::build_bool()
-                    .with_must(vec![Filter::build_term("field_a",
-                                                       "value").build(),
-                                    Filter::build_range("field_b")
-                                        .with_gte(5)
-                                        .with_lt(10)
-                                        .build()])
-                    .build())
-                .with_query(Query::build_query_string("some value").build())
-                .build();
+let query = Query::build_bool()
+    .with_must(vec![Query::build_term("field_a",
+                                      "value").build(),
+                    Query::build_range("field_b")
+                          .with_gte(5)
+                          .with_lt(10)
+                          .build()])
+    .build();
 ```
 
 The resulting `Query` value can be used in the various search/query functions exposed by [the client](#the-client).  It implements [`ToJson`](http://doc.rust-lang.org/rustc-serialize/rustc_serialize/json/index.html), which in the above example would produce JSON like so:
 
 ```javascript
 {
-    "filtered": {
-        "query": {
-            "query_string": {
-                "query": "some_value"
-            }
-        },
-        "filter": {
-            "bool": {
-                "must": [
-                    {
-                        "term": {
-                            "field_a": "value"
-                        }
-                    },
-                    {
-                        "range": {
-                            "field_b": {
-                                "gte": 5,
-                                "lt": 10
-                            }
+    "filter": {
+        "bool": {
+            "must": [
+                {
+                    "term": {
+                        "field_a": "value"
+                    }
+                },
+                {
+                    "range": {
+                        "field_b": {
+                            "gte": 5,
+                            "lt": 10
                         }
                     }
-                ]
-            }
+                }
+            ]
         }
     }
 }
 ```
 
 The implementation makes much use of [conversion traits](http://benashford.github.io/blog/2015/05/24/rust-traits-for-developer-friendly-libraries/) which are used to keep a lid on the verbosity of using such a builder pattern.
-
-#### Experimental
-
-This implementation of the query DSL is auto-generated and is done so in such a way to allow the generated code to change when necessary.  The template files are [query.rs.erb](templates/query.rs.erb) and [generate_query_dsl.rb](tools/generate_query_dsl.rb).  The experimental warning is recursive, it's likely that the means of generating the query DSL will change due to lessons-learnt implementing the first version.
 
 ### Scan and scroll
 
@@ -412,17 +386,24 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
+0. Identify and fix duplication in SortBy(Script) and Functions Inline (Query DSL); and Scripted aggregations.
+0. Implement ScriptQuery (Query DSL).
 1. Implement changes to the Query API as documented here: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_query_dsl_changes.html
+2. Transcribe this TODO list into specific GitHub issues, for easier management.
 2. Implement search API changes: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_search_changes.html
 3. Implement aggregation changes: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_aggregation_changes.html
 4. Implement scripting changes: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_scripting_changes.html
 5. Upgrade the targeted version of ElasticSearch from 1.6 to 2.2, paying attention to the changelogs: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking-changes-2.0.html
-6. Documentation
+6. Documentation.
+6. Move longer examples from README to the rustdocs instead.
+6. rustc-serialize appears to be deprecated, retrofit `rs-es` to Serde: https://github.com/serde-rs/serde
+6. Tests
+7. Stop panicking on unexpected JSON, etc., to guard against surprises with future versions; return a result instead.
 7. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
 8. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html
 9. Add significant-terms aggregation (esp., if made a permanent feature): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
 10. Add IP Range aggregation (complex due to changing response type): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-iprange-aggregation.html
-11. Reduce repetition in aggregations.rs
+11. Reduce repetition in aggregations.rs and/or differences with the Query DSL
 12. Reduce repetition around `from` functions when parsing `buckets` attribute.
 13. Check for over-dependency on macros parsing from JSON
 14. Consistency on when builder objects take ownership, vs. borrow a reference to some data.
@@ -436,7 +417,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 22. Implement Update API.
 23. Implement Multi Get API
 24. Implement Term Vectors and Multi termvectors API
-25. Test coverage.
 26. Performance (ensure use of persistent HTTP connections, etc.).
 27. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
 28. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.

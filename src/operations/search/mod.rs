@@ -27,7 +27,7 @@ use rustc_serialize::json::{Json, ToJson};
 
 use ::Client;
 use ::error::EsError;
-use ::query::{Filter, Query};
+use ::query::Query;
 use ::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
 use ::util::StrJoin;
 use super::common::{Options, OptionVal};
@@ -137,7 +137,7 @@ pub struct SortField {
     order:         Option<Order>,
     mode:          Option<Mode>,
     nested_path:   Option<String>,
-    nested_filter: Option<Filter>,
+    nested_filter: Option<Query>,
     missing:       Option<Missing>,
     unmapped_type: Option<String>
 }
@@ -158,7 +158,7 @@ impl SortField {
 
     add_field!(with_mode, mode, Mode);
     add_field!(with_nested_path, nested_path, String);
-    add_field!(with_nested_filter, nested_filter, Filter);
+    add_field!(with_nested_filter, nested_filter, Query);
     add_field!(with_missing, missing, Missing);
     add_field!(with_unmapped_type, unmapped_type, String);
 
@@ -189,12 +189,12 @@ impl ToJson for SortField {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
 
-        optional_add!(inner, self.order, "order");
-        optional_add!(inner, self.mode, "mode");
-        optional_add!(inner, self.nested_path, "nested_path");
-        optional_add!(inner, self.nested_filter, "nested_filter");
-        optional_add!(inner, self.missing, "missing");
-        optional_add!(inner, self.unmapped_type, "unmapped_type");
+        optional_add!(self, inner, order);
+        optional_add!(self, inner, mode);
+        optional_add!(self, inner, nested_path);
+        optional_add!(self, inner, nested_filter);
+        optional_add!(self, inner, missing);
+        optional_add!(self, inner, unmapped_type);
 
         d.insert(self.field.clone(), Json::Object(inner));
         Json::Object(d)
@@ -252,10 +252,10 @@ impl ToJson for GeoDistance {
 
         inner.insert(self.field.clone(), self.location.to_json());
 
-        optional_add!(inner, self.order, "order");
-        optional_add!(inner, self.unit, "unit");
-        optional_add!(inner, self.mode, "mode");
-        optional_add!(inner, self.distance_type, "distance_type");
+        optional_add!(self, inner, order);
+        optional_add!(self, inner, unit);
+        optional_add!(self, inner, mode);
+        optional_add!(self, inner, distance_type);
 
         d.insert("_geo_distance".to_owned(), Json::Object(inner));
         Json::Object(d)
@@ -343,26 +343,26 @@ pub struct Sort {
 }
 
 impl Sort {
-    pub fn new(fields: Vec<SortBy>) -> Sort {
+    pub fn new(fields: Vec<SortBy>) -> Self {
         Sort {
             fields: fields
         }
     }
 
     /// Convenience function for a single field default
-    pub fn field<S: Into<String>>(fieldname: S) -> Sort {
+    pub fn field<S: Into<String>>(fieldname: S) -> Self {
         Sort {
             fields: vec![SortField::new(fieldname, None).build()]
         }
     }
 
-    pub fn field_order<S: Into<String>>(fieldname: S, order: Order) -> Sort {
+    pub fn field_order<S: Into<String>>(fieldname: S, order: Order) -> Self {
         Sort {
             fields: vec![SortField::new(fieldname, Some(order)).build()]
         }
     }
 
-    pub fn fields<S: Into<String>>(fieldnames: Vec<S>) -> Sort {
+    pub fn fields<S: Into<String>>(fieldnames: Vec<S>) -> Self {
         Sort {
             fields: fieldnames.into_iter().map(|fieldname| {
                 SortField::new(fieldname, None).build()
@@ -370,7 +370,7 @@ impl Sort {
         }
     }
 
-    pub fn field_orders<S: Into<String>>(fields: Vec<(S, Order)>) -> Sort {
+    pub fn field_orders<S: Into<String>>(fields: Vec<(S, Order)>) -> Self {
         Sort {
             fields: fields.into_iter().map(|(fieldname, order)| {
                 SortField::new(fieldname, Some(order)).build()
@@ -391,6 +391,8 @@ impl Sort {
 /// ```
 impl<'a> From<&'a Sort> for OptionVal {
     fn from(from: &'a Sort) -> OptionVal {
+        // TODO - stop requiring `to_string` if `AsRef<str>` could be implemented
+        // instead
         OptionVal(from.fields.iter().map(|f| f.to_string()).join(","))
     }
 }
@@ -556,15 +558,15 @@ impl<'a> ToJson for SearchQueryOperationBody<'a> {
         let mut d = BTreeMap::new();
         d.insert("from".to_owned(), self.from.to_json());
         d.insert("size".to_owned(), self.size.to_json());
-        optional_add!(d, self.query, "query");
-        optional_add!(d, self.timeout, "timeout");
-        optional_add!(d, self.terminate_after, "terminate_after");
-        optional_add!(d, self.stats, "stats");
-        optional_add!(d, self.min_score, "min_score");
-        optional_add!(d, self.sort, "sort");
-        optional_add!(d, self.track_scores, "track_scores");
-        optional_add!(d, self.source, "_source");
-        optional_add!(d, self.aggs, "aggs");
+        optional_add!(self, d, query);
+        optional_add!(self, d, timeout);
+        optional_add!(self, d, terminate_after);
+        optional_add!(self, d, stats);
+        optional_add!(self, d, min_score);
+        optional_add!(self, d, sort);
+        optional_add!(self, d, track_scores);
+        optional_add!(self, d, source, "_source");
+        optional_add!(self, d, aggs);
         Json::Object(d)
     }
 }
