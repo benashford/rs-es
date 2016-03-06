@@ -1,4 +1,4 @@
-FROM devbox-rust
+FROM devbox-rust-nightly
 
 RUN apt-get update
 

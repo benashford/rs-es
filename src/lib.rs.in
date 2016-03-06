@@ -14,25 +14,6 @@
  * limitations under the License.
  */
 
-#![crate_type = "lib"]
-#![crate_name = "rs_es"]
-
-//! A client for ElasticSearch's REST API
-//!
-//! The `Client` itself is used as the central access point, from which numerous
-//! operations are defined implementing each of the specific ElasticSearch APIs.
-//!
-//! Warning: at the time of writing the majority of such APIs are currently
-//! unimplemented.
-
-#[macro_use]
-extern crate log;
-extern crate hyper;
-extern crate rustc_serialize;
-
-#[macro_use]
-extern crate maplit;
-
 #[macro_use]
 pub mod util;
 
