@@ -12,6 +12,8 @@ Versions up-to and including 0.2 of `rs-es` targetted ElasticSearch 1.6.x.  Star
 
 Please note, due a minor breaking change between Rust 1.5 and 1.6 the 0.1.x releases of `rs-es` only work with Rust 1.5 or earlier, the 0.2.x releases only work with Rust 1.6 or later.
 
+Not every feature and every option is implemented, this README and the documentation describe what is available.  For any errors, omissions, etc., issues and pull requests are welcome.
+
 ### Contributing and compatibility
 
 The HEAD of `master` is currently the development branch for 0.3.0, for any fixes etc. the current 0.2.x release, please open a pull request against the `0.2-releases` branch.  For contributions for ongoing development, please open a pull request against `master`.
@@ -387,15 +389,11 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 ### Some, non-exhaustive, specific TODOs
 
 1. Transcribe this TODO list into specific GitHub issues, for easier management.
-2. Implement search API changes: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_search_changes.html
-3. Implement aggregation changes: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_aggregation_changes.html
-4. Implement scripting changes: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking_20_scripting_changes.html
-5. Upgrade the targeted version of ElasticSearch from 1.6 to 2.2, paying attention to the changelogs: https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking-changes-2.0.html
-6. Documentation.
-6. Move longer examples from README to the rustdocs instead.
-6. rustc-serialize appears to be deprecated, retrofit `rs-es` to Serde: https://github.com/serde-rs/serde
-6. Tests
-7. Stop panicking on unexpected JSON, etc., to guard against surprises with future versions; return a result instead.
+2. Documentation.
+3. Move longer examples from README to the rustdocs instead.
+4. rustc-serialize appears to be deprecated, retrofit `rs-es` to Serde: https://github.com/serde-rs/serde
+5. Tests
+6. Stop panicking on unexpected JSON, etc., to guard against surprises with future versions; return a result instead.
 7. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
 8. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html
 9. Add significant-terms aggregation (esp., if made a permanent feature): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
