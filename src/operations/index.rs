@@ -115,12 +115,12 @@ impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
                 }
             }
         });
-        Ok(IndexResult::from(&result.expect("No Json payload")))
+        Ok(result)
     }
 }
 
 /// The result of an index operation
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct IndexResult {
     pub index:    String,
     pub doc_type: String,

@@ -69,8 +69,10 @@ impl<'a, 'b> AnalyzeOperation<'a, 'b> {
                            .post(&full_url)
                            .body(self.body)
                            .send());
-        let (_, result) = try!(do_req(&mut req));
-        Ok(AnalyzeResult::from(&result.expect("No Json payload")))
+        // TODO - check if we need to check the status code, etc.
+        //let (_, result) = try!(do_req(&mut req));
+        //Ok(result)
+        panic!("Unimplemented, uncomment above")
     }
 }
 
@@ -89,6 +91,7 @@ pub struct Token {
     pub end_offset: u64
 }
 
+// DEPRECATED
 impl<'a> From<&'a Json> for AnalyzeResult {
     fn from(r: &'a Json) -> AnalyzeResult {
         let mut tokens = Vec::new();

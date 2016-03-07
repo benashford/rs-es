@@ -69,14 +69,15 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
                           self.doc_type,
                           self.id,
                           self.options);
-        let (status_code, result) = try!(self.client.delete_op(&url));
-        info!("DELETE OPERATION STATUS: {:?} RESULT: {:?}", status_code, result);
-        match status_code {
-            StatusCode::Ok =>
-                Ok(DeleteResult::from(&result.expect("No Json payload"))),
-            _ =>
-                Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
-        }
+        //let (status_code, result) = try!(self.client.delete_op(&url));
+        //info!("DELETE OPERATION STATUS: {:?} RESULT: {:?}", status_code, result);
+        // match status_code {
+        //     StatusCode::Ok =>
+        //         Ok(DeleteResult::from(&result.expect("No Json payload"))),
+        //     _ =>
+        //         Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        // }
+        unimplemented!()
     }
 }
 

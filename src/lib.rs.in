@@ -23,11 +23,14 @@ pub mod operations;
 pub mod query;
 pub mod units;
 
+use hyper::client;
 use hyper::status::StatusCode;
 use hyper::header::{Headers, Authorization, Basic};
 
 use rustc_serialize::Encodable;
 use rustc_serialize::json::{encode, Json};
+
+use serde::de::Deserialize;
 
 use error::EsError;
 use operations::bulk::{BulkOperation, Action};
@@ -37,6 +40,7 @@ use operations::index::IndexOperation;
 use operations::search::{SearchURIOperation, SearchQueryOperation};
 use operations::RefreshOperation;
 use operations::analyze::AnalyzeOperation;
+use operations::version::VersionOperation;
 
 // The client
 
@@ -46,15 +50,17 @@ use operations::analyze::AnalyzeOperation;
 ///
 /// This function is exposed to allow extensions to certain operations, it is
 /// not expected to be used by consumers of the library
-pub fn do_req(resp: &mut hyper::client::response::Response)
-              -> Result<(StatusCode, Option<Json>), EsError> {
+pub fn do_req<R>(resp: &mut client::response::Response) -> Result<(StatusCode, R), EsError>
+    where R: Deserialize {
+
     info!("Response: {:?}", resp);
-    match resp.status {
+    let status = resp.status;
+    match status {
         StatusCode::Ok |
         StatusCode::Created |
-        StatusCode::NotFound => match Json::from_reader(resp) {
-            Ok(json) => Ok((resp.status, Some(json))),
-            Err(e)   => Err(EsError::from(e))
+        StatusCode::NotFound => match serde_json::from_reader(resp) {
+            Ok(result) => Ok((status, result)),
+            Err(e)     => Err(EsError::from(e))
         },
         _                    => Err(EsError::from(resp))
     }
@@ -96,14 +102,15 @@ pub struct Client {
 /// Create a HTTP function for the given method (GET/PUT/POST/DELETE)
 macro_rules! es_op {
     ($n:ident,$cn:ident) => {
-        fn $n(&mut self, url: &str)
-              -> Result<(StatusCode, Option<Json>), EsError> {
+        fn $n<R>(&mut self, url: &str)
+                 -> Result<(StatusCode, R), EsError>
+        where R: Deserialize {
             info!("Doing {} on {}", stringify!($n), url);
             let url = self.full_url(url);
             let mut result = try!(self.http_client
-                                    .$cn(&url)
-                                    .headers(self.headers.clone())
-                                    .send());
+                                  .$cn(&url)
+                                  .headers(self.headers.clone())
+                                  .send());
             do_req(&mut result)
         }
     }
@@ -113,21 +120,23 @@ macro_rules! es_op {
 /// (GET/PUT/POST/DELETE)
 macro_rules! es_body_op {
     ($n:ident,$cn:ident) => {
-        fn $n<E>(&mut self, url: &str, body: &E)
-                 -> Result<(StatusCode, Option<Json>), EsError>
-            where E: Encodable {
-                info!("Doing {} on {}", stringify!($n), url);
-                let json_string = try!(encode(body));
-                info!("Body: {}", json_string);
-                let url = self.full_url(url);
-                let mut result = try!(self.http_client
-                                      .$cn(&url)
-                                      .headers(self.headers.clone())
-                                      .body(&json_string)
-                                      .send());
+        fn $n<E, R>(&mut self, url: &str, body: &E)
+                 -> Result<(StatusCode, R), EsError>
+            where E: Encodable,
+                  R: Deserialize{
 
-                do_req(&mut result)
-            }
+            info!("Doing {} on {}", stringify!($n), url);
+            let json_string = try!(encode(body));
+            info!("Body: {}", json_string);
+            let url = self.full_url(url);
+            let mut result = try!(self.http_client
+                                  .$cn(&url)
+                                  .headers(self.headers.clone())
+                                  .body(&json_string)
+                                  .send());
+
+            do_req(&mut result)
+        }
     }
 }
 
@@ -178,18 +187,8 @@ impl Client {
     es_op!(delete_op, delete);
 
     /// Calls the base ES path, returning the version number
-    pub fn version(&mut self) -> Result<String, EsError> {
-        let (_, result) = try!(self.get_op("/"));
-        let json = result.expect("No Json payload");
-        match json.find_path(&["version", "number"]) {
-            Some(version) => match version.as_string() {
-                Some(string) => Ok(string.to_owned()),
-                None         => Err(EsError::EsError(format!("Cannot find version number in: {:?}",
-                                                             json)))
-            },
-            None          => Err(EsError::EsError(format!("Cannot find version number in {:?}",
-                                                          json)))
-        }
+    pub fn version(&mut self) -> VersionOperation {
+        VersionOperation::new(self)
     }
 
     // Indices APIs
@@ -235,15 +234,16 @@ impl Client {
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/2.x/indices-delete-index.html
     pub fn delete_index<'a>(&'a mut self, index: &'a str) -> Result<GenericResponse, EsError> {
         let url = format!("/{}/", index);
-        let (status_code, result) = try!(self.delete_op(&url));
-        info!("DELETE INDEX OPERATION STATUS: {:?} RESULT: {:?}", status_code, result);
+        // let (status_code, result) = try!(self.delete_op(&url));
+        // info!("DELETE INDEX OPERATION STATUS: {:?} RESULT: {:?}", status_code, result);
 
-        match status_code {
-            StatusCode::Ok =>
-                Ok(GenericResponse::from(&result.expect("No Json payload"))),
-            _ =>
-                Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
-        }
+        // match status_code {
+        //     StatusCode::Ok =>
+        //         Ok(GenericResponse::from(&result.expect("No Json payload"))),
+        //     _ =>
+        //         Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        // }
+        unimplemented!()
     }
 
     // Multi-document APIs
@@ -397,16 +397,16 @@ pub mod tests {
 
     // tests
 
-    // #[test]
-    // fn it_works() {
-    //     env_logger::init().unwrap();
+    #[test]
+    fn it_works() {
+        env_logger::init().unwrap();
 
-    //     let mut client = make_client();
-    //     let result = client.version().unwrap();
+        let mut client = make_client();
+        let result = client.version().send().unwrap();
 
-    //     let expected_regex = Regex::new(r"^\d\.\d\.\d$").unwrap();
-    //     assert_eq!(expected_regex.is_match(&result), true);
-    // }
+        let expected_regex = Regex::new(r"^\d\.\d\.\d$").unwrap();
+        assert_eq!(expected_regex.is_match(&result.version.number), true);
+    }
 
     // #[test]
     // fn test_indexing() {

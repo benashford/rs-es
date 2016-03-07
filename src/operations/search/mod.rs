@@ -455,12 +455,14 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
         info!("Searching with: {}", url);
-        let (status_code, result) = try!(self.client.get_op(&url));
-        info!("Search result (status: {}, result: {:?})", status_code, result);
-        match status_code {
-            StatusCode::Ok => Ok(SearchResult::from(&result.expect("No Json payload"))),
-            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
-        }
+        // TODO - fix below
+        // let (status_code, result) = try!(self.client.get_op(&url));
+        // info!("Search result (status: {}, result: {:?})", status_code, result);
+        // match status_code {
+        //     StatusCode::Ok => Ok(result.expect("No Json payload")),
+        //     _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        // }
+        unimplemented!()
     }
 }
 
@@ -694,21 +696,23 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
-        let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
-        match status_code {
-            StatusCode::Ok => {
-                let result_json = result.expect("No Json payload");
-                let mut search_result = SearchResult::from(&result_json);
-                match self.body.aggs {
-                    Some(ref aggs) => {
-                        search_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
-                    },
-                    _              => ()
-                }
-                Ok(search_result)
-            },
-            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
-        }
+        // let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
+        // match status_code {
+        //     StatusCode::Ok => {
+        //         // let result_json = result.expect("No Json payload");
+        //         // let mut search_result = SearchResult::from(&result_json);
+        //         // match self.body.aggs {
+        //         //     Some(ref aggs) => {
+        //         //         search_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
+        //         //     },
+        //         //     _              => ()
+        //         // }
+        //         // Ok(search_result)
+        //         unimplemented!()
+        //     },
+        //     _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        // }
+        unimplemented!()
     }
 
     /// Begins a scan with the specified query and options
@@ -718,24 +722,26 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
-        let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
-        match status_code {
-            StatusCode::Ok => {
-                let result_json = result.expect("No Json payload");
-                let mut scan_result = ScanResult::from(scroll, &result_json);
-                match self.body.aggs {
-                    Some(ref aggs) => {
-                        scan_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
-                    },
-                    _              => ()
-                }
-                Ok(scan_result)
-            },
-            StatusCode::NotFound => {
-                Err(EsError::EsServerError(format!("Not found: {:?}", result)))
-            },
-            _ => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
-        }
+        // let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
+        // match status_code {
+        //     StatusCode::Ok => {
+        //         // let result_json = result.expect("No Json payload");
+        //         // let mut scan_result = ScanResult::from(scroll, &result_json);
+        //         // match self.body.aggs {
+        //         //     Some(ref aggs) => {
+        //         //         scan_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
+        //         //     },
+        //         //     _              => ()
+        //         // }
+        //         // Ok(scan_result)
+        //         unimplemented!()
+        //     },
+        //     StatusCode::NotFound => {
+        //         Err(EsError::EsServerError(format!("Not found: {:?}", result)))
+        //     },
+        //     _ => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        // }
+        unimplemented!()
     }
 }
 
@@ -941,30 +947,32 @@ impl ScanResult {
         let url = format!("/_search/scroll?scroll={}&scroll_id={}",
                           self.scroll.to_string(),
                           self.scroll_id);
-        let (status_code, result) = try!(client.get_op(&url));
-        match status_code {
-            StatusCode::Ok => {
-                let r = result.expect("No Json payload");
-                self.scroll_id = get_json_string!(r, "_scroll_id");
-                Ok(SearchResult::from(&r))
-            },
-            _              => {
-                Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
-            }
-        }
+        // let (status_code, result) = try!(client.get_op(&url));
+        // match status_code {
+        //     StatusCode::Ok => {
+        //         // let r = result.expect("No Json payload");
+        //         // self.scroll_id = get_json_string!(r, "_scroll_id");
+        //         // Ok(SearchResult::from(&r))
+        //         unimplemented!()
+        //     },
+        //     _              => {
+        //         Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        //     }
+        // }
+        unimplemented!()
     }
 
     /// Calls ES to close the server-side part of the scan/scroll operation
     pub fn close(&self, client: &mut Client) -> Result<(), EsError> {
         let url = format!("/_search/scroll?scroll_id={}", self.scroll_id);
-        let (status_code, result) = try!(client.delete_op(&url));
-        match status_code {
-            StatusCode::Ok       => Ok(()), // closed
-            StatusCode::NotFound => Ok(()), // previously closed
-            _                    => Err(EsError::EsError(format!("Unexpected status: {}, {}",
-                                                                 status_code,
-                                                                 result.unwrap())))
-        }
+        // let (status_code, result) = try!(client.delete_op(&url));
+        // match status_code {
+        //     StatusCode::Ok       => Ok(()), // closed
+        //     StatusCode::NotFound => Ok(()), // previously closed
+        //     _                    => Err(EsError::EsError(format!("Unexpected status: {}",
+        //                                                          status_code)))
+        // }
+        unimplemented!()
     }
 }
 

@@ -61,7 +61,7 @@ pub struct GetOperation<'a, 'b> {
 impl<'a, 'b> GetOperation<'a, 'b> {
     pub fn new(client:   &'a mut Client,
                index:    &'b str,
-               id:       &'b str) -> GetOperation<'a, 'b> {
+               id:       &'b str) -> Self {
         GetOperation {
             client:   client,
             index:    index,
@@ -102,8 +102,10 @@ impl<'a, 'b> GetOperation<'a, 'b> {
                           self.options);
         // We're ignoring status_code as all valid codes should return a value,
         // so anything else is an error.
-        let (_, result) = try!(self.client.get_op(&url));
-        Ok(GetResult::from(&result.expect("No Json payload")))
+        // TODO - fix below
+        // let (_, result) = try!(self.client.get_op(&url));
+        // Ok(GetResult::from(&result.expect("No Json payload")))
+        unimplemented!()
     }
 }
 

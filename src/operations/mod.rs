@@ -40,6 +40,7 @@ pub mod index;
 pub mod search;
 pub mod analyze;
 pub mod mapping;
+pub mod version;
 
 // Common utility functions
 
@@ -90,7 +91,7 @@ impl<'a, 'b> RefreshOperation<'a, 'b> {
                           format_multi(&self.indexes));
         let (status_code, result) = try!(self.client.post_op(&url));
         match status_code {
-            StatusCode::Ok => Ok(RefreshResult::from(&result.expect("No Json payload"))),
+            StatusCode::Ok => Ok(result),
             _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
     }
@@ -100,13 +101,14 @@ impl<'a, 'b> RefreshOperation<'a, 'b> {
 
 // Result helpers
 
+// TODO - deprecated, replace with Serde
 fn decode_json<T: Decodable>(doc: Json) -> Result<T, EsError> {
     Ok(try!(Decodable::decode(&mut Decoder::new(doc))))
 }
 
 /// Shared struct for operations that include counts of success/failed shards.
 /// This is returned within various other result structs.
-#[derive(Debug, RustcDecodable)]
+#[derive(Debug, RustcDecodable, Deserialize)]
 pub struct ShardCountResult {
     pub total:      u64,
     pub successful: u64,
@@ -114,6 +116,7 @@ pub struct ShardCountResult {
 }
 
 /// Result of a refresh request
+#[derive(Deserialize)]
 pub struct RefreshResult {
     pub shards: ShardCountResult
 }

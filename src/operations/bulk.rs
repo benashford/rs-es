@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ben Ashford
+ * Copyright 2015-2016 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,8 @@ impl ToJson for ActionSource {
     }
 }
 
+// TODO - probably need to provide a specific Deserialize implementation
+#[derive(Deserialize)]
 pub enum ActionType {
     Index,
     Create,
@@ -338,16 +340,17 @@ impl<'a, 'b> BulkOperation<'a, 'b> {
                               .body(&body)
                               .send());
 
-        let (status_code, json_opt) = try!(do_req(&mut result));
+        let (status_code, bulk_result) = try!(do_req(&mut result));
 
         match status_code {
-            StatusCode::Ok => Ok(BulkResult::from(&json_opt.expect("No Json payload"))),
+            StatusCode::Ok => Ok(bulk_result),
             _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
         }
     }
 }
 
 /// The result of specific actions
+#[derive(Deserialize)]
 pub struct ActionResult {
     pub action:   ActionType,
     pub index:    String,
@@ -375,6 +378,7 @@ impl<'a> From<&'a Json> for ActionResult {
 }
 
 /// The result of a bulk operation
+#[derive(Deserialize)]
 pub struct BulkResult {
     pub errors: bool,
     pub items:  Vec<ActionResult>,
