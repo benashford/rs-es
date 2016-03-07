@@ -234,6 +234,17 @@ impl<T: Default> Default for OneOrMany<T> {
     }
 }
 
+impl<T> Serialize for OneOrMany<T>
+    where T: Serialize {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        match self {
+            &OneOrMany::One(ref t) => t.serialize(serializer),
+            &OneOrMany::Many(ref t) => t.serialize(serializer)
+        }
+    }
+}
+
 impl<T> From<T> for OneOrMany<T> {
     fn from(from: T) -> OneOrMany<T> {
         OneOrMany::One(from)

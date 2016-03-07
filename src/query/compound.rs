@@ -20,6 +20,9 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
+use serde::{Serialize, Serializer};
+
+use ::json::ShouldSkip;
 use ::units::OneOrMany;
 
 use super::{MinimumShouldMatch, ScoreMode, Query};
@@ -83,14 +86,21 @@ impl ToJson for ConstantScoreQuery {
 }
 
 /// Bool query
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct BoolQuery {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     must: Option<OneOrMany<Query>>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     filter: Option<Query>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     should: Option<OneOrMany<Query>>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     must_not: Option<OneOrMany<Query>>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     minimum_should_match: Option<MinimumShouldMatch>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     disable_coord: Option<bool>
 }
 
@@ -109,7 +119,7 @@ impl BoolQuery {
     add_option!(with_boost, boost, f64);
     add_option!(with_disable_coord, disable_coord, bool);
 
-    //build!(Bool);
+    build!(Bool);
 }
 
 impl ToJson for BoolQuery {

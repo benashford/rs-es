@@ -44,6 +44,8 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
+use serde::{Serialize, Serializer};
+
 use util::StrJoin;
 
 #[macro_use]
@@ -90,6 +92,13 @@ impl ToString for CombinationMinimumShouldMatch {
 impl ToJson for CombinationMinimumShouldMatch {
     fn to_json(&self) -> Json {
         Json::String(self.to_string())
+    }
+}
+
+impl Serialize for CombinationMinimumShouldMatch {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        self.to_string().serialize(serializer)
     }
 }
 
@@ -144,6 +153,26 @@ impl ToJson for MinimumShouldMatch {
                 d.insert("low_freq".to_owned(), low.to_json());
                 d.insert("high_freq".to_owned(), high.to_json());
                 Json::Object(d)
+            }
+        }
+    }
+}
+
+impl Serialize for MinimumShouldMatch {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        match self {
+            &MinimumShouldMatch::Integer(val) => val.serialize(serializer),
+            &MinimumShouldMatch::Percentage(_) => self.to_string().serialize(serializer),
+            &MinimumShouldMatch::Combination(ref comb) => comb.serialize(serializer),
+            &MinimumShouldMatch::MultipleCombination(ref combs) => {
+                combs.iter().map(|c| c.to_string()).join(" ").serialize(serializer)
+            },
+            &MinimumShouldMatch::LowHigh(low, high) => {
+                let mut d = BTreeMap::new();
+                d.insert("low_freq", low);
+                d.insert("high_freq", high);
+                d.serialize(serializer)
             }
         }
     }
@@ -255,7 +284,7 @@ pub enum Query {
 
     // // Compound queries
     // ConstantScore(Box<compound::ConstantScoreQuery>),
-    // Bool(Box<compound::BoolQuery>),
+    Bool(Box<compound::BoolQuery>),
     // DisMax(Box<compound::DisMaxQuery>),
     // FunctionScore(Box<compound::FunctionScoreQuery>),
     // Boosting(Box<compound::BoostingQuery>),
@@ -360,9 +389,9 @@ impl ToJson for Query {
             // &Query::ConstantScore(ref q) => {
             //     d.insert("constant_score".to_owned(), q.to_json());
             // },
-            // &Query::Bool(ref q) => {
-            //     d.insert("bool".to_owned(), q.to_json());
-            // },
+            &Query::Bool(ref q) => {
+                d.insert("bool".to_owned(), q.to_json());
+            },
             // &Query::DisMax(ref q) => {
             //     d.insert("dis_max".to_owned(), q.to_json());
             // },
