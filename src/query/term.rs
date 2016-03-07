@@ -22,6 +22,7 @@ use rustc_serialize::json::{Json, ToJson};
 
 use serde::{Serialize, Serializer};
 
+use ::json::ShouldSkip;
 use ::units::{JsonPotential, JsonVal, OneOrMany};
 
 use super::{Flags, Fuzziness, Query};
@@ -96,10 +97,13 @@ impl ToJson for TermQuery {
 /// Terms Query Lookup
 #[derive(Debug, Default, Serialize)]
 pub struct TermsQueryLookup {
-    index: Option<String>,
-    doc_type: Option<String>,
     id: JsonVal,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    index: Option<String>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    doc_type: Option<String>,
     path: String,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     routing: Option<String>
 }
 

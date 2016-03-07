@@ -472,11 +472,15 @@ mod tests {
             .with_values(["a", "b", "c"].as_ref())
             .build();
         assert_eq!("{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
+                   serde_json::to_string(&terms_query_2).unwrap());
+        assert_eq!("{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
                    terms_query_2.to_json().to_string());
 
         let terms_query_3 = Query::build_terms("field_name")
             .with_values(TermsQueryLookup::new(123, "blah.de.blah").with_index("other"))
             .build();
+        assert_eq!("{\"terms\":{\"field_name\":{\"id\":123,\"index\":\"other\",\"path\":\"blah.de.blah\"}}}",
+                   serde_json::to_string(&terms_query_3).unwrap());
         assert_eq!("{\"terms\":{\"field_name\":{\"id\":123,\"index\":\"other\",\"path\":\"blah.de.blah\"}}}",
                    terms_query_3.to_json().to_string());
     }
