@@ -238,6 +238,7 @@ pub enum Query {
 
     // // Term level queries
     // Term(Box<term::TermQuery>),
+    #[serde(rename="terms")]
     Terms(Box<term::TermsQuery>),
     // Range(Box<term::RangeQuery>),
     // Exists(Box<term::ExistsQuery>),
@@ -462,8 +463,8 @@ mod tests {
         let terms_query = Query::build_terms("field_name")
             .with_values(vec!["a", "b", "c"])
             .build();
-//        assert_eq!("{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
-//                   serde_json::to_string(&terms_query).unwrap());
+        assert_eq!("{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
+                   serde_json::to_string(&terms_query).unwrap());
         assert_eq!("{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
                    terms_query.to_json().to_string());
 

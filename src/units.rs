@@ -25,6 +25,8 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
+use serde::{Serialize, Serializer};
+
 use ::operations::common::OptionVal;
 
 /// The units by which duration is measured.
@@ -366,7 +368,7 @@ json_potential!(bool);
 
 /// A Json value that's not a structural thing - i.e. just String, i64 and f64,
 /// no array or object
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub enum JsonVal {
     String(String),
     I64(i64),
@@ -378,6 +380,19 @@ pub enum JsonVal {
 impl Default for JsonVal {
     fn default() -> Self {
         JsonVal::String(Default::default())
+    }
+}
+
+impl Serialize for JsonVal {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        match self {
+            &JsonVal::String(ref s) => s.serialize(serializer),
+            &JsonVal::I64(i) => i.serialize(serializer),
+            &JsonVal::U64(u) => u.serialize(serializer),
+            &JsonVal::F64(f) => f.serialize(serializer),
+            &JsonVal::Boolean(b) => b.serialize(serializer)
+        }
     }
 }
 

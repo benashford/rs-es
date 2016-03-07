@@ -20,6 +20,8 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
+use serde::{Serialize, Serializer};
+
 use ::units::{JsonPotential, JsonVal, OneOrMany};
 
 use super::{Flags, Fuzziness, Query};
@@ -131,13 +133,24 @@ impl ToJson for TermsQueryLookup {
 }
 
 /// TermsQueryIn
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub enum TermsQueryIn {
     /// A `Vec` of values
     Values(Vec<JsonVal>),
 
     /// An indirect reference to another document
     Lookup(TermsQueryLookup)
+}
+
+// TODO - if this looks useful it can be extracted into a macro
+impl Serialize for TermsQueryIn {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        match self {
+            &TermsQueryIn::Values(ref q) => q.serialize(serializer),
+            &TermsQueryIn::Lookup(ref q) => q.serialize(serializer)
+        }
+    }
 }
 
 impl Default for TermsQueryIn {
