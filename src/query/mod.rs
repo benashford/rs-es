@@ -241,7 +241,8 @@ pub enum Query {
     Term(Box<term::TermQuery>),
     #[serde(rename="terms")]
     Terms(Box<term::TermsQuery>),
-    // Range(Box<term::RangeQuery>),
+    #[serde(rename="range")]
+    Range(Box<term::RangeQuery>),
     // Exists(Box<term::ExistsQuery>),
     // // Not implementing the Missing query, as it's deprecated, use `must_not` and `Exists`
     // // instead
@@ -332,9 +333,9 @@ impl ToJson for Query {
             &Query::Terms(ref q) => {
                 d.insert("terms".to_owned(), q.to_json());
             },
-            // &Query::Range(ref q) => {
-            //     d.insert("range".to_owned(), q.to_json());
-            // },
+            &Query::Range(ref q) => {
+                d.insert("range".to_owned(), q.to_json());
+            },
             // &Query::Exists(ref q) => {
             //     d.insert("exists".to_owned(), q.to_json());
             // },

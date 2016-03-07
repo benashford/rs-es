@@ -243,38 +243,45 @@ impl ToJson for TermsQuery {
 /// Range query
 /// TODO: Check all possible combinations: gt, gte, lte, lt, from, to, include_upper, include_lower
 /// and share with other range queries
-#[derive(Debug, Default)]
-pub struct RangeQuery {
-    field: String,
+#[derive(Debug, Default, Serialize)]
+pub struct RangeQueryInner {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     gte: Option<JsonVal>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     gt: Option<JsonVal>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     lte: Option<JsonVal>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     lt: Option<JsonVal>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     time_zone: Option<String>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     format: Option<String>
 }
+
+#[derive(Debug, Serialize)]
+pub struct RangeQuery(FieldBasedQuery<RangeQueryInner, NoOuter>);
 
 impl Query {
     pub fn build_range<A>(field: A) -> RangeQuery
         where A: Into<String> {
-        RangeQuery {
-            field: field.into(),
-            ..Default::default()
-        }
+
+        RangeQuery(FieldBasedQuery::new(field.into(), Default::default(), NoOuter))
     }
 }
 
 impl RangeQuery {
-    add_option!(with_gte, gte, JsonVal);
-    add_option!(with_gt, gt, JsonVal);
-    add_option!(with_lte, lte, JsonVal);
-    add_option!(with_lt, lt, JsonVal);
-    add_option!(with_boost, boost, f64);
-    add_option!(with_time_zone, time_zone, String);
-    add_option!(with_format, format, String);
+    add_inner_option!(with_gte, gte, JsonVal);
+    add_inner_option!(with_gt, gt, JsonVal);
+    add_inner_option!(with_lte, lte, JsonVal);
+    add_inner_option!(with_lt, lt, JsonVal);
+    add_inner_option!(with_boost, boost, f64);
+    add_inner_option!(with_time_zone, time_zone, String);
+    add_inner_option!(with_format, format, String);
 
-//    build!(Range);
+    build!(Range);
 }
 
 impl ToJson for RangeQuery {
@@ -282,15 +289,15 @@ impl ToJson for RangeQuery {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
 
-        optional_add!(self, inner, gte);
-        optional_add!(self, inner, gt);
-        optional_add!(self, inner, lte);
-        optional_add!(self, inner, lt);
-        optional_add!(self, inner, boost);
-        optional_add!(self, inner, time_zone);
-        optional_add!(self, inner, format);
+        optional_add!(self.0.inner, inner, gte);
+        optional_add!(self.0.inner, inner, gt);
+        optional_add!(self.0.inner, inner, lte);
+        optional_add!(self.0.inner, inner, lt);
+        optional_add!(self.0.inner, inner, boost);
+        optional_add!(self.0.inner, inner, time_zone);
+        optional_add!(self.0.inner, inner, format);
 
-        d.insert(self.field.clone(), Json::Object(inner));
+        d.insert(self.0.field.clone(), Json::Object(inner));
         Json::Object(d)
     }
 }
