@@ -55,29 +55,37 @@ impl ToJson for Rewrite {
 }
 
 /// Term query
-#[derive(Debug, Default)]
-pub struct TermQuery {
-    field: String,
+#[derive(Debug, Default, Serialize)]
+pub struct TermQueryInner {
     value: JsonVal,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>
 }
 
-impl Query {
-    pub fn build_term<A, B>(field: A, value: B) -> TermQuery
-        where A: Into<String>,
-              B: Into<JsonVal> {
-        TermQuery {
-            field: field.into(),
-            value: value.into(),
+impl TermQueryInner {
+    fn new(value: JsonVal) -> Self {
+        TermQueryInner {
+            value: value,
             ..Default::default()
         }
     }
 }
 
-impl TermQuery {
-    add_option!(with_boost, boost, f64);
+#[derive(Debug, Serialize)]
+pub struct TermQuery(FieldBasedQuery<TermQueryInner, NoOuter>);
 
-    //build!(Term);
+impl Query {
+    pub fn build_term<A, B>(field: A, value: B) -> TermQuery
+        where A: Into<String>,
+              B: Into<JsonVal> {
+        TermQuery(FieldBasedQuery::new(field.into(), TermQueryInner::new(value.into()), NoOuter))
+    }
+}
+
+impl TermQuery {
+    add_inner_option!(with_boost, boost, f64);
+
+    build!(Term);
 }
 
 impl ToJson for TermQuery {
@@ -85,10 +93,10 @@ impl ToJson for TermQuery {
         let mut d = BTreeMap::new();
         let mut inner = BTreeMap::new();
 
-        inner.insert("value".to_owned(), self.value.to_json());
-        optional_add!(self, inner, boost);
+        inner.insert("value".to_owned(), self.0.inner.value.to_json());
+        optional_add!(self.0.inner, inner, boost);
 
-        d.insert(self.field.clone(), Json::Object(inner));
+        d.insert(self.0.field.clone(), Json::Object(inner));
         Json::Object(d)
     }
 }

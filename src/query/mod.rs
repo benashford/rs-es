@@ -237,7 +237,8 @@ pub enum Query {
     // SimpleQueryString(Box<full_text::SimpleQueryStringQuery>),
 
     // // Term level queries
-    // Term(Box<term::TermQuery>),
+    #[serde(rename="term")]
+    Term(Box<term::TermQuery>),
     #[serde(rename="terms")]
     Terms(Box<term::TermsQuery>),
     // Range(Box<term::RangeQuery>),
@@ -325,9 +326,9 @@ impl ToJson for Query {
             // &Query::SimpleQueryString(ref q) => {
             //     d.insert("simple_query_string".to_owned(), q.to_json());
             // },
-            // &Query::Term(ref q) => {
-            //     d.insert("term".to_owned(), q.to_json());
-            // },
+            &Query::Term(ref q) => {
+                d.insert("term".to_owned(), q.to_json());
+            },
             &Query::Terms(ref q) => {
                 d.insert("terms".to_owned(), q.to_json());
             },

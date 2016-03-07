@@ -32,6 +32,15 @@ macro_rules! add_option {
     )
 }
 
+macro_rules! add_inner_option {
+    ($n:ident, $e:ident, $t:ty) => (
+        pub fn $n<T: Into<$t>>(mut self, val: T) -> Self {
+            self.0.inner.$e = Some(val.into());
+            self
+        }
+    )
+}
+
 /// Build the `build` function for each builder struct
 macro_rules! build {
     ($t:ident) => (

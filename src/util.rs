@@ -22,16 +22,16 @@ use std::iter::Iterator;
 //
 // This is a recurring pattern when creating JSON.
 macro_rules! optional_add {
-    ($slf:ident, $map:ident, $sn:ident, $field:expr, $val: ident, $ex:expr) => {
+    ($slf:expr, $map:ident, $sn:ident, $field:expr, $val: ident, $ex:expr) => {
         match $slf.$sn {
             Some(ref $val) => { $map.insert($field.to_owned(), $ex); }
             _              => ()
         }
     };
-    ($slf:ident, $map:ident, $sn:ident, $field:expr) => {
+    ($slf:expr, $map:ident, $sn:ident, $field:expr) => {
         optional_add!($slf, $map, $sn, $field, value, value.to_json());
     };
-    ($slf:ident, $map:ident, $sn:ident) => {
+    ($slf:expr, $map:ident, $sn:ident) => {
         optional_add!($slf, $map, $sn, stringify!($sn));
     };
 }
