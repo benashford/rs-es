@@ -156,6 +156,25 @@ impl<'a> From<&'a Json> for Location {
 from_exp!((f64, f64), Location, from, Location::LatLon(from.0, from.1));
 from!(String, Location, GeoHash);
 
+impl Serialize for Location {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
+            &Location::LatLon(lat, lon) => {
+                let mut d = BTreeMap::new();
+                d.insert("lat", lat);
+                d.insert("lon", lon);
+                d.serialize(serializer)
+            },
+            &Location::GeoHash(ref geo_hash) => {
+                geo_hash.serialize(serializer)
+            }
+        }
+    }
+}
+
+// TODO - deprecatedd
 impl ToJson for Location {
     fn to_json(&self) -> Json {
         match self {
@@ -277,6 +296,18 @@ pub enum DistanceType {
     Plane
 }
 
+impl Serialize for DistanceType {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
+            &DistanceType::SloppyArc => "sloppy_arc",
+            &DistanceType::Arc       => "arc",
+            &DistanceType::Plane     => "plane"
+        }.serialize(serializer)
+    }
+}
+
 impl ToJson for DistanceType {
     fn to_json(&self) -> Json {
         Json::String(match self {
@@ -320,6 +351,14 @@ impl ToString for DistanceUnit {
             DistanceUnit::Millimeter => "mm",
             DistanceUnit::NauticalMile => "NM"
         }.to_owned()
+    }
+}
+
+impl Serialize for DistanceUnit {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        self.to_string().serialize(serializer)
     }
 }
 

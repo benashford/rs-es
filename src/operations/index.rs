@@ -19,6 +19,8 @@
 use rustc_serialize::Encodable;
 use rustc_serialize::json::Json;
 
+use serde::ser::Serialize;
+
 use ::{Client, EsResponse};
 use ::error::EsError;
 use super::common::{Options, OptionVal};
@@ -37,7 +39,7 @@ impl From<OpType> for OptionVal {
 }
 
 /// An indexing operation
-pub struct IndexOperation<'a, 'b, E: Encodable + 'b> {
+pub struct IndexOperation<'a, 'b, E: Serialize + 'b> {
     /// The HTTP client that this operation will use
     client:   &'a mut Client,
 
@@ -57,7 +59,7 @@ pub struct IndexOperation<'a, 'b, E: Encodable + 'b> {
     document: Option<&'b E>
 }
 
-impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
+impl<'a, 'b, E: Serialize + 'b> IndexOperation<'a, 'b, E> {
     pub fn new(client: &'a mut Client, index: &'b str, doc_type: &'b str) -> IndexOperation<'a, 'b, E> {
         IndexOperation {
             client:   client,

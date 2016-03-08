@@ -25,6 +25,8 @@ use hyper::status::StatusCode;
 use rustc_serialize::Decodable;
 use rustc_serialize::json::{Json, ToJson};
 
+use serde::ser::{Serialize, Serializer};
+
 use ::{Client, EsResponse};
 use ::error::EsError;
 use ::query::Query;
@@ -80,6 +82,15 @@ impl ToString for Order {
     }
 }
 
+impl Serialize for Order {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        self.to_string().serialize(serializer)
+    }
+}
+
+// TODO - deprecated
 impl ToJson for Order {
     fn to_json(&self) -> Json {
         Json::String(self.to_string())
@@ -94,6 +105,20 @@ pub enum Mode {
     Avg
 }
 
+impl Serialize for Mode {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
+            &Mode::Min => "min",
+            &Mode::Max => "max",
+            &Mode::Sum => "sum",
+            &Mode::Avg => "avg"
+        }.serialize(serializer)
+    }
+}
+
+// TODO - deprecated
 impl ToJson for Mode {
     fn to_json(&self) -> Json {
         Json::String(match self {
@@ -112,6 +137,19 @@ pub enum Missing {
     Custom(String)
 }
 
+impl Serialize for Missing {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
+            &Missing::First => "first".serialize(serializer),
+            &Missing::Last  => "last".serialize(serializer),
+            &Missing::Custom(ref s) => s.serialize(serializer)
+        }
+    }
+}
+
+// TODO - deprecated
 impl ToJson for Missing {
     fn to_json(&self) -> Json {
         Json::String(match self {
@@ -132,6 +170,8 @@ impl<S: Into<String>> From<S> for Missing {
 
 /// Representing sort options for a specific field, can be combined with others
 /// to produce the full sort clause
+// TODO - this has an outer and an inner structure, similar to query fields, should refactor
+#[derive(Serialize)]
 pub struct SortField {
     field:         String,
     order:         Option<Order>,
@@ -202,6 +242,8 @@ impl ToJson for SortField {
 }
 
 /// Representing sort options for sort by geodistance
+// TODO - fix structure to represent reality
+#[derive(Serialize)]
 pub struct GeoDistance {
     field:         String,
     location:      OneOrMany<Location>,
@@ -263,6 +305,8 @@ impl ToJson for GeoDistance {
 }
 
 /// Representing options for sort by script
+// TODO - fix structure
+#[derive(Serialize)]
 pub struct Script {
     script:      String,
     script_type: String,
@@ -318,6 +362,18 @@ pub enum SortBy {
     Script(Script)
 }
 
+impl Serialize for SortBy {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
+            &SortBy::Field(ref f) => f.serialize(serializer),
+            &SortBy::Distance(ref d) => d.serialize(serializer),
+            &SortBy::Script(ref s) => s.serialize(serializer),
+        }
+    }
+}
+
 impl ToString for SortBy {
     fn to_string(&self) -> String {
         match self {
@@ -338,6 +394,7 @@ impl ToJson for SortBy {
 }
 
 /// A full sort clause
+#[derive(Serialize)]
 pub struct Sort {
     fields: Vec<SortBy>
 }
@@ -475,6 +532,28 @@ pub enum Source<'a> {
     Filter(Option<&'a [&'a str]>, Option<&'a [&'a str]>)
 }
 
+impl<'a> Serialize for Source<'a> {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
+            &Source::Off => false.serialize(serializer),
+            &Source::Filter(incl, excl) => {
+                let mut d = BTreeMap::new();
+                match incl {
+                    Some(val) => { d.insert("include".to_owned(), val); },
+                    None      => (),
+                }
+                match excl {
+                    Some(val) => { d.insert("exclude".to_owned(), val); },
+                    None      => (),
+                }
+                d.serialize(serializer)
+            }
+        }
+    }
+}
+
 impl<'a> Source<'a> {
     /// An include-only source filter
     pub fn include(fields: &'a [&'a str]) -> Source<'a> {
@@ -494,12 +573,14 @@ impl<'a> Source<'a> {
 
 /// Convenience function to Json-ify a reference to a slice of references of
 /// items that can be converted to Json
+// TODO - deprecated
 fn slice_to_json<J: ToJson + ?Sized>(slice: &[&J]) -> Json {
     Json::Array(slice.iter().map(|e| {
         e.to_json()
     }).collect())
 }
 
+// TODO - deprecated
 impl<'a> ToJson for Source<'a> {
     fn to_json(&self) -> Json {
         match self {
@@ -520,6 +601,7 @@ impl<'a> ToJson for Source<'a> {
     }
 }
 
+#[derive(Serialize)]
 struct SearchQueryOperationBody<'b> {
     /// The query
     query: Option<&'b Query>,
@@ -549,12 +631,15 @@ struct SearchQueryOperationBody<'b> {
     track_scores: Option<bool>,
 
     /// Source filtering
-    source: Option<Source<'b>>,
+    #[serde(rename="_source")]
+    source: Option<Source<'b>>
 
-    /// Aggregations
-    aggs: Option<&'b aggregations::Aggregations<'b>>
+    // Aggregations
+    // TODO - re-enable
+    //aggs: Option<&'b aggregations::Aggregations<'b>>
 }
 
+// TODO - deprecated
 impl<'a> ToJson for SearchQueryOperationBody<'a> {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
@@ -568,7 +653,7 @@ impl<'a> ToJson for SearchQueryOperationBody<'a> {
         optional_add!(self, d, sort);
         optional_add!(self, d, track_scores);
         optional_add!(self, d, source, "_source");
-        optional_add!(self, d, aggs);
+        //optional_add!(self, d, aggs);
         Json::Object(d)
     }
 }
@@ -598,6 +683,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
             doc_types: &[],
             options:   Options::new(),
             body:      SearchQueryOperationBody {
+                // TODO - use Default trait
                 query:           None,
                 timeout:         None,
                 from:            0,
@@ -607,8 +693,9 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
                 min_score:       None,
                 sort:            None,
                 track_scores:    None,
-                source:          None,
-                aggs:            None
+                source:          None
+                // TODO - re-enable
+                //aggs:            None
             }
         }
     }
@@ -681,11 +768,12 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         self
     }
 
-    /// Specify any aggregations
-    pub fn with_aggs(&'b mut self, aggs: &'b aggregations::Aggregations) -> &'b mut Self {
-        self.body.aggs = Some(aggs);
-        self
-    }
+    // TODO - re-enable
+    // /// Specify any aggregations
+    // pub fn with_aggs(&'b mut self, aggs: &'b aggregations::Aggregations) -> &'b mut Self {
+    //     self.body.aggs = Some(aggs);
+    //     self
+    // }
 
     add_option!(with_routing, "routing");
     add_option!(with_search_type, "search_type");
@@ -722,7 +810,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
-        let response = try!(self.client.post_body_op(&url, &self.body.to_json()));
+        let response = try!(self.client.post_body_op(&url, &self.body));
         match response.status_code() {
             &StatusCode::Ok => {
                 // TODO - re-enable this
