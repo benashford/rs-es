@@ -17,8 +17,10 @@
 #[macro_use]
 pub mod util;
 
-pub mod error;
+#[macro_use]
 pub mod json;
+
+pub mod error;
 pub mod operations;
 pub mod query;
 pub mod units;
@@ -139,7 +141,7 @@ macro_rules! es_body_op {
 
             info!("Doing {} on {}", stringify!($n), url);
             let json_string = try!(serde_json::to_string(body));
-            info!("Body: {}", json_string);
+            println!("Body: {}", json_string);
             let url = self.full_url(url);
             let mut result = try!(self.http_client
                                   .$cn(&url)

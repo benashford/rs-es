@@ -22,11 +22,11 @@ use rustc_serialize::json::{Json, ToJson};
 
 use serde::{Serialize, Serializer};
 
-use ::json::ShouldSkip;
+use ::json::{NoOuter, ShouldSkip};
 use ::units::{JsonPotential, JsonVal, OneOrMany};
 
 use super::{Flags, Fuzziness, Query};
-use super::common::{FieldBasedQuery, NoOuter};
+use super::common::FieldBasedQuery;
 
 /// Values of the rewrite option used by multi-term queries
 #[derive(Debug)]
@@ -88,18 +88,19 @@ impl TermQuery {
     build!(Term);
 }
 
-impl ToJson for TermQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
+// TODO - remove
+// impl ToJson for TermQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
 
-        inner.insert("value".to_owned(), self.0.inner.value.to_json());
-        optional_add!(self.0.inner, inner, boost);
+//         inner.insert("value".to_owned(), self.0.inner.value.to_json());
+//         optional_add!(self.0.inner, inner, boost);
 
-        d.insert(self.0.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+//         d.insert(self.0.field.clone(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 // Terms query
 /// Terms Query Lookup
@@ -284,24 +285,24 @@ impl RangeQuery {
     build!(Range);
 }
 
-impl ToJson for RangeQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
+// TODO - deprecated
+// impl ToJson for RangeQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
 
-        optional_add!(self.0.inner, inner, gte);
-        optional_add!(self.0.inner, inner, gt);
-        optional_add!(self.0.inner, inner, lte);
-        optional_add!(self.0.inner, inner, lt);
-        optional_add!(self.0.inner, inner, boost);
-        optional_add!(self.0.inner, inner, time_zone);
-        optional_add!(self.0.inner, inner, format);
+//         optional_add!(self.0.inner, inner, gte);
+//         optional_add!(self.0.inner, inner, gt);
+//         optional_add!(self.0.inner, inner, lte);
+//         optional_add!(self.0.inner, inner, lt);
+//         optional_add!(self.0.inner, inner, boost);
+//         optional_add!(self.0.inner, inner, time_zone);
+//         optional_add!(self.0.inner, inner, format);
 
-        d.insert(self.0.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
-
+//         d.insert(self.0.field.clone(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 /// Exists query
 #[derive(Debug)]

@@ -97,10 +97,11 @@ macro_rules! add_field {
             self.$f = Some(val.into());
             self
         }
-    )
+    );
 }
 
 /// The [`version_type` field](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#index-versioning)
+// TODO - proper serialization
 #[allow(dead_code)]
 pub enum VersionType {
     Internal,

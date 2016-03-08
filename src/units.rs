@@ -33,7 +33,7 @@ use ::operations::common::OptionVal;
 ///
 /// TODO - this list is incomplete, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#time-units
 /// TODO - ensure deserialization works correctly
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum DurationUnit {
     Month,
     Week,
@@ -69,7 +69,7 @@ impl ToString for DurationUnit {
 /// ```
 ///
 /// TODO - implement Deserialize correctly
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Duration {
     amt: i64,
     unit: DurationUnit
@@ -174,7 +174,7 @@ impl Serialize for Location {
     }
 }
 
-// TODO - deprecatedd
+// TODO - deprecated
 impl ToJson for Location {
     fn to_json(&self) -> Json {
         match self {

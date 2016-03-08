@@ -336,105 +336,11 @@ impl Default for Query {
 }
 
 /// Convert a Query to Json
+// TODO - remove
 impl ToJson for Query {
     fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        match self {
-            &Query::MatchAll(ref q) => {
-                d.insert("match_all".to_owned(), q.to_json());
-            },
-            // &Query::Match(ref q) => {
-            //     d.insert("match".to_owned(), q.to_json());
-            // },
-            // &Query::MultiMatch(ref q) => {
-            //     d.insert("multi_match".to_owned(), q.to_json());
-            // },
-            // &Query::Common(ref q) => {
-            //     d.insert("common".to_owned(), q.to_json());
-            // },
-            // &Query::QueryString(ref q) => {
-            //     d.insert("query_string".to_owned(), q.to_json());
-            // },
-            // &Query::SimpleQueryString(ref q) => {
-            //     d.insert("simple_query_string".to_owned(), q.to_json());
-            // },
-            &Query::Term(ref q) => {
-                d.insert("term".to_owned(), q.to_json());
-            },
-            &Query::Terms(ref q) => {
-                d.insert("terms".to_owned(), q.to_json());
-            },
-            &Query::Range(ref q) => {
-                d.insert("range".to_owned(), q.to_json());
-            },
-            // &Query::Exists(ref q) => {
-            //     d.insert("exists".to_owned(), q.to_json());
-            // },
-            // &Query::Prefix(ref q) => {
-            //     d.insert("prefix".to_owned(), q.to_json());
-            // },
-            // &Query::Wildcard(ref q) => {
-            //     d.insert("wildcard".to_owned(), q.to_json());
-            // },
-            // &Query::Regexp(ref q) => {
-            //     d.insert("regexp".to_owned(), q.to_json());
-            // },
-            // &Query::Fuzzy(ref q) => {
-            //     d.insert("fuzzy".to_owned(), q.to_json());
-            // },
-            // &Query::Type(ref q) => {
-            //     d.insert("type".to_owned(), q.to_json());
-            // },
-            // &Query::Ids(ref q) => {
-            //     d.insert("ids".to_owned(), q.to_json());
-            // },
-            // &Query::ConstantScore(ref q) => {
-            //     d.insert("constant_score".to_owned(), q.to_json());
-            // },
-            &Query::Bool(ref q) => {
-                d.insert("bool".to_owned(), q.to_json());
-            },
-            // &Query::DisMax(ref q) => {
-            //     d.insert("dis_max".to_owned(), q.to_json());
-            // },
-            // &Query::FunctionScore(ref q) => {
-            //     d.insert("function_score".to_owned(), q.to_json());
-            // },
-            // &Query::Boosting(ref q) => {
-            //     d.insert("boosting".to_owned(), q.to_json());
-            // },
-            // &Query::Indices(ref q) => {
-            //     d.insert("indices".to_owned(), q.to_json());
-            // },
-            // &Query::Nested(ref q) => {
-            //     d.insert("nested".to_owned(), q.to_json());
-            // },
-            // &Query::HasChild(ref q) => {
-            //     d.insert("has_child".to_owned(), q.to_json());
-            // },
-            // &Query::HasParent(ref q) => {
-            //     d.insert("has_parent".to_owned(), q.to_json());
-            // },
-            // &Query::GeoShape(ref q) => {
-            //     d.insert("geo_shape".to_owned(), q.to_json());
-            // },
-            // &Query::GeoBoundingBox(ref q) => {
-            //     d.insert("geo_bounding_box".to_owned(), q.to_json());
-            // },
-            // &Query::GeoDistance(ref q) => {
-            //     d.insert("geo_distance".to_owned(), q.to_json());
-            // },
-            // &Query::GeoPolygon(ref q) => {
-            //     d.insert("geo_polygon".to_owned(), q.to_json());
-            // },
-            // &Query::GeohashCell(ref q) => {
-            //     d.insert("geohash_cell".to_owned(), q.to_json());
-            // },
-            // &Query::MoreLikeThis(ref q) => {
-            //     d.insert("more_like_this".to_owned(), q.to_json());
-            // },
-        }
-        Json::Object(d)
+        // TODO - remove this entirely
+        unimplemented!()
     }
 }
 

@@ -21,6 +21,8 @@ use std::iter::Iterator;
 // Macro to add an Optional from a struct to a BTreeMap if it's set.
 //
 // This is a recurring pattern when creating JSON.
+//
+// TODO - deprecated
 macro_rules! optional_add {
     ($slf:expr, $map:ident, $sn:ident, $field:expr, $val: ident, $ex:expr) => {
         match $slf.$sn {

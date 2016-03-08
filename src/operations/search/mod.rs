@@ -29,6 +29,7 @@ use serde::ser::{Serialize, Serializer};
 
 use ::{Client, EsResponse};
 use ::error::EsError;
+use ::json::ShouldSkip;
 use ::query::Query;
 use ::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
 use ::util::StrJoin;
@@ -601,37 +602,46 @@ impl<'a> ToJson for Source<'a> {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Default, Serialize)]
 struct SearchQueryOperationBody<'b> {
     /// The query
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     query: Option<&'b Query>,
 
     /// Timeout
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     timeout: Option<&'b str>,
 
     /// From
-    from: u64,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    from: Option<u64>,
 
     /// Size
-    size: u64,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    size: Option<u64>,
 
     /// Terminate early (marked as experimental in the ES docs)
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     terminate_after: Option<u64>,
 
     /// Stats groups to which the query belongs
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     stats: Option<Vec<String>>,
 
     /// Minimum score to use
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     min_score: Option<f64>,
 
     /// Sort fields
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     sort: Option<&'b Sort>,
 
     /// Track scores
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     track_scores: Option<bool>,
 
     /// Source filtering
-    #[serde(rename="_source")]
+    #[serde(rename="_source", skip_serializing_if="ShouldSkip::should_skip")]
     source: Option<Source<'b>>
 
     // Aggregations
@@ -682,21 +692,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
             indexes:   &[],
             doc_types: &[],
             options:   Options::new(),
-            body:      SearchQueryOperationBody {
-                // TODO - use Default trait
-                query:           None,
-                timeout:         None,
-                from:            0,
-                size:            10,
-                terminate_after: None,
-                stats:           None,
-                min_score:       None,
-                sort:            None,
-                track_scores:    None,
-                source:          None
-                // TODO - re-enable
-                //aggs:            None
-            }
+            body:      Default::default()
         }
     }
 
@@ -721,12 +717,12 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
     }
 
     pub fn with_from(&'b mut self, from: u64) -> &'b mut Self {
-        self.body.from = from;
+        self.body.from = Some(from);
         self
     }
 
     pub fn with_size(&'b mut self, size: u64) -> &'b mut Self {
-        self.body.size = size;
+        self.body.size = Some(size);
         self
     }
 

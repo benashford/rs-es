@@ -23,12 +23,14 @@ use hyper::status::StatusCode;
 use rustc_serialize::json;
 use rustc_serialize::json::{Json, ToJson};
 
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{Error, MapVisitor, Visitor};
+use serde_json;
 
 use ::{Client, EsResponse};
 use ::do_req;
 use ::error::EsError;
+use ::json::{FieldBased, NoOuter};
 use ::units::Duration;
 
 use super::common::{Options, OptionVal, VersionType};
@@ -84,6 +86,14 @@ pub enum ActionType {
     Update
 }
 
+impl Serialize for ActionType {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        self.to_string().serialize(serializer)
+    }
+}
+
 // TODO - deprecated
 impl<'a> From<&'a String> for ActionType {
     fn from(from: &'a String) -> ActionType {
@@ -112,23 +122,31 @@ impl ToString for ActionType {
     }
 }
 
-/// A bulk operation consists of one or more `Action`s.
-pub struct Action {
-    action:            ActionType,
+#[derive(Default, Serialize)]
+pub struct ActionOptions {
     index:             Option<String>,
     doc_type:          Option<String>,
     id:                Option<String>,
     version:           Option<u64>,
-    version_type:      Option<VersionType>,
+    // TODO - re-enable
+    //version_type:      Option<VersionType>,
     routing:           Option<String>,
     parent:            Option<String>,
     timestamp:         Option<String>,
     ttl:               Option<Duration>,
     retry_on_conflict: Option<u64>,
-    source:            Option<Json>
+    // TODO - re-enable
+    //source:            Option<Json>
 }
 
+#[derive(Serialize)]
+pub struct Action(FieldBased<ActionType, ActionOptions, NoOuter>);
+
 impl Action {
+    fn new(action: ActionType, options: ActionOptions) -> Action {
+        Action(FieldBased::new(action, options, NoOuter))
+    }
+
     /// An index action.
     ///
     /// Takes the document to be indexed, other parameters can be set as
@@ -142,124 +160,100 @@ impl Action {
     /// let delete_action = Action::delete("doc_id");
     /// ```
     pub fn index<E: ToJson>(document: E) -> Action {
-        Action {
-            action:            ActionType::Index,
-            index:             None,
-            doc_type:          None,
-            id:                None,
-            version:           None,
-            version_type:      None,
-            routing:           None,
-            parent:            None,
-            timestamp:         None,
-            ttl:               None,
-            retry_on_conflict: None,
-            source:            Some(document.to_json())
-        }
+        // Action::new(ActionType::Index, ActionOptions {
+        //     source: Some(document.to_json()),
+        //     ..Default::default()
+        // })
+        unimplemented!()
     }
 
     /// Create action
     pub fn create<E: ToJson>(document: E) -> Action {
-        Action {
-            action:            ActionType::Create,
-            index:             None,
-            doc_type:          None,
-            id:                None,
-            version:           None,
-            version_type:      None,
-            routing:           None,
-            parent:            None,
-            timestamp:         None,
-            ttl:               None,
-            retry_on_conflict: None,
-            source:            Some(document.to_json())
-        }
+        unimplemented!()
+        // Action {
+        //     action:  ActionType::Create,
+        //     options: ActionOptions {
+        //         source: Some(document.to_json()),
+        //         ..Default::default()
+        //     }
+        // }
     }
 
     pub fn delete<S: Into<String>>(id: S) -> Action {
-        Action {
-            action:            ActionType::Delete,
-            index:             None,
-            doc_type:          None,
-            id:                Some(id.into()),
-            version:           None,
-            version_type:      None,
-            routing:           None,
-            parent:            None,
-            timestamp:         None,
-            ttl:               None,
-            retry_on_conflict: None,
-            source:            None
-        }
+        unimplemented!()
+        // Action {
+        //     action: ActionType::Delete,
+        //     options: ActionOptions {
+        //         id: Some(id.into()),
+        //         ..Default::default()
+        //     }
+        // }
     }
 
     pub fn update<S: Into<String>>(id: S, update: &ActionSource) -> Action {
-        Action {
-            action:            ActionType::Update,
-            index:             None,
-            doc_type:          None,
-            id:                Some(id.into()),
-            version:           None,
-            version_type:      None,
-            routing:           None,
-            parent:            None,
-            timestamp:         None,
-            ttl:               None,
-            retry_on_conflict: None,
-            source:            Some(update.to_json())
-        }
+        unimplemented!()
+        // Action {
+        //     action: ActionType::Update,
+        //     options: ActionOptions {
+        //         id: Some(id.into()),
+        //         source: Some(update.to_json()),
+        //         ..Default::default()
+        //     }
+        // }
     }
 
-    add_field!(with_index, index, String);
-    add_field!(with_doc_type, doc_type, String);
-    add_field!(with_id, id, String);
-    add_field!(with_version, version, u64);
-    add_field!(with_version_type, version_type, VersionType);
-    add_field!(with_routing, routing, String);
-    add_field!(with_parent, parent, String);
-    add_field!(with_timestamp, timestamp, String);
-    add_field!(with_ttl, ttl, Duration);
-    add_field!(with_retry_on_conflict, retry_on_conflict, u64);
+    add_inner_field!(with_index, index, String);
+    add_inner_field!(with_doc_type, doc_type, String);
+    add_inner_field!(with_id, id, String);
+    add_inner_field!(with_version, version, u64);
+    // TODO - re-enable
+    //add_inner_field!(with_version_type, version_type, VersionType);
+    add_inner_field!(with_routing, routing, String);
+    add_inner_field!(with_parent, parent, String);
+    add_inner_field!(with_timestamp, timestamp, String);
+    add_inner_field!(with_ttl, ttl, Duration);
+    add_inner_field!(with_retry_on_conflict, retry_on_conflict, u64);
 
     /// Add the serialized version of this action to the bulk `String`.
     fn add(&self, actstr: &mut String) -> Result<(), EsError> {
-        let command_str = try!(json::encode(&self.to_json()));
+        // let command_str = try!(serde_json::to_string(self));
 
-        actstr.push_str(&command_str);
-        actstr.push_str("\n");
+        // actstr.push_str(&command_str);
+        // actstr.push_str("\n");
 
-        match self.source {
-            Some(ref source) => {
-                let payload_str = try!(json::encode(source));
-                actstr.push_str(&payload_str);
-                actstr.push_str("\n");
-            },
-            None             => ()
-        }
-        Ok(())
+        // match self.0.inner.source {
+        //     Some(ref source) => {
+        //         let payload_str = try!(serde_json::to_string(source));
+        //         actstr.push_str(&payload_str);
+        //         actstr.push_str("\n");
+        //     },
+        //     None             => ()
+        // }
+        // Ok(())
+        unimplemented!()
     }
 }
 
-impl ToJson for Action {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
+// impl ToJson for Action {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
 
-        optional_add!(self, inner, index, "_index");
-        optional_add!(self, inner, doc_type, "_type");
-        optional_add!(self, inner, id, "_id");
-        optional_add!(self, inner, version, "_version");
-        optional_add!(self, inner, version_type, "_version_type");
-        optional_add!(self, inner, routing, "_routing");
-        optional_add!(self, inner, parent, "_parent");
-        optional_add!(self, inner, timestamp, "_timestamp");
-        optional_add!(self, inner, ttl, "_ttl");
-        optional_add!(self, inner, retry_on_conflict, "_retry_on_conflict");
+//         optional_add!(self, inner, index, "_index");
+//         optional_add!(self, inner, doc_type, "_type");
+//         optional_add!(self, inner, id, "_id");
+//         optional_add!(self, inner, version, "_version");
+//         optional_add!(self, inner, version_type, "_version_type");
+//         optional_add!(self, inner, routing, "_routing");
+//         optional_add!(self, inner, parent, "_parent");
+//         optional_add!(self, inner, timestamp, "_timestamp");
+//         optional_add!(self, inner, ttl, "_ttl");
+//         optional_add!(self, inner, retry_on_conflict, "_retry_on_conflict");
 
-        d.insert(self.action.to_string(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+//         d.insert(self.action.to_string(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 pub struct BulkOperation<'a, 'b> {
     client:   &'a mut Client,
@@ -337,7 +331,7 @@ impl<'a, 'b> BulkOperation<'a, 'b> {
         };
         let body = self.format_actions();
 
-        // TODO - why does this not use the macros in `lib.rs`?
+        // Doesn't use the standard macros as it's not standard JSON
         let mut result = try!(self.client.http_client
                               .post(&full_url)
                               .body(&body)
@@ -375,7 +369,7 @@ impl Deserialize for ActionResult {
                     Some((key, value)) => (key, value),
                     None               => return Err(V::Error::custom("expecting at least one field"))
                 };
-   
+
                 let result = ActionResult {
                     action: match key.as_ref() {
                         "index" => ActionType::Index,
