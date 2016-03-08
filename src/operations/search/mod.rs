@@ -25,7 +25,7 @@ use hyper::status::StatusCode;
 use rustc_serialize::Decodable;
 use rustc_serialize::json::{Json, ToJson};
 
-use ::Client;
+use ::{Client, EsResponse};
 use ::error::EsError;
 use ::query::Query;
 use ::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
@@ -722,50 +722,58 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
-        // let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
-        // match status_code {
-        //     StatusCode::Ok => {
-        //         // let result_json = result.expect("No Json payload");
-        //         // let mut scan_result = ScanResult::from(scroll, &result_json);
-        //         // match self.body.aggs {
-        //         //     Some(ref aggs) => {
-        //         //         scan_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
-        //         //     },
-        //         //     _              => ()
-        //         // }
-        //         // Ok(scan_result)
-        //         unimplemented!()
-        //     },
-        //     StatusCode::NotFound => {
-        //         Err(EsError::EsServerError(format!("Not found: {:?}", result)))
-        //     },
-        //     _ => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
-        // }
-        unimplemented!()
+        let response = try!(self.client.post_body_op(&url, &self.body.to_json()));
+        match response.status_code() {
+            &StatusCode::Ok => {
+                // TODO - re-enable this
+                //
+                // match self.body.aggs {
+                //     Some(ref aggs) => {
+                //         scan_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
+                //     },
+                //     _              => ()
+                // }
+                Ok(try!(response.read_response()))
+            },
+            &StatusCode::NotFound => {
+                Err(EsError::EsServerError(format!("Not found: {:?}", response)))
+            },
+            _ => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
+        }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct SearchHitsHitsResult {
+    #[serde(rename="_index")]
     pub index:    String,
+    #[serde(rename="_type")]
     pub doc_type: String,
+    #[serde(rename="_id")]
     pub id:       String,
+    #[serde(rename="_score")]
     pub score:    Option<f64>,
-    pub source:   Option<Json>,
-    pub fields:   Option<Json>
+    // TODO - re-enable
+    // #[serde(rename="_source")]
+    // pub source:   Option<Json>,
+    // #[serde(rename="_fields")]
+    // pub fields:   Option<Json>
 }
 
 impl SearchHitsHitsResult {
     /// Get the source document as a struct, the raw JSON version is available
     /// directly from the source field
     pub fn source<T: Decodable>(self) -> Result<T, EsError> {
-        match self.source {
-            Some(source) => decode_json(source),
-            None         => Err(EsError::EsError("No source field".to_owned()))
-        }
+        // TODO - replace with Serde equivalent
+        // match self.source {
+        //     Some(source) => decode_json(source),
+        //     None         => Err(EsError::EsError("No source field".to_owned()))
+        // }
+        unimplemented!()
     }
 }
 
+// TODO - deprecated
 impl<'a> From<&'a Json> for SearchHitsHitsResult {
     fn from(r: &'a Json) -> SearchHitsHitsResult {
         SearchHitsHitsResult {
@@ -780,13 +788,14 @@ impl<'a> From<&'a Json> for SearchHitsHitsResult {
                     None
                 }
             },
-            source:   r.find("_source").map(|s| s.clone()),
-            fields:   r.find("fields").map(|s| s.clone())
+            // TODO - decommissioned, ensure it (and the whole function is removed)
+            // source:   r.find("_source").map(|s| s.clone()),
+            // fields:   r.find("fields").map(|s| s.clone())
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct SearchHitsResult {
     pub total: u64,
     pub hits:  Vec<SearchHitsHitsResult>
@@ -907,6 +916,9 @@ impl<'a> Iterator for ScanIterator<'a> {
 ///
 /// See also the [official ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/guide/current/scan-scroll.html)
 /// for proper use of this functionality.
+///
+/// TODO - check fields are mapped correctly, etc.
+#[derive(Deserialize)]
 pub struct ScanResult {
     scroll_id:     String,
     scroll:        Duration,
@@ -918,6 +930,7 @@ pub struct ScanResult {
 }
 
 impl ScanResult {
+    // TODO - deprecated, replace with Serde
     fn from<'b>(scroll: Duration, r: &'b Json) -> ScanResult {
         ScanResult {
             scroll:    scroll,

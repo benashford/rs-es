@@ -25,9 +25,9 @@ use hyper::status::StatusCode;
 use rustc_serialize::Decodable;
 use rustc_serialize::json::{Decoder, Json};
 
-use Client;
-use error::EsError;
-use util::StrJoin;
+use ::{Client, EsResponse};
+use ::error::EsError;
+use ::util::StrJoin;
 
 // Specific operations
 #[macro_use]
@@ -65,6 +65,7 @@ fn format_indexes_and_types(indexes: &[&str], types: &[&str]) -> String {
     }
 }
 
+// TODO: move to refresh.rs
 pub struct RefreshOperation<'a, 'b> {
     /// The HTTP client
     client: &'a mut Client,
@@ -89,10 +90,10 @@ impl<'a, 'b> RefreshOperation<'a, 'b> {
     pub fn send(&mut self) -> Result<RefreshResult, EsError> {
         let url = format!("/{}/_refresh",
                           format_multi(&self.indexes));
-        let (status_code, result) = try!(self.client.post_op(&url));
-        match status_code {
-            StatusCode::Ok => Ok(result),
-            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        let response = try!(self.client.post_op(&url));
+        match response.status_code() {
+            &StatusCode::Ok => Ok(try!(response.read_response())),
+            _              => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
         }
     }
 }

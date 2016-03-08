@@ -32,7 +32,8 @@ use ::operations::common::OptionVal;
 /// The units by which duration is measured.
 ///
 /// TODO - this list is incomplete, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#time-units
-#[derive(Debug)]
+/// TODO - ensure deserialization works correctly
+#[derive(Debug, Deserialize)]
 pub enum DurationUnit {
     Month,
     Week,
@@ -66,7 +67,9 @@ impl ToString for DurationUnit {
 ///
 /// assert_eq!("100d", Duration::new(100, DurationUnit::Day).to_string());
 /// ```
-#[derive(Debug)]
+///
+/// TODO - implement Deserialize correctly
+#[derive(Debug, Deserialize)]
 pub struct Duration {
     amt: i64,
     unit: DurationUnit

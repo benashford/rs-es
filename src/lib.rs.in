@@ -42,6 +42,23 @@ use operations::RefreshOperation;
 use operations::analyze::AnalyzeOperation;
 use operations::version::VersionOperation;
 
+pub trait EsResponse {
+    fn status_code<'a>(&'a self) -> &'a StatusCode;
+    fn read_response<R>(mut self) -> Result<R, EsError> where R: Deserialize;
+}
+
+impl EsResponse for client::response::Response {
+    fn status_code<'a>(&'a self) -> &'a StatusCode {
+        &self.status
+    }
+
+    fn read_response<R>(mut self) -> Result<R, EsError>
+        where R: Deserialize {
+
+        Ok(try!(serde_json::from_reader(self)))
+    }
+}
+
 // The client
 
 /// Process the result of an HTTP request, returning the status code and the
@@ -50,19 +67,14 @@ use operations::version::VersionOperation;
 ///
 /// This function is exposed to allow extensions to certain operations, it is
 /// not expected to be used by consumers of the library
-pub fn do_req<R>(resp: &mut client::response::Response) -> Result<(StatusCode, R), EsError>
-    where R: Deserialize {
-
-    info!("Response: {:?}", resp);
+pub fn do_req(resp: client::response::Response) -> Result<client::response::Response, EsError> {
+    let mut resp = resp;
     let status = resp.status;
     match status {
         StatusCode::Ok |
         StatusCode::Created |
-        StatusCode::NotFound => match serde_json::from_reader(resp) {
-            Ok(result) => Ok((status, result)),
-            Err(e)     => Err(EsError::from(e))
-        },
-        _                    => Err(EsError::from(resp))
+        StatusCode::NotFound => Ok(resp),
+        _                    => Err(EsError::from(&mut resp))
     }
 }
 
@@ -102,28 +114,26 @@ pub struct Client {
 /// Create a HTTP function for the given method (GET/PUT/POST/DELETE)
 macro_rules! es_op {
     ($n:ident,$cn:ident) => {
-        fn $n<R>(&mut self, url: &str)
-                 -> Result<(StatusCode, R), EsError>
-        where R: Deserialize {
+        fn $n(&mut self, url: &str) -> Result<client::response::Response, EsError> {
             info!("Doing {} on {}", stringify!($n), url);
             let url = self.full_url(url);
             let mut result = try!(self.http_client
                                   .$cn(&url)
                                   .headers(self.headers.clone())
                                   .send());
-            do_req(&mut result)
+            do_req(result)
         }
     }
 }
 
 /// Create a HTTP function with a request body for the given method
 /// (GET/PUT/POST/DELETE)
+///
+/// TODO: replace Encodable with Serialize (rustc_serialize -> Serde)
 macro_rules! es_body_op {
     ($n:ident,$cn:ident) => {
-        fn $n<E, R>(&mut self, url: &str, body: &E)
-                 -> Result<(StatusCode, R), EsError>
-            where E: Encodable,
-                  R: Deserialize{
+        fn $n<E>(&mut self, url: &str, body: &E) -> Result<client::response::Response, EsError>
+            where E: Encodable {
 
             info!("Doing {} on {}", stringify!($n), url);
             let json_string = try!(encode(body));
@@ -135,7 +145,7 @@ macro_rules! es_body_op {
                                   .body(&json_string)
                                   .send());
 
-            do_req(&mut result)
+            do_req(result)
         }
     }
 }
@@ -365,35 +375,34 @@ pub mod tests {
         }
     }
 
-    // TODO - re-enable
-    // pub fn clean_db(mut client: &mut Client,
-    //                 test_idx: &str) {
-    //     let mut scan = match client.search_query()
-    //         .with_indexes(&[test_idx])
-    //         .with_query(&Query::build_match_all().build())
-    //         .scan(Duration::minutes(1)) {
-    //             Ok(scan) => scan,
-    //             Err(_) => return // Ignore not-found errors
-    //         };
+    pub fn clean_db(mut client: &mut Client,
+                    test_idx: &str) {
+        let mut scan = match client.search_query()
+            .with_indexes(&[test_idx])
+            .with_query(&Query::build_match_all().build())
+            .scan(Duration::minutes(1)) {
+                Ok(scan) => scan,
+                Err(_) => return // Ignore not-found errors
+            };
 
-    //     loop {
-    //         let page = scan.scroll(&mut client).unwrap();
-    //         let mut hits = page.hits.hits;
-    //         if hits.len() == 0 {
-    //             break;
-    //         }
-    //         let actions: Vec<Action> = hits.drain(..)
-    //             .map(|hit| {
-    //                 Action::delete(hit.id)
-    //                     .with_index(test_idx)
-    //                     .with_doc_type(hit.doc_type)
-    //             })
-    //             .collect();
-    //         client.bulk(&actions).send().unwrap();
-    //     }
+        loop {
+            let page = scan.scroll(&mut client).unwrap();
+            let mut hits = page.hits.hits;
+            if hits.len() == 0 {
+                break;
+            }
+            let actions: Vec<Action> = hits.drain(..)
+                .map(|hit| {
+                    Action::delete(hit.id)
+                        .with_index(test_idx)
+                        .with_doc_type(hit.doc_type)
+                })
+                .collect();
+            client.bulk(&actions).send().unwrap();
+        }
 
-    //     scan.close(&mut client).unwrap();
-    // }
+        scan.close(&mut client).unwrap();
+    }
 
     // tests
 
@@ -408,45 +417,41 @@ pub mod tests {
         assert_eq!(expected_regex.is_match(&result.version.number), true);
     }
 
-    // #[test]
-    // fn test_indexing() {
-    //     let index_name = "test_indexing";
-    //     let mut client = make_client();
-    //     // TODO - re-enable
-    //     //clean_db(&mut client, index_name);
-    //     {
-    //         let result_wrapped = client
-    //             .index(index_name, "test_type")
-    //             .with_doc(&TestDocument::new().with_int_field(1))
-    //             .with_ttl(&Duration::milliseconds(927500))
-    //             .send();
-    //         info!("TEST RESULT: {:?}", result_wrapped);
-    //         let result = result_wrapped.unwrap();
-    //         assert_eq!(result.created, true);
-    //         assert_eq!(result.index, index_name);
-    //         assert_eq!(result.doc_type, "test_type");
-    //         assert!(result.id.len() > 0);
-    //         assert_eq!(result.version, 1);
-    //     }
-    //     {
-    //         let delete_result = client.delete(index_name, "test_type", "TEST_INDEXING_2").send();
-    //         info!("DELETE RESULT: {:?}", delete_result);
+    #[test]
+    fn test_indexing() {
+        let index_name = "test_indexing";
+        let mut client = make_client();
+        clean_db(&mut client, index_name);
+        {
+            let result_wrapped = client
+                .index(index_name, "test_type")
+                .with_doc(&TestDocument::new().with_int_field(1))
+                .with_ttl(&Duration::milliseconds(927500))
+                .send();
+            println!("TEST RESULT: {:?}", result_wrapped);
+            let result = result_wrapped.unwrap();
+            assert_eq!(result.created, true);
+            assert_eq!(result.index, index_name);
+            assert_eq!(result.doc_type, "test_type");
+            assert!(result.id.len() > 0);
+            assert_eq!(result.version, 1);
+        }
+        {
+            let result_wrapped = client
+                .index(index_name, "test_type")
+                .with_doc(&TestDocument::new().with_int_field(2))
+                .with_id("TEST_INDEXING_2")
+                .with_op_type(OpType::Create)
+                .send();
+            let result = result_wrapped.unwrap();
 
-    //         let result_wrapped = client
-    //             .index(index_name, "test_type")
-    //             .with_doc(&TestDocument::new().with_int_field(2))
-    //             .with_id("TEST_INDEXING_2")
-    //             .with_op_type(OpType::Create)
-    //             .send();
-    //         let result = result_wrapped.unwrap();
-
-    //         assert_eq!(result.created, true);
-    //         assert_eq!(result.index, index_name);
-    //         assert_eq!(result.doc_type, "test_type");
-    //         assert_eq!(result.id, "TEST_INDEXING_2");
-    //         assert!(result.version >= 1);
-    //     }
-    // }
+            assert_eq!(result.created, true);
+            assert_eq!(result.index, index_name);
+            assert_eq!(result.doc_type, "test_type");
+            assert_eq!(result.id, "TEST_INDEXING_2");
+            assert!(result.version >= 1);
+        }
+    }
 
     // #[test]
     // fn test_delete_index() {

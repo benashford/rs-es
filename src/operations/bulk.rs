@@ -23,7 +23,7 @@ use hyper::status::StatusCode;
 use rustc_serialize::json;
 use rustc_serialize::json::{Json, ToJson};
 
-use ::Client;
+use ::{Client, EsResponse};
 use ::do_req;
 use ::error::EsError;
 use ::units::Duration;
@@ -335,16 +335,17 @@ impl<'a, 'b> BulkOperation<'a, 'b> {
         };
         let body = self.format_actions();
 
+        // TODO - why does this not use the macros in `lib.rs`?
         let mut result = try!(self.client.http_client
                               .post(&full_url)
                               .body(&body)
                               .send());
 
-        let (status_code, bulk_result) = try!(do_req(&mut result));
+        let response = try!(do_req(result));
 
-        match status_code {
-            StatusCode::Ok => Ok(bulk_result),
-            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        match response.status_code() {
+            &StatusCode::Ok => Ok(try!(response.read_response())),
+            _              => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
         }
     }
 }

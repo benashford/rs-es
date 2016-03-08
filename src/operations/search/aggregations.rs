@@ -2017,37 +2017,38 @@ impl GeoHashResult {
 /// The result of one specific aggregation
 ///
 /// The data returned varies depending on aggregation type
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub enum AggregationResult {
-    // Metrics
-    Min(MinResult),
-    Max(MaxResult),
-    Sum(SumResult),
-    Avg(AvgResult),
-    Stats(StatsResult),
-    ExtendedStats(ExtendedStatsResult),
-    ValueCount(ValueCountResult),
-    Percentiles(PercentilesResult),
-    PercentileRanks(PercentileRanksResult),
-    Cardinality(CardinalityResult),
-    GeoBounds(GeoBoundsResult),
-    ScriptedMetric(ScriptedMetricResult),
+    // TODO - disabled during refactoring
+    // // Metrics
+    // Min(MinResult),
+    // Max(MaxResult),
+    // Sum(SumResult),
+    // Avg(AvgResult),
+    // Stats(StatsResult),
+    // ExtendedStats(ExtendedStatsResult),
+    // ValueCount(ValueCountResult),
+    // Percentiles(PercentilesResult),
+    // PercentileRanks(PercentileRanksResult),
+    // Cardinality(CardinalityResult),
+    // GeoBounds(GeoBoundsResult),
+    // ScriptedMetric(ScriptedMetricResult),
 
-    // Buckets
-    Global(GlobalResult),
-    Filter(FilterResult),
-    Filters(FiltersResult),
-    Missing(MissingResult),
-    Nested(NestedResult),
-    ReverseNested(ReverseNestedResult),
-    Children(ChildrenResult),
-    Terms(TermsResult),
-    Range(RangeResult),
-    DateRange(DateRangeResult),
-    Histogram(HistogramResult),
-    DateHistogram(DateHistogramResult),
-    GeoDistance(GeoDistanceResult),
-    GeoHash(GeoHashResult)
+    // // Buckets
+    // Global(GlobalResult),
+    // Filter(FilterResult),
+    // Filters(FiltersResult),
+    // Missing(MissingResult),
+    // Nested(NestedResult),
+    // ReverseNested(ReverseNestedResult),
+    // Children(ChildrenResult),
+    // Terms(TermsResult),
+    // Range(RangeResult),
+    // DateRange(DateRangeResult),
+    // Histogram(HistogramResult),
+    // DateHistogram(DateHistogramResult),
+    // GeoDistance(GeoDistanceResult),
+    // GeoHash(GeoHashResult)
 }
 
 /// Macro to implement the various as... functions that return the details of an
@@ -2055,12 +2056,14 @@ pub enum AggregationResult {
 macro_rules! agg_as {
     ($n:ident,$t:ident,$rt:ty) => {
         pub fn $n<'a>(&'a self) -> Result<&'a $rt, EsError> {
-            match self {
-                &AggregationResult::$t(ref res) => Ok(res),
-                _                               => {
-                    Err(EsError::EsError(format!("Wrong type: {:?}", self)))
-                }
-            }
+            // TODO - re-enable
+            // match self {
+            //     &AggregationResult::$t(ref res) => Ok(res),
+            //     _                               => {
+            //         Err(EsError::EsError(format!("Wrong type: {:?}", self)))
+            //     }
+            // }
+            unimplemented!()
         }
     }
 }
@@ -2097,112 +2100,114 @@ impl AggregationResult {
     agg_as!(as_geo_hash, GeoHash, GeoHashResult);
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct AggregationsResult(HashMap<String, AggregationResult>);
 
+// TODO - deprecated
 /// Loads a Json object of aggregation results into an `AggregationsResult`.
 fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> AggregationsResult {
-    let mut ar_map = HashMap::new();
+    // let mut ar_map = HashMap::new();
 
-    for (key, val) in aggs.0.iter() {
-        let owned_key = (*key).to_owned();
-        let json = object.get(&owned_key).expect(&format!("No key: {}", &owned_key));
-        ar_map.insert(owned_key, match val {
-            &Aggregation::Metrics(ref ma) => {
-                match ma {
-                    &MetricsAggregation::Min(_) => {
-                        AggregationResult::Min(MinResult::from(json))
-                    },
-                    &MetricsAggregation::Max(_) => {
-                        AggregationResult::Max(MaxResult::from(json))
-                    },
-                    &MetricsAggregation::Sum(_) => {
-                        AggregationResult::Sum(SumResult::from(json))
-                    },
-                    &MetricsAggregation::Avg(_) => {
-                        AggregationResult::Avg(AvgResult::from(json))
-                    },
-                    &MetricsAggregation::Stats(_) => {
-                        AggregationResult::Stats(StatsResult::from(json))
-                    },
-                    &MetricsAggregation::ExtendedStats(_) => {
-                        AggregationResult::ExtendedStats(ExtendedStatsResult::from(json))
-                    },
-                    &MetricsAggregation::ValueCount(_) => {
-                        AggregationResult::ValueCount(ValueCountResult::from(json))
-                    }
-                    &MetricsAggregation::Percentiles(_) => {
-                        AggregationResult::Percentiles(PercentilesResult::from(json))
-                    },
-                    &MetricsAggregation::PercentileRanks(_) => {
-                        AggregationResult::PercentileRanks(PercentileRanksResult::from(json))
-                    },
-                    &MetricsAggregation::Cardinality(_) => {
-                        AggregationResult::Cardinality(CardinalityResult::from(json))
-                    },
-                    &MetricsAggregation::GeoBounds(_) => {
-                        AggregationResult::GeoBounds(GeoBoundsResult::from(json))
-                    },
-                    &MetricsAggregation::ScriptedMetric(_) => {
-                        AggregationResult::ScriptedMetric(ScriptedMetricResult::from(json))
-                    }
-                }
-            },
-            &Aggregation::Bucket(ref ba, ref aggs) => {
-                match ba {
-                    &BucketAggregation::Global(_) => {
-                        AggregationResult::Global(GlobalResult::from(json, aggs))
-                    },
-                    &BucketAggregation::Filter(_) => {
-                        AggregationResult::Filter(FilterResult::from(json, aggs))
-                    },
-                    &BucketAggregation::Filters(_) => {
-                        AggregationResult::Filters(FiltersResult::from(json, aggs))
-                    },
-                    &BucketAggregation::Missing(_) => {
-                        AggregationResult::Missing(MissingResult::from(json, aggs))
-                    },
-                    &BucketAggregation::Nested(_) => {
-                        AggregationResult::Nested(NestedResult::from(json, aggs))
-                    },
-                    &BucketAggregation::ReverseNested(_) => {
-                        AggregationResult::ReverseNested(ReverseNestedResult::from(json,
-                                                                                   aggs))
-                    },
-                    &BucketAggregation::Children(_) => {
-                        AggregationResult::Children(ChildrenResult::from(json, aggs))
-                    },
-                    &BucketAggregation::Terms(_) => {
-                        AggregationResult::Terms(TermsResult::from(json, aggs))
-                    },
-                    &BucketAggregation::Range(_) => {
-                        AggregationResult::Range(RangeResult::from(json, aggs))
-                    },
-                    &BucketAggregation::DateRange(_) => {
-                        AggregationResult::DateRange(DateRangeResult::from(json, aggs))
-                    },
-                    &BucketAggregation::Histogram(_) => {
-                        AggregationResult::Histogram(HistogramResult::from(json, aggs))
-                    },
-                    &BucketAggregation::DateHistogram(_) => {
-                        AggregationResult::DateHistogram(DateHistogramResult::from(json,
-                                                                                   aggs))
-                    },
-                    &BucketAggregation::GeoDistance(_) => {
-                        AggregationResult::GeoDistance(GeoDistanceResult::from(json,
-                                                                               aggs))
-                    },
-                    &BucketAggregation::GeoHash(_) => {
-                        AggregationResult::GeoHash(GeoHashResult::from(json, aggs))
-                    }
-                }
-            }
-        });
-    }
+    // for (key, val) in aggs.0.iter() {
+    //     let owned_key = (*key).to_owned();
+    //     let json = object.get(&owned_key).expect(&format!("No key: {}", &owned_key));
+    //     ar_map.insert(owned_key, match val {
+    //         &Aggregation::Metrics(ref ma) => {
+    //             match ma {
+    //                 &MetricsAggregation::Min(_) => {
+    //                     AggregationResult::Min(MinResult::from(json))
+    //                 },
+    //                 &MetricsAggregation::Max(_) => {
+    //                     AggregationResult::Max(MaxResult::from(json))
+    //                 },
+    //                 &MetricsAggregation::Sum(_) => {
+    //                     AggregationResult::Sum(SumResult::from(json))
+    //                 },
+    //                 &MetricsAggregation::Avg(_) => {
+    //                     AggregationResult::Avg(AvgResult::from(json))
+    //                 },
+    //                 &MetricsAggregation::Stats(_) => {
+    //                     AggregationResult::Stats(StatsResult::from(json))
+    //                 },
+    //                 &MetricsAggregation::ExtendedStats(_) => {
+    //                     AggregationResult::ExtendedStats(ExtendedStatsResult::from(json))
+    //                 },
+    //                 &MetricsAggregation::ValueCount(_) => {
+    //                     AggregationResult::ValueCount(ValueCountResult::from(json))
+    //                 }
+    //                 &MetricsAggregation::Percentiles(_) => {
+    //                     AggregationResult::Percentiles(PercentilesResult::from(json))
+    //                 },
+    //                 &MetricsAggregation::PercentileRanks(_) => {
+    //                     AggregationResult::PercentileRanks(PercentileRanksResult::from(json))
+    //                 },
+    //                 &MetricsAggregation::Cardinality(_) => {
+    //                     AggregationResult::Cardinality(CardinalityResult::from(json))
+    //                 },
+    //                 &MetricsAggregation::GeoBounds(_) => {
+    //                     AggregationResult::GeoBounds(GeoBoundsResult::from(json))
+    //                 },
+    //                 &MetricsAggregation::ScriptedMetric(_) => {
+    //                     AggregationResult::ScriptedMetric(ScriptedMetricResult::from(json))
+    //                 }
+    //             }
+    //         },
+    //         &Aggregation::Bucket(ref ba, ref aggs) => {
+    //             match ba {
+    //                 &BucketAggregation::Global(_) => {
+    //                     AggregationResult::Global(GlobalResult::from(json, aggs))
+    //                 },
+    //                 &BucketAggregation::Filter(_) => {
+    //                     AggregationResult::Filter(FilterResult::from(json, aggs))
+    //                 },
+    //                 &BucketAggregation::Filters(_) => {
+    //                     AggregationResult::Filters(FiltersResult::from(json, aggs))
+    //                 },
+    //                 &BucketAggregation::Missing(_) => {
+    //                     AggregationResult::Missing(MissingResult::from(json, aggs))
+    //                 },
+    //                 &BucketAggregation::Nested(_) => {
+    //                     AggregationResult::Nested(NestedResult::from(json, aggs))
+    //                 },
+    //                 &BucketAggregation::ReverseNested(_) => {
+    //                     AggregationResult::ReverseNested(ReverseNestedResult::from(json,
+    //                                                                                aggs))
+    //                 },
+    //                 &BucketAggregation::Children(_) => {
+    //                     AggregationResult::Children(ChildrenResult::from(json, aggs))
+    //                 },
+    //                 &BucketAggregation::Terms(_) => {
+    //                     AggregationResult::Terms(TermsResult::from(json, aggs))
+    //                 },
+    //                 &BucketAggregation::Range(_) => {
+    //                     AggregationResult::Range(RangeResult::from(json, aggs))
+    //                 },
+    //                 &BucketAggregation::DateRange(_) => {
+    //                     AggregationResult::DateRange(DateRangeResult::from(json, aggs))
+    //                 },
+    //                 &BucketAggregation::Histogram(_) => {
+    //                     AggregationResult::Histogram(HistogramResult::from(json, aggs))
+    //                 },
+    //                 &BucketAggregation::DateHistogram(_) => {
+    //                     AggregationResult::DateHistogram(DateHistogramResult::from(json,
+    //                                                                                aggs))
+    //                 },
+    //                 &BucketAggregation::GeoDistance(_) => {
+    //                     AggregationResult::GeoDistance(GeoDistanceResult::from(json,
+    //                                                                            aggs))
+    //                 },
+    //                 &BucketAggregation::GeoHash(_) => {
+    //                     AggregationResult::GeoHash(GeoHashResult::from(json, aggs))
+    //                 }
+    //             }
+    //         }
+    //     });
+    // }
 
-    info!("Processed aggs - From: {:?}. To: {:?}", object, ar_map);
+    // info!("Processed aggs - From: {:?}. To: {:?}", object, ar_map);
 
-    AggregationsResult(ar_map)
+    // AggregationsResult(ar_map)
+    unimplemented!()
 }
 
 impl AggregationsResult {

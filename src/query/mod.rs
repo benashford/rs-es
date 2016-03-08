@@ -46,7 +46,8 @@ use rustc_serialize::json::{Json, ToJson};
 
 use serde::{Serialize, Serializer};
 
-use util::StrJoin;
+use ::json::ShouldSkip;
+use ::util::StrJoin;
 
 #[macro_use]
 mod common;
@@ -256,7 +257,8 @@ impl ToJson for ScoreMode {
 #[derive(Debug, Serialize)]
 pub enum Query {
     // TODO - uncomment one-level to re-enable after Serdeification
-    // MatchAll(Box<MatchAllQuery>),
+    #[serde(rename="match_all")]
+    MatchAll(Box<MatchAllQuery>),
 
     // // Full-text queries
     // Match(Box<full_text::MatchQuery>),
@@ -338,9 +340,9 @@ impl ToJson for Query {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
         match self {
-            // &Query::MatchAll(ref q) => {
-            //     d.insert("match_all".to_owned(), q.to_json());
-            // },
+            &Query::MatchAll(ref q) => {
+                d.insert("match_all".to_owned(), q.to_json());
+            },
             // &Query::Match(ref q) => {
             //     d.insert("match".to_owned(), q.to_json());
             // },
@@ -440,8 +442,9 @@ impl ToJson for Query {
 
 /// Match all query
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct MatchAllQuery {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>,
 }
 
@@ -454,15 +457,13 @@ impl Query {
 impl MatchAllQuery {
     add_option!(with_boost, boost, f64);
 
-    //build!(MatchAll);
+    build!(MatchAll);
 }
 
 impl ToJson for MatchAllQuery {
     fn to_json(&self) -> Json {
         let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        optional_add!(self, inner, boost);
-        d.insert("match_all".to_owned(), Json::Object(inner));
+        optional_add!(self, d, boost);
         Json::Object(d)
     }
 }

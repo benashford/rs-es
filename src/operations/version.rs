@@ -16,7 +16,7 @@
 
 //! Fetch ElasticSearch version information
 
-use ::Client;
+use ::{Client, EsResponse};
 use ::error::EsError;
 
 pub struct VersionOperation<'a> {
@@ -31,8 +31,8 @@ impl<'a> VersionOperation<'a> {
     }
 
     pub fn send(&mut self) -> Result<VersionResult, EsError> {
-        let (_, result) = try!(self.client.get_op("/"));
-        Ok(result)
+        let response = try!(self.client.get_op("/"));
+        Ok(try!(response.read_response()))
     }
 }
 

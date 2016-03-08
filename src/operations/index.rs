@@ -19,7 +19,7 @@
 use rustc_serialize::Encodable;
 use rustc_serialize::json::Json;
 
-use ::Client;
+use ::{Client, EsResponse};
 use ::error::EsError;
 use super::common::{Options, OptionVal};
 
@@ -92,7 +92,7 @@ impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
     pub fn send(&'b mut self) -> Result<IndexResult, EsError> {
         // Ignoring status_code as everything should return an IndexResult or
         // already be an error
-        let (_, result) = try!(match self.id {
+        let response = try!(match self.id {
             Some(ref id) => {
                 let url = format!("/{}/{}/{}{}",
                                   self.index,
@@ -115,20 +115,25 @@ impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
                 }
             }
         });
-        Ok(result)
+        Ok(try!(response.read_response()))
     }
 }
 
 /// The result of an index operation
 #[derive(Debug, Deserialize)]
 pub struct IndexResult {
+    #[serde(rename="_index")]
     pub index:    String,
+    #[serde(rename="_type")]
     pub doc_type: String,
+    #[serde(rename="_id")]
     pub id:       String,
+    #[serde(rename="_version")]
     pub version:  u64,
     pub created:  bool
 }
 
+// TODO - deprecated - delete me
 impl<'a> From<&'a Json> for IndexResult {
     fn from(r: &'a Json) -> IndexResult {
         IndexResult {
