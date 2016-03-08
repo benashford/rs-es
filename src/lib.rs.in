@@ -265,7 +265,10 @@ impl Client {
     /// Bulk
     ///
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
-    pub fn bulk<'a, 'b>(&'a mut self, actions: &'b [Action]) -> BulkOperation<'a, 'b> {
+    pub fn bulk<'a, 'b, S>(&'a mut self,
+                           actions: &'b [Action<S>]) -> BulkOperation<'a, 'b, S>
+        where S: Serialize {
+
         BulkOperation::new(self, actions)
     }
 
@@ -399,7 +402,7 @@ pub mod tests {
             if hits.len() == 0 {
                 break;
             }
-            let actions: Vec<Action> = hits.drain(..)
+            let actions: Vec<Action<()>> = hits.drain(..)
                 .map(|hit| {
                     Action::delete(hit.id)
                         .with_index(test_idx)

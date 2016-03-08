@@ -1114,7 +1114,7 @@ mod tests {
     }
 
     fn setup_scan_data(client: &mut Client, index_name: &str) {
-        let actions:Vec<Action> = (0..1000).map(|idx| {
+        let actions:Vec<Action<TestDocument>> = (0..1000).map(|idx| {
             Action::index(make_document(idx))
         }).collect();
 

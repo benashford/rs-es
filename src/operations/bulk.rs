@@ -30,7 +30,7 @@ use serde_json;
 use ::{Client, EsResponse};
 use ::do_req;
 use ::error::EsError;
-use ::json::{FieldBased, NoOuter};
+use ::json::{FieldBased, NoOuter, ShouldSkip};
 use ::units::Duration;
 
 use super::common::{Options, OptionVal, VersionType};
@@ -124,29 +124,34 @@ impl ToString for ActionType {
 
 #[derive(Default, Serialize)]
 pub struct ActionOptions {
+    #[serde(rename="_index", skip_serializing_if="ShouldSkip::should_skip")]
     index:             Option<String>,
+    #[serde(rename="_type", skip_serializing_if="ShouldSkip::should_skip")]
     doc_type:          Option<String>,
+    #[serde(rename="_id", skip_serializing_if="ShouldSkip::should_skip")]
     id:                Option<String>,
+    #[serde(rename="_version", skip_serializing_if="ShouldSkip::should_skip")]
     version:           Option<u64>,
     // TODO - re-enable
+    //#[serde(rename="_version_type", skip_serializing_if="ShouldSkip::should_skip")]
     //version_type:      Option<VersionType>,
+    #[serde(rename="_routing", skip_serializing_if="ShouldSkip::should_skip")]
     routing:           Option<String>,
+    #[serde(rename="_parent", skip_serializing_if="ShouldSkip::should_skip")]
     parent:            Option<String>,
+    #[serde(rename="_timestamp", skip_serializing_if="ShouldSkip::should_skip")]
     timestamp:         Option<String>,
+    #[serde(rename="_ttl", skip_serializing_if="ShouldSkip::should_skip")]
     ttl:               Option<Duration>,
+    #[serde(rename="_retry_on_conflict", skip_serializing_if="ShouldSkip::should_skip")]
     retry_on_conflict: Option<u64>,
-    // TODO - re-enable
-    //source:            Option<Json>
 }
 
 #[derive(Serialize)]
-pub struct Action(FieldBased<ActionType, ActionOptions, NoOuter>);
+pub struct Action<X>(FieldBased<ActionType, ActionOptions, NoOuter>, Option<Box<X>>);
 
-impl Action {
-    fn new(action: ActionType, options: ActionOptions) -> Action {
-        Action(FieldBased::new(action, options, NoOuter))
-    }
-
+impl<S> Action<S>
+    where S: Serialize {
     /// An index action.
     ///
     /// Takes the document to be indexed, other parameters can be set as
@@ -159,7 +164,7 @@ impl Action {
     ///
     /// let delete_action = Action::delete("doc_id");
     /// ```
-    pub fn index<E: ToJson>(document: E) -> Action {
+    pub fn index(document: S) -> Self {
         // Action::new(ActionType::Index, ActionOptions {
         //     source: Some(document.to_json()),
         //     ..Default::default()
@@ -168,7 +173,7 @@ impl Action {
     }
 
     /// Create action
-    pub fn create<E: ToJson>(document: E) -> Action {
+    pub fn create(document: S) -> Self {
         unimplemented!()
         // Action {
         //     action:  ActionType::Create,
@@ -179,7 +184,28 @@ impl Action {
         // }
     }
 
-    pub fn delete<S: Into<String>>(id: S) -> Action {
+    /// Add the serialized version of this action to the bulk `String`.
+    fn add(&self, actstr: &mut String) -> Result<(), EsError> {
+        // let command_str = try!(serde_json::to_string(self));
+
+        // actstr.push_str(&command_str);
+        // actstr.push_str("\n");
+
+        // match self.1 {
+        //     Some(ref source) => {
+        //         let payload_str = try!(serde_json::to_string(source));
+        //         actstr.push_str(&payload_str);
+        //         actstr.push_str("\n");
+        //     },
+        //     None             => ()
+        // }
+        // Ok(())
+        unimplemented!()
+    }
+}
+
+impl<S> Action<S> {
+    pub fn delete<A: Into<String>>(id: A) -> Self {
         unimplemented!()
         // Action {
         //     action: ActionType::Delete,
@@ -190,7 +216,7 @@ impl Action {
         // }
     }
 
-    pub fn update<S: Into<String>>(id: S, update: &ActionSource) -> Action {
+    pub fn update<A: Into<String>>(id: A, update: &ActionSource) -> Self {
         unimplemented!()
         // Action {
         //     action: ActionType::Update,
@@ -213,58 +239,20 @@ impl Action {
     add_inner_field!(with_timestamp, timestamp, String);
     add_inner_field!(with_ttl, ttl, Duration);
     add_inner_field!(with_retry_on_conflict, retry_on_conflict, u64);
-
-    /// Add the serialized version of this action to the bulk `String`.
-    fn add(&self, actstr: &mut String) -> Result<(), EsError> {
-        // let command_str = try!(serde_json::to_string(self));
-
-        // actstr.push_str(&command_str);
-        // actstr.push_str("\n");
-
-        // match self.0.inner.source {
-        //     Some(ref source) => {
-        //         let payload_str = try!(serde_json::to_string(source));
-        //         actstr.push_str(&payload_str);
-        //         actstr.push_str("\n");
-        //     },
-        //     None             => ()
-        // }
-        // Ok(())
-        unimplemented!()
-    }
 }
 
-// impl ToJson for Action {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-
-//         optional_add!(self, inner, index, "_index");
-//         optional_add!(self, inner, doc_type, "_type");
-//         optional_add!(self, inner, id, "_id");
-//         optional_add!(self, inner, version, "_version");
-//         optional_add!(self, inner, version_type, "_version_type");
-//         optional_add!(self, inner, routing, "_routing");
-//         optional_add!(self, inner, parent, "_parent");
-//         optional_add!(self, inner, timestamp, "_timestamp");
-//         optional_add!(self, inner, ttl, "_ttl");
-//         optional_add!(self, inner, retry_on_conflict, "_retry_on_conflict");
-
-//         d.insert(self.action.to_string(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
-
-pub struct BulkOperation<'a, 'b> {
+pub struct BulkOperation<'a, 'b, S: 'b> {
     client:   &'a mut Client,
     index:    Option<&'b str>,
     doc_type: Option<&'b str>,
-    actions:  &'b [Action],
+    actions:  &'b [Action<S>],
     options:  Options<'b>
 }
 
-impl<'a, 'b> BulkOperation<'a, 'b> {
-    pub fn new(client: &'a mut Client, actions: &'b [Action]) -> BulkOperation<'a, 'b> {
+impl<'a, 'b, S> BulkOperation<'a, 'b, S>
+    where S: Serialize {
+    
+    pub fn new(client: &'a mut Client, actions: &'b [Action<S>]) -> Self {
         BulkOperation {
             client:   client,
             index:    None,
