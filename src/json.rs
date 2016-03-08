@@ -141,8 +141,8 @@ pub mod tests {
     #[test]
     fn test_simple_field_based() {
         let t = TestStruct::new("key".to_owned(),
-                                TestOptions {opt_a: 4i64, opt_b: 3.0f64});
+                                TestOptions {opt_a: 4i64, opt_b: 3.5f64});
         let s = serde_json::to_string(&t).unwrap();
-        assert_eq!("", s);
+        assert_eq!("{\"key\":{\"opt_a\":4,\"opt_b\":3.5}}", s);
     }
 }
