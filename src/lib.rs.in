@@ -377,16 +377,20 @@ pub mod tests {
 
     pub fn clean_db(mut client: &mut Client,
                     test_idx: &str) {
+        let scroll = Duration::minutes(1);
         let mut scan = match client.search_query()
             .with_indexes(&[test_idx])
             .with_query(&Query::build_match_all().build())
-            .scan(Duration::minutes(1)) {
+            .scan(&scroll) {
                 Ok(scan) => scan,
-                Err(_) => return // Ignore not-found errors
+                Err(e) => {
+                    println!("Scan error: {:?}", e);
+                    return // Ignore not-found errors
+                }
             };
 
         loop {
-            let page = scan.scroll(&mut client).unwrap();
+            let page = scan.scroll(&mut client, &scroll).unwrap();
             let mut hits = page.hits.hits;
             if hits.len() == 0 {
                 break;

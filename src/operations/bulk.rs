@@ -23,6 +23,9 @@ use hyper::status::StatusCode;
 use rustc_serialize::json;
 use rustc_serialize::json::{Json, ToJson};
 
+use serde::{Deserialize, Deserializer};
+use serde::de::{Error, MapVisitor, Visitor};
+
 use ::{Client, EsResponse};
 use ::do_req;
 use ::error::EsError;
@@ -74,8 +77,6 @@ impl ToJson for ActionSource {
     }
 }
 
-// TODO - probably need to provide a specific Deserialize implementation
-#[derive(Deserialize)]
 pub enum ActionType {
     Index,
     Create,
@@ -83,6 +84,7 @@ pub enum ActionType {
     Update
 }
 
+// TODO - deprecated
 impl<'a> From<&'a String> for ActionType {
     fn from(from: &'a String) -> ActionType {
         if from == "index" {
@@ -351,32 +353,79 @@ impl<'a, 'b> BulkOperation<'a, 'b> {
 }
 
 /// The result of specific actions
-#[derive(Deserialize)]
 pub struct ActionResult {
-    pub action:   ActionType,
+    pub action: ActionType,
+    pub inner: ActionResultInner
+}
+
+impl Deserialize for ActionResult {
+    fn deserialize<D>(deserializer: &mut D) -> Result<ActionResult, D::Error>
+        where D: Deserializer {
+
+        struct ActionResultVisitor;
+
+        impl Visitor for ActionResultVisitor {
+            type Value = ActionResult;
+
+            fn visit_map<V>(&mut self, mut visitor: V) -> Result<ActionResult, V::Error>
+                where V: MapVisitor {
+
+                let visited:Option<(String, ActionResultInner)> = try!(visitor.visit());
+                let (key, value) = match visited {
+                    Some((key, value)) => (key, value),
+                    None               => return Err(V::Error::custom("expecting at least one field"))
+                };
+   
+                let result = ActionResult {
+                    action: match key.as_ref() {
+                        "index" => ActionType::Index,
+                        "create" => ActionType::Create,
+                        "delete" => ActionType::Delete,
+                        "update" => ActionType::Update,
+                        _ => {
+                            return Err(V::Error::custom(format!("Unrecognised key: {}", key)))
+                        }
+                    },
+                    inner:  value
+                };
+
+                Ok(result)
+            }
+        }
+
+        deserializer.deserialize(ActionResultVisitor)
+    }
+}
+
+#[derive(Deserialize)]
+pub struct ActionResultInner {
+    #[serde(rename="_index")]
     pub index:    String,
+    #[serde(rename="_type")]
     pub doc_type: String,
+    #[serde(rename="_version")]
     pub version:  u64,
     pub status:   u64
 }
 
-impl<'a> From<&'a Json> for ActionResult {
-    fn from(from: &'a Json) -> ActionResult {
-        info!("ActionResult from: {:?}", from);
+// TODO - deprecated
+// impl<'a> From<&'a Json> for ActionResult {
+//     fn from(from: &'a Json) -> ActionResult {
+//         info!("ActionResult from: {:?}", from);
 
-        let d = from.as_object().expect("Not a Json object");
-        assert_eq!(1, d.len());
-        let (key, inner) = d.iter().next().expect("No content");
+//         let d = from.as_object().expect("Not a Json object");
+//         assert_eq!(1, d.len());
+//         let (key, inner) = d.iter().next().expect("No content");
 
-        ActionResult {
-            action:   ActionType::from(key),
-            index:    get_json_string!(inner, "_index"),
-            doc_type: get_json_string!(inner, "_type"),
-            version:  get_json_u64!(inner, "_version"),
-            status:   get_json_u64!(inner, "status")
-        }
-    }
-}
+//         ActionResult {
+//             action:   ActionType::from(key),
+//             index:    get_json_string!(inner, "_index"),
+//             doc_type: get_json_string!(inner, "_type"),
+//             version:  get_json_u64!(inner, "_version"),
+//             status:   get_json_u64!(inner, "status")
+//         }
+//     }
+// }
 
 /// The result of a bulk operation
 #[derive(Deserialize)]
@@ -386,21 +435,22 @@ pub struct BulkResult {
     pub took:   u64
 }
 
-impl<'a> From<&'a Json> for BulkResult {
-    fn from(from: &'a Json) -> BulkResult {
-        info!("Bulk result, result: {:?}", from);
-        BulkResult {
-            errors: get_json_bool!(from, "errors"),
-            items:  from.find("items")
-                .expect("No field called 'items'")
-                .as_array()
-                .expect("Field 'items' not expected array")
-                .iter()
-                .map(|item| {
-                    ActionResult::from(item)
-                })
-                .collect(),
-            took:   get_json_u64!(from, "took")
-        }
-    }
-}
+// TODO - Deprecated
+// impl<'a> From<&'a Json> for BulkResult {
+//     fn from(from: &'a Json) -> BulkResult {
+//         info!("Bulk result, result: {:?}", from);
+//         BulkResult {
+//             errors: get_json_bool!(from, "errors"),
+//             items:  from.find("items")
+//                 .expect("No field called 'items'")
+//                 .as_array()
+//                 .expect("Field 'items' not expected array")
+//                 .iter()
+//                 .map(|item| {
+//                     ActionResult::from(item)
+//                 })
+//                 .collect(),
+//             took:   get_json_u64!(from, "took")
+//         }
+//     }
+// }

@@ -716,9 +716,9 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
     }
 
     /// Begins a scan with the specified query and options
-    pub fn scan(&'b mut self, scroll: Duration) -> Result<ScanResult, EsError> {
+    pub fn scan(&'b mut self, scroll: &'b Duration) -> Result<ScanResult, EsError> {
         self.options.push("search_type", "scan");
-        self.options.push("scroll", &scroll);
+        self.options.push("scroll", scroll);
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
@@ -826,12 +826,21 @@ impl<'a> From<&'a Json> for SearchHitsResult {
     }
 }
 
+#[derive(Debug, Deserialize)]
 pub struct SearchResult {
     pub took:      u64,
     pub timed_out: bool,
+
+    #[serde(rename="_shards")]
     pub shards:    ShardCountResult,
     pub hits:      SearchHitsResult,
-    pub aggs:      Option<AggregationsResult>
+
+    /// Optional field populated if aggregations are specified
+    pub aggs:      Option<AggregationsResult>,
+
+    /// Optional field populated during scanning and scrolling
+    #[serde(rename="_scroll_id")]
+    pub scroll_id: Option<String>
 }
 
 impl SearchResult {
@@ -841,6 +850,7 @@ impl SearchResult {
     }
 }
 
+// TODO - deprecated
 impl<'a> From<&'a Json> for SearchResult {
     fn from(r: &'a Json) -> SearchResult {
         SearchResult {
@@ -851,13 +861,15 @@ impl<'a> From<&'a Json> for SearchResult {
                                    .clone()).unwrap(),
             hits:      SearchHitsResult::from(r.find("hits")
                                               .expect("No field 'hits'")),
-            aggs:      None
+            aggs:      None,
+            scroll_id: None
         }
     }
 }
 
 pub struct ScanIterator<'a> {
     scan_result: ScanResult,
+    scroll:      Duration,
     client:      &'a mut Client,
     page:        Vec<SearchHitsHitsResult>
 }
@@ -865,7 +877,7 @@ pub struct ScanIterator<'a> {
 impl<'a> ScanIterator<'a> {
     /// Fetch the next page and return the first hit, or None if there are no hits
     fn next_page(&mut self) -> Option<Result<SearchHitsHitsResult, EsError>> {
-        match self.scan_result.scroll(self.client) {
+        match self.scan_result.scroll(self.client, &self.scroll) {
             Ok(scroll_page) => {
                 self.page = scroll_page.hits.hits;
                 if self.page.len() > 0 {
@@ -916,14 +928,13 @@ impl<'a> Iterator for ScanIterator<'a> {
 ///
 /// See also the [official ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/guide/current/scan-scroll.html)
 /// for proper use of this functionality.
-///
-/// TODO - check fields are mapped correctly, etc.
 #[derive(Deserialize)]
 pub struct ScanResult {
+    #[serde(rename="_scroll_id")]
     scroll_id:     String,
-    scroll:        Duration,
     pub took:      u64,
     pub timed_out: bool,
+    #[serde(rename="_shards")]
     pub shards:    ShardCountResult,
     pub hits:      SearchHitsResult,
     pub aggs:      Option<AggregationsResult>
@@ -931,9 +942,8 @@ pub struct ScanResult {
 
 impl ScanResult {
     // TODO - deprecated, replace with Serde
-    fn from<'b>(scroll: Duration, r: &'b Json) -> ScanResult {
+    fn from<'b>(r: &'b Json) -> ScanResult {
         ScanResult {
-            scroll:    scroll,
             scroll_id: get_json_string!(r, "_scroll_id"),
             took:      get_json_u64!(r, "took"),
             timed_out: get_json_bool!(r, "timed_out"),
@@ -947,45 +957,52 @@ impl ScanResult {
     }
 
     /// Returns an iterator from which hits can be read
-    pub fn iter(self, client: &mut Client) -> ScanIterator {
+    pub fn iter(self, client: &mut Client, scroll: Duration) -> ScanIterator {
         ScanIterator {
             scan_result: self,
+            scroll:      scroll,
             client:      client,
             page:        vec![],
         }
     }
 
     /// Calls the `/_search/scroll` ES end-point for the next page
-    pub fn scroll(&mut self, client: &mut Client) -> Result<SearchResult, EsError> {
+    pub fn scroll(&mut self,
+                  client: &mut Client,
+                  scroll: &Duration) -> Result<SearchResult, EsError> {
         let url = format!("/_search/scroll?scroll={}&scroll_id={}",
-                          self.scroll.to_string(),
+                          scroll.to_string(),
                           self.scroll_id);
-        // let (status_code, result) = try!(client.get_op(&url));
-        // match status_code {
-        //     StatusCode::Ok => {
-        //         // let r = result.expect("No Json payload");
-        //         // self.scroll_id = get_json_string!(r, "_scroll_id");
-        //         // Ok(SearchResult::from(&r))
-        //         unimplemented!()
-        //     },
-        //     _              => {
-        //         Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
-        //     }
-        // }
-        unimplemented!()
+        let response = try!(client.get_op(&url));
+        match response.status_code() {
+            &StatusCode::Ok => {
+                let search_result:SearchResult = try!(response.read_response());
+                self.scroll_id = match search_result.scroll_id {
+                    Some(ref id) => id.clone(),
+                    None     => {
+                        return Err(EsError::EsError("Expecting scroll_id".to_owned()))
+                    }
+                };
+                println!("Scrolled: {:?}", search_result);
+                Ok(search_result)
+            },
+            _               => {
+                Err(EsError::EsError(format!("Unexpected status: {}",
+                                             response.status_code())))
+            }
+        }
     }
 
     /// Calls ES to close the server-side part of the scan/scroll operation
     pub fn close(&self, client: &mut Client) -> Result<(), EsError> {
         let url = format!("/_search/scroll?scroll_id={}", self.scroll_id);
-        // let (status_code, result) = try!(client.delete_op(&url));
-        // match status_code {
-        //     StatusCode::Ok       => Ok(()), // closed
-        //     StatusCode::NotFound => Ok(()), // previously closed
-        //     _                    => Err(EsError::EsError(format!("Unexpected status: {}",
-        //                                                          status_code)))
-        // }
-        unimplemented!()
+        let response = try!(client.delete_op(&url));
+        match response.status_code() {
+            &StatusCode::Ok       => Ok(()), // closed
+            &StatusCode::NotFound => Ok(()), // previously closed
+            _                     => Err(EsError::EsError(format!("Unexpected status: {}",
+                                                                  response.status_code())))
+        }
     }
 }
 
