@@ -426,6 +426,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 36. Consider not using to_string pattern for converting to String (to avoid confusion with built-in to_string that uses formatter).
 37. Avoid calls to `.to_json()` in cases where `Json::Whatever(thing)` would do instead.
 38. Tidy-up/standardise logging.
+39. Deserialize the JSON returned in errors, to allow the client to know details.
 
 ## Licence
 
