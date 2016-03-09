@@ -21,7 +21,7 @@
 use rustc_serialize::json::Json;
 
 use ::do_req;
-use ::Client;
+use ::{Client, EsResponse};
 use ::error::EsError;
 
 pub struct AnalyzeOperation<'a, 'b> {
@@ -70,22 +70,21 @@ impl<'a, 'b> AnalyzeOperation<'a, 'b> {
                        .post(&full_url)
                        .body(self.body)
                        .send());
-        // TODO - check if we need to check the status code, etc.
-        //let (_, result) = try!(do_req(&mut req));
-        //Ok(result)
-        panic!("Unimplemented, uncomment above")
+        let response = try!(do_req(req));
+        Ok(try!(response.read_response()))
     }
 }
 
 /// The result of an analyze operation
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct AnalyzeResult {
     pub tokens: Vec<Token>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Token {
     pub token: String,
+    #[serde(rename="type")]
     pub token_type: String,
     pub position: u64,
     pub start_offset: u64,
