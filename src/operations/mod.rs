@@ -119,9 +119,11 @@ pub struct ShardCountResult {
 /// Result of a refresh request
 #[derive(Deserialize)]
 pub struct RefreshResult {
+    #[serde(rename="_shards")]
     pub shards: ShardCountResult
 }
 
+// TODO - obsolete
 impl<'a> From<&'a Json> for RefreshResult {
     fn from(r: &'a Json) -> RefreshResult {
         RefreshResult {
