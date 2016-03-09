@@ -17,7 +17,7 @@
 //! Helper for common requirements when producing/parsing JSON
 
 use serde::{Serialize, Serializer};
-use serde::ser::MapVisitor;
+use serde::ser::{MapVisitor, SeqVisitor};
 
 // TODO: this contains Serde related functions, there are old rustc_serialize helpers
 // elsewhere, they should be deleted or moved/updated here.
@@ -98,14 +98,84 @@ impl<'a, F, I, O> MapVisitor for FieldBasedMapVisitor<'a, F, I, O>
             },
             1 => {
                 self.state += 1;
-                // TODO - this is writing a whole `{...}` object, we just want to serialize
-                // the keys to add them to this one
-                Ok(Some(try!(self.fbq.outer.serialize(serializer))))
+                let mut merge_ser = MergeSerializer::new(serializer);
+                Ok(Some(try!(self.fbq.outer.serialize(&mut merge_ser))))
             },
             _ => {
                 Ok(None)
             }
         }
+    }
+}
+
+struct MergeSerializer<'a, S: Serializer + 'a> {
+    underlying: &'a mut S
+}
+
+impl<'a, S> MergeSerializer<'a, S>
+    where S: Serializer {
+
+    fn new(u: &'a mut S) -> Self {
+        MergeSerializer {underlying: u}
+    }
+}
+
+macro_rules! delegate_serialize {
+    ($n:ident, $t:ty) => (
+        fn $n(&mut self, value: $t) -> Result<(), Self::Error> {
+            self.underlying.$n(value)
+        }
+    )
+}
+
+impl<'a, S> Serializer for MergeSerializer<'a, S>
+    where S: Serializer {
+
+    type Error = S::Error;
+
+    delegate_serialize!(serialize_bool, bool);
+    delegate_serialize!(serialize_i64, i64);
+    delegate_serialize!(serialize_u64, u64);
+    delegate_serialize!(serialize_f64, f64);
+    delegate_serialize!(serialize_str, &str);
+
+    fn serialize_unit(&mut self) -> Result<(), Self::Error> {
+        self.underlying.serialize_unit()
+    }
+
+    fn serialize_none(&mut self) -> Result<(), Self::Error> {
+        self.underlying.serialize_none()
+    }
+
+    fn serialize_some<V>(&mut self, value: V) -> Result<(), Self::Error>
+        where V: Serialize {
+
+        value.serialize(self)
+    }
+
+    fn serialize_seq<V>(&mut self, visitor: V) -> Result<(), Self::Error>
+        where V: SeqVisitor {
+
+        self.underlying.serialize_seq(visitor)
+    }
+
+    fn serialize_seq_elt<V>(&mut self, value: V) -> Result<(), Self::Error>
+        where V: Serialize {
+
+        self.underlying.serialize_seq_elt(value)
+    }
+
+    fn serialize_map<V>(&mut self, mut visitor: V) -> Result<(), Self::Error>
+        where V: MapVisitor {
+
+        while let Some(()) = try!(visitor.visit(self.underlying)) { }
+        Ok(())
+    }
+
+    fn serialize_map_elt<K, V>(&mut self, key: K, value: V) -> Result<(), Self::Error>
+        where K: Serialize,
+              V: Serialize {
+        self.underlying.serialize_map_elt(key, value)
     }
 }
 
@@ -163,6 +233,6 @@ pub mod tests {
                                    TestOptions {opt_a: 8i64, opt_b: 2.5f64},
                                    TestOptions {opt_a: 9i64, opt_b: 1.5f64});
         let s = serde_json::to_string(&t).unwrap();
-        assert_eq!("", s);
+        assert_eq!("{\"key\":{\"opt_a\":8,\"opt_b\":2.5},\"opt_a\":9,\"opt_b\":1.5}", s);
     }
 }
