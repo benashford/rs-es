@@ -36,6 +36,8 @@ use ::units::Duration;
 use super::ShardCountResult;
 use super::common::{Options, OptionVal, VersionType};
 
+// TODO - make Serialize
+#[derive(Default)]
 pub struct ActionSource {
     doc:           Option<Json>,
     upsert:        Option<Json>,
@@ -46,15 +48,8 @@ pub struct ActionSource {
 }
 
 impl ActionSource {
-    pub fn new() -> ActionSource {
-        ActionSource {
-            doc:           None,
-            upsert:        None,
-            doc_as_upsert: None,
-            script:        None,
-            params:        None,
-            lang:          None
-        }
+    pub fn new() -> Self {
+        Default::default()
     }
 
     add_field!(with_doc, doc, Json);
@@ -149,7 +144,7 @@ pub struct ActionOptions {
 }
 
 #[derive(Serialize)]
-pub struct Action<X>(FieldBased<ActionType, ActionOptions, NoOuter>, Option<Box<X>>);
+pub struct Action<X>(FieldBased<ActionType, ActionOptions, NoOuter>, Option<X>);
 
 impl<S> Action<S>
     where S: Serialize {
@@ -166,23 +161,18 @@ impl<S> Action<S>
     /// let delete_action = Action::delete("doc_id");
     /// ```
     pub fn index(document: S) -> Self {
-        // Action::new(ActionType::Index, ActionOptions {
-        //     source: Some(document.to_json()),
-        //     ..Default::default()
-        // })
-        unimplemented!()
+        Action(FieldBased::new(ActionType::Index,
+                               Default::default(),
+                               NoOuter),
+               Some(document))
     }
 
     /// Create action
     pub fn create(document: S) -> Self {
-        unimplemented!()
-        // Action {
-        //     action:  ActionType::Create,
-        //     options: ActionOptions {
-        //         source: Some(document.to_json()),
-        //         ..Default::default()
-        //     }
-        // }
+        Action(FieldBased::new(ActionType::Create,
+                               Default::default(),
+                               NoOuter),
+               Some(document))
     }
 
     /// Add the serialized version of this action to the bulk `String`.
@@ -215,16 +205,15 @@ impl<S> Action<S> {
                None)
     }
 
-    pub fn update<A: Into<String>>(id: A, update: &ActionSource) -> Self {
+    pub fn update<A: Into<String>>(id: A, update: ActionSource) -> Self {
         unimplemented!()
-        // Action {
-        //     action: ActionType::Update,
-        //     options: ActionOptions {
-        //         id: Some(id.into()),
-        //         source: Some(update.to_json()),
-        //         ..Default::default()
-        //     }
-        // }
+        // Action(FieldBased::new(ActionType::Update,
+        //                        ActionOptions {
+        //                            id: Some(id.into()),
+        //                            ..Default::default()
+        //                        },
+        //                        NoOuter),
+        //        update)
     }
 
     add_inner_field!(with_index, index, String);
