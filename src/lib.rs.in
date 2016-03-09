@@ -476,8 +476,8 @@ pub mod tests {
     fn test_delete_index() {
         let index_name = "test_delete_index";
         let mut client = make_client();
-        // TODO - re-enable
-        //clean_db(&mut client, index_name);
+
+        clean_db(&mut client, index_name);
         {
             let result = client
                 .index(index_name, "test_type")
