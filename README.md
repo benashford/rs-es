@@ -390,6 +390,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 0. Re-enable the `nightly` build once Travis is fixed.
 1. Decide whether it's best in structs that contain a "document" to box the document or not?
+2. Re-enable UPDATE BULK option. (may be related to Script refactoring)
 1. Transcribe this TODO list into specific GitHub issues, for easier management.
 2. Handling API calls that don't deal with JSON objects.
 2. Documentation.

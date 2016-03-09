@@ -36,49 +36,11 @@ use ::units::Duration;
 use super::ShardCountResult;
 use super::common::{Options, OptionVal, VersionType};
 
-// TODO - make Serialize
-#[derive(Default)]
-pub struct ActionSource {
-    doc:           Option<Json>,
-    upsert:        Option<Json>,
-    doc_as_upsert: Option<bool>,
-    script:        Option<String>,
-    params:        Option<Json>,
-    lang:          Option<String>
-}
-
-impl ActionSource {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    add_field!(with_doc, doc, Json);
-    add_field!(with_upsert, upsert, Json);
-    add_field!(with_doc_as_upsert, doc_as_upsert, bool);
-    add_field!(with_script, script, String);
-    add_field!(with_params, params, Json);
-    add_field!(with_lang, lang, String);
-}
-
-impl ToJson for ActionSource {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-
-        optional_add!(self, d, doc);
-        optional_add!(self, d, upsert);
-        optional_add!(self, d, doc_as_upsert);
-        optional_add!(self, d, script);
-        optional_add!(self, d, params);
-        optional_add!(self, d, lang);
-
-        Json::Object(d)
-    }
-}
-
 pub enum ActionType {
     Index,
     Create,
     Delete,
+    /// WARNING - currently un-implemented
     Update
 }
 
@@ -207,16 +169,7 @@ impl<S> Action<S> {
                None)
     }
 
-    pub fn update<A: Into<String>>(id: A, update: ActionSource) -> Self {
-        unimplemented!()
-        // Action(FieldBased::new(ActionType::Update,
-        //                        ActionOptions {
-        //                            id: Some(id.into()),
-        //                            ..Default::default()
-        //                        },
-        //                        NoOuter),
-        //        update)
-    }
+    // TODO - implement update
 
     add_inner_field!(with_index, index, String);
     add_inner_field!(with_doc_type, doc_type, String);
@@ -385,25 +338,6 @@ pub struct ActionResultInner {
     pub found:    Option<bool>
 }
 
-// TODO - deprecated
-// impl<'a> From<&'a Json> for ActionResult {
-//     fn from(from: &'a Json) -> ActionResult {
-//         info!("ActionResult from: {:?}", from);
-
-//         let d = from.as_object().expect("Not a Json object");
-//         assert_eq!(1, d.len());
-//         let (key, inner) = d.iter().next().expect("No content");
-
-//         ActionResult {
-//             action:   ActionType::from(key),
-//             index:    get_json_string!(inner, "_index"),
-//             doc_type: get_json_string!(inner, "_type"),
-//             version:  get_json_u64!(inner, "_version"),
-//             status:   get_json_u64!(inner, "status")
-//         }
-//     }
-// }
-
 /// The result of a bulk operation
 #[derive(Deserialize)]
 pub struct BulkResult {
@@ -411,23 +345,3 @@ pub struct BulkResult {
     pub items:  Vec<ActionResult>,
     pub took:   u64
 }
-
-// TODO - Deprecated
-// impl<'a> From<&'a Json> for BulkResult {
-//     fn from(from: &'a Json) -> BulkResult {
-//         info!("Bulk result, result: {:?}", from);
-//         BulkResult {
-//             errors: get_json_bool!(from, "errors"),
-//             items:  from.find("items")
-//                 .expect("No field called 'items'")
-//                 .as_array()
-//                 .expect("Field 'items' not expected array")
-//                 .iter()
-//                 .map(|item| {
-//                     ActionResult::from(item)
-//                 })
-//                 .collect(),
-//             took:   get_json_u64!(from, "took")
-//         }
-//     }
-// }
