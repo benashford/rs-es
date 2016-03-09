@@ -348,7 +348,7 @@ pub mod tests {
         Client::new(&hostname, 9200)
     }
 
-    #[derive(Debug, RustcDecodable, RustcEncodable, Serialize)]
+    #[derive(Debug, RustcDecodable, RustcEncodable, Serialize, Deserialize)]
     pub struct TestDocument {
         pub str_field:  String,
         pub int_field:  i64,
@@ -496,36 +496,34 @@ pub mod tests {
         }
     }
 
-    // #[test]
-    // fn test_get() {
-    //     let index_name = "test_get";
-    //     let mut client = make_client();
-    //     // TODO - re-enable
-    //     //clean_db(&mut client, index_name);
-    //     {
-    //         let doc = TestDocument::new().with_int_field(3)
-    //                                      .with_bool_field(false);
-    //         client
-    //             .index(index_name, "test_type")
-    //             .with_id("TEST_GETTING")
-    //             .with_doc(&doc)
-    //             .send().unwrap();
-    //     }
-    //     {
-    //         let mut getter = client.get(index_name, "TEST_GETTING");
-    //         let result_wrapped = getter
-    //             .with_doc_type("test_type")
-    //             .send();
-    //         info!("RESULT: {:?}", result_wrapped);
-    //         let result = result_wrapped.unwrap();
-    //         assert_eq!(result.id, "TEST_GETTING");
+    #[test]
+    fn test_get() {
+        let index_name = "test_get";
+        let mut client = make_client();
+        clean_db(&mut client, index_name);
+        {
+            let doc = TestDocument::new().with_int_field(3)
+                                         .with_bool_field(false);
+            client
+                .index(index_name, "test_type")
+                .with_id("TEST_GETTING")
+                .with_doc(&doc)
+                .send().unwrap();
+        }
+        {
+            let mut getter = client.get(index_name, "TEST_GETTING");
+            let result_wrapped = getter
+                .with_doc_type("test_type")
+                .send();
+            let result = result_wrapped.unwrap();
+            assert_eq!(result.id, "TEST_GETTING");
 
-    //         let source:TestDocument = result.source().unwrap();
-    //         assert_eq!(source.str_field, "I am a test");
-    //         assert_eq!(source.int_field, 3);
-    //         assert_eq!(source.bool_field, false);
-    //     }
-    // }
+            let source:TestDocument = result.source.expect("Source document");
+            assert_eq!(source.str_field, "I am a test");
+            assert_eq!(source.int_field, 3);
+            assert_eq!(source.bool_field, false);
+        }
+    }
 
     // fn setup_search_test_data(client: &mut Client, index_name: &str) {
     //     let documents = vec![
