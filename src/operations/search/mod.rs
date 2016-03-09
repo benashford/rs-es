@@ -513,14 +513,12 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
         info!("Searching with: {}", url);
-        // TODO - fix below
-        // let (status_code, result) = try!(self.client.get_op(&url));
-        // info!("Search result (status: {}, result: {:?})", status_code, result);
-        // match status_code {
-        //     StatusCode::Ok => Ok(result.expect("No Json payload")),
-        //     _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
-        // }
-        unimplemented!()
+        let response = try!(self.client.get_op(&url));
+        match response.status_code() {
+            &StatusCode::Ok => Ok(try!(response.read_response())),
+            _               => Err(EsError::EsError(format!("Unexpected status: {}",
+                                                            response.status_code())))
+        }
     }
 }
 
