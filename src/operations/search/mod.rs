@@ -778,23 +778,23 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
-        // let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
-        // match status_code {
-        //     StatusCode::Ok => {
-        //         // let result_json = result.expect("No Json payload");
-        //         // let mut search_result = SearchResult::from(&result_json);
-        //         // match self.body.aggs {
-        //         //     Some(ref aggs) => {
-        //         //         search_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
-        //         //     },
-        //         //     _              => ()
-        //         // }
-        //         // Ok(search_result)
-        //         unimplemented!()
-        //     },
-        //     _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
-        // }
-        unimplemented!()
+        let response = try!(self.client.post_body_op(&url, &self.body));
+        match response.status_code() {
+            &StatusCode::Ok => {
+                // TODO - enable these
+                // let result_json = result.expect("No Json payload");
+                // let mut search_result = SearchResult::from(&result_json);
+                // match self.body.aggs {
+                //     Some(ref aggs) => {
+                //         search_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
+                //     },
+                //     _              => ()
+                // }
+                Ok(try!(response.read_response()))
+            },
+            _ => Err(EsError::EsError(format!("Unexpected status: {}",
+                                              response.status_code())))
+        }
     }
 
     /// Begins a scan with the specified query and options
@@ -842,19 +842,6 @@ pub struct SearchHitsHitsResult {
     // pub fields:   Option<Json>
 }
 
-impl SearchHitsHitsResult {
-    /// Get the source document as a struct, the raw JSON version is available
-    /// directly from the source field
-    pub fn source<T: Decodable>(self) -> Result<T, EsError> {
-        // TODO - replace with Serde equivalent
-        // match self.source {
-        //     Some(source) => decode_json(source),
-        //     None         => Err(EsError::EsError("No source field".to_owned()))
-        // }
-        unimplemented!()
-    }
-}
-
 // TODO - deprecated
 impl<'a> From<&'a Json> for SearchHitsHitsResult {
     fn from(r: &'a Json) -> SearchHitsHitsResult {
@@ -881,16 +868,6 @@ impl<'a> From<&'a Json> for SearchHitsHitsResult {
 pub struct SearchHitsResult {
     pub total: u64,
     pub hits:  Vec<SearchHitsHitsResult>
-}
-
-impl SearchHitsResult {
-    pub fn hits<T: Decodable>(self) -> Result<Vec<T>, EsError> {
-        let mut r = Vec::with_capacity(self.hits.len());
-        for hit in self.hits {
-            r.push(try!(hit.source()));
-        }
-        Ok(r)
-    }
 }
 
 impl<'a> From<&'a Json> for SearchHitsResult {
