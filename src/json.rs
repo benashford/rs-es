@@ -98,6 +98,8 @@ impl<'a, F, I, O> MapVisitor for FieldBasedMapVisitor<'a, F, I, O>
             },
             1 => {
                 self.state += 1;
+                // TODO - this is writing a whole `{...}` object, we just want to serialize
+                // the keys to add them to this one
                 Ok(Some(try!(self.fbq.outer.serialize(serializer))))
             },
             _ => {
@@ -133,8 +135,17 @@ pub mod tests {
     struct TestStruct(FieldBased<String, TestOptions, NoOuter>);
 
     impl TestStruct {
-        fn new(key: String, options: TestOptions) -> TestStruct {
+        fn new(key: String, options: TestOptions) -> Self {
             TestStruct(FieldBased::new(key, options, NoOuter))
+        }
+    }
+
+    #[derive(Serialize)]
+    struct TestWithOuter(FieldBased<String, TestOptions, TestOptions>);
+
+    impl TestWithOuter {
+        fn new(key: String, options: TestOptions, outer: TestOptions) -> Self {
+            TestWithOuter(FieldBased::new(key, options, outer))
         }
     }
 
@@ -144,5 +155,14 @@ pub mod tests {
                                 TestOptions {opt_a: 4i64, opt_b: 3.5f64});
         let s = serde_json::to_string(&t).unwrap();
         assert_eq!("{\"key\":{\"opt_a\":4,\"opt_b\":3.5}}", s);
+    }
+
+    #[test]
+    fn test_outer_field_based() {
+        let t = TestWithOuter::new("key".to_owned(),
+                                   TestOptions {opt_a: 8i64, opt_b: 2.5f64},
+                                   TestOptions {opt_a: 9i64, opt_b: 1.5f64});
+        let s = serde_json::to_string(&t).unwrap();
+        assert_eq!("", s);
     }
 }
