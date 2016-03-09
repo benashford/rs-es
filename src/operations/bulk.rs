@@ -152,14 +152,6 @@ impl<S> Action<S>
     ///
     /// Takes the document to be indexed, other parameters can be set as
     /// optional on the `Action` struct returned.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use rs_es::operations::bulk::Action;
-    ///
-    /// let delete_action = Action::delete("doc_id");
-    /// ```
     pub fn index(document: S) -> Self {
         Action(FieldBased::new(ActionType::Index,
                                Default::default(),
@@ -195,6 +187,16 @@ impl<S> Action<S>
 }
 
 impl<S> Action<S> {
+    /// Delete a document based on ID.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rs_es::operations::bulk::Action;
+    ///
+    /// let delete_action:Action<()> = Action::delete("doc_id");
+    /// let delete_with_index:Action<()> = Action::delete("doc_id").with_index("index_name");
+    /// ```
     pub fn delete<A: Into<String>>(id: A) -> Self {
         Action(FieldBased::new(ActionType::Delete,
                                ActionOptions {
