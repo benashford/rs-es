@@ -33,6 +33,7 @@ use ::error::EsError;
 use ::json::{FieldBased, NoOuter, ShouldSkip};
 use ::units::Duration;
 
+use super::ShardCountResult;
 use super::common::{Options, OptionVal, VersionType};
 
 pub struct ActionSource {
@@ -186,34 +187,32 @@ impl<S> Action<S>
 
     /// Add the serialized version of this action to the bulk `String`.
     fn add(&self, actstr: &mut String) -> Result<(), EsError> {
-        // let command_str = try!(serde_json::to_string(self));
+        let command_str = try!(serde_json::to_string(&self.0));
 
-        // actstr.push_str(&command_str);
-        // actstr.push_str("\n");
+        actstr.push_str(&command_str);
+        actstr.push_str("\n");
 
-        // match self.1 {
-        //     Some(ref source) => {
-        //         let payload_str = try!(serde_json::to_string(source));
-        //         actstr.push_str(&payload_str);
-        //         actstr.push_str("\n");
-        //     },
-        //     None             => ()
-        // }
-        // Ok(())
-        unimplemented!()
+        match self.1 {
+            Some(ref source) => {
+                let payload_str = try!(serde_json::to_string(source));
+                actstr.push_str(&payload_str);
+                actstr.push_str("\n");
+            },
+            None             => ()
+        }
+        Ok(())
     }
 }
 
 impl<S> Action<S> {
     pub fn delete<A: Into<String>>(id: A) -> Self {
-        unimplemented!()
-        // Action {
-        //     action: ActionType::Delete,
-        //     options: ActionOptions {
-        //         id: Some(id.into()),
-        //         ..Default::default()
-        //     }
-        // }
+        Action(FieldBased::new(ActionType::Delete,
+                               ActionOptions {
+                                   id: Some(id.into()),
+                                   ..Default::default()
+                               },
+                               NoOuter),
+               None)
     }
 
     pub fn update<A: Into<String>>(id: A, update: &ActionSource) -> Self {
@@ -251,7 +250,7 @@ pub struct BulkOperation<'a, 'b, S: 'b> {
 
 impl<'a, 'b, S> BulkOperation<'a, 'b, S>
     where S: Serialize {
-    
+
     pub fn new(client: &'a mut Client, actions: &'b [Action<S>]) -> Self {
         BulkOperation {
             client:   client,
@@ -318,7 +317,7 @@ impl<'a, 'b, S> BulkOperation<'a, 'b, S>
             self.client.full_url(&url)
         };
         let body = self.format_actions();
-
+        println!("Sending: {}", body);
         // Doesn't use the standard macros as it's not standard JSON
         let mut result = try!(self.client.http_client
                               .post(&full_url)
@@ -357,6 +356,8 @@ impl Deserialize for ActionResult {
                     Some((key, value)) => (key, value),
                     None               => return Err(V::Error::custom("expecting at least one field"))
                 };
+                println!("Found key: {:?}, value: {:?}", key, value);
+                try!(visitor.end());
 
                 let result = ActionResult {
                     action: match key.as_ref() {
@@ -379,7 +380,7 @@ impl Deserialize for ActionResult {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ActionResultInner {
     #[serde(rename="_index")]
     pub index:    String,
@@ -387,7 +388,10 @@ pub struct ActionResultInner {
     pub doc_type: String,
     #[serde(rename="_version")]
     pub version:  u64,
-    pub status:   u64
+    pub status:   u64,
+    #[serde(rename="_shards")]
+    pub shards:   ShardCountResult,
+    pub found:    bool
 }
 
 // TODO - deprecated
