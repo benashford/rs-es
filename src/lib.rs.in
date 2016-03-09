@@ -156,7 +156,7 @@ macro_rules! es_body_op {
                               .headers(self.headers.clone())
                               .body(&json_string)
                               .send());
-            
+
             do_req(result)
         }
     }
@@ -602,25 +602,25 @@ pub mod tests {
         assert_eq!(2, within_range.hits.total);
     }
 
-    // #[test]
-    // fn test_bulk() {
-    //     let index_name = "test_bulk";
-    //     let mut client = make_client();
-    //     // TODO - re-enable
-    //     //clean_db(&mut client, index_name);
+    #[test]
+    fn test_bulk() {
+        let index_name = "test_bulk";
+        let mut client = make_client();
 
-    //     let actions:Vec<Action> = (1..10).map(|i| {
-    //         let doc = TestDocument::new().with_str_field("bulk_doc").with_int_field(i);
-    //         Action::index(doc)
-    //     }).collect();
+        clean_db(&mut client, index_name);
 
-    //     let result = client.bulk(&actions)
-    //         .with_index(index_name)
-    //         .with_doc_type("bulk_type")
-    //         .send()
-    //         .unwrap();
+        let actions:Vec<Action<TestDocument>> = (1..10).map(|i| {
+            let doc = TestDocument::new().with_str_field("bulk_doc").with_int_field(i);
+            Action::index(doc)
+        }).collect();
 
-    //     assert_eq!(false, result.errors);
-    //     assert_eq!(9, result.items.len());
-    // }
+        let result = client.bulk(&actions)
+            .with_index(index_name)
+            .with_doc_type("bulk_type")
+            .send()
+            .unwrap();
+
+        assert_eq!(false, result.errors);
+        assert_eq!(9, result.items.len());
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ben Ashford
+ * Copyright 2015-2016 Ben Ashford
  * Copyright 2015 Astro
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,7 @@
 
 //! Implementation of ElasticSearch Analyze operation
 
+// TODO - deprecated
 use rustc_serialize::json::Json;
 
 use ::do_req;
@@ -65,10 +66,10 @@ impl<'a, 'b> AnalyzeOperation<'a, 'b> {
         }
         let client = &self.client;
         let full_url = client.full_url(&url);
-        let mut req = try!(client.http_client
-                           .post(&full_url)
-                           .body(self.body)
-                           .send());
+        let req = try!(client.http_client
+                       .post(&full_url)
+                       .body(self.body)
+                       .send());
         // TODO - check if we need to check the status code, etc.
         //let (_, result) = try!(do_req(&mut req));
         //Ok(result)

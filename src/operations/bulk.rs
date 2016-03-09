@@ -382,7 +382,7 @@ pub struct ActionResultInner {
     pub status:   u64,
     #[serde(rename="_shards")]
     pub shards:   ShardCountResult,
-    pub found:    bool
+    pub found:    Option<bool>
 }
 
 // TODO - deprecated
