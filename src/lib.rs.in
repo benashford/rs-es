@@ -257,16 +257,13 @@ impl Client {
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/2.x/indices-delete-index.html
     pub fn delete_index<'a>(&'a mut self, index: &'a str) -> Result<GenericResponse, EsError> {
         let url = format!("/{}/", index);
-        // let (status_code, result) = try!(self.delete_op(&url));
-        // info!("DELETE INDEX OPERATION STATUS: {:?} RESULT: {:?}", status_code, result);
+        let response = try!(self.delete_op(&url));
 
-        // match status_code {
-        //     StatusCode::Ok =>
-        //         Ok(GenericResponse::from(&result.expect("No Json payload"))),
-        //     _ =>
-        //         Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
-        // }
-        unimplemented!()
+        match response.status_code() {
+            &StatusCode::Ok => Ok(try!(response.read_response())),
+            _ => Err(EsError::EsError(format!("Unexpected status: {}",
+                                              response.status_code())))
+        }
     }
 
     // Multi-document APIs
@@ -306,11 +303,13 @@ impl Client {
     }
 }
 
-#[derive(Debug)]
+// TODO - move somewhere where it makes sense
+#[derive(Debug, Deserialize)]
 pub struct GenericResponse {
     acknowledged: bool
 }
 
+// TODO - deprecated
 impl<'a> From<&'a Json> for GenericResponse {
     fn from(r: &'a Json) -> GenericResponse {
         GenericResponse {
@@ -473,29 +472,29 @@ pub mod tests {
         }
     }
 
-    // #[test]
-    // fn test_delete_index() {
-    //     let index_name = "test_delete_index";
-    //     let mut client = make_client();
-    //     // TODO - re-enable
-    //     //clean_db(&mut client, index_name);
-    //     {
-    //         let result = client
-    //             .index(index_name, "test_type")
-    //             .with_doc(&TestDocument::new().with_int_field(1))
-    //             .send();
-    //         assert!(result.is_ok());
-    //     }
-    //     {
-    //         let result = client.delete_index(index_name);
-    //         info!("DELETE INDEX RESULT: {:?}", result);
+    #[test]
+    fn test_delete_index() {
+        let index_name = "test_delete_index";
+        let mut client = make_client();
+        // TODO - re-enable
+        //clean_db(&mut client, index_name);
+        {
+            let result = client
+                .index(index_name, "test_type")
+                .with_doc(&TestDocument::new().with_int_field(1))
+                .send();
+            assert!(result.is_ok());
+        }
+        {
+            let result = client.delete_index(index_name);
+            info!("DELETE INDEX RESULT: {:?}", result);
 
-    //         assert!(result.is_ok());
+            assert!(result.is_ok());
 
-    //         let result_wrapped = result.unwrap();
-    //         assert!(result_wrapped.acknowledged);
-    //     }
-    // }
+            let result_wrapped = result.unwrap();
+            assert!(result_wrapped.acknowledged);
+        }
+    }
 
     // #[test]
     // fn test_get() {
