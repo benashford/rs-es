@@ -20,6 +20,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use serde::ser;
 use serde::ser::{Serialize, Serializer};
+use serde_json::{to_value, Value};
 
 // TODO - deprecated
 use rustc_serialize::json::{Json, ToJson};
@@ -62,6 +63,14 @@ macro_rules! metrics_agg {
         impl<'a> From<$b<'a>> for Aggregation<'a> {
             fn from(from: $b<'a>) -> Aggregation<'a> {
                 Aggregation::Metrics(MetricsAggregation::$b(from))
+            }
+        }
+
+        impl<'a> Serialize for $b<'a> {
+            fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+                where S: Serializer {
+
+                self.0.serialize(serializer)
             }
         }
     }
@@ -132,7 +141,7 @@ impl<'a> ser::MapVisitor for MetricAggVisitor<'a> {
 }
 
 /// Min aggregation
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct Min<'a>(MetricAgg<'a>);
 metrics_agg!(Min);
 
@@ -395,9 +404,8 @@ impl<'a> ToJson for ScriptedMetric<'a> {
 }
 
 /// Individual aggregations and their options
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub enum MetricsAggregation<'a> {
-    #[serde(rename="min")]
     Min(Min<'a>),
     // Max(Max<'a>),
     // Sum(Sum<'a>),
@@ -410,6 +418,20 @@ pub enum MetricsAggregation<'a> {
     // Cardinality(Cardinality<'a>),
     // GeoBounds(GeoBounds<'a>),
     // ScriptedMetric(ScriptedMetric<'a>)
+}
+
+impl<'a> MetricsAggregation<'a> {
+    pub fn to_map(&self) -> BTreeMap<&'static str, Value> {
+        use self::MetricsAggregation::*;
+        let mut b = BTreeMap::new();
+        let (key, value) = match self {
+            &Min(ref min) => ("min", to_value(min))
+        };
+        println!("Self: {:?}", &self);
+        println!("Value: {:?}", &value);
+        b.insert(key, value);
+        b
+    }
 }
 
 // TODO deprecated
@@ -458,7 +480,7 @@ pub enum MetricsAggregation<'a> {
 //     }
 // }
 
-#[cfg(tests)]
+#[cfg(test)]
 pub mod tests {
     use serde_json;
 
@@ -470,6 +492,6 @@ pub mod tests {
         let aggs:Aggregations = ("min_test", Min::field("blah")).into();
 
         assert_eq!("{\"min_test\":{\"min\":{\"field\":\"blah\"}}}",
-                   serde_json::to_string(&aggs));
+                   serde_json::to_string(&aggs).unwrap());
     }
 }

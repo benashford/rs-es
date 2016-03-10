@@ -175,24 +175,22 @@ pub enum Aggregation<'a> {
 impl<'a> Serialize for Aggregation<'a> {
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
         where S: Serializer {
+        use self::Aggregation::*;
 
-        // TODO - this is almost certainly going to be replaced with something
-        // that makes more sense
-        // match self {
-        //     &Aggregation::Metrics(ref a) => a.serialize(serializer),
-        //     &Aggregation::Bucket(ref b, ref aggs) => {
-        //         let mut m = BTreeMap::new();
-        //         b.add_to_object(&mut m);
-        //         match aggs {
-        //             &Some(ref a) => {
-        //                 m.insert("aggs", to_value(a));
-        //             },
-        //             &None => ()
-        //         }
-        //         m.serialize(serializer)
-        //     }
-        // }
-        unimplemented!()
+        let m:BTreeMap<&'static str, Value> = match self {
+            &Metrics(ref a) => a.to_map(),
+            &Bucket(ref b, ref aggs) => {
+                let mut m:BTreeMap<&'static str, Value> = b.to_map();
+                match aggs {
+                    &Some(ref a) => {
+                        m.insert("aggs", to_value(a));
+                    },
+                    &None => ()
+                }
+                m
+            }
+        };
+        m.serialize(serializer)
     }
 }
 
@@ -1137,19 +1135,5 @@ impl AggregationsResult {
             None    => return Err(EsError::EsError("Aggregations is not an object".to_owned()))
         };
         Ok(object_to_result(aggs, object))
-    }
-}
-
-#[cfg(tests)]
-pub mod tests {
-    use serde_json;
-
-    use super::{Aggregations, Global};
-
-    #[test]
-    fn test_global_aggregation() {
-        let aggs:Aggregations = ("test", Global::new()).into();
-
-        assert_eq!("", serde_json::to_string(&aggs));
     }
 }
