@@ -33,12 +33,14 @@ use error::EsError;
 use query;
 use units::{DistanceType, DistanceUnit, Duration, GeoBox, JsonVal, Location};
 
+// TODO - deprecated
 #[derive(Debug)]
 pub enum Scripts<'a> {
     Inline(&'a str, Option<&'a str>),
     Id(&'a str)
 }
 
+// TODO - deprecated
 /// Script attributes for various attributes
 #[derive(Debug)]
 pub struct Script<'a> {
@@ -46,80 +48,65 @@ pub struct Script<'a> {
     params: Option<Json>
 }
 
-impl<'a> Script<'a> {
-    pub fn id(script_id: &'a str) -> Script<'a> {
-        Script {
-            script: Scripts::Id(script_id),
-            params: None
-        }
-    }
+// TODO - deprecated
+// impl<'a> Script<'a> {
+//     pub fn id(script_id: &'a str) -> Script<'a> {
+//         Script {
+//             script: Scripts::Id(script_id),
+//             params: None
+//         }
+//     }
 
-    pub fn script(script: &'a str) -> Script<'a> {
-        Script {
-            script: Scripts::Inline(script, None),
-            params: None
-        }
-    }
+//     pub fn script(script: &'a str) -> Script<'a> {
+//         Script {
+//             script: Scripts::Inline(script, None),
+//             params: None
+//         }
+//     }
 
-    pub fn script_and_field(script: &'a str, field: &'a str) -> Script<'a> {
-        Script {
-            script: Scripts::Inline(script, Some(field)),
-            params: None
-        }
-    }
+//     pub fn script_and_field(script: &'a str, field: &'a str) -> Script<'a> {
+//         Script {
+//             script: Scripts::Inline(script, Some(field)),
+//             params: None
+//         }
+//     }
 
-    fn add_to_object(&self, obj: &mut BTreeMap<&'static str, Value>) {
-        match self.script {
-            Scripts::Inline(script, field) => {
-                obj.insert("script", to_value(script));
-                match field {
-                    Some(f) => {
-                        obj.insert("field", to_value(f));
-                    },
-                    None    => ()
-                }
-            },
-            Scripts::Id(script_id) => {
-                obj.insert("script_id", to_value(script_id));
-            }
-        };
-        // TODO - fix this
-        // match self.params {
-        //     Some(ref json) => {
-        //         obj.insert("params".to_owned(), json.clone());
-        //     },
-        //     None           => ()
-        // };
-    }
+//     fn add_to_object(&self, obj: &mut BTreeMap<&'static str, Value>) {
+//         match self.script {
+//             Scripts::Inline(script, field) => {
+//                 obj.insert("script", to_value(script));
+//                 match field {
+//                     Some(f) => {
+//                         obj.insert("field", to_value(f));
+//                     },
+//                     None    => ()
+//                 }
+//             },
+//             Scripts::Id(script_id) => {
+//                 obj.insert("script_id", to_value(script_id));
+//             }
+//         };
+//         // TODO - fix this
+//         // match self.params {
+//         //     Some(ref json) => {
+//         //         obj.insert("params".to_owned(), json.clone());
+//         //     },
+//         //     None           => ()
+//         // };
+//     }
 
-    pub fn with_params(mut self, params: Json) -> Self {
-        self.params = Some(params);
-        self
-    }
-}
+//     pub fn with_params(mut self, params: Json) -> Self {
+//         self.params = Some(params);
+//         self
+//     }
+// }
 
 /// A common pattern is for an aggregation to accept a field or a script
 #[derive(Debug)]
+// TODO - deprecated
 pub enum FieldOrScript<'a> {
     Field(&'a str),
     Script(Script<'a>)
-}
-
-impl<'a> Serialize for FieldOrScript<'a> {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
-        where S: Serializer {
-
-        let mut d = BTreeMap::new();
-        match self {
-            &FieldOrScript::Field(field) => {
-                d.insert("field", to_value(field));
-            },
-            &FieldOrScript::Script(ref script) => {
-                script.add_to_object(&mut d);
-            }
-        }
-        d.serialize(serializer)
-    }
 }
 
 impl<'a> FieldOrScript<'a> {
@@ -136,43 +123,43 @@ impl<'a> FieldOrScript<'a> {
     // }
 }
 
-impl<'a> From<&'a str> for FieldOrScript<'a> {
-    fn from(from: &'a str) -> FieldOrScript<'a> {
-        FieldOrScript::Field(from)
-    }
-}
+// impl<'a> From<&'a str> for FieldOrScript<'a> {
+//     fn from(from: &'a str) -> FieldOrScript<'a> {
+//         FieldOrScript::Field(from)
+//     }
+// }
 
-impl<'a> From<Script<'a>> for FieldOrScript<'a> {
-    fn from(from: Script<'a>) -> FieldOrScript<'a> {
-        FieldOrScript::Script(from)
-    }
-}
+// impl<'a> From<Script<'a>> for FieldOrScript<'a> {
+//     fn from(from: Script<'a>) -> FieldOrScript<'a> {
+//         FieldOrScript::Script(from)
+//     }
+// }
 
-/// Macros to build simple `FieldOrScript` based aggregations
-macro_rules! field_or_script_new {
-    ($t:ident) => {
-        impl<'a> $t<'a> {
-            pub fn new<FOS: Into<FieldOrScript<'a>>>(fos: FOS) -> $t<'a> {
-                $t(fos.into())
-            }
-        }
-    }
-}
+// /// Macros to build simple `FieldOrScript` based aggregations
+// macro_rules! field_or_script_new {
+//     ($t:ident) => {
+//         impl<'a> $t<'a> {
+//             pub fn new<FOS: Into<FieldOrScript<'a>>>(fos: FOS) -> $t<'a> {
+//                 $t(fos.into())
+//             }
+//         }
+//     }
+// }
 
-// TODO - deprecated
-macro_rules! field_or_script_to_json {
-    ($t:ident) => {
-        impl<'a> ToJson for $t<'a> {
-            fn to_json(&self) -> Json {
-                // DEPRECATED
-                // let mut d = BTreeMap::new();
-                // self.0.add_to_object(&mut d);
-                // Json::Object(d)
-                unimplemented!()
-            }
-        }
-    }
-}
+// // TODO - deprecated
+// macro_rules! field_or_script_to_json {
+//     ($t:ident) => {
+//         impl<'a> ToJson for $t<'a> {
+//             fn to_json(&self) -> Json {
+//                 // DEPRECATED
+//                 // let mut d = BTreeMap::new();
+//                 // self.0.add_to_object(&mut d);
+//                 // Json::Object(d)
+//                 unimplemented!()
+//             }
+//         }
+//     }
+// }
 
 /// Aggregations are either metrics or bucket-based aggregations
 #[derive(Debug)]
@@ -249,7 +236,7 @@ impl<'a> Aggregations<'a> {
     /// use rs_es::operations::search::aggregations::metrics::Min;
     ///
     /// let mut aggs = Aggregations::new();
-    /// aggs.add("agg_name", Min::new("field_name"));
+    /// aggs.add("agg_name", Min::field("field_name"));
     /// ```
     pub fn new() -> Aggregations<'a> {
         Aggregations(HashMap::new())

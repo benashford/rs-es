@@ -16,17 +16,49 @@
 
 //! For metrics-based aggregations
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
+use serde::ser;
 use serde::ser::{Serialize, Serializer};
 
 // TODO - deprecated
 use rustc_serialize::json::{Json, ToJson};
 
+use ::units::JsonVal;
+
+// TODO - deprecated
 use super::FieldOrScript;
+
+use super::Aggregation;
 
 macro_rules! metrics_agg {
     ($b:ident) => {
+        impl<'a> $b<'a> {
+            pub fn field(field: &'a str) -> Self {
+                $b(MetricAgg {
+                    field: Some(field),
+                    ..Default::default()
+                })
+            }
+
+            pub fn script<S: Into<Script<'a>>>(script: S) -> Self {
+                $b(MetricAgg {
+                    script: script.into(),
+                    ..Default::default()
+                })
+            }
+
+            pub fn with_script<S: Into<Script<'a>>>(mut self, script: S) -> Self {
+                self.0.script = script.into();
+                self
+            }
+
+            pub fn with_missing<J: Into<JsonVal>>(mut self, missing: J) -> Self {
+                self.0.missing = Some(missing.into());
+                self
+            }
+        }
+
         impl<'a> From<$b<'a>> for Aggregation<'a> {
             fn from(from: $b<'a>) -> Aggregation<'a> {
                 Aggregation::Metrics(MetricsAggregation::$b(from))
@@ -35,13 +67,74 @@ macro_rules! metrics_agg {
     }
 }
 
+/// Scripts used in aggregations
+#[derive(Debug, Default)]
+struct Script<'a> {
+    inline: Option<&'a str>,
+    file: Option<&'a str>,
+    id: Option<&'a str>,
+    params: Option<HashMap<&'a str, JsonVal>>
+}
+
+/// Base of all Metrics aggregations
+#[derive(Debug, Default)]
+struct MetricAgg<'a> {
+    field: Option<&'a str>,
+    script: Script<'a>,
+    missing: Option<JsonVal>
+}
+
+impl<'a> Serialize for MetricAgg<'a> {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        serializer.serialize_struct("MetricAgg", MetricAggVisitor {
+            ma: self,
+            state: 0
+        })
+    }
+}
+
+struct MetricAggVisitor<'a> {
+    ma: &'a MetricAgg<'a>,
+    state: u8
+}
+
+fn visit_field<S, T>(field: Option<T>,
+                     field_name: &str,
+                     serializer: &mut S) -> Result<Option<()>, S::Error>
+    where S: Serializer,
+          T: Serialize {
+
+    match field {
+        Some(value) => {
+            Ok(Some(try!(serializer.serialize_map_elt(field_name, value))))
+        },
+        None => Ok(Some(()))
+    }
+}
+
+impl<'a> ser::MapVisitor for MetricAggVisitor<'a> {
+    fn visit<S>(&mut self, serializer: &mut S) -> Result<Option<()>, S::Error>
+        where S: Serializer {
+
+        self.state += 1;
+        match self.state {
+            1 => visit_field(self.ma.field, "field", serializer),
+            2 => visit_field(self.ma.script.inline, "inline", serializer),
+            3 => visit_field(self.ma.script.file, "file", serializer),
+            4 => visit_field(self.ma.script.id, "id", serializer),
+            5 => visit_field(self.ma.script.params.as_ref(), "params", serializer),
+            6 => visit_field(self.ma.missing.as_ref(), "missing", serializer),
+            _ => Ok(None)
+        }
+    }
+}
+
 /// Min aggregation
 #[derive(Debug, Serialize)]
-pub struct Min<'a>(FieldOrScript<'a>);
-
-// field_or_script_new!(Min);
-// field_or_script_to_json!(Min);
-// metrics_agg!(Min);
+pub struct Min<'a>(MetricAgg<'a>);
+metrics_agg!(Min);
 
 // /// Max aggregation
 // #[derive(Debug)]
@@ -364,3 +457,19 @@ pub enum MetricsAggregation<'a> {
 //         Json::Object(d)
 //     }
 // }
+
+#[cfg(tests)]
+pub mod tests {
+    use serde_json;
+
+    use super::super::Aggregations;
+    use super::Min;
+
+    #[test]
+    fn test_min_aggregation() {
+        let aggs:Aggregations = ("min_test", Min::field("blah")).into();
+
+        assert_eq!("{\"min_test\":{\"min\":{\"field\":\"blah\"}}}",
+                   serde_json::to_string(&aggs));
+    }
+}
