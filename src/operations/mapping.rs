@@ -62,10 +62,10 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
 
         let body = hashmap! { "mappings" => mappings };
 
-        let url    = format!("{}", self.index);
-        // let (_, _) = try!(self.client.put_body_op(&url, &body));
-        // Ok(MappingResult)
-        unimplemented!()
+        let url = format!("{}", self.index);
+        // TODO - actually check the response
+        let response = try!(self.client.put_body_op(&url, &body));
+        Ok(MappingResult)
     }
 }
 
@@ -81,53 +81,54 @@ pub mod tests {
 
     use super::MappingOperation;
 
-    #[derive(Debug, RustcDecodable, RustcEncodable)]
+    #[derive(Debug, RustcDecodable, RustcEncodable, Serialize)]
     pub struct Author {
         pub name: String
     }
 
-    // #[test]
-    // fn test_mapping() {
-    //     let index_name = "tests_test_mapping";
-    //     let mut client = ::tests::make_client();
+    #[test]
+    fn test_mapping() {
+        let index_name = "tests_test_mapping";
+        let mut client = ::tests::make_client();
 
-    //     // TODO - this fails in many cases (specifically on TravisCI), but we ignore the
-    //     // failures anyway
-    //     client.delete_index(index_name);
+        // TODO - this fails in many cases (specifically on TravisCI), but we ignore the
+        // failures anyway
+        client.delete_index(index_name);
 
-    //     let mapping = hashmap! { // DocTypes
-    //         "post" => hashmap! { // DocType
-    //             "created_at" => hashmap! {
-    //                 "type" => "date",
-    //                 "format" => "date_time"
-    //             },
+        let mapping = hashmap! { // DocTypes
+            "post" => hashmap! { // DocType
+                "created_at" => hashmap! {
+                    "type" => "date",
+                    "format" => "date_time"
+                },
 
-    //             "title" => hashmap! {
-    //                 "type" => "string",
-    //                 "index" => "not_analyzed"
-    //             }
-    //         },
+                "title" => hashmap! {
+                    "type" => "string",
+                    "index" => "not_analyzed"
+                }
+            },
 
-    //         "author" => hashmap! { // DocType
-    //             "name" => hashmap! {
-    //                 "type" => "string",
-    //             }
-    //         },
-    //     };
+            "author" => hashmap! { // DocType
+                "name" => hashmap! {
+                    "type" => "string",
+                }
+            },
+        };
 
-    //     let result = MappingOperation::new(&mut client, index_name, &mapping).send();
-    //     assert!(result.is_ok());
+        // TODO add appropriate functions to the `Client` struct
+        let result = MappingOperation::new(&mut client, index_name, &mapping).send();
+        assert!(result.is_ok());
 
-    //     {
-    //         let result_wrapped = client
-    //             .index(index_name, "post")
-    //             .with_doc(&Author { name: "Homu".to_owned() })
-    //             .send();
+        {
+            let result_wrapped = client
+                .index(index_name, "post")
+                .with_doc(&Author { name: "Homu".to_owned() })
+                .send();
 
-    //         assert!(result_wrapped.is_ok());
+            assert!(result_wrapped.is_ok());
 
-    //         let result = result_wrapped.unwrap();
-    //         assert!(result.created);
-    //     }
-    // }
+            let result = result_wrapped.unwrap();
+            assert!(result.created);
+        }
+    }
 }
