@@ -20,7 +20,7 @@ use hyper::status::StatusCode;
 
 use rustc_serialize::json::Json;
 
-use ::Client;
+use ::{Client, EsResponse};
 use ::error::EsError;
 use super::common::{Options, OptionVal};
 
@@ -69,36 +69,27 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
                           self.doc_type,
                           self.id,
                           self.options);
-        //let (status_code, result) = try!(self.client.delete_op(&url));
-        //info!("DELETE OPERATION STATUS: {:?} RESULT: {:?}", status_code, result);
-        // match status_code {
-        //     StatusCode::Ok =>
-        //         Ok(DeleteResult::from(&result.expect("No Json payload"))),
-        //     _ =>
-        //         Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
-        // }
-        unimplemented!()
+        let response = try!(self.client.delete_op(&url));
+        match response.status_code() {
+            &StatusCode::Ok =>
+                Ok(try!(response.read_response())),
+            _ =>
+                Err(EsError::EsError(format!("Unexpected status: {}",
+                                             response.status_code())))
+        }
     }
 }
 
 /// Result of a DELETE operation
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct DeleteResult {
     pub found:    bool,
+    #[serde(rename="_index")]
     pub index:    String,
+    #[serde(rename="_type")]
     pub doc_type: String,
+    #[serde(rename="_id")]
     pub id:       String,
+    #[serde(rename="_version")]
     pub version:  u64
-}
-
-impl<'a> From<&'a Json> for DeleteResult {
-    fn from(r: &'a Json) -> DeleteResult {
-        DeleteResult {
-            found:    get_json_bool!(r, "found"),
-            index:    get_json_string!(r, "_index"),
-            doc_type: get_json_string!(r, "_type"),
-            id:       get_json_string!(r, "_id"),
-            version:  get_json_u64!(r, "_version")
-        }
-    }
 }
