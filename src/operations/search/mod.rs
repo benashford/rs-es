@@ -651,25 +651,6 @@ struct SearchQueryOperationBody<'b> {
     aggs: Option<&'b aggregations::Aggregations<'b>>
 }
 
-// TODO - deprecated
-// impl<'a> ToJson for SearchQueryOperationBody<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("from".to_owned(), self.from.to_json());
-//         d.insert("size".to_owned(), self.size.to_json());
-//         optional_add!(self, d, query);
-//         optional_add!(self, d, timeout);
-//         optional_add!(self, d, terminate_after);
-//         optional_add!(self, d, stats);
-//         optional_add!(self, d, min_score);
-//         optional_add!(self, d, sort);
-//         optional_add!(self, d, track_scores);
-//         optional_add!(self, d, source, "_source");
-//         optional_add!(self, d, aggs);
-//         Json::Object(d)
-//     }
-// }
-
 pub struct SearchQueryOperation<'a, 'b> {
     /// The HTTP client
     client: &'a mut Client,
