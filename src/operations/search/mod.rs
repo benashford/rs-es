@@ -647,6 +647,7 @@ struct SearchQueryOperationBody<'b> {
     source: Option<Source<'b>>,
 
     /// Aggregations
+    #[serde(rename="aggregations", skip_serializing_if="ShouldSkip::should_skip")]
     aggs: Option<&'b aggregations::Aggregations<'b>>
 }
 
