@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ben Ashford
+ * Copyright 2015-2016 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,10 @@
 
 use std::fmt;
 
+// TODO - remove
 use rustc_serialize::json::{Json, ToJson};
+
+use serde::ser::{Serialize, Serializer};
 
 use util::StrJoin;
 
@@ -101,14 +104,20 @@ macro_rules! add_field {
 }
 
 /// The [`version_type` field](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#index-versioning)
-// TODO - proper serialization
-#[allow(dead_code)]
 pub enum VersionType {
     Internal,
     External,
     ExternalGt,
     ExternalGte,
     Force
+}
+
+impl Serialize for VersionType {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        self.to_string().serialize(serializer)
+    }
 }
 
 impl ToString for VersionType {
@@ -125,6 +134,7 @@ impl ToString for VersionType {
 
 from_exp!(VersionType, OptionVal, from, OptionVal(from.to_string()));
 
+// TODO - deprecated
 impl ToJson for VersionType {
     fn to_json(&self) -> Json {
         Json::String(self.to_string())

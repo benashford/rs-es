@@ -90,9 +90,8 @@ pub struct ActionOptions {
     id:                Option<String>,
     #[serde(rename="_version", skip_serializing_if="ShouldSkip::should_skip")]
     version:           Option<u64>,
-    // TODO - re-enable
-    //#[serde(rename="_version_type", skip_serializing_if="ShouldSkip::should_skip")]
-    //version_type:      Option<VersionType>,
+    #[serde(rename="_version_type", skip_serializing_if="ShouldSkip::should_skip")]
+    version_type:      Option<VersionType>,
     #[serde(rename="_routing", skip_serializing_if="ShouldSkip::should_skip")]
     routing:           Option<String>,
     #[serde(rename="_parent", skip_serializing_if="ShouldSkip::should_skip")]
@@ -175,8 +174,7 @@ impl<S> Action<S> {
     add_inner_field!(with_doc_type, doc_type, String);
     add_inner_field!(with_id, id, String);
     add_inner_field!(with_version, version, u64);
-    // TODO - re-enable
-    //add_inner_field!(with_version_type, version_type, VersionType);
+    add_inner_field!(with_version_type, version_type, VersionType);
     add_inner_field!(with_routing, routing, String);
     add_inner_field!(with_parent, parent, String);
     add_inner_field!(with_timestamp, timestamp, String);
