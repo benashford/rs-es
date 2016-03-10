@@ -19,7 +19,12 @@
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
+// TODO - deprecated
 use rustc_serialize::json::{Json, ToJson};
+
+use serde::de::Deserialize;
+use serde::ser::{Serialize, Serializer};
+use serde_json::{to_value, Value};
 
 use error::EsError;
 use query;
@@ -60,27 +65,28 @@ impl<'a> Script<'a> {
         }
     }
 
-    fn add_to_object(&self, obj: &mut BTreeMap<String, Json>) {
+    fn add_to_object(&self, obj: &mut BTreeMap<&'static str, Value>) {
         match self.script {
             Scripts::Inline(script, field) => {
-                obj.insert("script".to_owned(), script.to_json());
+                obj.insert("script", to_value(script));
                 match field {
                     Some(f) => {
-                        obj.insert("field".to_owned(), f.to_json());
+                        obj.insert("field", to_value(f));
                     },
                     None    => ()
                 }
             },
             Scripts::Id(script_id) => {
-                obj.insert("script_id".to_owned(), script_id.to_json());
+                obj.insert("script_id", to_value(script_id));
             }
         };
-        match self.params {
-            Some(ref json) => {
-                obj.insert("params".to_owned(), json.clone());
-            },
-            None           => ()
-        };
+        // TODO - fix this
+        // match self.params {
+        //     Some(ref json) => {
+        //         obj.insert("params".to_owned(), json.clone());
+        //     },
+        //     None           => ()
+        // };
     }
 
     pub fn with_params(mut self, params: Json) -> Self {
@@ -106,17 +112,35 @@ pub enum FieldOrScript<'a> {
     Script(Script<'a>)
 }
 
-impl<'a> FieldOrScript<'a> {
-    fn add_to_object(&self, obj: &mut BTreeMap<String, Json>) {
+impl<'a> Serialize for FieldOrScript<'a> {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        let mut d = BTreeMap::new();
         match self {
             &FieldOrScript::Field(field) => {
-                obj.insert("field".to_owned(), field.to_json());
+                d.insert("field", to_value(field));
             },
             &FieldOrScript::Script(ref script) => {
-                script.add_to_object(obj);
+                script.add_to_object(&mut d);
             }
         }
+        d.serialize(serializer)
     }
+}
+
+impl<'a> FieldOrScript<'a> {
+    // TODO - deprecated
+    // fn add_to_object(&self, obj: &mut BTreeMap<String, Json>) {
+    //     match self {
+    //         &FieldOrScript::Field(field) => {
+    //             obj.insert("field".to_owned(), field.to_json());
+    //         },
+    //         &FieldOrScript::Script(ref script) => {
+    //             script.add_to_object(obj);
+    //         }
+    //     }
+    // }
 }
 
 impl<'a> From<&'a str> for FieldOrScript<'a> {
@@ -142,204 +166,207 @@ macro_rules! field_or_script_new {
     }
 }
 
+// TODO - deprecated
 macro_rules! field_or_script_to_json {
     ($t:ident) => {
         impl<'a> ToJson for $t<'a> {
             fn to_json(&self) -> Json {
-                let mut d = BTreeMap::new();
-                self.0.add_to_object(&mut d);
-                Json::Object(d)
+                // DEPRECATED
+                // let mut d = BTreeMap::new();
+                // self.0.add_to_object(&mut d);
+                // Json::Object(d)
+                unimplemented!()
             }
         }
     }
 }
 
 /// Min aggregation
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Min<'a>(FieldOrScript<'a>);
 
 field_or_script_new!(Min);
 field_or_script_to_json!(Min);
 metrics_agg!(Min);
 
-/// Max aggregation
-#[derive(Debug)]
-pub struct Max<'a>(FieldOrScript<'a>);
+// /// Max aggregation
+// #[derive(Debug)]
+// pub struct Max<'a>(FieldOrScript<'a>);
 
-field_or_script_new!(Max);
-field_or_script_to_json!(Max);
-metrics_agg!(Max);
+// field_or_script_new!(Max);
+// field_or_script_to_json!(Max);
+// metrics_agg!(Max);
 
-/// Sum aggregation
-#[derive(Debug)]
-pub struct Sum<'a>(FieldOrScript<'a>);
+// /// Sum aggregation
+// #[derive(Debug)]
+// pub struct Sum<'a>(FieldOrScript<'a>);
 
-field_or_script_new!(Sum);
-field_or_script_to_json!(Sum);
-metrics_agg!(Sum);
+// field_or_script_new!(Sum);
+// field_or_script_to_json!(Sum);
+// metrics_agg!(Sum);
 
-/// Avg aggregation
-#[derive(Debug)]
-pub struct Avg<'a>(FieldOrScript<'a>);
+// /// Avg aggregation
+// #[derive(Debug)]
+// pub struct Avg<'a>(FieldOrScript<'a>);
 
-field_or_script_new!(Avg);
-field_or_script_to_json!(Avg);
-metrics_agg!(Avg);
+// field_or_script_new!(Avg);
+// field_or_script_to_json!(Avg);
+// metrics_agg!(Avg);
 
-/// Stats aggregation
-#[derive(Debug)]
-pub struct Stats<'a>(FieldOrScript<'a>);
+// /// Stats aggregation
+// #[derive(Debug)]
+// pub struct Stats<'a>(FieldOrScript<'a>);
 
-field_or_script_new!(Stats);
-field_or_script_to_json!(Stats);
-metrics_agg!(Stats);
+// field_or_script_new!(Stats);
+// field_or_script_to_json!(Stats);
+// metrics_agg!(Stats);
 
-/// Extended stats aggregation
-#[derive(Debug)]
-pub struct ExtendedStats<'a>(FieldOrScript<'a>);
+// /// Extended stats aggregation
+// #[derive(Debug)]
+// pub struct ExtendedStats<'a>(FieldOrScript<'a>);
 
-field_or_script_new!(ExtendedStats);
-field_or_script_to_json!(ExtendedStats);
-metrics_agg!(ExtendedStats);
+// field_or_script_new!(ExtendedStats);
+// field_or_script_to_json!(ExtendedStats);
+// metrics_agg!(ExtendedStats);
 
-/// Value count aggregation
-#[derive(Debug)]
-pub struct ValueCount<'a>(FieldOrScript<'a>);
+// /// Value count aggregation
+// #[derive(Debug)]
+// pub struct ValueCount<'a>(FieldOrScript<'a>);
 
-field_or_script_new!(ValueCount);
-field_or_script_to_json!(ValueCount);
-metrics_agg!(ValueCount);
+// field_or_script_new!(ValueCount);
+// field_or_script_to_json!(ValueCount);
+// metrics_agg!(ValueCount);
 
-/// Percentiles aggregation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-percentile-aggregation.html
-///
-/// # Examples
-///
-/// ```
-/// use rs_es::operations::search::aggregations::Percentiles;
-///
-/// let p1 = Percentiles::new("field_name").with_compression(100u64);
-/// let p2 = Percentiles::new("field_name").with_percents(vec![10.0, 20.0]);
-/// ```
-#[derive(Debug)]
-pub struct Percentiles<'a> {
-    fos:         FieldOrScript<'a>,
-    percents:    Option<Vec<f64>>,
-    compression: Option<u64>
-}
+// /// Percentiles aggregation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-percentile-aggregation.html
+// ///
+// /// # Examples
+// ///
+// /// ```
+// /// use rs_es::operations::search::aggregations::Percentiles;
+// ///
+// /// let p1 = Percentiles::new("field_name").with_compression(100u64);
+// /// let p2 = Percentiles::new("field_name").with_percents(vec![10.0, 20.0]);
+// /// ```
+// #[derive(Debug)]
+// pub struct Percentiles<'a> {
+//     fos:         FieldOrScript<'a>,
+//     percents:    Option<Vec<f64>>,
+//     compression: Option<u64>
+// }
 
-impl<'a> Percentiles<'a> {
-    pub fn new<F: Into<FieldOrScript<'a>>>(fos: F) -> Percentiles<'a> {
-        Percentiles {
-            fos:         fos.into(),
-            percents:    None,
-            compression: None
-        }
-    }
+// impl<'a> Percentiles<'a> {
+//     pub fn new<F: Into<FieldOrScript<'a>>>(fos: F) -> Percentiles<'a> {
+//         Percentiles {
+//             fos:         fos.into(),
+//             percents:    None,
+//             compression: None
+//         }
+//     }
 
-    add_field!(with_percents, percents, Vec<f64>);
-    add_field!(with_compression, compression, u64);
-}
+//     add_field!(with_percents, percents, Vec<f64>);
+//     add_field!(with_compression, compression, u64);
+// }
 
-impl<'a> ToJson for Percentiles<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        self.fos.add_to_object(&mut d);
-        optional_add!(self, d, percents);
-        optional_add!(self, d, compression);
-        Json::Object(d)
-    }
-}
+// impl<'a> ToJson for Percentiles<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         self.fos.add_to_object(&mut d);
+//         optional_add!(self, d, percents);
+//         optional_add!(self, d, compression);
+//         Json::Object(d)
+//     }
+// }
 
-metrics_agg!(Percentiles);
+// metrics_agg!(Percentiles);
 
-/// Percentile Ranks aggregation
-#[derive(Debug)]
-pub struct PercentileRanks<'a> {
-    fos:    FieldOrScript<'a>,
-    values: Vec<f64>
-}
+// /// Percentile Ranks aggregation
+// #[derive(Debug)]
+// pub struct PercentileRanks<'a> {
+//     fos:    FieldOrScript<'a>,
+//     values: Vec<f64>
+// }
 
-impl<'a> PercentileRanks<'a> {
-    pub fn new<F: Into<FieldOrScript<'a>>>(fos: F, vals: Vec<f64>) -> PercentileRanks<'a> {
-        PercentileRanks {
-            fos:    fos.into(),
-            values: vals
-        }
-    }
-}
+// impl<'a> PercentileRanks<'a> {
+//     pub fn new<F: Into<FieldOrScript<'a>>>(fos: F, vals: Vec<f64>) -> PercentileRanks<'a> {
+//         PercentileRanks {
+//             fos:    fos.into(),
+//             values: vals
+//         }
+//     }
+// }
 
-impl<'a> ToJson for PercentileRanks<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        self.fos.add_to_object(&mut d);
-        d.insert("values".to_owned(), self.values.to_json());
-        Json::Object(d)
-    }
-}
+// impl<'a> ToJson for PercentileRanks<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         self.fos.add_to_object(&mut d);
+//         d.insert("values".to_owned(), self.values.to_json());
+//         Json::Object(d)
+//     }
+// }
 
-metrics_agg!(PercentileRanks);
+// metrics_agg!(PercentileRanks);
 
-/// Cardinality aggregation
-#[derive(Debug)]
-pub struct Cardinality<'a> {
-    fos:                 FieldOrScript<'a>,
-    precision_threshold: Option<u64>,
-    rehash:              Option<bool>
-}
+// /// Cardinality aggregation
+// #[derive(Debug)]
+// pub struct Cardinality<'a> {
+//     fos:                 FieldOrScript<'a>,
+//     precision_threshold: Option<u64>,
+//     rehash:              Option<bool>
+// }
 
-impl<'a> Cardinality<'a> {
-    pub fn new<F: Into<FieldOrScript<'a>>>(fos: F) -> Cardinality<'a> {
-        Cardinality {
-            fos:                 fos.into(),
-            precision_threshold: None,
-            rehash:              None
-        }
-    }
+// impl<'a> Cardinality<'a> {
+//     pub fn new<F: Into<FieldOrScript<'a>>>(fos: F) -> Cardinality<'a> {
+//         Cardinality {
+//             fos:                 fos.into(),
+//             precision_threshold: None,
+//             rehash:              None
+//         }
+//     }
 
-    add_field!(with_precision_threshold, precision_threshold, u64);
-    add_field!(with_rehash, rehash, bool);
-}
+//     add_field!(with_precision_threshold, precision_threshold, u64);
+//     add_field!(with_rehash, rehash, bool);
+// }
 
-impl<'a> ToJson for Cardinality<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        self.fos.add_to_object(&mut d);
-        optional_add!(self, d, precision_threshold);
-        optional_add!(self, d, rehash);
-        Json::Object(d)
-    }
-}
+// impl<'a> ToJson for Cardinality<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         self.fos.add_to_object(&mut d);
+//         optional_add!(self, d, precision_threshold);
+//         optional_add!(self, d, rehash);
+//         Json::Object(d)
+//     }
+// }
 
-metrics_agg!(Cardinality);
+// metrics_agg!(Cardinality);
 
-/// Geo Bounds aggregation
-#[derive(Debug)]
-pub struct GeoBounds<'a> {
-    field:          &'a str,
-    wrap_longitude: Option<bool>
-}
+// /// Geo Bounds aggregation
+// #[derive(Debug)]
+// pub struct GeoBounds<'a> {
+//     field:          &'a str,
+//     wrap_longitude: Option<bool>
+// }
 
-impl<'a> GeoBounds<'a> {
-    pub fn new(field: &'a str) -> GeoBounds {
-        GeoBounds {
-            field: field,
-            wrap_longitude: None
-        }
-    }
+// impl<'a> GeoBounds<'a> {
+//     pub fn new(field: &'a str) -> GeoBounds {
+//         GeoBounds {
+//             field: field,
+//             wrap_longitude: None
+//         }
+//     }
 
-    add_field!(with_wrap_longitude, wrap_longitude, bool);
-}
+//     add_field!(with_wrap_longitude, wrap_longitude, bool);
+// }
 
-impl<'a> ToJson for GeoBounds<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("field".to_owned(), self.field.to_json());
-        optional_add!(self, d, wrap_longitude);
-        Json::Object(d)
-    }
-}
+// impl<'a> ToJson for GeoBounds<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("field".to_owned(), self.field.to_json());
+//         optional_add!(self, d, wrap_longitude);
+//         Json::Object(d)
+//     }
+// }
 
-metrics_agg!(GeoBounds);
+// metrics_agg!(GeoBounds);
 
 /// Scripted method aggregation
 #[derive(Debug)]
@@ -421,66 +448,68 @@ impl<'a> ToJson for ScriptedMetric<'a> {
 }
 
 /// Individual aggregations and their options
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum MetricsAggregation<'a> {
+    #[serde(rename="min")]
     Min(Min<'a>),
-    Max(Max<'a>),
-    Sum(Sum<'a>),
-    Avg(Avg<'a>),
-    Stats(Stats<'a>),
-    ExtendedStats(ExtendedStats<'a>),
-    ValueCount(ValueCount<'a>),
-    Percentiles(Percentiles<'a>),
-    PercentileRanks(PercentileRanks<'a>),
-    Cardinality(Cardinality<'a>),
-    GeoBounds(GeoBounds<'a>),
-    ScriptedMetric(ScriptedMetric<'a>)
+    // Max(Max<'a>),
+    // Sum(Sum<'a>),
+    // Avg(Avg<'a>),
+    // Stats(Stats<'a>),
+    // ExtendedStats(ExtendedStats<'a>),
+    // ValueCount(ValueCount<'a>),
+    // Percentiles(Percentiles<'a>),
+    // PercentileRanks(PercentileRanks<'a>),
+    // Cardinality(Cardinality<'a>),
+    // GeoBounds(GeoBounds<'a>),
+    // ScriptedMetric(ScriptedMetric<'a>)
 }
 
-impl<'a> ToJson for MetricsAggregation<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        match self {
-            &MetricsAggregation::Min(ref min_agg) => {
-                d.insert("min".to_owned(), min_agg.to_json());
-            },
-            &MetricsAggregation::Max(ref max_agg) => {
-                d.insert("max".to_owned(), max_agg.to_json());
-            },
-            &MetricsAggregation::Sum(ref sum_agg) => {
-                d.insert("sum".to_owned(), sum_agg.to_json());
-            },
-            &MetricsAggregation::Avg(ref avg_agg) => {
-                d.insert("avg".to_owned(), avg_agg.to_json());
-            },
-            &MetricsAggregation::Stats(ref stats_agg) => {
-                d.insert("stats".to_owned(), stats_agg.to_json());
-            },
-            &MetricsAggregation::ExtendedStats(ref ext_stat_agg) => {
-                d.insert("extended_stats".to_owned(), ext_stat_agg.to_json());
-            },
-            &MetricsAggregation::ValueCount(ref vc_agg) => {
-                d.insert("value_count".to_owned(), vc_agg.to_json());
-            },
-            &MetricsAggregation::Percentiles(ref pc_agg) => {
-                d.insert("percentiles".to_owned(), pc_agg.to_json());
-            },
-            &MetricsAggregation::PercentileRanks(ref pr_agg) => {
-                d.insert("percentile_ranks".to_owned(), pr_agg.to_json());
-            },
-            &MetricsAggregation::Cardinality(ref card_agg) => {
-                d.insert("cardinality".to_owned(), card_agg.to_json());
-            },
-            &MetricsAggregation::GeoBounds(ref gb_agg) => {
-                d.insert("geo_bounds".to_owned(), gb_agg.to_json());
-            },
-            &MetricsAggregation::ScriptedMetric(ref sm_agg) => {
-                d.insert("scripted_metric".to_owned(), sm_agg.to_json());
-            }
-        }
-        Json::Object(d)
-    }
-}
+// TODO deprecated
+// impl<'a> ToJson for MetricsAggregation<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         match self {
+//             &MetricsAggregation::Min(ref min_agg) => {
+//                 d.insert("min".to_owned(), min_agg.to_json());
+//             },
+//             &MetricsAggregation::Max(ref max_agg) => {
+//                 d.insert("max".to_owned(), max_agg.to_json());
+//             },
+//             &MetricsAggregation::Sum(ref sum_agg) => {
+//                 d.insert("sum".to_owned(), sum_agg.to_json());
+//             },
+//             &MetricsAggregation::Avg(ref avg_agg) => {
+//                 d.insert("avg".to_owned(), avg_agg.to_json());
+//             },
+//             &MetricsAggregation::Stats(ref stats_agg) => {
+//                 d.insert("stats".to_owned(), stats_agg.to_json());
+//             },
+//             &MetricsAggregation::ExtendedStats(ref ext_stat_agg) => {
+//                 d.insert("extended_stats".to_owned(), ext_stat_agg.to_json());
+//             },
+//             &MetricsAggregation::ValueCount(ref vc_agg) => {
+//                 d.insert("value_count".to_owned(), vc_agg.to_json());
+//             },
+//             &MetricsAggregation::Percentiles(ref pc_agg) => {
+//                 d.insert("percentiles".to_owned(), pc_agg.to_json());
+//             },
+//             &MetricsAggregation::PercentileRanks(ref pr_agg) => {
+//                 d.insert("percentile_ranks".to_owned(), pr_agg.to_json());
+//             },
+//             &MetricsAggregation::Cardinality(ref card_agg) => {
+//                 d.insert("cardinality".to_owned(), card_agg.to_json());
+//             },
+//             &MetricsAggregation::GeoBounds(ref gb_agg) => {
+//                 d.insert("geo_bounds".to_owned(), gb_agg.to_json());
+//             },
+//             &MetricsAggregation::ScriptedMetric(ref sm_agg) => {
+//                 d.insert("scripted_metric".to_owned(), sm_agg.to_json());
+//             }
+//         }
+//         Json::Object(d)
+//     }
+// }
 
 // Bucket aggregations
 
@@ -502,7 +531,7 @@ macro_rules! bucket_agg {
 
 /// Global aggregation, defines a single global bucket.  Can only be used as a
 /// top-level aggregation.  See: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-global-aggregation.html
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Global<'a> {
     /// Needed for lifecycle reasons
     phantom: PhantomData<&'a str>
@@ -516,6 +545,7 @@ impl<'a> Global<'a> {
     }
 }
 
+// TODO - deprecated
 impl<'a> ToJson for Global<'a> {
     fn to_json(&self) -> Json {
         Json::Object(BTreeMap::new())
@@ -524,165 +554,165 @@ impl<'a> ToJson for Global<'a> {
 
 bucket_agg!(Global);
 
-/// Filter aggregation
-#[derive(Debug)]
-pub struct Filter<'a> {
-    // TODO - Query is now an enum with a `Box` it might be simpler, with little
-    // side-effects to own it instead
-    filter: &'a query::Query
-}
+// /// Filter aggregation
+// #[derive(Debug)]
+// pub struct Filter<'a> {
+//     // TODO - Query is now an enum with a `Box` it might be simpler, with little
+//     // side-effects to own it instead
+//     filter: &'a query::Query
+// }
 
-impl<'a> Filter<'a> {
-    pub fn new(filter: &'a query::Query) -> Filter<'a> {
-        Filter {
-            filter: filter
-        }
-    }
-}
+// impl<'a> Filter<'a> {
+//     pub fn new(filter: &'a query::Query) -> Filter<'a> {
+//         Filter {
+//             filter: filter
+//         }
+//     }
+// }
 
-impl<'a> ToJson for Filter<'a> {
-    fn to_json(&self) -> Json {
-        self.filter.to_json()
-    }
-}
+// impl<'a> ToJson for Filter<'a> {
+//     fn to_json(&self) -> Json {
+//         self.filter.to_json()
+//     }
+// }
 
-bucket_agg!(Filter);
+// bucket_agg!(Filter);
 
-/// Filters aggregation
-#[derive(Debug)]
-pub struct Filters<'a> {
-    filters: HashMap<&'a str, &'a query::Query>
-}
+// /// Filters aggregation
+// #[derive(Debug)]
+// pub struct Filters<'a> {
+//     filters: HashMap<&'a str, &'a query::Query>
+// }
 
-impl<'a> Filters<'a> {
-    pub fn new(filters: HashMap<&'a str, &'a query::Query>) -> Filters<'a> {
-        Filters {
-            filters: filters
-        }
-    }
-}
+// impl<'a> Filters<'a> {
+//     pub fn new(filters: HashMap<&'a str, &'a query::Query>) -> Filters<'a> {
+//         Filters {
+//             filters: filters
+//         }
+//     }
+// }
 
-impl<'a> From<Vec<(&'a str, &'a query::Query)>> for Filters<'a> {
-    fn from(from: Vec<(&'a str, &'a query::Query)>) -> Filters<'a> {
-        let mut filters = HashMap::with_capacity(from.len());
-        for (k, v) in from {
-            filters.insert(k, v);
-        }
-        Filters::new(filters)
-    }
-}
+// impl<'a> From<Vec<(&'a str, &'a query::Query)>> for Filters<'a> {
+//     fn from(from: Vec<(&'a str, &'a query::Query)>) -> Filters<'a> {
+//         let mut filters = HashMap::with_capacity(from.len());
+//         for (k, v) in from {
+//             filters.insert(k, v);
+//         }
+//         Filters::new(filters)
+//     }
+// }
 
-impl<'a> ToJson for Filters<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        for (&k, v) in self.filters.iter() {
-            inner.insert(k.to_owned(), v.to_json());
-        }
-        d.insert("filters".to_owned(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+// impl<'a> ToJson for Filters<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
+//         for (&k, v) in self.filters.iter() {
+//             inner.insert(k.to_owned(), v.to_json());
+//         }
+//         d.insert("filters".to_owned(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
-bucket_agg!(Filters);
+// bucket_agg!(Filters);
 
-/// Missing aggregation
-#[derive(Debug)]
-pub struct Missing<'a> {
-    pub field: &'a str
-}
+// /// Missing aggregation
+// #[derive(Debug)]
+// pub struct Missing<'a> {
+//     pub field: &'a str
+// }
 
-impl<'a> Missing<'a> {
-    pub fn new(field: &'a str) -> Missing<'a> {
-        Missing {
-            field: field
-        }
-    }
-}
+// impl<'a> Missing<'a> {
+//     pub fn new(field: &'a str) -> Missing<'a> {
+//         Missing {
+//             field: field
+//         }
+//     }
+// }
 
-impl<'a> ToJson for Missing<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("field".to_owned(), self.field.to_json());
-        Json::Object(d)
-    }
-}
+// impl<'a> ToJson for Missing<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("field".to_owned(), self.field.to_json());
+//         Json::Object(d)
+//     }
+// }
 
-bucket_agg!(Missing);
+// bucket_agg!(Missing);
 
-/// Nested aggregation
-#[derive(Debug)]
-pub struct Nested<'a> {
-    pub path: &'a str
-}
+// /// Nested aggregation
+// #[derive(Debug)]
+// pub struct Nested<'a> {
+//     pub path: &'a str
+// }
 
-impl<'a> Nested<'a> {
-    pub fn new(path: &'a str) -> Nested<'a> {
-        Nested {
-            path: path
-        }
-    }
-}
+// impl<'a> Nested<'a> {
+//     pub fn new(path: &'a str) -> Nested<'a> {
+//         Nested {
+//             path: path
+//         }
+//     }
+// }
 
-impl<'a> ToJson for Nested<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("path".to_owned(), self.path.to_json());
-        Json::Object(d)
-    }
-}
+// impl<'a> ToJson for Nested<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("path".to_owned(), self.path.to_json());
+//         Json::Object(d)
+//     }
+// }
 
-bucket_agg!(Nested);
+// bucket_agg!(Nested);
 
-/// Reverse nested aggregation, will produce an error if used anywhere other than
-/// inside a nested aggregation.
-///
-/// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-reverse-nested-aggregation.html
-#[derive(Debug)]
-pub struct ReverseNested<'a> {
-    /// Needed for lifecycle reasons
-    phantom: PhantomData<&'a str>
-}
+// /// Reverse nested aggregation, will produce an error if used anywhere other than
+// /// inside a nested aggregation.
+// ///
+// /// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-reverse-nested-aggregation.html
+// #[derive(Debug)]
+// pub struct ReverseNested<'a> {
+//     /// Needed for lifecycle reasons
+//     phantom: PhantomData<&'a str>
+// }
 
-impl<'a> ReverseNested<'a> {
-    pub fn new() -> ReverseNested<'a> {
-        ReverseNested {
-            phantom: PhantomData
-        }
-    }
-}
+// impl<'a> ReverseNested<'a> {
+//     pub fn new() -> ReverseNested<'a> {
+//         ReverseNested {
+//             phantom: PhantomData
+//         }
+//     }
+// }
 
-impl<'a> ToJson for ReverseNested<'a> {
-    fn to_json(&self) -> Json {
-        Json::Object(BTreeMap::new())
-    }
-}
+// impl<'a> ToJson for ReverseNested<'a> {
+//     fn to_json(&self) -> Json {
+//         Json::Object(BTreeMap::new())
+//     }
+// }
 
-bucket_agg!(ReverseNested);
+// bucket_agg!(ReverseNested);
 
-/// Children aggregation - sub-aggregations run against the child document
-#[derive(Debug)]
-pub struct Children<'a> {
-    doc_type: &'a str
-}
+// /// Children aggregation - sub-aggregations run against the child document
+// #[derive(Debug)]
+// pub struct Children<'a> {
+//     doc_type: &'a str
+// }
 
-impl<'a> Children<'a> {
-    pub fn new(doc_type: &'a str) -> Children<'a> {
-        Children {
-            doc_type: doc_type
-        }
-    }
-}
+// impl<'a> Children<'a> {
+//     pub fn new(doc_type: &'a str) -> Children<'a> {
+//         Children {
+//             doc_type: doc_type
+//         }
+//     }
+// }
 
-impl<'a> ToJson for Children<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("type".to_owned(), self.doc_type.to_json());
-        Json::Object(d)
-    }
-}
+// impl<'a> ToJson for Children<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("type".to_owned(), self.doc_type.to_json());
+//         Json::Object(d)
+//     }
+// }
 
-bucket_agg!(Children);
+// bucket_agg!(Children);
 
 /// Order - used for some bucketing aggregations to determine the order of
 /// buckets
@@ -747,44 +777,44 @@ impl<'a> ToJson for Order<'a> {
     }
 }
 
-/// Terms aggregation
-#[derive(Debug)]
-pub struct Terms<'a> {
-    field:      FieldOrScript<'a>,
-    size:       Option<u64>,
-    shard_size: Option<u64>,
-    order:      Option<Order<'a>>
-}
+// /// Terms aggregation
+// #[derive(Debug)]
+// pub struct Terms<'a> {
+//     field:      FieldOrScript<'a>,
+//     size:       Option<u64>,
+//     shard_size: Option<u64>,
+//     order:      Option<Order<'a>>
+// }
 
-impl<'a> Terms<'a> {
-    pub fn new<FOS: Into<FieldOrScript<'a>>>(field: FOS) -> Terms<'a> {
-        Terms {
-            field:      field.into(),
-            size:       None,
-            shard_size: None,
-            order:      None
-        }
-    }
+// impl<'a> Terms<'a> {
+//     pub fn new<FOS: Into<FieldOrScript<'a>>>(field: FOS) -> Terms<'a> {
+//         Terms {
+//             field:      field.into(),
+//             size:       None,
+//             shard_size: None,
+//             order:      None
+//         }
+//     }
 
-    add_field!(with_size, size, u64);
-    add_field!(with_shard_size, shard_size, u64);
-    add_field!(with_order, order, Order<'a>);
-}
+//     add_field!(with_size, size, u64);
+//     add_field!(with_shard_size, shard_size, u64);
+//     add_field!(with_order, order, Order<'a>);
+// }
 
-impl<'a> ToJson for Terms<'a> {
-    fn to_json(&self) -> Json {
-        let mut json = BTreeMap::new();
-        self.field.add_to_object(&mut json);
+// impl<'a> ToJson for Terms<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut json = BTreeMap::new();
+//         self.field.add_to_object(&mut json);
 
-        optional_add!(self, json, size);
-        optional_add!(self, json, shard_size);
-        optional_add!(self, json, order);
+//         optional_add!(self, json, size);
+//         optional_add!(self, json, shard_size);
+//         optional_add!(self, json, order);
 
-        Json::Object(json)
-    }
-}
+//         Json::Object(json)
+//     }
+// }
 
-bucket_agg!(Terms);
+// bucket_agg!(Terms);
 
 // Range aggs and dependencies
 
@@ -822,44 +852,44 @@ impl<'a> ToJson for RangeInst<'a> {
     }
 }
 
-/// Range aggregations
-///
-/// The keyed option will always be used.
-///
-/// https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-range-aggregation.html
-#[derive(Debug)]
-pub struct Range<'a> {
-    field: FieldOrScript<'a>,
-    keyed: bool,
-    ranges: Vec<RangeInst<'a>>
-}
+// /// Range aggregations
+// ///
+// /// The keyed option will always be used.
+// ///
+// /// https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-range-aggregation.html
+// #[derive(Debug)]
+// pub struct Range<'a> {
+//     field: FieldOrScript<'a>,
+//     keyed: bool,
+//     ranges: Vec<RangeInst<'a>>
+// }
 
-impl<'a> Range<'a> {
-    pub fn new<FOS: Into<FieldOrScript<'a>>>(field: FOS,
-                                             ranges: Vec<RangeInst<'a>>) -> Range<'a> {
-        Range {
-            field:  field.into(),
-            keyed:  true,
-            ranges: ranges
-        }
-    }
+// impl<'a> Range<'a> {
+//     pub fn new<FOS: Into<FieldOrScript<'a>>>(field: FOS,
+//                                              ranges: Vec<RangeInst<'a>>) -> Range<'a> {
+//         Range {
+//             field:  field.into(),
+//             keyed:  true,
+//             ranges: ranges
+//         }
+//     }
 
-    pub fn inst() -> RangeInst<'a> {
-        RangeInst::new()
-    }
-}
+//     pub fn inst() -> RangeInst<'a> {
+//         RangeInst::new()
+//     }
+// }
 
-impl<'a> ToJson for Range<'a> {
-    fn to_json(&self) -> Json {
-        let mut json = BTreeMap::new();
-        self.field.add_to_object(&mut json);
-        json.insert("keyed".to_owned(), Json::Boolean(self.keyed));
-        json.insert("ranges".to_owned(), self.ranges.to_json());
-        Json::Object(json)
-    }
-}
+// impl<'a> ToJson for Range<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut json = BTreeMap::new();
+//         self.field.add_to_object(&mut json);
+//         json.insert("keyed".to_owned(), Json::Boolean(self.keyed));
+//         json.insert("ranges".to_owned(), self.ranges.to_json());
+//         Json::Object(json)
+//     }
+// }
 
-bucket_agg!(Range);
+// bucket_agg!(Range);
 
 /// A specific element of a range for a `DateRange` aggregation
 #[derive(Debug)]
@@ -890,40 +920,40 @@ impl<'a> ToJson for DateRangeInst<'a> {
     }
 }
 
-/// Date range aggregation.  See: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-daterange-aggregation.html
-#[derive(Debug)]
-pub struct DateRange<'a> {
-    field: FieldOrScript<'a>,
-    format: Option<&'a str>,
-    ranges: Vec<DateRangeInst<'a>>
-}
+// /// Date range aggregation.  See: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-daterange-aggregation.html
+// #[derive(Debug)]
+// pub struct DateRange<'a> {
+//     field: FieldOrScript<'a>,
+//     format: Option<&'a str>,
+//     ranges: Vec<DateRangeInst<'a>>
+// }
 
-impl<'a> DateRange<'a> {
-    pub fn new<FOS: Into<FieldOrScript<'a>>>(field: FOS,
-                                             ranges: Vec<DateRangeInst<'a>>) -> DateRange<'a> {
-        DateRange {
-            field: field.into(),
-            format: None,
-            ranges: ranges
-        }
-    }
+// impl<'a> DateRange<'a> {
+//     pub fn new<FOS: Into<FieldOrScript<'a>>>(field: FOS,
+//                                              ranges: Vec<DateRangeInst<'a>>) -> DateRange<'a> {
+//         DateRange {
+//             field: field.into(),
+//             format: None,
+//             ranges: ranges
+//         }
+//     }
 
-    pub fn inst() -> DateRangeInst<'a> {
-        DateRangeInst::new()
-    }
-}
+//     pub fn inst() -> DateRangeInst<'a> {
+//         DateRangeInst::new()
+//     }
+// }
 
-impl<'a> ToJson for DateRange<'a> {
-    fn to_json(&self) -> Json {
-        let mut json = BTreeMap::new();
-        self.field.add_to_object(&mut json);
-        optional_add!(self, json, format);
-        json.insert("ranges".to_owned(), self.ranges.to_json());
-        Json::Object(json)
-    }
-}
+// impl<'a> ToJson for DateRange<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut json = BTreeMap::new();
+//         self.field.add_to_object(&mut json);
+//         optional_add!(self, json, format);
+//         json.insert("ranges".to_owned(), self.ranges.to_json());
+//         Json::Object(json)
+//     }
+// }
 
-bucket_agg!(DateRange);
+// bucket_agg!(DateRange);
 
 /// Histogram aggregation.
 #[derive(Debug)]
@@ -957,46 +987,46 @@ impl From<(i64, i64)> for ExtendedBounds {
     }
 }
 
-#[derive(Debug)]
-pub struct Histogram<'a> {
-    field:           &'a str,
-    interval:        Option<u64>,
-    min_doc_count:   Option<u64>,
-    extended_bounds: Option<ExtendedBounds>,
-    order:           Option<Order<'a>>
-}
+// #[derive(Debug)]
+// pub struct Histogram<'a> {
+//     field:           &'a str,
+//     interval:        Option<u64>,
+//     min_doc_count:   Option<u64>,
+//     extended_bounds: Option<ExtendedBounds>,
+//     order:           Option<Order<'a>>
+// }
 
-impl<'a> Histogram<'a> {
-    pub fn new(field: &'a str) -> Histogram<'a> {
-        Histogram {
-            field: field,
-            interval: None,
-            min_doc_count: None,
-            extended_bounds: None,
-            order: None
-        }
-    }
+// impl<'a> Histogram<'a> {
+//     pub fn new(field: &'a str) -> Histogram<'a> {
+//         Histogram {
+//             field: field,
+//             interval: None,
+//             min_doc_count: None,
+//             extended_bounds: None,
+//             order: None
+//         }
+//     }
 
-    add_field!(with_interval, interval, u64);
-    add_field!(with_min_doc_count, min_doc_count, u64);
-    add_field!(with_extended_bounds, extended_bounds, ExtendedBounds);
-    add_field!(with_order, order, Order<'a>);
-}
+//     add_field!(with_interval, interval, u64);
+//     add_field!(with_min_doc_count, min_doc_count, u64);
+//     add_field!(with_extended_bounds, extended_bounds, ExtendedBounds);
+//     add_field!(with_order, order, Order<'a>);
+// }
 
-impl<'a> ToJson for Histogram<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("field".to_owned(), self.field.to_json());
-        optional_add!(self, d, interval);
-        optional_add!(self, d, min_doc_count);
-        optional_add!(self, d, extended_bounds);
-        optional_add!(self, d, order);
+// impl<'a> ToJson for Histogram<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("field".to_owned(), self.field.to_json());
+//         optional_add!(self, d, interval);
+//         optional_add!(self, d, min_doc_count);
+//         optional_add!(self, d, extended_bounds);
+//         optional_add!(self, d, order);
 
-        Json::Object(d)
-    }
-}
+//         Json::Object(d)
+//     }
+// }
 
-bucket_agg!(Histogram);
+// bucket_agg!(Histogram);
 
 /// Date histogram and related fields
 #[derive(Debug)]
@@ -1054,227 +1084,190 @@ impl ToJson for Interval {
     }
 }
 
-#[derive(Debug)]
-pub struct DateHistogram<'a> {
-    field: &'a str,
-    interval: Interval,
-    time_zone: Option<TimeZone<'a>>,
-    offset: Option<Duration>,
-    format: Option<&'a str>,
-}
+// #[derive(Debug)]
+// pub struct DateHistogram<'a> {
+//     field: &'a str,
+//     interval: Interval,
+//     time_zone: Option<TimeZone<'a>>,
+//     offset: Option<Duration>,
+//     format: Option<&'a str>,
+// }
 
-impl<'a> DateHistogram<'a> {
-    pub fn new<I>(field: &'a str, interval: I) -> DateHistogram<'a>
-    where I: Into<Interval> {
-        DateHistogram {
-            field: field,
-            interval: interval.into(),
-            time_zone: None,
-            offset: None,
-            format: None
-        }
-    }
+// impl<'a> DateHistogram<'a> {
+//     pub fn new<I>(field: &'a str, interval: I) -> DateHistogram<'a>
+//     where I: Into<Interval> {
+//         DateHistogram {
+//             field: field,
+//             interval: interval.into(),
+//             time_zone: None,
+//             offset: None,
+//             format: None
+//         }
+//     }
 
-    add_field!(with_time_zone, time_zone, TimeZone<'a>);
-    add_field!(with_offset, offset, Duration);
-    add_field!(with_format, format, &'a str);
-}
+//     add_field!(with_time_zone, time_zone, TimeZone<'a>);
+//     add_field!(with_offset, offset, Duration);
+//     add_field!(with_format, format, &'a str);
+// }
 
-impl<'a> ToJson for DateHistogram<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("field".to_owned(), self.field.to_json());
-        d.insert("interval".to_owned(), self.interval.to_json());
-        optional_add!(self, d, time_zone);
-        optional_add!(self, d, offset);
-        optional_add!(self, d, format);
+// impl<'a> ToJson for DateHistogram<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("field".to_owned(), self.field.to_json());
+//         d.insert("interval".to_owned(), self.interval.to_json());
+//         optional_add!(self, d, time_zone);
+//         optional_add!(self, d, offset);
+//         optional_add!(self, d, format);
 
-        Json::Object(d)
-    }
-}
+//         Json::Object(d)
+//     }
+// }
 
-bucket_agg!(DateHistogram);
+// bucket_agg!(DateHistogram);
 
-#[derive(Debug)]
-pub struct GeoDistanceInst {
-    from: Option<f64>,
-    to:   Option<f64>
-}
+// #[derive(Debug)]
+// pub struct GeoDistanceInst {
+//     from: Option<f64>,
+//     to:   Option<f64>
+// }
 
-impl GeoDistanceInst {
-    pub fn new() -> GeoDistanceInst {
-        GeoDistanceInst {
-            from: None,
-            to:   None
-        }
-    }
+// impl GeoDistanceInst {
+//     pub fn new() -> GeoDistanceInst {
+//         GeoDistanceInst {
+//             from: None,
+//             to:   None
+//         }
+//     }
 
-    add_field!(with_from, from, f64);
-    add_field!(with_to, to, f64);
-}
+//     add_field!(with_from, from, f64);
+//     add_field!(with_to, to, f64);
+// }
 
-impl ToJson for GeoDistanceInst {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        optional_add!(self, d, from);
-        optional_add!(self, d, to);
+// impl ToJson for GeoDistanceInst {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         optional_add!(self, d, from);
+//         optional_add!(self, d, to);
 
-        Json::Object(d)
-    }
-}
+//         Json::Object(d)
+//     }
+// }
 
-#[derive(Debug)]
-pub struct GeoDistance<'a> {
-    field:         &'a str,
-    origin:        &'a Location,
-    unit:          Option<DistanceUnit>,
-    distance_type: Option<DistanceType>,
-    ranges:        &'a [GeoDistanceInst]
-}
+// #[derive(Debug)]
+// pub struct GeoDistance<'a> {
+//     field:         &'a str,
+//     origin:        &'a Location,
+//     unit:          Option<DistanceUnit>,
+//     distance_type: Option<DistanceType>,
+//     ranges:        &'a [GeoDistanceInst]
+// }
 
-impl<'a> GeoDistance<'a> {
-    pub fn new(field: &'a str,
-               origin: &'a Location,
-               ranges: &'a [GeoDistanceInst]) -> GeoDistance<'a> {
-        GeoDistance {
-            field:         field,
-            origin:        origin,
-            unit:          None,
-            distance_type: None,
-            ranges:        ranges
-        }
-    }
+// impl<'a> GeoDistance<'a> {
+//     pub fn new(field: &'a str,
+//                origin: &'a Location,
+//                ranges: &'a [GeoDistanceInst]) -> GeoDistance<'a> {
+//         GeoDistance {
+//             field:         field,
+//             origin:        origin,
+//             unit:          None,
+//             distance_type: None,
+//             ranges:        ranges
+//         }
+//     }
 
-    add_field!(with_unit, unit, DistanceUnit);
-    add_field!(with_distance_type, distance_type, DistanceType);
+//     add_field!(with_unit, unit, DistanceUnit);
+//     add_field!(with_distance_type, distance_type, DistanceType);
 
-    pub fn inst() -> GeoDistanceInst {
-        GeoDistanceInst::new()
-    }
-}
+//     pub fn inst() -> GeoDistanceInst {
+//         GeoDistanceInst::new()
+//     }
+// }
 
-impl<'a> ToJson for GeoDistance<'a> {
-    fn to_json(&self) -> Json {
-        let mut json = BTreeMap::new();
+// impl<'a> ToJson for GeoDistance<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut json = BTreeMap::new();
 
-        json.insert("field".to_owned(), self.field.to_json());
-        json.insert("origin".to_owned(), self.origin.to_json());
-        json.insert("ranges".to_owned(), self.ranges.to_json());
+//         json.insert("field".to_owned(), self.field.to_json());
+//         json.insert("origin".to_owned(), self.origin.to_json());
+//         json.insert("ranges".to_owned(), self.ranges.to_json());
 
-        optional_add!(self, json, unit);
-        optional_add!(self, json, distance_type);
+//         optional_add!(self, json, unit);
+//         optional_add!(self, json, distance_type);
 
-        Json::Object(json)
-    }
-}
+//         Json::Object(json)
+//     }
+// }
 
-bucket_agg!(GeoDistance);
+// bucket_agg!(GeoDistance);
 
-/// Geohash aggregation
-#[derive(Debug)]
-pub struct GeoHash<'a> {
-    field:      &'a str,
-    precision:  Option<u64>,
-    size:       Option<u64>,
-    shard_size: Option<u64>
-}
+// /// Geohash aggregation
+// #[derive(Debug)]
+// pub struct GeoHash<'a> {
+//     field:      &'a str,
+//     precision:  Option<u64>,
+//     size:       Option<u64>,
+//     shard_size: Option<u64>
+// }
 
-impl<'a> GeoHash<'a> {
-    pub fn new(field: &'a str) -> GeoHash<'a> {
-        GeoHash {
-            field: field,
-            precision: None,
-            size: None,
-            shard_size: None
-        }
-    }
+// impl<'a> GeoHash<'a> {
+//     pub fn new(field: &'a str) -> GeoHash<'a> {
+//         GeoHash {
+//             field: field,
+//             precision: None,
+//             size: None,
+//             shard_size: None
+//         }
+//     }
 
-    add_field!(with_precision, precision, u64);
-    add_field!(with_size, size, u64);
-    add_field!(with_shard_size, shard_size, u64);
-}
+//     add_field!(with_precision, precision, u64);
+//     add_field!(with_size, size, u64);
+//     add_field!(with_shard_size, shard_size, u64);
+// }
 
-impl<'a> ToJson for GeoHash<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
+// impl<'a> ToJson for GeoHash<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
 
-        d.insert("field".to_owned(), self.field.to_json());
+//         d.insert("field".to_owned(), self.field.to_json());
 
-        optional_add!(self, d, precision);
-        optional_add!(self, d, size);
-        optional_add!(self, d, shard_size);
+//         optional_add!(self, d, precision);
+//         optional_add!(self, d, size);
+//         optional_add!(self, d, shard_size);
 
-        Json::Object(d)
-    }
-}
+//         Json::Object(d)
+//     }
+// }
 
-bucket_agg!(GeoHash);
+// bucket_agg!(GeoHash);
 
 /// The set of bucket aggregations
 #[derive(Debug)]
 pub enum BucketAggregation<'a> {
     Global(Global<'a>),
-    Filter(Filter<'a>),
-    Filters(Filters<'a>),
-    Missing(Missing<'a>),
-    Nested(Nested<'a>),
-    ReverseNested(ReverseNested<'a>),
-    Children(Children<'a>),
-    Terms(Terms<'a>),
-    Range(Range<'a>),
-    DateRange(DateRange<'a>),
-    Histogram(Histogram<'a>),
-    DateHistogram(DateHistogram<'a>),
-    GeoDistance(GeoDistance<'a>),
-    GeoHash(GeoHash<'a>)
+    // Filter(Filter<'a>),
+    // Filters(Filters<'a>),
+    // Missing(Missing<'a>),
+    // Nested(Nested<'a>),
+    // ReverseNested(ReverseNested<'a>),
+    // Children(Children<'a>),
+    // Terms(Terms<'a>),
+    // Range(Range<'a>),
+    // DateRange(DateRange<'a>),
+    // Histogram(Histogram<'a>),
+    // DateHistogram(DateHistogram<'a>),
+    // GeoDistance(GeoDistance<'a>),
+    // GeoHash(GeoHash<'a>)
 }
 
 impl<'a> BucketAggregation<'a> {
-    fn add_to_object(&self, json: &mut BTreeMap<String, Json>) {
-        match self {
-            &BucketAggregation::Global(ref g) => {
-                json.insert("global".to_owned(), g.to_json());
-            },
-            &BucketAggregation::Filter(ref filter) => {
-                json.insert("filter".to_owned(), filter.to_json());
-            },
-            &BucketAggregation::Filters(ref filters) => {
-                json.insert("filters".to_owned(), filters.to_json());
-            },
-            &BucketAggregation::Missing(ref missing) => {
-                json.insert("missing".to_owned(), missing.to_json());
-            },
-            &BucketAggregation::Nested(ref nested) => {
-                json.insert("nested".to_owned(), nested.to_json());
-            },
-            &BucketAggregation::ReverseNested(ref revnest) => {
-                json.insert("reverse_nested".to_owned(), revnest.to_json());
-            },
-            &BucketAggregation::Children(ref children) => {
-                json.insert("children".to_owned(), children.to_json());
-            },
-            &BucketAggregation::Terms(ref terms) => {
-                json.insert("terms".to_owned(), terms.to_json());
-            },
-            &BucketAggregation::Range(ref range) => {
-                json.insert("range".to_owned(), range.to_json());
-            },
-            &BucketAggregation::DateRange(ref date_range) => {
-                json.insert("date_range".to_owned(), date_range.to_json());
-            },
-            &BucketAggregation::Histogram(ref histogram) => {
-                json.insert("histogram".to_owned(), histogram.to_json());
-            },
-            &BucketAggregation::DateHistogram(ref dh) => {
-                json.insert("date_histogram".to_owned(), dh.to_json());
-            },
-            &BucketAggregation::GeoDistance(ref gd) => {
-                json.insert("geo_distance".to_owned(), gd.to_json());
-            },
-            &BucketAggregation::GeoHash(ref gh) => {
-                json.insert("get_hash".to_owned(), gh.to_json());
-            }
-        }
+    fn add_to_object<S>(&self, json: &mut BTreeMap<&'static str, Value>)
+        where S: Serialize {
+
+        let (key, value) = match self {
+            &BucketAggregation::Global(ref a) => ("global", to_value(a))
+        };
+
+        json.insert(key, value);
     }
 }
 
@@ -1289,32 +1282,57 @@ pub enum Aggregation<'a> {
     Bucket(BucketAggregation<'a>, Option<Aggregations<'a>>)
 }
 
-impl<'a> ToJson for Aggregation<'a> {
-    fn to_json(&self) -> Json {
-        match self {
-            &Aggregation::Metrics(ref ma)          => {
-                ma.to_json()
-            },
-            &Aggregation::Bucket(ref ba, ref aggs) => {
-                let mut d = BTreeMap::new();
-                ba.add_to_object(&mut d);
-                match aggs {
-                    &Some(ref a) => {
-                        d.insert("aggs".to_owned(), a.to_json());
-                    },
-                    &None        => ()
-                }
-                Json::Object(d)
-            }
-        }
+impl<'a> Serialize for Aggregation<'a> {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        // TODO - this is almost certainly going to be replaced with something
+        // that makes more sense
+        // match self {
+        //     &Aggregation::Metrics(ref a) => a.serialize(serializer),
+        //     &Aggregation::Bucket(ref b, ref aggs) => {
+        //         let mut m = BTreeMap::new();
+        //         b.add_to_object(&mut m);
+        //         match aggs {
+        //             &Some(ref a) => {
+        //                 m.insert("aggs", to_value(a));
+        //             },
+        //             &None => ()
+        //         }
+        //         m.serialize(serializer)
+        //     }
+        // }
+        unimplemented!()
     }
 }
+
+// TODO - deprecated
+// impl<'a> ToJson for Aggregation<'a> {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &Aggregation::Metrics(ref ma)          => {
+//                 ma.to_json()
+//             },
+//             &Aggregation::Bucket(ref ba, ref aggs) => {
+//                 let mut d = BTreeMap::new();
+//                 ba.add_to_object(&mut d);
+//                 match aggs {
+//                     &Some(ref a) => {
+//                         d.insert("aggs".to_owned(), a.to_json());
+//                     },
+//                     &None        => ()
+//                 }
+//                 Json::Object(d)
+//             }
+//         }
+//     }
+// }
 
 /// The set of aggregations
 ///
 /// There are many ways of creating aggregations, either standalone or via a
 /// conversion trait
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Aggregations<'a>(HashMap<&'a str, Aggregation<'a>>);
 
 impl<'a> Aggregations<'a> {
@@ -1357,15 +1375,16 @@ impl <'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
     }
 }
 
-impl<'a> ToJson for Aggregations<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        for (k, ref v) in self.0.iter() {
-            d.insert((*k).to_owned(), v.to_json());
-        }
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl<'a> ToJson for Aggregations<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         for (k, ref v) in self.0.iter() {
+//             d.insert((*k).to_owned(), v.to_json());
+//         }
+//         Json::Object(d)
+//     }
+// }
 
 // Result objects
 
@@ -1597,12 +1616,13 @@ macro_rules! add_aggs_ref {
 /// Macro to extract sub-aggregations for a bucket aggregation
 macro_rules! extract_aggs {
     ($f:ident, $a:ident) => {
-        match $a {
-            &Some(ref agg) => {
-                Some(object_to_result(agg, $f.as_object().expect("Not an object")))
-            },
-            &None          => None
-        }
+        // match $a {
+        //     &Some(ref agg) => {
+        //         Some(object_to_result(agg, $f.as_object().expect("Not an object")))
+        //     },
+        //     &None          => None
+        // }
+        unimplemented!()
     }
 }
 
@@ -2100,12 +2120,12 @@ impl AggregationResult {
     agg_as!(as_geo_hash, GeoHash, GeoHashResult);
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct AggregationsResult(HashMap<String, AggregationResult>);
 
-// TODO - deprecated
 /// Loads a Json object of aggregation results into an `AggregationsResult`.
-fn object_to_result(aggs: &Aggregations, object: &BTreeMap<String, Json>) -> AggregationsResult {
+fn object_to_result(aggs: &Aggregations,
+                    object: &BTreeMap<String, Value>) -> AggregationsResult {
     // let mut ar_map = HashMap::new();
 
     // for (key, val) in aggs.0.iter() {
@@ -2219,12 +2239,26 @@ impl AggregationsResult {
         }
     }
 
-    pub fn from(aggs: &Aggregations, json: &Json) -> AggregationsResult {
-        let object = json.find("aggregations")
-            .expect("No aggregations")
-            .as_object()
-            .expect("No aggregations");
+    pub fn from(aggs: &Aggregations,
+                json: &Value) -> Result<AggregationsResult, EsError> {
+        let object = match json.as_object() {
+            Some(o) => o,
+            None    => return Err(EsError::EsError("Aggregations is not an object".to_owned()))
+        };
+        Ok(object_to_result(aggs, object))
+    }
+}
 
-        object_to_result(aggs, object)
+#[cfg(tests)]
+pub mod tests {
+    use serde_json;
+
+    use super::{Aggregations, Global};
+
+    #[test]
+    fn test_global_aggregation() {
+        let aggs:Aggregations = ("test", Global::new()).into();
+
+        assert_eq!("", serde_json::to_string(&aggs));
     }
 }

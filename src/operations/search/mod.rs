@@ -26,6 +26,7 @@ use rustc_serialize::Decodable;
 use rustc_serialize::json::{Json, ToJson};
 
 use serde::ser::{Serialize, Serializer};
+use serde_json::Value;
 
 use ::{Client, EsResponse};
 use ::error::EsError;
@@ -515,9 +516,12 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
         info!("Searching with: {}", url);
         let response = try!(self.client.get_op(&url));
         match response.status_code() {
-            &StatusCode::Ok => Ok(try!(response.read_response())),
-            _               => Err(EsError::EsError(format!("Unexpected status: {}",
-                                                            response.status_code())))
+            &StatusCode::Ok => {
+                let interim:SearchResultInterim = try!(response.read_response());
+                Ok(interim.finalize())
+            },
+            _ => Err(EsError::EsError(format!("Unexpected status: {}",
+                                              response.status_code())))
         }
     }
 }
@@ -640,31 +644,30 @@ struct SearchQueryOperationBody<'b> {
 
     /// Source filtering
     #[serde(rename="_source", skip_serializing_if="ShouldSkip::should_skip")]
-    source: Option<Source<'b>>
+    source: Option<Source<'b>>,
 
-    // Aggregations
-    // TODO - re-enable
-    //aggs: Option<&'b aggregations::Aggregations<'b>>
+    /// Aggregations
+    aggs: Option<&'b aggregations::Aggregations<'b>>
 }
 
 // TODO - deprecated
-impl<'a> ToJson for SearchQueryOperationBody<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("from".to_owned(), self.from.to_json());
-        d.insert("size".to_owned(), self.size.to_json());
-        optional_add!(self, d, query);
-        optional_add!(self, d, timeout);
-        optional_add!(self, d, terminate_after);
-        optional_add!(self, d, stats);
-        optional_add!(self, d, min_score);
-        optional_add!(self, d, sort);
-        optional_add!(self, d, track_scores);
-        optional_add!(self, d, source, "_source");
-        //optional_add!(self, d, aggs);
-        Json::Object(d)
-    }
-}
+// impl<'a> ToJson for SearchQueryOperationBody<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("from".to_owned(), self.from.to_json());
+//         d.insert("size".to_owned(), self.size.to_json());
+//         optional_add!(self, d, query);
+//         optional_add!(self, d, timeout);
+//         optional_add!(self, d, terminate_after);
+//         optional_add!(self, d, stats);
+//         optional_add!(self, d, min_score);
+//         optional_add!(self, d, sort);
+//         optional_add!(self, d, track_scores);
+//         optional_add!(self, d, source, "_source");
+//         optional_add!(self, d, aggs);
+//         Json::Object(d)
+//     }
+// }
 
 pub struct SearchQueryOperation<'a, 'b> {
     /// The HTTP client
@@ -762,12 +765,11 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         self
     }
 
-    // TODO - re-enable
-    // /// Specify any aggregations
-    // pub fn with_aggs(&'b mut self, aggs: &'b aggregations::Aggregations) -> &'b mut Self {
-    //     self.body.aggs = Some(aggs);
-    //     self
-    // }
+    /// Specify any aggregations
+    pub fn with_aggs(&'b mut self, aggs: &'b aggregations::Aggregations) -> &'b mut Self {
+        self.body.aggs = Some(aggs);
+        self
+    }
 
     add_option!(with_routing, "routing");
     add_option!(with_search_type, "search_type");
@@ -781,16 +783,21 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         let response = try!(self.client.post_body_op(&url, &self.body));
         match response.status_code() {
             &StatusCode::Ok => {
-                // TODO - enable these
-                // let result_json = result.expect("No Json payload");
-                // let mut search_result = SearchResult::from(&result_json);
-                // match self.body.aggs {
-                //     Some(ref aggs) => {
-                //         search_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
-                //     },
-                //     _              => ()
-                // }
-                Ok(try!(response.read_response()))
+                let interim:SearchResultInterim = try!(response.read_response());
+                let aggs = match &interim.aggs {
+                    &Some(ref raw_aggs) => {
+                        let req_aggs = match &self.body.aggs {
+                            &Some(ref aggs) => aggs,
+                            &None => return Err(EsError::EsError("No aggs despite being in results".to_owned()))
+                        };
+                        Some(try!(AggregationsResult::from(req_aggs,
+                                                           raw_aggs)))
+                    },
+                    &None => None
+                };
+                let mut result = interim.finalize();
+                result.aggs = aggs;
+                Ok(result)
             },
             _ => Err(EsError::EsError(format!("Unexpected status: {}",
                                               response.status_code())))
@@ -807,15 +814,21 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         let response = try!(self.client.post_body_op(&url, &self.body));
         match response.status_code() {
             &StatusCode::Ok => {
-                // TODO - re-enable this
-                //
-                // match self.body.aggs {
-                //     Some(ref aggs) => {
-                //         scan_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
-                //     },
-                //     _              => ()
-                // }
-                Ok(try!(response.read_response()))
+                let interim:ScanResultInterim = try!(response.read_response());
+                let aggs = match &interim.aggs {
+                    &Some(ref raw_aggs) => {
+                        let req_aggs = match &self.body.aggs {
+                            &Some(ref aggs) => aggs,
+                            &None => return Err(EsError::EsError("No aggs despite being in results".to_owned()))
+                        };
+                        Some(try!(AggregationsResult::from(req_aggs,
+                                                           raw_aggs)))
+                    },
+                    &None => None
+                };
+                let mut result = interim.finalize();
+                result.aggs = aggs;
+                Ok(result)
             },
             &StatusCode::NotFound => {
                 Err(EsError::EsServerError(format!("Not found: {:?}", response)))
@@ -886,7 +899,7 @@ impl<'a> From<&'a Json> for SearchHitsResult {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SearchResult {
+pub struct SearchResultInterim {
     pub took:      u64,
     pub timed_out: bool,
 
@@ -895,10 +908,33 @@ pub struct SearchResult {
     pub hits:      SearchHitsResult,
 
     /// Optional field populated if aggregations are specified
-    pub aggs:      Option<AggregationsResult>,
+    pub aggs:      Option<Value>,
 
     /// Optional field populated during scanning and scrolling
     #[serde(rename="_scroll_id")]
+    pub scroll_id: Option<String>
+}
+
+impl SearchResultInterim {
+    fn finalize(self) -> SearchResult {
+        SearchResult {
+            took: self.took,
+            timed_out: self.timed_out,
+            shards: self.shards,
+            hits: self.hits,
+            aggs: None,
+            scroll_id: self.scroll_id
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct SearchResult {
+    pub took:      u64,
+    pub timed_out: bool,
+    pub shards:    ShardCountResult,
+    pub hits:      SearchHitsResult,
+    pub aggs:      Option<AggregationsResult>,
     pub scroll_id: Option<String>
 }
 
@@ -906,23 +942,6 @@ impl SearchResult {
     /// Take a reference to any aggregations in this result
     pub fn aggs_ref<'a>(&'a self) -> Option<&'a AggregationsResult> {
         self.aggs.as_ref()
-    }
-}
-
-// TODO - deprecated
-impl<'a> From<&'a Json> for SearchResult {
-    fn from(r: &'a Json) -> SearchResult {
-        SearchResult {
-            took:      get_json_u64!(r, "took"),
-            timed_out: get_json_bool!(r, "timed_out"),
-            shards:    decode_json(r.find("_shards")
-                                   .expect("No field '_shards'")
-                                   .clone()).unwrap(),
-            hits:      SearchHitsResult::from(r.find("hits")
-                                              .expect("No field 'hits'")),
-            aggs:      None,
-            scroll_id: None
-        }
     }
 }
 
@@ -988,33 +1007,40 @@ impl<'a> Iterator for ScanIterator<'a> {
 /// See also the [official ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/guide/current/scan-scroll.html)
 /// for proper use of this functionality.
 #[derive(Deserialize)]
-pub struct ScanResult {
+pub struct ScanResultInterim {
     #[serde(rename="_scroll_id")]
     scroll_id:     String,
-    pub took:      u64,
-    pub timed_out: bool,
+    took:      u64,
+    timed_out: bool,
     #[serde(rename="_shards")]
-    pub shards:    ShardCountResult,
-    pub hits:      SearchHitsResult,
-    pub aggs:      Option<AggregationsResult>
+    shards:    ShardCountResult,
+    hits:      SearchHitsResult,
+    aggs:      Option<Value>
+}
+
+impl ScanResultInterim {
+    fn finalize(self) -> ScanResult {
+        ScanResult {
+            scroll_id: self.scroll_id,
+            took: self.took,
+            timed_out: self.timed_out,
+            shards: self.shards,
+            hits: self.hits,
+            aggs: None
+        }
+    }
+}
+
+pub struct ScanResult {
+    pub scroll_id: String,
+    pub took: u64,
+    pub timed_out: bool,
+    pub shards: ShardCountResult,
+    pub hits: SearchHitsResult,
+    pub aggs: Option<AggregationsResult>
 }
 
 impl ScanResult {
-    // TODO - deprecated, replace with Serde
-    fn from<'b>(r: &'b Json) -> ScanResult {
-        ScanResult {
-            scroll_id: get_json_string!(r, "_scroll_id"),
-            took:      get_json_u64!(r, "took"),
-            timed_out: get_json_bool!(r, "timed_out"),
-            shards:    decode_json(r.find("_shards")
-                                   .unwrap()
-                                   .clone()).unwrap(),
-            hits:      SearchHitsResult::from(r.find("hits")
-                                              .unwrap()),
-            aggs:      None
-        }
-    }
-
     /// Returns an iterator from which hits can be read
     pub fn iter(self, client: &mut Client, scroll: Duration) -> ScanIterator {
         ScanIterator {
@@ -1035,7 +1061,7 @@ impl ScanResult {
         let response = try!(client.get_op(&url));
         match response.status_code() {
             &StatusCode::Ok => {
-                let search_result:SearchResult = try!(response.read_response());
+                let search_result:SearchResultInterim = try!(response.read_response());
                 self.scroll_id = match search_result.scroll_id {
                     Some(ref id) => id.clone(),
                     None     => {
@@ -1043,7 +1069,7 @@ impl ScanResult {
                     }
                 };
                 println!("Scrolled: {:?}", search_result);
-                Ok(search_result)
+                Ok(search_result.finalize())
             },
             _               => {
                 Err(EsError::EsError(format!("Unexpected status: {}",
@@ -1080,7 +1106,7 @@ mod tests {
     use super::Sort;
     use super::Source;
 
-    use super::aggregations::{Aggregations, Min, Order, OrderKey, Terms};
+//    use super::aggregations::{Aggregations, Min, Order, OrderKey, Terms};
 
     fn make_document(idx: i64) -> TestDocument {
         TestDocument::new()

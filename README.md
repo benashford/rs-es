@@ -389,6 +389,10 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 ### Some, non-exhaustive, specific TODOs
 
 0. Re-enable the `nightly` build once Travis is fixed.
+0. Serialization of Aggregations potentially inefficient.
+0. Allow static &str for error messages.
+0. Ensure all tests are in the same file as the code being tested.
+0. Tests for aggregations
 1. Decide whether it's best in structs that contain a "document" to box the document or not?
 2. Re-enable UPDATE BULK option. (may be related to Script refactoring)
 1. Transcribe this TODO list into specific GitHub issues, for easier management.
