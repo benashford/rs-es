@@ -19,17 +19,18 @@ default = ["serde_codegen"]
 nightly = ["serde_macros"]
 
 [build-dependencies]
-serde_codegen = {version = "^0.7", optional = true}
-syntex = "^0.29"
+quasi = {git = "https://github.com/benashford/quasi", branch = "experimental"}
+serde_codegen = {git = "https://github.com/benashford/serde", branch = "experimental", optional = true}
+syntex = {git = "https://github.com/benashford/syntex", branch = "experimental"}
 
 [dependencies]
 hyper = "^0.7"
 rustc-serialize = "^0.3"
 log = "^0.3"
 maplit = "^0.1"
-serde = "^0.7"
-serde_json = "^0.7"
-serde_macros = {version = "^0.7", optional = true}
+serde = {git = "https://github.com/benashford/serde", branch = "experimental"}
+serde_json = {git = "https://github.com/benashford/json", branch = "experimental"}
+serde_macros = {git = "https://github.com/benashford/serde", branch = "experimental", optional = true}
 
 [dev-dependencies]
 env_logger = "^0.3"
