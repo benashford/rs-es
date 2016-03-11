@@ -439,52 +439,6 @@ impl<'a> Serialize for MetricsAggregation<'a> {
     }
 }
 
-// TODO deprecated
-// impl<'a> ToJson for MetricsAggregation<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         match self {
-//             &MetricsAggregation::Min(ref min_agg) => {
-//                 d.insert("min".to_owned(), min_agg.to_json());
-//             },
-//             &MetricsAggregation::Max(ref max_agg) => {
-//                 d.insert("max".to_owned(), max_agg.to_json());
-//             },
-//             &MetricsAggregation::Sum(ref sum_agg) => {
-//                 d.insert("sum".to_owned(), sum_agg.to_json());
-//             },
-//             &MetricsAggregation::Avg(ref avg_agg) => {
-//                 d.insert("avg".to_owned(), avg_agg.to_json());
-//             },
-//             &MetricsAggregation::Stats(ref stats_agg) => {
-//                 d.insert("stats".to_owned(), stats_agg.to_json());
-//             },
-//             &MetricsAggregation::ExtendedStats(ref ext_stat_agg) => {
-//                 d.insert("extended_stats".to_owned(), ext_stat_agg.to_json());
-//             },
-//             &MetricsAggregation::ValueCount(ref vc_agg) => {
-//                 d.insert("value_count".to_owned(), vc_agg.to_json());
-//             },
-//             &MetricsAggregation::Percentiles(ref pc_agg) => {
-//                 d.insert("percentiles".to_owned(), pc_agg.to_json());
-//             },
-//             &MetricsAggregation::PercentileRanks(ref pr_agg) => {
-//                 d.insert("percentile_ranks".to_owned(), pr_agg.to_json());
-//             },
-//             &MetricsAggregation::Cardinality(ref card_agg) => {
-//                 d.insert("cardinality".to_owned(), card_agg.to_json());
-//             },
-//             &MetricsAggregation::GeoBounds(ref gb_agg) => {
-//                 d.insert("geo_bounds".to_owned(), gb_agg.to_json());
-//             },
-//             &MetricsAggregation::ScriptedMetric(ref sm_agg) => {
-//                 d.insert("scripted_metric".to_owned(), sm_agg.to_json());
-//             }
-//         }
-//         Json::Object(d)
-//     }
-// }
-
 #[cfg(test)]
 pub mod tests {
     use serde_json;
