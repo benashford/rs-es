@@ -26,6 +26,7 @@ use std::marker::PhantomData;
 use rustc_serialize::json::{Json, ToJson};
 
 use serde::de::Deserialize;
+use serde::ser;
 use serde::ser::{Serialize, Serializer};
 use serde_json::{to_value, Value};
 
@@ -175,22 +176,44 @@ pub enum Aggregation<'a> {
 impl<'a> Serialize for Aggregation<'a> {
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
         where S: Serializer {
+
+        serializer.serialize_struct("Aggregation", AggregationVisitor {
+            agg: self,
+            state: 0
+        })
+    }
+}
+
+struct AggregationVisitor<'a> {
+    agg: &'a Aggregation<'a>,
+    state: u8
+}
+
+impl<'a> ser::MapVisitor for AggregationVisitor<'a> {
+    fn visit<S>(&mut self, serializer: &mut S) -> Result<Option<()>, S::Error>
+        where S: Serializer {
         use self::Aggregation::*;
 
-        let m:BTreeMap<&'static str, Value> = match self {
-            &Metrics(ref a) => a.to_map(),
-            &Bucket(ref b, ref aggs) => {
-                let mut m:BTreeMap<&'static str, Value> = b.to_map();
-                match aggs {
-                    &Some(ref a) => {
-                        m.insert("aggs", to_value(a));
-                    },
-                    &None => ()
+        self.state += 1;
+        match self.state {
+            1 => match self.agg {
+                &Metrics(ref metric_agg) => {
+                    let agg_name = metric_agg.details();
+                    Ok(Some(try!(serializer.serialize_map_elt(agg_name, metric_agg))))
+                },
+                &Bucket(ref bucket_agg, _) => {
+                    let agg_name = bucket_agg.details();
+                    Ok(Some(try!(serializer.serialize_map_elt(agg_name, bucket_agg))))
                 }
-                m
-            }
-        };
-        m.serialize(serializer)
+            },
+            2 => match self.agg {
+                &Metrics(_) => Ok(Some(())),
+                &Bucket(_, ref other_aggs) => {
+                    Ok(Some(try!(serializer.serialize_map_elt("aggregations", other_aggs))))
+                }
+            },
+            _ => Ok(None)
+        }
     }
 }
 

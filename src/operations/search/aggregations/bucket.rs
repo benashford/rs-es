@@ -778,13 +778,20 @@ pub enum BucketAggregation<'a> {
 }
 
 impl<'a> BucketAggregation<'a> {
-    pub fn to_map(&self) -> BTreeMap<&'static str, Value> {
+    pub fn details(&self) -> &'static str {
         use self::BucketAggregation::*;
-        let mut b = BTreeMap::new();
-        let (key, value) = match self {
-            &Global(ref a) => ("global", to_value(a))
-        };
-        b.insert(key, value);
-        b
+        match self {
+            &Global(_) => "global"
+        }
+    }
+}
+
+impl<'a> Serialize for BucketAggregation<'a> {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        use self::BucketAggregation::*;
+        match self {
+            &Global(ref g) => g.serialize(serializer)
+        }
     }
 }

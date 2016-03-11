@@ -421,16 +421,21 @@ pub enum MetricsAggregation<'a> {
 }
 
 impl<'a> MetricsAggregation<'a> {
-    pub fn to_map(&self) -> BTreeMap<&'static str, Value> {
+    pub fn details(&self) -> &'static str {
         use self::MetricsAggregation::*;
-        let mut b = BTreeMap::new();
-        let (key, value) = match self {
-            &Min(ref min) => ("min", to_value(min))
-        };
-        println!("Self: {:?}", &self);
-        println!("Value: {:?}", &value);
-        b.insert(key, value);
-        b
+        match self {
+            &Min(_) => "min"
+        }
+    }
+}
+
+impl<'a> Serialize for MetricsAggregation<'a> {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        use self::MetricsAggregation::*;
+        match self {
+            &Min(ref min) => min.serialize(serializer)
+        }
     }
 }
 
