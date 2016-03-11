@@ -839,7 +839,7 @@ pub struct SearchHitsHitsResult<T: Deserialize> {
     #[serde(rename="_score")]
     pub score:    Option<f64>,
     #[serde(rename="_source")]
-    pub source:   Option<T>,
+    pub source:   Option<Box<T>>,
     // TODO - check this isn't deprecated
     //#[serde(rename="_fields")]
     // pub fields:   Option<Json>
@@ -1117,61 +1117,64 @@ mod tests {
         scan_result.close(&mut client).unwrap();
     }
 
-    // #[test]
-    // fn test_scan_and_scroll() {
-    //     let mut client = ::tests::make_client();
-    //     let index_name = "tests_test_scan_and_scroll";
-    //     ::tests::clean_db(&mut client, index_name);
-    //     setup_scan_data(&mut client, index_name);
+    #[test]
+    fn test_scan_and_scroll() {
+        let mut client = ::tests::make_client();
+        let index_name = "tests_test_scan_and_scroll";
+        ::tests::clean_db(&mut client, index_name);
+        setup_scan_data(&mut client, index_name);
 
-    //     let indexes = [index_name];
+        let indexes = [index_name];
 
-    //     let mut scan_result = client.search_query()
-    //         .with_indexes(&indexes)
-    //         .with_size(100)
-    //         .scan(Duration::minutes(1))
-    //         .unwrap();
+        let scroll = Duration::minutes(1);
+        let mut scan_result:ScanResult<TestDocument> = client.search_query()
+            .with_indexes(&indexes)
+            .with_size(100)
+            .scan(&scroll)
+            .unwrap();
 
-    //     assert_eq!(1000, scan_result.hits.total);
-    //     let mut total = 0;
+        assert_eq!(1000, scan_result.hits.total);
+        let mut total = 0;
 
-    //     loop {
-    //         let page = scan_result.scroll(&mut client).unwrap();
-    //         let page_total = page.hits.hits.len();
-    //         total += page_total;
-    //         if page_total == 0 && total == 1000 {
-    //             break;
-    //         }
-    //         assert!(total <= 1000);
-    //     }
+        loop {
+            let page = scan_result.scroll(&mut client, &scroll).unwrap();
+            let page_total = page.hits.hits.len();
+            total += page_total;
+            if page_total == 0 && total == 1000 {
+                break;
+            }
+            assert!(total <= 1000);
+        }
 
-    //     scan_result.close(&mut client).unwrap();
-    // }
+        scan_result.close(&mut client).unwrap();
+    }
 
-    // #[test]
-    // fn test_scan_and_iterate() {
-    //     let mut client = ::tests::make_client();
-    //     let index_name = "tests_test_scan_and_iterate";
-    //     ::tests::clean_db(&mut client, index_name);
-    //     setup_scan_data(&mut client, index_name);
+    #[test]
+    fn test_scan_and_iterate() {
+        let mut client = ::tests::make_client();
+        let index_name = "tests_test_scan_and_iterate";
+        ::tests::clean_db(&mut client, index_name);
+        setup_scan_data(&mut client, index_name);
 
-    //     let indexes = [index_name];
+        let indexes = [index_name];
 
-    //     let scan_result = client.search_query()
-    //         .with_indexes(&indexes)
-    //         .with_size(10)
-    //         .scan(Duration::minutes(1))
-    //         .unwrap();
+        let scroll = Duration::minutes(1);
+        let scan_result:ScanResult<TestDocument> = client.search_query()
+            .with_indexes(&indexes)
+            .with_size(10)
+            .scan(&scroll)
+            .unwrap();
 
-    //     assert_eq!(1000, scan_result.hits.total);
+        assert_eq!(1000, scan_result.hits.total);
 
-    //     let hits:Vec<SearchHitsHitsResult> = scan_result.iter(&mut client)
-    //         .take(200)
-    //         .map(|hit| hit.unwrap())
-    //         .collect();
+        let hits:Vec<SearchHitsHitsResult<TestDocument>> = scan_result
+            .iter(&mut client, scroll)
+            .take(200)
+            .map(|hit| hit.unwrap())
+            .collect();
 
-    //     assert_eq!(200, hits.len());
-    // }
+        assert_eq!(200, hits.len());
+    }
 
     // #[test]
     // fn test_source_filter() {
