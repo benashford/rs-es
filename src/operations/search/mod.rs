@@ -551,15 +551,6 @@ impl<'a> Source<'a> {
     }
 }
 
-/// Convenience function to Json-ify a reference to a slice of references of
-/// items that can be converted to Json
-// TODO - deprecated
-fn slice_to_json<J: ToJson + ?Sized>(slice: &[&J]) -> Json {
-    Json::Array(slice.iter().map(|e| {
-        e.to_json()
-    }).collect())
-}
-
 #[derive(Default, Serialize)]
 struct SearchQueryOperationBody<'b> {
     /// The query
@@ -1029,6 +1020,7 @@ mod tests {
     use super::Sort;
     use super::Source;
 
+    use super::aggregations::bucket::Order;
 //    use super::aggregations::{Aggregations, Min, Order, OrderKey, Terms};
 
     fn make_document(idx: i64) -> TestDocument {
@@ -1150,7 +1142,7 @@ mod tests {
 
         assert_eq!(1, result.hits.hits.len());
         let json = result.hits.hits.remove(0).source.unwrap();
-        
+
         assert_eq!(true, json.find("str_field").is_some());
         assert_eq!(false, json.find("int_field").is_some());
     }

@@ -16,7 +16,7 @@
 
 //! Bucket-based aggregations
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
 // TODO - deprecated
@@ -232,7 +232,7 @@ bucket_agg!(Global);
 
 /// Order - used for some bucketing aggregations to determine the order of
 /// buckets
-#[derive(Debug)]
+#[derive(Debug, Eq, Hash, PartialEq)]
 pub enum OrderKey<'a> {
     Count,
     Key,
@@ -246,45 +246,69 @@ impl<'a> From<&'a str> for OrderKey<'a> {
     }
 }
 
-impl<'a> ToString for OrderKey<'a> {
-    fn to_string(&self) -> String {
-        match *self {
-            OrderKey::Count   => "_count".to_owned(),
-            OrderKey::Key     => "_key".to_owned(),
-            OrderKey::Term    => "_term".to_owned(),
-            OrderKey::Expr(e) => e.to_owned()
+impl<'a> AsRef<str> for OrderKey<'a> {
+    fn as_ref(&self) -> &str {
+        use self::OrderKey::*;
+        match self {
+            &Count   => "_count",
+            &Key     => "_key",
+            &Term    => "_term",
+            &Expr(e) => e
         }
     }
 }
 
-// /// Used to define the ordering of buckets in a some bucketted aggregations
-// ///
-// /// # Examples
-// ///
-// /// ```
-// /// use rs_es::operations::search::aggregations::bucket::{Order, OrderKey};
-// ///
-// /// let order1 = Order::asc(OrderKey::Count);
-// /// let order2 = Order::desc("field_name");
-// /// ```
-// ///
-// /// The first will produce a JSON fragment: `{"_count": "asc"}`; the second will
-// /// produce a JSON fragment: `{"field_name", "desc"}`
-// #[derive(Debug)]
-// pub struct Order<'a>(OrderKey<'a>, super::Order);
-
-// impl<'a> Order<'a> {
-//     /// Create an `Order` ascending
-//     pub fn asc<O: Into<OrderKey<'a>>>(key: O) -> Order<'a> {
-//         Order(key.into(), super::Order::Asc)
-//     }
-
-//     /// Create an `Order` descending
-//     pub fn desc<O: Into<OrderKey<'a>>>(key: O) -> Order<'a> {
-//         Order(key.into(), super::Order::Desc)
+// TODO - deprecated
+// impl<'a> ToString for OrderKey<'a> {
+//     fn to_string(&self) -> String {
+//         match *self {
+//             OrderKey::Count   => "_count".to_owned(),
+//             OrderKey::Key     => "_key".to_owned(),
+//             OrderKey::Term    => "_term".to_owned(),
+//             OrderKey::Expr(e) => e.to_owned()
+//         }
 //     }
 // }
 
+/// Used to define the ordering of buckets in a some bucketted aggregations
+///
+/// # Examples
+///
+/// ```
+/// use rs_es::operations::search::aggregations::bucket::{Order, OrderKey};
+///
+/// let order1 = Order::asc(OrderKey::Count);
+/// let order2 = Order::desc("field_name");
+/// ```
+///
+/// The first will produce a JSON fragment: `{"_count": "asc"}`; the second will
+/// produce a JSON fragment: `{"field_name", "desc"}`
+#[derive(Debug)]
+pub struct Order<'a>(OrderKey<'a>, super::super::Order);
+
+impl<'a> Serialize for Order<'a> {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        let mut d = HashMap::new();
+        d.insert(self.0.as_ref(), &self.1);
+        d.serialize(serializer)
+    }
+}
+
+impl<'a> Order<'a> {
+    /// Create an `Order` ascending
+    pub fn asc<O: Into<OrderKey<'a>>>(key: O) -> Order<'a> {
+        Order(key.into(), super::super::Order::Asc)
+    }
+
+    /// Create an `Order` descending
+    pub fn desc<O: Into<OrderKey<'a>>>(key: O) -> Order<'a> {
+        Order(key.into(), super::super::Order::Desc)
+    }
+}
+
+// TODO deprecated
 // impl<'a> ToJson for Order<'a> {
 //     fn to_json(&self) -> Json {
 //         let mut d = BTreeMap::new();
