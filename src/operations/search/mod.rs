@@ -19,12 +19,14 @@
 pub mod aggregations;
 
 use std::collections::{BTreeMap, HashMap};
+use std::fmt::Debug;
 
 use hyper::status::StatusCode;
 
 use rustc_serialize::Decodable;
 use rustc_serialize::json::{Json, ToJson};
 
+use serde::de::Deserialize;
 use serde::ser::{Serialize, Serializer};
 use serde_json::Value;
 
@@ -509,7 +511,9 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
         self
     }
 
-    pub fn send(&'b mut self) -> Result<SearchResult, EsError> {
+    pub fn send<T>(&'b mut self) -> Result<SearchResult<T>, EsError>
+        where T: Deserialize {
+
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
@@ -517,7 +521,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
         let response = try!(self.client.get_op(&url));
         match response.status_code() {
             &StatusCode::Ok => {
-                let interim:SearchResultInterim = try!(response.read_response());
+                let interim:SearchResultInterim<T> = try!(response.read_response());
                 Ok(interim.finalize())
             },
             _ => Err(EsError::EsError(format!("Unexpected status: {}",
@@ -758,14 +762,16 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
     add_option!(with_query_cache, "query_cache");
 
     /// Performs the search with the specified query and options
-    pub fn send(&'b mut self) -> Result<SearchResult, EsError> {
+    pub fn send<T>(&'b mut self) -> Result<SearchResult<T>, EsError>
+        where T: Deserialize {
+
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
         let response = try!(self.client.post_body_op(&url, &self.body));
         match response.status_code() {
             &StatusCode::Ok => {
-                let interim:SearchResultInterim = try!(response.read_response());
+                let interim:SearchResultInterim<T> = try!(response.read_response());
                 let aggs = match &interim.aggs {
                     &Some(ref raw_aggs) => {
                         let req_aggs = match &self.body.aggs {
@@ -787,7 +793,9 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
     }
 
     /// Begins a scan with the specified query and options
-    pub fn scan(&'b mut self, scroll: &'b Duration) -> Result<ScanResult, EsError> {
+    pub fn scan<T>(&'b mut self, scroll: &'b Duration) -> Result<ScanResult<T>, EsError>
+        where T: Deserialize {
+
         self.options.push("search_type", "scan");
         self.options.push("scroll", scroll);
         let url = format!("/{}/_search{}",
@@ -796,7 +804,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         let response = try!(self.client.post_body_op(&url, &self.body));
         match response.status_code() {
             &StatusCode::Ok => {
-                let interim:ScanResultInterim = try!(response.read_response());
+                let interim:ScanResultInterim<T> = try!(response.read_response());
                 let aggs = match &interim.aggs {
                     &Some(ref raw_aggs) => {
                         let req_aggs = match &self.body.aggs {
@@ -821,7 +829,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SearchHitsHitsResult {
+pub struct SearchHitsHitsResult<T: Deserialize> {
     #[serde(rename="_index")]
     pub index:    String,
     #[serde(rename="_type")]
@@ -830,64 +838,27 @@ pub struct SearchHitsHitsResult {
     pub id:       String,
     #[serde(rename="_score")]
     pub score:    Option<f64>,
-    // TODO - re-enable
-    // #[serde(rename="_source")]
-    // pub source:   Option<Json>,
-    // #[serde(rename="_fields")]
+    #[serde(rename="_source")]
+    pub source:   Option<Box<T>>,
+    // TODO - check this isn't deprecated
+    //#[serde(rename="_fields")]
     // pub fields:   Option<Json>
 }
 
-// TODO - deprecated
-impl<'a> From<&'a Json> for SearchHitsHitsResult {
-    fn from(r: &'a Json) -> SearchHitsHitsResult {
-        SearchHitsHitsResult {
-            index:    get_json_string!(r, "_index"),
-            doc_type: get_json_string!(r, "_type"),
-            id:       get_json_string!(r, "_id"),
-            score:    {
-                let s = r.find("_score").expect("No field '_score'");
-                if s.is_f64() {
-                    s.as_f64()
-                } else {
-                    None
-                }
-            },
-            // TODO - decommissioned, ensure it (and the whole function is removed)
-            // source:   r.find("_source").map(|s| s.clone()),
-            // fields:   r.find("fields").map(|s| s.clone())
-        }
-    }
-}
-
 #[derive(Debug, Deserialize)]
-pub struct SearchHitsResult {
+pub struct SearchHitsResult<T: Deserialize> {
     pub total: u64,
-    pub hits:  Vec<SearchHitsHitsResult>
-}
-
-impl<'a> From<&'a Json> for SearchHitsResult {
-    fn from(r: &'a Json) -> SearchHitsResult {
-        SearchHitsResult {
-            total: get_json_u64!(r, "total"),
-            hits:  r.find("hits")
-                .expect("No field 'hits'")
-                .as_array()
-                .expect("Field 'hits' is not an array")
-                .iter()
-                .map(|j| SearchHitsHitsResult::from(j))
-                .collect()
-        }
-    }
+    pub hits:  Vec<SearchHitsHitsResult<T>>
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SearchResultInterim {
+pub struct SearchResultInterim<T: Deserialize> {
     pub took:      u64,
     pub timed_out: bool,
 
     #[serde(rename="_shards")]
     pub shards:    ShardCountResult,
-    pub hits:      SearchHitsResult,
+    pub hits:      SearchHitsResult<T>,
 
     /// Optional field populated if aggregations are specified
     pub aggs:      Option<Value>,
@@ -897,8 +868,10 @@ pub struct SearchResultInterim {
     pub scroll_id: Option<String>
 }
 
-impl SearchResultInterim {
-    fn finalize(self) -> SearchResult {
+impl<T> SearchResultInterim<T>
+    where T: Deserialize {
+
+    fn finalize(self) -> SearchResult<T> {
         SearchResult {
             took: self.took,
             timed_out: self.timed_out,
@@ -911,32 +884,36 @@ impl SearchResultInterim {
 }
 
 #[derive(Debug)]
-pub struct SearchResult {
+pub struct SearchResult<T: Deserialize> {
     pub took:      u64,
     pub timed_out: bool,
     pub shards:    ShardCountResult,
-    pub hits:      SearchHitsResult,
+    pub hits:      SearchHitsResult<T>,
     pub aggs:      Option<AggregationsResult>,
     pub scroll_id: Option<String>
 }
 
-impl SearchResult {
+impl<T> SearchResult<T>
+    where T: Deserialize {
+
     /// Take a reference to any aggregations in this result
     pub fn aggs_ref<'a>(&'a self) -> Option<&'a AggregationsResult> {
         self.aggs.as_ref()
     }
 }
 
-pub struct ScanIterator<'a> {
-    scan_result: ScanResult,
+pub struct ScanIterator<'a, T: Deserialize + Debug> {
+    scan_result: ScanResult<T>,
     scroll:      Duration,
     client:      &'a mut Client,
-    page:        Vec<SearchHitsHitsResult>
+    page:        Vec<SearchHitsHitsResult<T>>
 }
 
-impl<'a> ScanIterator<'a> {
+impl<'a, T> ScanIterator<'a, T>
+    where T: Deserialize + Debug {
+
     /// Fetch the next page and return the first hit, or None if there are no hits
-    fn next_page(&mut self) -> Option<Result<SearchHitsHitsResult, EsError>> {
+    fn next_page(&mut self) -> Option<Result<SearchHitsHitsResult<T>, EsError>> {
         match self.scan_result.scroll(self.client, &self.scroll) {
             Ok(scroll_page) => {
                 self.page = scroll_page.hits.hits;
@@ -951,7 +928,9 @@ impl<'a> ScanIterator<'a> {
     }
 }
 
-impl<'a> Drop for ScanIterator<'a> {
+impl<'a, T> Drop for ScanIterator<'a, T>
+    where T: Deserialize + Debug {
+
     fn drop(&mut self) {
         match self.scan_result.close(self.client) {
             Ok(_)  => (),
@@ -962,8 +941,10 @@ impl<'a> Drop for ScanIterator<'a> {
     }
 }
 
-impl<'a> Iterator for ScanIterator<'a> {
-    type Item = Result<SearchHitsHitsResult, EsError>;
+impl<'a, T> Iterator for ScanIterator<'a, T>
+    where T: Deserialize + Debug {
+
+    type Item = Result<SearchHitsHitsResult<T>, EsError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.page.len() > 0 {
@@ -989,19 +970,21 @@ impl<'a> Iterator for ScanIterator<'a> {
 /// See also the [official ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/guide/current/scan-scroll.html)
 /// for proper use of this functionality.
 #[derive(Deserialize)]
-pub struct ScanResultInterim {
+pub struct ScanResultInterim<T: Deserialize> {
     #[serde(rename="_scroll_id")]
     scroll_id:     String,
     took:      u64,
     timed_out: bool,
     #[serde(rename="_shards")]
     shards:    ShardCountResult,
-    hits:      SearchHitsResult,
+    hits:      SearchHitsResult<T>,
     aggs:      Option<Value>
 }
 
-impl ScanResultInterim {
-    fn finalize(self) -> ScanResult {
+impl<T> ScanResultInterim<T>
+    where T: Deserialize {
+
+    fn finalize(self) -> ScanResult<T> {
         ScanResult {
             scroll_id: self.scroll_id,
             took: self.took,
@@ -1013,18 +996,20 @@ impl ScanResultInterim {
     }
 }
 
-pub struct ScanResult {
+pub struct ScanResult<T: Deserialize> {
     pub scroll_id: String,
     pub took: u64,
     pub timed_out: bool,
     pub shards: ShardCountResult,
-    pub hits: SearchHitsResult,
+    pub hits: SearchHitsResult<T>,
     pub aggs: Option<AggregationsResult>
 }
 
-impl ScanResult {
+impl<T> ScanResult<T>
+    where T: Deserialize + Debug {
+
     /// Returns an iterator from which hits can be read
-    pub fn iter(self, client: &mut Client, scroll: Duration) -> ScanIterator {
+    pub fn iter(self, client: &mut Client, scroll: Duration) -> ScanIterator<T> {
         ScanIterator {
             scan_result: self,
             scroll:      scroll,
@@ -1036,14 +1021,14 @@ impl ScanResult {
     /// Calls the `/_search/scroll` ES end-point for the next page
     pub fn scroll(&mut self,
                   client: &mut Client,
-                  scroll: &Duration) -> Result<SearchResult, EsError> {
+                  scroll: &Duration) -> Result<SearchResult<T>, EsError> {
         let url = format!("/_search/scroll?scroll={}&scroll_id={}",
                           scroll.to_string(),
                           self.scroll_id);
         let response = try!(client.get_op(&url));
         match response.status_code() {
             &StatusCode::Ok => {
-                let search_result:SearchResultInterim = try!(response.read_response());
+                let search_result:SearchResultInterim<T> = try!(response.read_response());
                 self.scroll_id = match search_result.scroll_id {
                     Some(ref id) => id.clone(),
                     None     => {
@@ -1084,6 +1069,7 @@ mod tests {
     use ::operations::bulk::Action;
     use ::units::{Duration, JsonVal};
 
+    use super::ScanResult;
     use super::SearchHitsHitsResult;
     use super::Sort;
     use super::Source;
@@ -1110,81 +1096,85 @@ mod tests {
         client.refresh().with_indexes(&[index_name]).send().unwrap();
     }
 
-    // #[test]
-    // fn test_close() {
-    //     let mut client = ::tests::make_client();
-    //     let index_name = "tests_test_close";
-    //     ::tests::clean_db(&mut client, index_name);
-    //     setup_scan_data(&mut client, index_name);
+    #[test]
+    fn test_close() {
+        let mut client = ::tests::make_client();
+        let index_name = "tests_test_close";
+        ::tests::clean_db(&mut client, index_name);
+        setup_scan_data(&mut client, index_name);
 
-    //     let indexes = [index_name];
+        let indexes = [index_name];
 
-    //     let mut scan_result = client.search_query()
-    //         .with_indexes(&indexes)
-    //         .with_size(100)
-    //         .scan(Duration::minutes(1))
-    //         .unwrap();
+        let scroll = Duration::minutes(1);
+        let mut scan_result:ScanResult<TestDocument> = client.search_query()
+            .with_indexes(&indexes)
+            .with_size(100)
+            .scan(&scroll)
+            .unwrap();
 
-    //     scan_result.scroll(&mut client).unwrap();
+        scan_result.scroll(&mut client, &scroll).unwrap();
 
-    //     scan_result.close(&mut client).unwrap();
-    // }
+        scan_result.close(&mut client).unwrap();
+    }
 
-    // #[test]
-    // fn test_scan_and_scroll() {
-    //     let mut client = ::tests::make_client();
-    //     let index_name = "tests_test_scan_and_scroll";
-    //     ::tests::clean_db(&mut client, index_name);
-    //     setup_scan_data(&mut client, index_name);
+    #[test]
+    fn test_scan_and_scroll() {
+        let mut client = ::tests::make_client();
+        let index_name = "tests_test_scan_and_scroll";
+        ::tests::clean_db(&mut client, index_name);
+        setup_scan_data(&mut client, index_name);
 
-    //     let indexes = [index_name];
+        let indexes = [index_name];
 
-    //     let mut scan_result = client.search_query()
-    //         .with_indexes(&indexes)
-    //         .with_size(100)
-    //         .scan(Duration::minutes(1))
-    //         .unwrap();
+        let scroll = Duration::minutes(1);
+        let mut scan_result:ScanResult<TestDocument> = client.search_query()
+            .with_indexes(&indexes)
+            .with_size(100)
+            .scan(&scroll)
+            .unwrap();
 
-    //     assert_eq!(1000, scan_result.hits.total);
-    //     let mut total = 0;
+        assert_eq!(1000, scan_result.hits.total);
+        let mut total = 0;
 
-    //     loop {
-    //         let page = scan_result.scroll(&mut client).unwrap();
-    //         let page_total = page.hits.hits.len();
-    //         total += page_total;
-    //         if page_total == 0 && total == 1000 {
-    //             break;
-    //         }
-    //         assert!(total <= 1000);
-    //     }
+        loop {
+            let page = scan_result.scroll(&mut client, &scroll).unwrap();
+            let page_total = page.hits.hits.len();
+            total += page_total;
+            if page_total == 0 && total == 1000 {
+                break;
+            }
+            assert!(total <= 1000);
+        }
 
-    //     scan_result.close(&mut client).unwrap();
-    // }
+        scan_result.close(&mut client).unwrap();
+    }
 
-    // #[test]
-    // fn test_scan_and_iterate() {
-    //     let mut client = ::tests::make_client();
-    //     let index_name = "tests_test_scan_and_iterate";
-    //     ::tests::clean_db(&mut client, index_name);
-    //     setup_scan_data(&mut client, index_name);
+    #[test]
+    fn test_scan_and_iterate() {
+        let mut client = ::tests::make_client();
+        let index_name = "tests_test_scan_and_iterate";
+        ::tests::clean_db(&mut client, index_name);
+        setup_scan_data(&mut client, index_name);
 
-    //     let indexes = [index_name];
+        let indexes = [index_name];
 
-    //     let scan_result = client.search_query()
-    //         .with_indexes(&indexes)
-    //         .with_size(10)
-    //         .scan(Duration::minutes(1))
-    //         .unwrap();
+        let scroll = Duration::minutes(1);
+        let scan_result:ScanResult<TestDocument> = client.search_query()
+            .with_indexes(&indexes)
+            .with_size(10)
+            .scan(&scroll)
+            .unwrap();
 
-    //     assert_eq!(1000, scan_result.hits.total);
+        assert_eq!(1000, scan_result.hits.total);
 
-    //     let hits:Vec<SearchHitsHitsResult> = scan_result.iter(&mut client)
-    //         .take(200)
-    //         .map(|hit| hit.unwrap())
-    //         .collect();
+        let hits:Vec<SearchHitsHitsResult<TestDocument>> = scan_result
+            .iter(&mut client, scroll)
+            .take(200)
+            .map(|hit| hit.unwrap())
+            .collect();
 
-    //     assert_eq!(200, hits.len());
-    // }
+        assert_eq!(200, hits.len());
+    }
 
     // #[test]
     // fn test_source_filter() {
