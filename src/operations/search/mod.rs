@@ -1069,6 +1069,7 @@ mod tests {
     use ::operations::bulk::Action;
     use ::units::{Duration, JsonVal};
 
+    use super::ScanResult;
     use super::SearchHitsHitsResult;
     use super::Sort;
     use super::Source;
@@ -1095,25 +1096,26 @@ mod tests {
         client.refresh().with_indexes(&[index_name]).send().unwrap();
     }
 
-    // #[test]
-    // fn test_close() {
-    //     let mut client = ::tests::make_client();
-    //     let index_name = "tests_test_close";
-    //     ::tests::clean_db(&mut client, index_name);
-    //     setup_scan_data(&mut client, index_name);
+    #[test]
+    fn test_close() {
+        let mut client = ::tests::make_client();
+        let index_name = "tests_test_close";
+        ::tests::clean_db(&mut client, index_name);
+        setup_scan_data(&mut client, index_name);
 
-    //     let indexes = [index_name];
+        let indexes = [index_name];
 
-    //     let mut scan_result = client.search_query()
-    //         .with_indexes(&indexes)
-    //         .with_size(100)
-    //         .scan(Duration::minutes(1))
-    //         .unwrap();
+        let scroll = Duration::minutes(1);
+        let mut scan_result:ScanResult<TestDocument> = client.search_query()
+            .with_indexes(&indexes)
+            .with_size(100)
+            .scan(&scroll)
+            .unwrap();
 
-    //     scan_result.scroll(&mut client).unwrap();
+        scan_result.scroll(&mut client, &scroll).unwrap();
 
-    //     scan_result.close(&mut client).unwrap();
-    // }
+        scan_result.close(&mut client).unwrap();
+    }
 
     // #[test]
     // fn test_scan_and_scroll() {

@@ -31,9 +31,6 @@ use hyper::client;
 use hyper::status::StatusCode;
 use hyper::header::{Headers, Authorization, Basic};
 
-// TODO - deprecated
-use rustc_serialize::json::Json;
-
 use serde::ser::Serialize;
 use serde::de::Deserialize;
 
@@ -309,7 +306,6 @@ pub mod tests {
     extern crate env_logger;
     extern crate regex;
 
-    use std::collections::BTreeMap;
     use std::env;
 
     use serde_json::Value;
