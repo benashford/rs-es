@@ -28,6 +28,7 @@ use serde_json::{to_value, Value};
 use ::units::JsonVal;
 
 use super::{Aggregation, Aggregations};
+use super::common::{Agg, Script};
 
 macro_rules! bucket_agg {
     ($b:ident) => {
@@ -42,6 +43,13 @@ macro_rules! bucket_agg {
                 Aggregation::Bucket(BucketAggregation::$b(from), None)
             }
         }
+    }
+}
+
+macro_rules! fos_bucket_agg {
+    ($b:ident) => {
+        agg!($b);
+        bucket_agg!($b);
     }
 }
 
@@ -308,14 +316,20 @@ impl<'a> Order<'a> {
     }
 }
 
-// TODO deprecated
-// impl<'a> ToJson for Order<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert(self.0.to_string(), self.1.to_json());
-//         Json::Object(d)
-//     }
-// }
+/// Terms aggregation
+#[derive(Debug)]
+pub struct Terms<'a>(Agg<'a, TermsInner>);
+
+#[derive(Debug, Default, Serialize)]
+pub struct TermsInner {
+    size: Option<u64>
+}
+
+impl<'a> Terms<'a> {
+    add_extra_option!(with_size, size, u64);
+}
+
+fos_bucket_agg!(Terms);
 
 // /// Terms aggregation
 // #[derive(Debug)]
@@ -784,6 +798,7 @@ pub enum Interval {
 
 /// The set of bucket aggregations
 #[derive(Debug)]
+// TODO - make sure all these are uncommented
 pub enum BucketAggregation<'a> {
     Global(Global<'a>),
     // Filter(Filter<'a>),
@@ -792,7 +807,7 @@ pub enum BucketAggregation<'a> {
     // Nested(Nested<'a>),
     // ReverseNested(ReverseNested<'a>),
     // Children(Children<'a>),
-    // Terms(Terms<'a>),
+    Terms(Terms<'a>),
     // Range(Range<'a>),
     // DateRange(DateRange<'a>),
     // Histogram(Histogram<'a>),
@@ -805,7 +820,8 @@ impl<'a> BucketAggregation<'a> {
     pub fn details(&self) -> &'static str {
         use self::BucketAggregation::*;
         match self {
-            &Global(_) => "global"
+            &Global(_) => "global",
+            &Terms(_) => "terms"
         }
     }
 }
@@ -815,7 +831,25 @@ impl<'a> Serialize for BucketAggregation<'a> {
         where S: Serializer {
         use self::BucketAggregation::*;
         match self {
-            &Global(ref g) => g.serialize(serializer)
+            &Global(ref g) => g.serialize(serializer),
+            &Terms(ref t) => t.serialize(serializer)
         }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use serde_json;
+
+    use super::super::Aggregations;
+    use super::Terms;
+
+    #[test]
+    fn test_terms_aggregation() {
+        let aggs:Aggregations = ("term_test",
+                                 Terms::field("blah").with_size(5u64)).into();
+
+        assert_eq!("{\"term_test\":{\"terms\":{\"field\":\"blah\",\"size\":5}}}",
+                   serde_json::to_string(&aggs).unwrap());
     }
 }

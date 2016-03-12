@@ -25,6 +25,7 @@ use serde_json::{to_value, Value};
 // TODO - deprecated
 use rustc_serialize::json::{Json, ToJson};
 
+use ::json::NoOuter;
 use ::units::JsonVal;
 
 // TODO - deprecated
@@ -47,7 +48,7 @@ macro_rules! metrics_agg {
 
 /// Min aggregation
 #[derive(Debug)]
-pub struct Min<'a>(Agg<'a>);
+pub struct Min<'a>(Agg<'a, NoOuter>);
 metrics_agg!(Min);
 
 // /// Max aggregation

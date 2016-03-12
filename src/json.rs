@@ -35,7 +35,9 @@ impl<T> ShouldSkip for Option<T> {
 }
 
 /// No outer options
-#[derive(Debug)]
+///
+/// Literally serializes to nothing
+#[derive(Debug, Default)]
 pub struct NoOuter;
 
 impl Serialize for NoOuter {
@@ -108,14 +110,14 @@ impl<'a, F, I, O> MapVisitor for FieldBasedMapVisitor<'a, F, I, O>
     }
 }
 
-struct MergeSerializer<'a, S: Serializer + 'a> {
+pub struct MergeSerializer<'a, S: Serializer + 'a> {
     underlying: &'a mut S
 }
 
 impl<'a, S> MergeSerializer<'a, S>
     where S: Serializer {
 
-    fn new(u: &'a mut S) -> Self {
+    pub fn new(u: &'a mut S) -> Self {
         MergeSerializer {underlying: u}
     }
 }

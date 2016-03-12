@@ -211,8 +211,14 @@ impl<'a> ser::MapVisitor for AggregationVisitor<'a> {
             },
             2 => match self.agg {
                 &Metrics(_) => Ok(Some(())),
-                &Bucket(_, ref other_aggs) => {
-                    Ok(Some(try!(serializer.serialize_map_elt("aggregations", other_aggs))))
+                &Bucket(_, ref opt_aggs) => {
+                    match opt_aggs {
+                        &Some(ref other_aggs) => {
+                            Ok(Some(try!(serializer.serialize_map_elt("aggregations",
+                                                                      other_aggs))))
+                        },
+                        &None => Ok(Some(()))
+                    }
                 }
             },
             _ => Ok(None)

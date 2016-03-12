@@ -21,6 +21,7 @@ use std::collections::HashMap;
 use serde::ser;
 use serde::ser::{Serialize, Serializer};
 
+use ::json::MergeSerializer;
 use ::units::JsonVal;
 
 use super::Aggregation;
@@ -74,13 +75,25 @@ pub struct Script<'a> {
 
 /// Base of all Metrics aggregations
 #[derive(Debug, Default)]
-pub struct Agg<'a> {
+pub struct Agg<'a, E> {
     pub field: Option<&'a str>,
     pub script: Script<'a>,
-    pub missing: Option<JsonVal>
+    pub missing: Option<JsonVal>,
+    pub extra: E
 }
 
-impl<'a> Serialize for Agg<'a> {
+macro_rules! add_extra_option {
+    ($n:ident, $e:ident, $t:ty) => {
+        pub fn $n<T: Into<$t>>(mut self, val: T) -> Self {
+            self.0.extra.$e = Some(val.into());
+            self
+        }
+    }
+}
+
+impl<'a, E> Serialize for Agg<'a, E>
+    where E: Serialize {
+
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
         where S: Serializer {
 
@@ -91,8 +104,8 @@ impl<'a> Serialize for Agg<'a> {
     }
 }
 
-struct AggVisitor<'a> {
-    ma: &'a Agg<'a>,
+struct AggVisitor<'a, E: 'a> {
+    ma: &'a Agg<'a, E>,
     state: u8
 }
 
@@ -110,7 +123,9 @@ fn visit_field<S, T>(field: Option<T>,
     }
 }
 
-impl<'a> ser::MapVisitor for AggVisitor<'a> {
+impl<'a, E> ser::MapVisitor for AggVisitor<'a, E>
+    where E: Serialize {
+
     fn visit<S>(&mut self, serializer: &mut S) -> Result<Option<()>, S::Error>
         where S: Serializer {
 
@@ -122,6 +137,10 @@ impl<'a> ser::MapVisitor for AggVisitor<'a> {
             4 => visit_field(self.ma.script.id, "id", serializer),
             5 => visit_field(self.ma.script.params.as_ref(), "params", serializer),
             6 => visit_field(self.ma.missing.as_ref(), "missing", serializer),
+            7 => {
+                let mut merge_serializer = MergeSerializer::new(serializer);
+                Ok(Some(try!(self.ma.extra.serialize(&mut merge_serializer))))
+            },
             _ => Ok(None)
         }
     }
