@@ -17,7 +17,6 @@
 //! Common macros, utilities, etc. for the query crate
 
 use serde::{Serialize, Serializer};
-use serde::ser::MapVisitor;
 
 use ::json::FieldBased;
 

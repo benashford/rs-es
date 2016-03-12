@@ -88,20 +88,6 @@ impl TermQuery {
     build!(Term);
 }
 
-// TODO - remove
-// impl ToJson for TermQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-
-//         inner.insert("value".to_owned(), self.0.inner.value.to_json());
-//         optional_add!(self.0.inner, inner, boost);
-
-//         d.insert(self.0.field.clone(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
-
 // Terms query
 /// Terms Query Lookup
 #[derive(Debug, Default, Serialize)]
@@ -133,17 +119,18 @@ impl<'a> TermsQueryLookup {
     add_option!(with_routing, routing, String);
 }
 
-impl ToJson for TermsQueryLookup {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("id".to_owned(), self.id.to_json());
-        d.insert("path".to_owned(), self.path.to_json());
-        optional_add!(self, d, index);
-        optional_add!(self, d, doc_type, "type");
-        optional_add!(self, d, routing);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for TermsQueryLookup {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("id".to_owned(), self.id.to_json());
+//         d.insert("path".to_owned(), self.path.to_json());
+//         optional_add!(self, d, index);
+//         optional_add!(self, d, doc_type, "type");
+//         optional_add!(self, d, routing);
+//         Json::Object(d)
+//     }
+// }
 
 /// TermsQueryIn
 #[derive(Debug)]
@@ -172,14 +159,15 @@ impl Default for TermsQueryIn {
     }
 }
 
-impl ToJson for TermsQueryIn {
-    fn to_json(&self) -> Json {
-        match self {
-            &TermsQueryIn::Values(ref v) => v.to_json(),
-            &TermsQueryIn::Lookup(ref l) => l.to_json()
-        }
-    }
-}
+// TODO - deprecated
+// impl ToJson for TermsQueryIn {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &TermsQueryIn::Values(ref v) => v.to_json(),
+//             &TermsQueryIn::Lookup(ref l) => l.to_json()
+//         }
+//     }
+// }
 
 impl From<TermsQueryLookup> for TermsQueryIn {
     fn from(from: TermsQueryLookup) -> TermsQueryIn {
@@ -232,15 +220,6 @@ impl TermsQuery {
     build!(Terms);
 }
 
-// DEPRECATED
-impl ToJson for TermsQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert(self.0.field.clone(), self.0.inner.to_json());
-        Json::Object(d)
-    }
-}
-
 /// Range query
 /// TODO: Check all possible combinations: gt, gte, lte, lt, from, to, include_upper, include_lower
 /// and share with other range queries
@@ -285,25 +264,6 @@ impl RangeQuery {
     build!(Range);
 }
 
-// TODO - deprecated
-// impl ToJson for RangeQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-
-//         optional_add!(self.0.inner, inner, gte);
-//         optional_add!(self.0.inner, inner, gt);
-//         optional_add!(self.0.inner, inner, lte);
-//         optional_add!(self.0.inner, inner, lt);
-//         optional_add!(self.0.inner, inner, boost);
-//         optional_add!(self.0.inner, inner, time_zone);
-//         optional_add!(self.0.inner, inner, format);
-
-//         d.insert(self.0.field.clone(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
-
 /// Exists query
 #[derive(Debug)]
 pub struct ExistsQuery {
@@ -324,13 +284,13 @@ impl ExistsQuery {
     //build!(Exists);
 }
 
-impl ToJson for ExistsQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("field".to_owned(), self.field.to_json());
-        Json::Object(d)
-    }
-}
+// impl ToJson for ExistsQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("field".to_owned(), self.field.to_json());
+//         Json::Object(d)
+//     }
+// }
 
 /// Prefix query
 #[derive(Debug, Default)]
@@ -360,17 +320,17 @@ impl PrefixQuery {
     //build!(Prefix);
 }
 
-impl ToJson for PrefixQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        inner.insert("value".to_owned(), self.value.to_json());
-        optional_add!(self, inner, boost);
-        optional_add!(self, inner, rewrite);
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+// impl ToJson for PrefixQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
+//         inner.insert("value".to_owned(), self.value.to_json());
+//         optional_add!(self, inner, boost);
+//         optional_add!(self, inner, rewrite);
+//         d.insert(self.field.clone(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 /// Wildcard query
 #[derive(Debug, Default)]
@@ -400,17 +360,17 @@ impl WildcardQuery {
     //build!(Wildcard);
 }
 
-impl ToJson for WildcardQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        inner.insert("value".to_owned(), self.value.to_json());
-        optional_add!(self, inner, boost);
-        optional_add!(self, inner, rewrite);
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+// impl ToJson for WildcardQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
+//         inner.insert("value".to_owned(), self.value.to_json());
+//         optional_add!(self, inner, boost);
+//         optional_add!(self, inner, rewrite);
+//         d.insert(self.field.clone(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 // Regexp query
 /// Flags for the Regexp query
@@ -469,20 +429,20 @@ impl RegexpQuery {
     //build!(Regexp);
 }
 
-impl ToJson for RegexpQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
+// impl ToJson for RegexpQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
 
-        inner.insert("value".to_owned(), self.value.to_json());
-        optional_add!(self, inner, boost);
-        optional_add!(self, inner, flags);
-        optional_add!(self, inner, max_determined_states);
+//         inner.insert("value".to_owned(), self.value.to_json());
+//         optional_add!(self, inner, boost);
+//         optional_add!(self, inner, flags);
+//         optional_add!(self, inner, max_determined_states);
 
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+//         d.insert(self.field.clone(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 /// Fuzzy query
 #[derive(Debug, Default)]
@@ -516,19 +476,19 @@ impl FuzzyQuery {
     //build!(Fuzzy);
 }
 
-impl ToJson for FuzzyQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        inner.insert("value".to_owned(), self.value.to_json());
-        optional_add!(self, inner, boost);
-        optional_add!(self, inner, fuzziness);
-        optional_add!(self, inner, prefix_length);
-        optional_add!(self, inner, max_expansions);
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+// impl ToJson for FuzzyQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
+//         inner.insert("value".to_owned(), self.value.to_json());
+//         optional_add!(self, inner, boost);
+//         optional_add!(self, inner, fuzziness);
+//         optional_add!(self, inner, prefix_length);
+//         optional_add!(self, inner, max_expansions);
+//         d.insert(self.field.clone(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 /// Type query
 #[derive(Debug)]
@@ -550,13 +510,13 @@ impl TypeQuery {
     //build!(Type);
 }
 
-impl ToJson for TypeQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("value".to_owned(), self.value.to_json());
-        Json::Object(d)
-    }
-}
+// impl ToJson for TypeQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("value".to_owned(), self.value.to_json());
+//         Json::Object(d)
+//     }
+// }
 
 /// Ids query
 #[derive(Debug, Default)]
@@ -582,11 +542,11 @@ impl IdsQuery {
     //build!(Ids);
 }
 
-impl ToJson for IdsQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("values".to_owned(), self.values.to_json());
-        optional_add!(self, d, doc_type, "type");
-        Json::Object(d)
-    }
-}
+// impl ToJson for IdsQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("values".to_owned(), self.values.to_json());
+//         optional_add!(self, d, doc_type, "type");
+//         Json::Object(d)
+//     }
+// }

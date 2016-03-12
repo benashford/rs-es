@@ -33,9 +33,12 @@ use serde::ser;
 use serde::ser::{Serialize, Serializer};
 use serde_json::{to_value, Value};
 
-use error::EsError;
-use query;
-use units::{DistanceType, DistanceUnit, Duration, GeoBox, JsonVal, Location};
+use ::error::EsError;
+use ::query;
+use ::units::{DistanceType, DistanceUnit, Duration, GeoBox, JsonVal, Location};
+
+use self::bucket::BucketAggregationResult;
+use self::metrics::MetricsAggregationResult;
 
 // TODO - deprecated
 #[derive(Debug)]
@@ -311,734 +314,553 @@ impl <'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
 
 // Metrics result
 
-#[derive(Debug)]
-pub struct MinResult {
-    pub value: JsonVal
-}
+// #[derive(Debug)]
+// pub struct SumResult {
+//     pub value: f64
+// }
 
-impl<'a> From<&'a Json> for MinResult {
-    fn from(from: &'a Json) -> MinResult {
-        MinResult {
-            value: JsonVal::from(from.find("value").expect("No 'value' value"))
-        }
-    }
-}
+// impl<'a> From<&'a Json> for SumResult {
+//     fn from(from: &'a Json) -> SumResult {
+//         SumResult {
+//             value: get_json_f64!(from, "value")
+//         }
+//     }
+// }
 
-#[derive(Debug)]
-pub struct MaxResult {
-    pub value: JsonVal
-}
+// #[derive(Debug)]
+// pub struct AvgResult {
+//     pub value: f64
+// }
 
-impl<'a> From<&'a Json> for MaxResult {
-    fn from(from: &'a Json) -> MaxResult {
-        MaxResult {
-            value: JsonVal::from(from.find("value").expect("No 'value' value"))
-        }
-    }
-}
+// impl<'a> From<&'a Json> for AvgResult {
+//     fn from(from: &'a Json) -> AvgResult {
+//         AvgResult {
+//             value: get_json_f64!(from, "value")
+//         }
+//     }
+// }
 
-#[derive(Debug)]
-pub struct SumResult {
-    pub value: f64
-}
+// #[derive(Debug)]
+// pub struct StatsResult {
+//     pub count: u64,
+//     pub min: f64,
+//     pub max: f64,
+//     pub avg: f64,
+//     pub sum: f64
+// }
 
-impl<'a> From<&'a Json> for SumResult {
-    fn from(from: &'a Json) -> SumResult {
-        SumResult {
-            value: get_json_f64!(from, "value")
-        }
-    }
-}
+// impl<'a> From<&'a Json> for StatsResult {
+//     fn from(from: &'a Json) -> StatsResult {
+//         StatsResult {
+//             count: get_json_u64!(from, "count"),
+//             min: get_json_f64!(from, "min"),
+//             max: get_json_f64!(from, "max"),
+//             avg: get_json_f64!(from, "avg"),
+//             sum: get_json_f64!(from, "sum")
+//         }
+//     }
+// }
 
-#[derive(Debug)]
-pub struct AvgResult {
-    pub value: f64
-}
+// /// Used by the `ExtendedStatsResult`
+// #[derive(Debug)]
+// pub struct Bounds {
+//     pub upper: f64,
+//     pub lower: f64
+// }
 
-impl<'a> From<&'a Json> for AvgResult {
-    fn from(from: &'a Json) -> AvgResult {
-        AvgResult {
-            value: get_json_f64!(from, "value")
-        }
-    }
-}
+// impl<'a> From<&'a Json> for Bounds {
+//     fn from(from: &'a Json) -> Bounds {
+//         Bounds {
+//             upper: get_json_f64!(from, "upper"),
+//             lower: get_json_f64!(from, "lower")
+//         }
+//     }
+// }
 
-#[derive(Debug)]
-pub struct StatsResult {
-    pub count: u64,
-    pub min: f64,
-    pub max: f64,
-    pub avg: f64,
-    pub sum: f64
-}
+// #[derive(Debug)]
+// pub struct ExtendedStatsResult {
+//     pub count: u64,
+//     pub min: f64,
+//     pub max: f64,
+//     pub avg: f64,
+//     pub sum: f64,
+//     pub sum_of_squares: f64,
+//     pub variance: f64,
+//     pub std_deviation: f64,
+//     pub std_deviation_bounds: Bounds
+// }
 
-impl<'a> From<&'a Json> for StatsResult {
-    fn from(from: &'a Json) -> StatsResult {
-        StatsResult {
-            count: get_json_u64!(from, "count"),
-            min: get_json_f64!(from, "min"),
-            max: get_json_f64!(from, "max"),
-            avg: get_json_f64!(from, "avg"),
-            sum: get_json_f64!(from, "sum")
-        }
-    }
-}
+// impl<'a> From<&'a Json> for ExtendedStatsResult {
+//     fn from(from: &'a Json) -> ExtendedStatsResult {
+//         ExtendedStatsResult {
+//             count: get_json_u64!(from, "count"),
+//             min: get_json_f64!(from, "min"),
+//             max: get_json_f64!(from, "max"),
+//             avg: get_json_f64!(from, "avg"),
+//             sum: get_json_f64!(from, "sum"),
+//             sum_of_squares: get_json_f64!(from, "sum_of_squares"),
+//             variance: get_json_f64!(from, "variance"),
+//             std_deviation: get_json_f64!(from, "std_deviation"),
+//             std_deviation_bounds: from.find("std_deviation_bounds")
+//                 .expect("No 'std_deviation_bounds'")
+//                 .into()
+//         }
+//     }
+// }
 
-/// Used by the `ExtendedStatsResult`
-#[derive(Debug)]
-pub struct Bounds {
-    pub upper: f64,
-    pub lower: f64
-}
+// #[derive(Debug)]
+// pub struct ValueCountResult {
+//     pub value: u64
+// }
 
-impl<'a> From<&'a Json> for Bounds {
-    fn from(from: &'a Json) -> Bounds {
-        Bounds {
-            upper: get_json_f64!(from, "upper"),
-            lower: get_json_f64!(from, "lower")
-        }
-    }
-}
+// impl<'a> From<&'a Json> for ValueCountResult {
+//     fn from(from: &'a Json) -> ValueCountResult {
+//         ValueCountResult {
+//             value: get_json_u64!(from, "value")
+//         }
+//     }
+// }
 
-#[derive(Debug)]
-pub struct ExtendedStatsResult {
-    pub count: u64,
-    pub min: f64,
-    pub max: f64,
-    pub avg: f64,
-    pub sum: f64,
-    pub sum_of_squares: f64,
-    pub variance: f64,
-    pub std_deviation: f64,
-    pub std_deviation_bounds: Bounds
-}
+// #[derive(Debug)]
+// pub struct PercentilesResult {
+//     pub values: HashMap<String, f64>
+// }
 
-impl<'a> From<&'a Json> for ExtendedStatsResult {
-    fn from(from: &'a Json) -> ExtendedStatsResult {
-        ExtendedStatsResult {
-            count: get_json_u64!(from, "count"),
-            min: get_json_f64!(from, "min"),
-            max: get_json_f64!(from, "max"),
-            avg: get_json_f64!(from, "avg"),
-            sum: get_json_f64!(from, "sum"),
-            sum_of_squares: get_json_f64!(from, "sum_of_squares"),
-            variance: get_json_f64!(from, "variance"),
-            std_deviation: get_json_f64!(from, "std_deviation"),
-            std_deviation_bounds: from.find("std_deviation_bounds")
-                .expect("No 'std_deviation_bounds'")
-                .into()
-        }
-    }
-}
+// impl<'a> From<&'a Json> for PercentilesResult {
+//     fn from(from: &'a Json) -> PercentilesResult {
+//         let val_obj = get_json_object!(from, "values");
+//         let mut vals = HashMap::with_capacity(val_obj.len());
 
-#[derive(Debug)]
-pub struct ValueCountResult {
-    pub value: u64
-}
+//         for (k, v) in val_obj.into_iter() {
+//             vals.insert(k.clone(), v.as_f64().expect("Not numeric value"));
+//         }
 
-impl<'a> From<&'a Json> for ValueCountResult {
-    fn from(from: &'a Json) -> ValueCountResult {
-        ValueCountResult {
-            value: get_json_u64!(from, "value")
-        }
-    }
-}
+//         PercentilesResult {
+//             values: vals
+//         }
+//     }
+// }
 
-#[derive(Debug)]
-pub struct PercentilesResult {
-    pub values: HashMap<String, f64>
-}
+// #[derive(Debug)]
+// pub struct PercentileRanksResult {
+//     pub values: HashMap<String, f64>
+// }
 
-impl<'a> From<&'a Json> for PercentilesResult {
-    fn from(from: &'a Json) -> PercentilesResult {
-        let val_obj = get_json_object!(from, "values");
-        let mut vals = HashMap::with_capacity(val_obj.len());
+// impl<'a> From<&'a Json> for PercentileRanksResult {
+//     fn from(from: &'a Json) -> PercentileRanksResult {
+//         let val_obj = get_json_object!(from, "values");
+//         let mut vals = HashMap::with_capacity(val_obj.len());
 
-        for (k, v) in val_obj.into_iter() {
-            vals.insert(k.clone(), v.as_f64().expect("Not numeric value"));
-        }
+//         for (k, v) in val_obj.into_iter() {
+//             vals.insert(k.clone(), v.as_f64().expect("Not numeric value"));
+//         }
 
-        PercentilesResult {
-            values: vals
-        }
-    }
-}
+//         PercentileRanksResult {
+//             values: vals
+//         }
+//     }
+// }
 
-#[derive(Debug)]
-pub struct PercentileRanksResult {
-    pub values: HashMap<String, f64>
-}
+// #[derive(Debug)]
+// pub struct CardinalityResult {
+//     pub value: u64
+// }
 
-impl<'a> From<&'a Json> for PercentileRanksResult {
-    fn from(from: &'a Json) -> PercentileRanksResult {
-        let val_obj = get_json_object!(from, "values");
-        let mut vals = HashMap::with_capacity(val_obj.len());
+// impl<'a> From<&'a Json> for CardinalityResult {
+//     fn from(from: &'a Json) -> CardinalityResult {
+//         CardinalityResult {
+//             value: get_json_u64!(from, "value")
+//         }
+//     }
+// }
 
-        for (k, v) in val_obj.into_iter() {
-            vals.insert(k.clone(), v.as_f64().expect("Not numeric value"));
-        }
+// #[derive(Debug)]
+// pub struct GeoBoundsResult {
+//     pub bounds: GeoBox
+// }
 
-        PercentileRanksResult {
-            values: vals
-        }
-    }
-}
+// impl<'a> From<&'a Json> for GeoBoundsResult {
+//     fn from(from: &'a Json) -> GeoBoundsResult {
+//         GeoBoundsResult {
+//             bounds: GeoBox::from(from.find("bounds").expect("No 'bounds' field"))
+//         }
+//     }
+// }
 
-#[derive(Debug)]
-pub struct CardinalityResult {
-    pub value: u64
-}
+// #[derive(Debug)]
+// pub struct ScriptedMetricResult {
+//     pub value: JsonVal
+// }
 
-impl<'a> From<&'a Json> for CardinalityResult {
-    fn from(from: &'a Json) -> CardinalityResult {
-        CardinalityResult {
-            value: get_json_u64!(from, "value")
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct GeoBoundsResult {
-    pub bounds: GeoBox
-}
-
-impl<'a> From<&'a Json> for GeoBoundsResult {
-    fn from(from: &'a Json) -> GeoBoundsResult {
-        GeoBoundsResult {
-            bounds: GeoBox::from(from.find("bounds").expect("No 'bounds' field"))
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct ScriptedMetricResult {
-    pub value: JsonVal
-}
-
-impl<'a> From<&'a Json> for ScriptedMetricResult {
-    fn from(from: &'a Json) -> ScriptedMetricResult {
-        ScriptedMetricResult {
-            value: JsonVal::from(from.find("value").expect("No 'value' field"))
-        }
-    }
-}
+// impl<'a> From<&'a Json> for ScriptedMetricResult {
+//     fn from(from: &'a Json) -> ScriptedMetricResult {
+//         ScriptedMetricResult {
+//             value: JsonVal::from(from.find("value").expect("No 'value' field"))
+//         }
+//     }
+// }
 
 // Buckets result
 
-/// Macros for buckets to return a reference to the sub-aggregations
-macro_rules! add_aggs_ref {
-    () => {
-        pub fn aggs_ref<'a>(&'a self) -> Option<&'a AggregationsResult> {
-            self.aggs.as_ref()
-        }
-    }
-}
+// #[derive(Debug)]
+// pub struct FilterResult {
+//     pub doc_count: u64,
+//     pub aggs: Option<AggregationsResult>
+// }
 
-/// Macro to extract sub-aggregations for a bucket aggregation
-macro_rules! extract_aggs {
-    ($f:ident, $a:ident) => {
-        // match $a {
-        //     &Some(ref agg) => {
-        //         Some(object_to_result(agg, $f.as_object().expect("Not an object")))
-        //     },
-        //     &None          => None
-        // }
-        unimplemented!()
-    }
-}
+// impl FilterResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> FilterResult {
+//         FilterResult {
+//             doc_count: get_json_u64!(from, "doc_count"),
+//             aggs: extract_aggs!(from, aggs)
+//         }
+//     }
 
-#[derive(Debug)]
-pub struct GlobalResult {
-    pub doc_count: u64,
-    pub aggs: Option<AggregationsResult>
-}
+//     add_aggs_ref!();
+// }
 
-impl GlobalResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> GlobalResult {
-        GlobalResult {
-            doc_count: get_json_u64!(from, "doc_count"),
-            aggs: extract_aggs!(from, aggs)
-        }
-    }
+// #[derive(Debug)]
+// pub struct FiltersBucketResult {
+//     pub doc_count: u64,
+//     pub aggs: Option<AggregationsResult>
+// }
 
-    add_aggs_ref!();
-}
+// impl FiltersBucketResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> FiltersBucketResult {
+//         FiltersBucketResult {
+//             doc_count: get_json_u64!(from, "doc_count"),
+//             aggs: extract_aggs!(from, aggs)
+//         }
+//     }
 
-#[derive(Debug)]
-pub struct FilterResult {
-    pub doc_count: u64,
-    pub aggs: Option<AggregationsResult>
-}
+//     add_aggs_ref!();
+// }
 
-impl FilterResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> FilterResult {
-        FilterResult {
-            doc_count: get_json_u64!(from, "doc_count"),
-            aggs: extract_aggs!(from, aggs)
-        }
-    }
+// #[derive(Debug)]
+// pub struct FiltersResult {
+//     pub buckets: HashMap<String, FiltersBucketResult>
+// }
 
-    add_aggs_ref!();
-}
+// impl FiltersResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> FiltersResult {
+//         FiltersResult {
+//             buckets: from.find("buckets").expect("No buckets")
+//                 .as_object().expect("Not an object")
+//                 .into_iter().map(|(k, v)| {
+//                     (k.clone(), FiltersBucketResult::from(v, aggs))
+//                 }).collect()
+//         }
+//     }
+// }
 
-#[derive(Debug)]
-pub struct FiltersBucketResult {
-    pub doc_count: u64,
-    pub aggs: Option<AggregationsResult>
-}
+// #[derive(Debug)]
+// pub struct MissingResult {
+//     pub doc_count: u64,
+//     pub aggs: Option<AggregationsResult>
+// }
 
-impl FiltersBucketResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> FiltersBucketResult {
-        FiltersBucketResult {
-            doc_count: get_json_u64!(from, "doc_count"),
-            aggs: extract_aggs!(from, aggs)
-        }
-    }
+// impl MissingResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> MissingResult {
+//         MissingResult {
+//             doc_count: get_json_u64!(from, "doc_count"),
+//             aggs: extract_aggs!(from, aggs)
+//         }
+//     }
 
-    add_aggs_ref!();
-}
+//     add_aggs_ref!();
+// }
 
-#[derive(Debug)]
-pub struct FiltersResult {
-    pub buckets: HashMap<String, FiltersBucketResult>
-}
+// #[derive(Debug)]
+// pub struct NestedResult {
+//     pub aggs: Option<AggregationsResult>
+// }
 
-impl FiltersResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> FiltersResult {
-        FiltersResult {
-            buckets: from.find("buckets").expect("No buckets")
-                .as_object().expect("Not an object")
-                .into_iter().map(|(k, v)| {
-                    (k.clone(), FiltersBucketResult::from(v, aggs))
-                }).collect()
-        }
-    }
-}
+// impl NestedResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> NestedResult {
+//         NestedResult {
+//             aggs: extract_aggs!(from, aggs)
+//         }
+//     }
 
-#[derive(Debug)]
-pub struct MissingResult {
-    pub doc_count: u64,
-    pub aggs: Option<AggregationsResult>
-}
+//     add_aggs_ref!();
+// }
 
-impl MissingResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> MissingResult {
-        MissingResult {
-            doc_count: get_json_u64!(from, "doc_count"),
-            aggs: extract_aggs!(from, aggs)
-        }
-    }
+// #[derive(Debug)]
+// pub struct ReverseNestedResult {
+//     pub aggs: Option<AggregationsResult>
+// }
 
-    add_aggs_ref!();
-}
+// impl ReverseNestedResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> ReverseNestedResult {
+//         ReverseNestedResult {
+//             aggs: extract_aggs!(from, aggs)
+//         }
+//     }
+// }
 
-#[derive(Debug)]
-pub struct NestedResult {
-    pub aggs: Option<AggregationsResult>
-}
+// #[derive(Debug)]
+// pub struct ChildrenResult {
+//     pub doc_count: u64,
+//     pub aggs: Option<AggregationsResult>
+// }
 
-impl NestedResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> NestedResult {
-        NestedResult {
-            aggs: extract_aggs!(from, aggs)
-        }
-    }
+// impl ChildrenResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> ChildrenResult {
+//         ChildrenResult {
+//             doc_count: get_json_u64!(from, "doc_count"),
+//             aggs: extract_aggs!(from, aggs)
+//         }
+//     }
 
-    add_aggs_ref!();
-}
+//     add_aggs_ref!();
+// }
 
-#[derive(Debug)]
-pub struct ReverseNestedResult {
-    pub aggs: Option<AggregationsResult>
-}
+// // Range result objects
 
-impl ReverseNestedResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> ReverseNestedResult {
-        ReverseNestedResult {
-            aggs: extract_aggs!(from, aggs)
-        }
-    }
-}
+// #[derive(Debug)]
+// pub struct RangeBucketResult {
+//     pub from:      Option<JsonVal>,
+//     pub to:        Option<JsonVal>,
+//     pub doc_count: u64,
+//     pub aggs:      Option<AggregationsResult>
+// }
 
-#[derive(Debug)]
-pub struct ChildrenResult {
-    pub doc_count: u64,
-    pub aggs: Option<AggregationsResult>
-}
+// impl RangeBucketResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> RangeBucketResult {
+//         RangeBucketResult {
+//             from:      from.find("from").and_then(|from| Some(from.into())),
+//             to:        from.find("to").and_then(|to| Some(to.into())),
+//             doc_count: get_json_u64!(from, "doc_count"),
+//             aggs:      extract_aggs!(from, aggs)
+//         }
+//     }
 
-impl ChildrenResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> ChildrenResult {
-        ChildrenResult {
-            doc_count: get_json_u64!(from, "doc_count"),
-            aggs: extract_aggs!(from, aggs)
-        }
-    }
+//     add_aggs_ref!();
+// }
 
-    add_aggs_ref!();
-}
+// #[derive(Debug)]
+// pub struct RangeResult {
+//     pub buckets: HashMap<String, RangeBucketResult>,
+// }
 
-#[derive(Debug)]
-pub struct TermsBucketResult {
-    pub key: JsonVal,
-    pub doc_count: u64,
-    pub aggs: Option<AggregationsResult>
-}
+// impl RangeResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> RangeResult {
+//         let bucket_obj = get_json_object!(from, "buckets");
+//         let mut buckets = HashMap::with_capacity(bucket_obj.len());
 
-impl TermsBucketResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> TermsBucketResult {
-        info!("Creating TermsBucketResult from: {:?} with {:?}", from, aggs);
+//         for (k, v) in bucket_obj.into_iter() {
+//             buckets.insert(k.clone(), RangeBucketResult::from(v, aggs));
+//         }
 
-        TermsBucketResult {
-            key: JsonVal::from(from.find("key").expect("No 'key' value")),
-            doc_count: get_json_u64!(from, "doc_count"),
-            aggs: extract_aggs!(from, aggs)
-        }
-    }
+//         RangeResult {
+//             buckets: buckets
+//         }
+//     }
+// }
 
-    add_aggs_ref!();
-}
+// // Date range result objects
 
-#[derive(Debug)]
-pub struct TermsResult {
-    pub doc_count_error_upper_bound: u64,
-    pub sum_other_doc_count: u64,
-    pub buckets: Vec<TermsBucketResult>
-}
+// #[derive(Debug)]
+// pub struct DateRangeBucketResult {
+//     pub from:           Option<f64>,
+//     pub from_as_string: Option<String>,
+//     pub to:             Option<f64>,
+//     pub to_as_string:   Option<String>,
+//     pub doc_count:      u64,
+//     pub aggs:           Option<AggregationsResult>
+// }
 
-impl TermsResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> TermsResult {
-        TermsResult {
-            doc_count_error_upper_bound: get_json_u64!(from, "doc_count_error_upper_bound"),
-            sum_other_doc_count: get_json_u64!(from, "sum_other_doc_count"),
-            buckets: from.find("buckets").expect("No buckets")
-                .as_array().expect("Not an array")
-                .iter().map(|bucket| {
-                    TermsBucketResult::from(bucket, aggs)
-                }).collect()
-        }
-    }
-}
+// impl DateRangeBucketResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> DateRangeBucketResult {
+//         DateRangeBucketResult {
+//             from:           optional_json_f64!(from, "from"),
+//             from_as_string: optional_json_string!(from, "from_as_string"),
+//             to:             optional_json_f64!(from, "to"),
+//             to_as_string:   optional_json_string!(from, "to_as_string"),
+//             doc_count:      get_json_u64!(from, "doc_count"),
+//             aggs:           extract_aggs!(from, aggs)
+//         }
+//     }
 
-// Range result objects
+//     add_aggs_ref!();
+// }
 
-#[derive(Debug)]
-pub struct RangeBucketResult {
-    pub from:      Option<JsonVal>,
-    pub to:        Option<JsonVal>,
-    pub doc_count: u64,
-    pub aggs:      Option<AggregationsResult>
-}
+// #[derive(Debug)]
+// pub struct DateRangeResult {
+//     pub buckets: Vec<DateRangeBucketResult>
+// }
 
-impl RangeBucketResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> RangeBucketResult {
-        RangeBucketResult {
-            from:      from.find("from").and_then(|from| Some(from.into())),
-            to:        from.find("to").and_then(|to| Some(to.into())),
-            doc_count: get_json_u64!(from, "doc_count"),
-            aggs:      extract_aggs!(from, aggs)
-        }
-    }
+// impl DateRangeResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> DateRangeResult {
+//         DateRangeResult {
+//             buckets: from.find("buckets").expect("No buckets")
+//                 .as_array().expect("Not an array")
+//                 .iter().map(|bucket| {
+//                     DateRangeBucketResult::from(bucket, aggs)
+//                 }).collect()
+//         }
+//     }
+// }
 
-    add_aggs_ref!();
-}
+// /// Used for histogram results
+// #[derive(Debug)]
+// pub struct HistogramBucketResult {
+//     pub key: String,
+//     pub doc_count: u64,
+//     pub aggs: Option<AggregationsResult>
+// }
 
-#[derive(Debug)]
-pub struct RangeResult {
-    pub buckets: HashMap<String, RangeBucketResult>,
-}
+// impl HistogramBucketResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> HistogramBucketResult {
+//         HistogramBucketResult {
+//             key: get_json_string!(from, "key"),
+//             doc_count: get_json_u64!(from, "doc_count"),
+//             aggs: extract_aggs!(from, aggs)
+//         }
+//     }
 
-impl RangeResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> RangeResult {
-        let bucket_obj = get_json_object!(from, "buckets");
-        let mut buckets = HashMap::with_capacity(bucket_obj.len());
+//     add_aggs_ref!();
+// }
 
-        for (k, v) in bucket_obj.into_iter() {
-            buckets.insert(k.clone(), RangeBucketResult::from(v, aggs));
-        }
+// #[derive(Debug)]
+// pub struct HistogramResult {
+//     pub buckets: Vec<HistogramBucketResult>
+// }
 
-        RangeResult {
-            buckets: buckets
-        }
-    }
-}
+// impl HistogramResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> HistogramResult {
+//         HistogramResult {
+//             buckets: from.find("buckets").expect("No buckets")
+//                 .as_array().expect("Not an array")
+//                 .iter().map(|bucket| HistogramBucketResult::from(bucket, aggs))
+//                 .collect()
+//         }
+//     }
+// }
 
-// Date range result objects
+// // Date histogram results
+// #[derive(Debug)]
+// pub struct DateHistogramBucketResult {
+//     pub key_as_string: String,
+//     pub key: u64,
+//     pub doc_count: u64,
+//     pub aggs: Option<AggregationsResult>
+// }
 
-#[derive(Debug)]
-pub struct DateRangeBucketResult {
-    pub from:           Option<f64>,
-    pub from_as_string: Option<String>,
-    pub to:             Option<f64>,
-    pub to_as_string:   Option<String>,
-    pub doc_count:      u64,
-    pub aggs:           Option<AggregationsResult>
-}
+// impl DateHistogramBucketResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> DateHistogramBucketResult {
+//         DateHistogramBucketResult {
+//             key_as_string: get_json_string!(from, "key_as_string"),
+//             key: get_json_u64!(from, "key"),
+//             doc_count: get_json_u64!(from, "doc_count"),
+//             aggs: extract_aggs!(from, aggs)
+//         }
+//     }
 
-impl DateRangeBucketResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> DateRangeBucketResult {
-        DateRangeBucketResult {
-            from:           optional_json_f64!(from, "from"),
-            from_as_string: optional_json_string!(from, "from_as_string"),
-            to:             optional_json_f64!(from, "to"),
-            to_as_string:   optional_json_string!(from, "to_as_string"),
-            doc_count:      get_json_u64!(from, "doc_count"),
-            aggs:           extract_aggs!(from, aggs)
-        }
-    }
+//     add_aggs_ref!();
+// }
 
-    add_aggs_ref!();
-}
+// #[derive(Debug)]
+// pub struct DateHistogramResult {
+//     pub buckets: Vec<DateHistogramBucketResult>
+// }
 
-#[derive(Debug)]
-pub struct DateRangeResult {
-    pub buckets: Vec<DateRangeBucketResult>
-}
+// impl DateHistogramResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> DateHistogramResult {
+//         DateHistogramResult {
+//             buckets: from.find("buckets").expect("No buckets")
+//                 .as_array().expect("Not an array")
+//                 .iter().map(|bucket| DateHistogramBucketResult::from(bucket, aggs))
+//                 .collect()
+//         }
+//     }
+// }
 
-impl DateRangeResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> DateRangeResult {
-        DateRangeResult {
-            buckets: from.find("buckets").expect("No buckets")
-                .as_array().expect("Not an array")
-                .iter().map(|bucket| {
-                    DateRangeBucketResult::from(bucket, aggs)
-                }).collect()
-        }
-    }
-}
+// // GeoDistance results
+// #[derive(Debug)]
+// pub struct GeoDistanceBucketResult {
+//     pub key: String,
+//     pub from: Option<f64>,
+//     pub to: Option<f64>,
+//     pub doc_count: u64,
+//     pub aggs: Option<AggregationsResult>
+// }
 
-/// Used for histogram results
-#[derive(Debug)]
-pub struct HistogramBucketResult {
-    pub key: String,
-    pub doc_count: u64,
-    pub aggs: Option<AggregationsResult>
-}
+// impl GeoDistanceBucketResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoDistanceBucketResult {
+//         GeoDistanceBucketResult {
+//             key: get_json_string!(from, "key"),
+//             from: optional_json_f64!(from, "from"),
+//             to: optional_json_f64!(from, "to"),
+//             doc_count: get_json_u64!(from, "doc_count"),
+//             aggs: extract_aggs!(from, aggs)
+//         }
+//     }
 
-impl HistogramBucketResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> HistogramBucketResult {
-        HistogramBucketResult {
-            key: get_json_string!(from, "key"),
-            doc_count: get_json_u64!(from, "doc_count"),
-            aggs: extract_aggs!(from, aggs)
-        }
-    }
+//     add_aggs_ref!();
+// }
 
-    add_aggs_ref!();
-}
+// #[derive(Debug)]
+// pub struct GeoDistanceResult {
+//     pub buckets: Vec<GeoDistanceBucketResult>
+// }
 
-#[derive(Debug)]
-pub struct HistogramResult {
-    pub buckets: Vec<HistogramBucketResult>
-}
+// impl GeoDistanceResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoDistanceResult {
+//         GeoDistanceResult {
+//             buckets: from.find("buckets").expect("No buckets")
+//                 .as_array().expect("Not an array")
+//                 .iter().map(|bucket| GeoDistanceBucketResult::from(bucket, aggs))
+//                 .collect()
+//         }
+//     }
+// }
 
-impl HistogramResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> HistogramResult {
-        HistogramResult {
-            buckets: from.find("buckets").expect("No buckets")
-                .as_array().expect("Not an array")
-                .iter().map(|bucket| HistogramBucketResult::from(bucket, aggs))
-                .collect()
-        }
-    }
-}
+// #[derive(Debug)]
+// pub struct GeoHashBucketResult {
+//     pub key:       String,
+//     pub doc_count: u64,
+//     pub aggs:      Option<AggregationsResult>
+// }
 
-// Date histogram results
-#[derive(Debug)]
-pub struct DateHistogramBucketResult {
-    pub key_as_string: String,
-    pub key: u64,
-    pub doc_count: u64,
-    pub aggs: Option<AggregationsResult>
-}
+// impl GeoHashBucketResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoHashBucketResult {
+//         GeoHashBucketResult {
+//             key: get_json_string!(from, "key"),
+//             doc_count: get_json_u64!(from, "doc_count"),
+//             aggs: extract_aggs!(from, aggs)
+//         }
+//     }
 
-impl DateHistogramBucketResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> DateHistogramBucketResult {
-        DateHistogramBucketResult {
-            key_as_string: get_json_string!(from, "key_as_string"),
-            key: get_json_u64!(from, "key"),
-            doc_count: get_json_u64!(from, "doc_count"),
-            aggs: extract_aggs!(from, aggs)
-        }
-    }
+//     add_aggs_ref!();
+// }
 
-    add_aggs_ref!();
-}
+// #[derive(Debug)]
+// pub struct GeoHashResult {
+//     pub buckets: Vec<GeoHashBucketResult>
+// }
 
-#[derive(Debug)]
-pub struct DateHistogramResult {
-    pub buckets: Vec<DateHistogramBucketResult>
-}
-
-impl DateHistogramResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> DateHistogramResult {
-        DateHistogramResult {
-            buckets: from.find("buckets").expect("No buckets")
-                .as_array().expect("Not an array")
-                .iter().map(|bucket| DateHistogramBucketResult::from(bucket, aggs))
-                .collect()
-        }
-    }
-}
-
-// GeoDistance results
-#[derive(Debug)]
-pub struct GeoDistanceBucketResult {
-    pub key: String,
-    pub from: Option<f64>,
-    pub to: Option<f64>,
-    pub doc_count: u64,
-    pub aggs: Option<AggregationsResult>
-}
-
-impl GeoDistanceBucketResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoDistanceBucketResult {
-        GeoDistanceBucketResult {
-            key: get_json_string!(from, "key"),
-            from: optional_json_f64!(from, "from"),
-            to: optional_json_f64!(from, "to"),
-            doc_count: get_json_u64!(from, "doc_count"),
-            aggs: extract_aggs!(from, aggs)
-        }
-    }
-
-    add_aggs_ref!();
-}
-
-#[derive(Debug)]
-pub struct GeoDistanceResult {
-    pub buckets: Vec<GeoDistanceBucketResult>
-}
-
-impl GeoDistanceResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoDistanceResult {
-        GeoDistanceResult {
-            buckets: from.find("buckets").expect("No buckets")
-                .as_array().expect("Not an array")
-                .iter().map(|bucket| GeoDistanceBucketResult::from(bucket, aggs))
-                .collect()
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct GeoHashBucketResult {
-    pub key:       String,
-    pub doc_count: u64,
-    pub aggs:      Option<AggregationsResult>
-}
-
-impl GeoHashBucketResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoHashBucketResult {
-        GeoHashBucketResult {
-            key: get_json_string!(from, "key"),
-            doc_count: get_json_u64!(from, "doc_count"),
-            aggs: extract_aggs!(from, aggs)
-        }
-    }
-
-    add_aggs_ref!();
-}
-
-#[derive(Debug)]
-pub struct GeoHashResult {
-    pub buckets: Vec<GeoHashBucketResult>
-}
-
-impl GeoHashResult {
-    fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoHashResult {
-        GeoHashResult {
-            buckets: from.find("buckets").expect("No buckets")
-                .as_array().expect("Not an array")
-                .iter().map(|bucket| GeoHashBucketResult::from(bucket, aggs))
-                .collect()
-        }
-    }
-}
+// impl GeoHashResult {
+//     fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoHashResult {
+//         GeoHashResult {
+//             buckets: from.find("buckets").expect("No buckets")
+//                 .as_array().expect("Not an array")
+//                 .iter().map(|bucket| GeoHashBucketResult::from(bucket, aggs))
+//                 .collect()
+//         }
+//     }
+// }
 
 /// The result of one specific aggregation
 ///
 /// The data returned varies depending on aggregation type
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub enum AggregationResult {
-    // TODO - disabled during refactoring
-    // // Metrics
-    // Min(MinResult),
-    // Max(MaxResult),
-    // Sum(SumResult),
-    // Avg(AvgResult),
-    // Stats(StatsResult),
-    // ExtendedStats(ExtendedStatsResult),
-    // ValueCount(ValueCountResult),
-    // Percentiles(PercentilesResult),
-    // PercentileRanks(PercentileRanksResult),
-    // Cardinality(CardinalityResult),
-    // GeoBounds(GeoBoundsResult),
-    // ScriptedMetric(ScriptedMetricResult),
+    /// Results of metrics aggregations
+    Metrics(MetricsAggregationResult),
 
-    // // Buckets
-    // Global(GlobalResult),
-    // Filter(FilterResult),
-    // Filters(FiltersResult),
-    // Missing(MissingResult),
-    // Nested(NestedResult),
-    // ReverseNested(ReverseNestedResult),
-    // Children(ChildrenResult),
-    // Terms(TermsResult),
-    // Range(RangeResult),
-    // DateRange(DateRangeResult),
-    // Histogram(HistogramResult),
-    // DateHistogram(DateHistogramResult),
-    // GeoDistance(GeoDistanceResult),
-    // GeoHash(GeoHashResult)
-}
-
-/// Macro to implement the various as... functions that return the details of an
-/// aggregation for that particular type
-macro_rules! agg_as {
-    ($n:ident,$t:ident,$rt:ty) => {
-        pub fn $n<'a>(&'a self) -> Result<&'a $rt, EsError> {
-            // TODO - re-enable
-            // match self {
-            //     &AggregationResult::$t(ref res) => Ok(res),
-            //     _                               => {
-            //         Err(EsError::EsError(format!("Wrong type: {:?}", self)))
-            //     }
-            // }
-            unimplemented!()
-        }
-    }
-}
-
-impl AggregationResult {
-    // Metrics
-    agg_as!(as_min, Min, MinResult);
-    agg_as!(as_max, Max, MaxResult);
-    agg_as!(as_sum, Sum, SumResult);
-    agg_as!(as_avg, Avg, AvgResult);
-    agg_as!(as_stats, Stats, StatsResult);
-    agg_as!(as_extended_stats, ExtendedStats, ExtendedStatsResult);
-    agg_as!(as_value_count, ValueCount, ValueCountResult);
-    agg_as!(as_percentiles, Percentiles, PercentilesResult);
-    agg_as!(as_percentile_ranks, PercentileRanks, PercentileRanksResult);
-    agg_as!(as_cardinality, Cardinality, CardinalityResult);
-    agg_as!(as_geo_bounds, GeoBounds, GeoBoundsResult);
-    agg_as!(as_scripted_metric, ScriptedMetric, ScriptedMetricResult);
-
-    // buckets
-    agg_as!(as_global, Global, GlobalResult);
-    agg_as!(as_filter, Filter, FilterResult);
-    agg_as!(as_filters, Filters, FiltersResult);
-    agg_as!(as_missing, Missing, MissingResult);
-    agg_as!(as_nested, Nested, NestedResult);
-    agg_as!(as_reverse_nested, ReverseNested, ReverseNestedResult);
-    agg_as!(as_children, Children, ChildrenResult);
-    agg_as!(as_terms, Terms, TermsResult);
-    agg_as!(as_range, Range, RangeResult);
-    agg_as!(as_date_range, DateRange, DateRangeResult);
-    agg_as!(as_histogram, Histogram, HistogramResult);
-    agg_as!(as_date_histogram, DateHistogram, DateHistogramResult);
-    agg_as!(as_geo_distance, GeoDistance, GeoDistanceResult);
-    agg_as!(as_geo_hash, GeoHash, GeoHashResult);
+    /// Result of a bucket aggregation
+    Bucket(BucketAggregationResult)
 }
 
 #[derive(Debug)]
@@ -1046,109 +868,31 @@ pub struct AggregationsResult(HashMap<String, AggregationResult>);
 
 /// Loads a Json object of aggregation results into an `AggregationsResult`.
 fn object_to_result(aggs: &Aggregations,
-                    object: &BTreeMap<String, Value>) -> AggregationsResult {
-    // let mut ar_map = HashMap::new();
+                    object: &BTreeMap<String, Value>) -> Result<AggregationsResult, EsError> {
+    let mut ar_map = HashMap::new();
+    use self::Aggregation::*;
+    for (&key, val) in aggs.0.iter() {
+        let owned_key = key.to_owned();
+        let json = match object.get(&owned_key) {
+            Some(json) => json,
+            None => return Err(EsError::EsError(format!("No key: {}", &owned_key)))
+        };
+        ar_map.insert(owned_key, match val {
+            &Metrics(ref ma) => {
+                AggregationResult::Metrics(try!(MetricsAggregationResult::from(ma, json)))
+            },
+            &Aggregation::Bucket(ref ba, ref aggs) => {
+                use self::bucket::BucketAggregation::*;
+                AggregationResult::Bucket(try!(BucketAggregationResult::from(ba,
+                                                                             json,
+                                                                             aggs)))
+            }
+        });
+    }
 
-    // for (key, val) in aggs.0.iter() {
-    //     let owned_key = (*key).to_owned();
-    //     let json = object.get(&owned_key).expect(&format!("No key: {}", &owned_key));
-    //     ar_map.insert(owned_key, match val {
-    //         &Aggregation::Metrics(ref ma) => {
-    //             match ma {
-    //                 &MetricsAggregation::Min(_) => {
-    //                     AggregationResult::Min(MinResult::from(json))
-    //                 },
-    //                 &MetricsAggregation::Max(_) => {
-    //                     AggregationResult::Max(MaxResult::from(json))
-    //                 },
-    //                 &MetricsAggregation::Sum(_) => {
-    //                     AggregationResult::Sum(SumResult::from(json))
-    //                 },
-    //                 &MetricsAggregation::Avg(_) => {
-    //                     AggregationResult::Avg(AvgResult::from(json))
-    //                 },
-    //                 &MetricsAggregation::Stats(_) => {
-    //                     AggregationResult::Stats(StatsResult::from(json))
-    //                 },
-    //                 &MetricsAggregation::ExtendedStats(_) => {
-    //                     AggregationResult::ExtendedStats(ExtendedStatsResult::from(json))
-    //                 },
-    //                 &MetricsAggregation::ValueCount(_) => {
-    //                     AggregationResult::ValueCount(ValueCountResult::from(json))
-    //                 }
-    //                 &MetricsAggregation::Percentiles(_) => {
-    //                     AggregationResult::Percentiles(PercentilesResult::from(json))
-    //                 },
-    //                 &MetricsAggregation::PercentileRanks(_) => {
-    //                     AggregationResult::PercentileRanks(PercentileRanksResult::from(json))
-    //                 },
-    //                 &MetricsAggregation::Cardinality(_) => {
-    //                     AggregationResult::Cardinality(CardinalityResult::from(json))
-    //                 },
-    //                 &MetricsAggregation::GeoBounds(_) => {
-    //                     AggregationResult::GeoBounds(GeoBoundsResult::from(json))
-    //                 },
-    //                 &MetricsAggregation::ScriptedMetric(_) => {
-    //                     AggregationResult::ScriptedMetric(ScriptedMetricResult::from(json))
-    //                 }
-    //             }
-    //         },
-    //         &Aggregation::Bucket(ref ba, ref aggs) => {
-    //             match ba {
-    //                 &BucketAggregation::Global(_) => {
-    //                     AggregationResult::Global(GlobalResult::from(json, aggs))
-    //                 },
-    //                 &BucketAggregation::Filter(_) => {
-    //                     AggregationResult::Filter(FilterResult::from(json, aggs))
-    //                 },
-    //                 &BucketAggregation::Filters(_) => {
-    //                     AggregationResult::Filters(FiltersResult::from(json, aggs))
-    //                 },
-    //                 &BucketAggregation::Missing(_) => {
-    //                     AggregationResult::Missing(MissingResult::from(json, aggs))
-    //                 },
-    //                 &BucketAggregation::Nested(_) => {
-    //                     AggregationResult::Nested(NestedResult::from(json, aggs))
-    //                 },
-    //                 &BucketAggregation::ReverseNested(_) => {
-    //                     AggregationResult::ReverseNested(ReverseNestedResult::from(json,
-    //                                                                                aggs))
-    //                 },
-    //                 &BucketAggregation::Children(_) => {
-    //                     AggregationResult::Children(ChildrenResult::from(json, aggs))
-    //                 },
-    //                 &BucketAggregation::Terms(_) => {
-    //                     AggregationResult::Terms(TermsResult::from(json, aggs))
-    //                 },
-    //                 &BucketAggregation::Range(_) => {
-    //                     AggregationResult::Range(RangeResult::from(json, aggs))
-    //                 },
-    //                 &BucketAggregation::DateRange(_) => {
-    //                     AggregationResult::DateRange(DateRangeResult::from(json, aggs))
-    //                 },
-    //                 &BucketAggregation::Histogram(_) => {
-    //                     AggregationResult::Histogram(HistogramResult::from(json, aggs))
-    //                 },
-    //                 &BucketAggregation::DateHistogram(_) => {
-    //                     AggregationResult::DateHistogram(DateHistogramResult::from(json,
-    //                                                                                aggs))
-    //                 },
-    //                 &BucketAggregation::GeoDistance(_) => {
-    //                     AggregationResult::GeoDistance(GeoDistanceResult::from(json,
-    //                                                                            aggs))
-    //                 },
-    //                 &BucketAggregation::GeoHash(_) => {
-    //                     AggregationResult::GeoHash(GeoHashResult::from(json, aggs))
-    //                 }
-    //             }
-    //         }
-    //     });
-    // }
+    info!("Processed aggs - From: {:?}. To: {:?}", object, ar_map);
 
-    // info!("Processed aggs - From: {:?}. To: {:?}", object, ar_map);
-
-    // AggregationsResult(ar_map)
-    unimplemented!()
+    Ok(AggregationsResult(ar_map))
 }
 
 impl AggregationsResult {
@@ -1162,10 +906,11 @@ impl AggregationsResult {
 
     pub fn from(aggs: &Aggregations,
                 json: &Value) -> Result<AggregationsResult, EsError> {
+        println!("Parsing aggregations {:?}", json);
         let object = match json.as_object() {
             Some(o) => o,
             None    => return Err(EsError::EsError("Aggregations is not an object".to_owned()))
         };
-        Ok(object_to_result(aggs, object))
+        object_to_result(aggs, object)
     }
 }

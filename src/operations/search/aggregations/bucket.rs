@@ -25,10 +25,41 @@ use rustc_serialize::json::{Json, ToJson};
 use serde::ser::{Serialize, Serializer};
 use serde_json::{to_value, Value};
 
-use ::units::JsonVal;
+use ::error::EsError;
+use ::json::ShouldSkip;
+use ::units::{JsonVal, OneOrMany};
 
-use super::{Aggregation, Aggregations};
+use super::{Aggregation,
+            Aggregations,
+            AggregationResult,
+            AggregationsResult,
+            object_to_result};
 use super::common::{Agg, Script};
+
+// Some options
+
+#[derive(Debug)]
+pub enum ExecutionHint {
+    Map,
+    GlobalOrdinalsLowCardinality,
+    GlobalOrdinals,
+    GlobalOrdinalsHash
+}
+
+impl Serialize for ExecutionHint {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        use self::ExecutionHint::*;
+        match self {
+            &Map => "map",
+            &GlobalOrdinalsLowCardinality => "global_ordinals_low_cardinality",
+            &GlobalOrdinals => "global_ordinals",
+            &GlobalOrdinalsHash => "global_ordinals_hash"
+        }.serialize(serializer)
+    }
+}
+
+// Common features
 
 macro_rules! bucket_agg {
     ($b:ident) => {
@@ -318,57 +349,40 @@ impl<'a> Order<'a> {
 
 /// Terms aggregation
 #[derive(Debug)]
-pub struct Terms<'a>(Agg<'a, TermsInner>);
+pub struct Terms<'a>(Agg<'a, TermsInner<'a>>);
 
 #[derive(Debug, Default, Serialize)]
-pub struct TermsInner {
-    size: Option<u64>
+pub struct TermsInner<'a> {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    size: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    shard_size: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    order: Option<OneOrMany<Order<'a>>>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    min_doc_count: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    shard_min_doc_count: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    include: Option<OneOrMany<&'a str>>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    exclude: Option<OneOrMany<&'a str>>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    execution_hint: Option<ExecutionHint>
 }
 
 impl<'a> Terms<'a> {
     add_extra_option!(with_size, size, u64);
+    add_extra_option!(with_shard_size, shard_size, u64);
+    add_extra_option!(with_order, order, OneOrMany<Order<'a>>);
+    add_extra_option!(with_min_doc_count, min_doc_count, u64);
+    add_extra_option!(with_shard_min_doc_count, shard_min_doc_count, u64);
+    add_extra_option!(with_include, include, OneOrMany<&'a str>);
+    add_extra_option!(with_exclude, exclude, OneOrMany<&'a str>);
+    add_extra_option!(with_execution_hint, execution_hint, ExecutionHint);
 }
 
 fos_bucket_agg!(Terms);
-
-// /// Terms aggregation
-// #[derive(Debug)]
-// pub struct Terms<'a> {
-//     field:      FieldOrScript<'a>,
-//     size:       Option<u64>,
-//     shard_size: Option<u64>,
-//     order:      Option<Order<'a>>
-// }
-
-// impl<'a> Terms<'a> {
-//     pub fn new<FOS: Into<FieldOrScript<'a>>>(field: FOS) -> Terms<'a> {
-//         Terms {
-//             field:      field.into(),
-//             size:       None,
-//             shard_size: None,
-//             order:      None
-//         }
-//     }
-
-//     add_field!(with_size, size, u64);
-//     add_field!(with_shard_size, shard_size, u64);
-//     add_field!(with_order, order, Order<'a>);
-// }
-
-// impl<'a> ToJson for Terms<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut json = BTreeMap::new();
-//         self.field.add_to_object(&mut json);
-
-//         optional_add!(self, json, size);
-//         optional_add!(self, json, shard_size);
-//         optional_add!(self, json, order);
-
-//         Json::Object(json)
-//     }
-// }
-
-// bucket_agg!(Terms);
 
 // Range aggs and dependencies
 
@@ -394,17 +408,18 @@ impl<'a> RangeInst<'a> {
     add_field!(with_key, key, &'a str);
 }
 
-impl<'a> ToJson for RangeInst<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
+// TODO - deprecated
+// impl<'a> ToJson for RangeInst<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
 
-        optional_add!(self, d, from);
-        optional_add!(self, d, to);
-        optional_add!(self, d, key);
+//         optional_add!(self, d, from);
+//         optional_add!(self, d, to);
+//         optional_add!(self, d, key);
 
-        Json::Object(d)
-    }
-}
+//         Json::Object(d)
+//     }
+// }
 
 // /// Range aggregations
 // ///
@@ -835,6 +850,211 @@ impl<'a> Serialize for BucketAggregation<'a> {
             &Terms(ref t) => t.serialize(serializer)
         }
     }
+}
+
+// results
+#[derive(Debug)]
+pub enum BucketAggregationResult {
+    Global(GlobalResult),
+    Terms(TermsResult)
+}
+
+impl BucketAggregationResult {
+    pub fn from<'a>(ba: &BucketAggregation<'a>,
+                    json: &Value,
+                    aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        use self::BucketAggregation::*;
+        Ok(match ba {
+            &Global(_) => {
+                BucketAggregationResult::Global(try!(GlobalResult::from(json, aggs)))
+            },
+            // &BucketAggregation::Filter(_) => {
+            //     AggregationResult::Filter(FilterResult::from(json, aggs))
+            // },
+            // &BucketAggregation::Filters(_) => {
+            //     AggregationResult::Filters(FiltersResult::from(json, aggs))
+            // },
+            // &BucketAggregation::Missing(_) => {
+            //     AggregationResult::Missing(MissingResult::from(json, aggs))
+            // },
+            // &BucketAggregation::Nested(_) => {
+            //     AggregationResult::Nested(NestedResult::from(json, aggs))
+            // },
+            // &BucketAggregation::ReverseNested(_) => {
+            //     AggregationResult::ReverseNested(ReverseNestedResult::from(json,
+            //                                                                aggs))
+            // },
+            // &BucketAggregation::Children(_) => {
+            //     AggregationResult::Children(ChildrenResult::from(json, aggs))
+            // },
+            &BucketAggregation::Terms(_) => {
+                BucketAggregationResult::Terms(try!(TermsResult::from(json, aggs)))
+            },
+            // &BucketAggregation::Range(_) => {
+            //     AggregationResult::Range(RangeResult::from(json, aggs))
+            // },
+            // &BucketAggregation::DateRange(_) => {
+            //     AggregationResult::DateRange(DateRangeResult::from(json, aggs))
+            // },
+            // &BucketAggregation::Histogram(_) => {
+            //     AggregationResult::Histogram(HistogramResult::from(json, aggs))
+            // },
+            // &BucketAggregation::DateHistogram(_) => {
+            //     AggregationResult::DateHistogram(DateHistogramResult::from(json,
+            //                                                                aggs))
+            // },
+            // &BucketAggregation::GeoDistance(_) => {
+            //     AggregationResult::GeoDistance(GeoDistanceResult::from(json,
+            //                                                            aggs))
+            // },
+            // &BucketAggregation::GeoHash(_) => {
+            //     AggregationResult::GeoHash(GeoHashResult::from(json, aggs))
+            // }
+        })
+    }
+}
+
+macro_rules! bucket_agg_as {
+    ($n:ident,$t:ident,$rt:ty) => {
+        agg_as!($n,Bucket,BucketAggregationResult,$t,$rt);
+    }
+}
+
+impl AggregationResult {
+    bucket_agg_as!(as_global, Global, GlobalResult);
+    // agg_as!(as_filter, Filter, FilterResult);
+    // agg_as!(as_filters, Filters, FiltersResult);
+    // agg_as!(as_missing, Missing, MissingResult);
+    // agg_as!(as_nested, Nested, NestedResult);
+    // agg_as!(as_reverse_nested, ReverseNested, ReverseNestedResult);
+    // agg_as!(as_children, Children, ChildrenResult);
+    bucket_agg_as!(as_terms, Terms, TermsResult);
+    // agg_as!(as_range, Range, RangeResult);
+    // agg_as!(as_date_range, DateRange, DateRangeResult);
+    // agg_as!(as_histogram, Histogram, HistogramResult);
+    // agg_as!(as_date_histogram, DateHistogram, DateHistogramResult);
+    // agg_as!(as_geo_distance, GeoDistance, GeoDistanceResult);
+    // agg_as!(as_geo_hash, GeoHash, GeoHashResult);
+}
+
+// Result reading
+
+/// Macros for buckets to return a reference to the sub-aggregations
+macro_rules! add_aggs_ref {
+    () => {
+        pub fn aggs_ref<'a>(&'a self) -> Option<&'a AggregationsResult> {
+            self.aggs.as_ref()
+        }
+    }
+}
+
+macro_rules! return_error {
+    ($e:expr) => {
+        return Err(EsError::EsError($e))
+    }
+}
+
+macro_rules! return_no_field {
+    ($f:expr) => {
+        return_error!(format!("No valid field: {}", $f))
+    }
+}
+
+macro_rules! from_json {
+    ($j:ident, $f:expr, $a:ident) => {
+        match $j.find($f) {
+            Some(val) => {
+                match val.$a() {
+                    Some(field_val) => field_val,
+                    None => return_no_field!($f)
+                }
+            },
+            None => return_no_field!($f)
+        }
+    }
+}
+
+macro_rules! extract_aggs {
+    ($j:ident, $a:ident) => {
+        match $a {
+            &Some(ref aggs) => {
+                let obj = match $j.as_object() {
+                    Some(field_val) => field_val,
+                    None => return_error!("Not an object".to_owned())
+                };
+                Some(try!(object_to_result(aggs, obj)))
+            },
+            &None => None
+        }
+    }
+}
+
+/// Global result
+#[derive(Debug)]
+pub struct GlobalResult {
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl GlobalResult {
+    fn from(json: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        Ok(GlobalResult {
+            doc_count: from_json!(json, "doc_count", as_u64),
+            aggs: extract_aggs!(json, aggs)
+        })
+    }
+
+    add_aggs_ref!();
+}
+
+/// Terms result
+#[derive(Debug)]
+pub struct TermsResult {
+    pub doc_count_error_upper_bound: u64,
+    pub sum_other_doc_count: u64,
+    pub buckets: Vec<TermsBucketResult>
+}
+
+impl TermsResult {
+    fn from(json: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        Ok(TermsResult {
+            doc_count_error_upper_bound: from_json!(json,
+                                                    "doc_count_error_upper_bound",
+                                                    as_u64),
+            sum_other_doc_count: from_json!(json, "sum_other_doc_count", as_u64),
+            buckets: {
+                let mut r = Vec::new();
+                for bucket in from_json!(json, "buckets", as_array).iter() {
+                    r.push(try!(TermsBucketResult::from(bucket, aggs)));
+                }
+                r
+            }
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct TermsBucketResult {
+    pub key: JsonVal,
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl TermsBucketResult {
+    fn from(json: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        info!("Creating TermsBucketResult from: {:?} with {:?}", json, aggs);
+
+        Ok(TermsBucketResult {
+            key: try!(JsonVal::from(match json.find("key") {
+                Some(key) => key,
+                None => return_error!("No 'key'".to_owned())
+            })),
+            doc_count: from_json!(json, "doc_count", as_u64),
+            aggs: extract_aggs!(json, aggs)
+        })
+    }
+
+    add_aggs_ref!();
 }
 
 #[cfg(test)]

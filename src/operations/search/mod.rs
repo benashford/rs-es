@@ -37,7 +37,6 @@ use ::query::Query;
 use ::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
 use ::util::StrJoin;
 use super::common::{Options, OptionVal};
-use super::decode_json;
 use super::format_indexes_and_types;
 use super::ShardCountResult;
 
@@ -318,19 +317,20 @@ impl Script {
     }
 }
 
-impl ToJson for Script {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
+// TODO - deprecated
+// impl ToJson for Script {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
 
-        inner.insert("script".to_owned(), self.script.to_json());
-        inner.insert("type".to_owned(), self.script_type.to_json());
-        inner.insert("params".to_owned(), self.params.to_json());
+//         inner.insert("script".to_owned(), self.script.to_json());
+//         inner.insert("type".to_owned(), self.script_type.to_json());
+//         inner.insert("params".to_owned(), self.params.to_json());
 
-        d.insert("_script".to_owned(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+//         d.insert("_script".to_owned(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 pub enum SortBy {
     Field(SortField),
@@ -804,6 +804,7 @@ pub struct SearchResultInterim<T: Deserialize> {
     pub hits:      SearchHitsResult<T>,
 
     /// Optional field populated if aggregations are specified
+    #[serde(rename="aggregations")]
     pub aggs:      Option<Value>,
 
     /// Optional field populated during scanning and scrolling
@@ -921,6 +922,7 @@ pub struct ScanResultInterim<T: Deserialize> {
     #[serde(rename="_shards")]
     shards:    ShardCountResult,
     hits:      SearchHitsResult<T>,
+    #[serde(rename="aggregations")]
     aggs:      Option<Value>
 }
 
@@ -1020,8 +1022,9 @@ mod tests {
     use super::Sort;
     use super::Source;
 
-    use super::aggregations::bucket::Order;
-//    use super::aggregations::{Aggregations, Min, Order, OrderKey, Terms};
+    use super::aggregations::Aggregations;
+    use super::aggregations::bucket::{Order, OrderKey, Terms};
+    use super::aggregations::metrics::Min;
 
     fn make_document(idx: i64) -> TestDocument {
         TestDocument::new()
@@ -1147,73 +1150,74 @@ mod tests {
         assert_eq!(false, json.find("int_field").is_some());
     }
 
-    // #[test]
-    // fn test_bucket_aggs() {
-    //     let mut client = ::tests::make_client();
-    //     let index_name = "test_bucket_aggs";
-    //     ::tests::clean_db(&mut client, index_name);
+    #[test]
+    fn test_bucket_aggs() {
+        let mut client = ::tests::make_client();
+        let index_name = "test_bucket_aggs";
+        ::tests::clean_db(&mut client, index_name);
 
-    //     client.bulk(&[Action::index(TestDocument::new().with_str_field("A").with_int_field(2)),
-    //                   Action::index(TestDocument::new().with_str_field("B").with_int_field(3)),
-    //                   Action::index(TestDocument::new().with_str_field("A").with_int_field(1)),
-    //                   Action::index(TestDocument::new().with_str_field("B").with_int_field(2))])
-    //         .with_index(index_name)
-    //         .with_doc_type("doc_type")
-    //         .send()
-    //         .unwrap();
+        client.bulk(&[Action::index(TestDocument::new().with_str_field("A").with_int_field(2)),
+                      Action::index(TestDocument::new().with_str_field("B").with_int_field(3)),
+                      Action::index(TestDocument::new().with_str_field("A").with_int_field(1)),
+                      Action::index(TestDocument::new().with_str_field("B").with_int_field(2))])
+            .with_index(index_name)
+            .with_doc_type("doc_type")
+            .send()
+            .unwrap();
 
-    //     client.refresh().with_indexes(&[index_name]).send().unwrap();
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
 
-    //     let aggs = Aggregations::from(("str",
-    //                                    (Terms::new("str_field").with_order(Order::asc(OrderKey::Term)),
-    //                                     Aggregations::from(("int",
-    //                                                         Min::new("int_field"))))));
+        let aggs = Aggregations::from(("str",
+                                       (Terms::field("str_field")
+                                        .with_order(Order::asc(OrderKey::Term)),
+                                        Aggregations::from(("int",
+                                                            Min::field("int_field"))))));
 
-    //     let result = client.search_query()
-    //         .with_indexes(&[index_name])
-    //         .with_aggs(&aggs)
-    //         .send()
-    //         .unwrap();
+        let result:SearchResult<TestDocument> = client.search_query()
+            .with_indexes(&[index_name])
+            .with_aggs(&aggs)
+            .send()
+            .unwrap();
 
-    //     let buckets = &result.aggs_ref()
-    //         .unwrap()
-    //         .get("str")
-    //         .unwrap()
-    //         .as_terms()
-    //         .unwrap()
-    //         .buckets;
+        let buckets = &result.aggs_ref()
+            .unwrap()
+            .get("str")
+            .unwrap()
+            .as_terms()
+            .unwrap()
+            .buckets;
 
-    //     let bucket_a = &buckets[0];
-    //     let bucket_b = &buckets[1];
+        let bucket_a = &buckets[0];
+        let bucket_b = &buckets[1];
 
-    //     assert_eq!(2, bucket_a.doc_count);
-    //     assert_eq!(2, bucket_b.doc_count);
+        assert_eq!(2, bucket_a.doc_count);
+        assert_eq!(2, bucket_b.doc_count);
 
-    //     let min_a = &bucket_a.aggs_ref()
-    //         .unwrap()
-    //         .get("int")
-    //         .unwrap()
-    //         .as_min()
-    //         .unwrap()
-    //         .value;
+        let min_a = &bucket_a.aggs_ref()
+            .unwrap()
+            .get("int")
+            .unwrap()
+            .as_min()
+            .unwrap()
+            .value;
 
-    //     let min_b = &bucket_b.aggs_ref()
-    //         .unwrap()
-    //         .get("int")
-    //         .unwrap()
-    //         .as_min()
-    //         .unwrap()
-    //         .value;
+        let min_b = &bucket_b.aggs_ref()
+            .unwrap()
+            .get("int")
+            .unwrap()
+            .as_min()
+            .unwrap()
+            .value;
 
-    //     match min_a {
-    //         &JsonVal::F64(i) => assert_eq!(1.0, i),
-    //         _                => panic!("Not an integer")
-    //     }
-    //     match min_b {
-    //         &JsonVal::F64(i) => assert_eq!(2.0, i),
-    //         _                => panic!("Not an integer")
-    //     }
-    // }
+        match min_a {
+            &JsonVal::F64(i) => assert_eq!(1.0, i),
+            _                => panic!("Not an integer")
+        }
+        match min_b {
+            &JsonVal::F64(i) => assert_eq!(2.0, i),
+            _                => panic!("Not an integer")
+        }
+    }
 
     // #[test]
     // fn test_aggs() {

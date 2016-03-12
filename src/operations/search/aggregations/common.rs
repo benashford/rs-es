@@ -21,6 +21,7 @@ use std::collections::HashMap;
 use serde::ser;
 use serde::ser::{Serialize, Serializer};
 
+use ::error::EsError;
 use ::json::MergeSerializer;
 use ::units::JsonVal;
 
@@ -142,6 +143,26 @@ impl<'a, E> ser::MapVisitor for AggVisitor<'a, E>
                 Ok(Some(try!(self.ma.extra.serialize(&mut merge_serializer))))
             },
             _ => Ok(None)
+        }
+    }
+}
+
+// Useful for results
+
+/// Macro to implement the various as... functions that return the details of an
+/// aggregation for that particular type
+macro_rules! agg_as {
+    ($n:ident,$st:ident,$tp:ident,$t:ident,$rt:ty) => {
+        pub fn $n<'a>(&'a self) -> Result<&'a $rt, EsError> {
+            match self {
+                &AggregationResult::$st(ref res) => {
+                    match res {
+                        &$tp::$t(ref res) => Ok(res),
+                        _ => Err(EsError::EsError(format!("Wrong type: {:?}", self)))
+                    }
+                },
+                _ => Err(EsError::EsError(format!("Wrong type: {:?}", self)))
+            }
         }
     }
 }

@@ -25,8 +25,11 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de;
+use serde_json::Value;
 
+use ::error::EsError;
 use ::operations::common::OptionVal;
 
 /// The units by which duration is measured.
@@ -430,6 +433,21 @@ pub enum JsonVal {
     Boolean(bool)
 }
 
+impl JsonVal {
+    pub fn from(from: &Value) -> Result<Self, EsError> {
+        use serde_json::Value::*;
+        Ok(match from {
+            &String(ref string) => JsonVal::String(string.clone()),
+            &Bool(b) => JsonVal::Boolean(b),
+            &I64(i) => JsonVal::I64(i),
+            &U64(u) => JsonVal::U64(u),
+            &F64(f) => JsonVal::F64(f),
+            _ => return Err(EsError::EsError(format!("Not a JsonVal: {:?}",
+                                                     from)))
+        })
+    }
+}
+
 impl Default for JsonVal {
     fn default() -> Self {
         JsonVal::String(Default::default())
@@ -449,17 +467,57 @@ impl Serialize for JsonVal {
     }
 }
 
-impl ToJson for JsonVal {
-    fn to_json(&self) -> Json {
-        match self {
-            &JsonVal::String(ref str) => str.to_json(),
-            &JsonVal::I64(i)          => Json::I64(i),
-            &JsonVal::U64(u)          => Json::U64(u),
-            &JsonVal::F64(f)          => Json::F64(f),
-            &JsonVal::Boolean(b)      => Json::Boolean(b)
-        }
+impl Deserialize for JsonVal {
+    fn deserialize<D>(deserializer: &mut D) -> Result<JsonVal, D::Error>
+        where D: Deserializer {
+
+        deserializer.deserialize(JsonValVisitor)
     }
 }
+
+struct JsonValVisitor;
+
+impl de::Visitor for JsonValVisitor {
+    type Value = JsonVal;
+
+    fn visit_string<E>(&mut self, s: String) -> Result<JsonVal, E>
+        where E: de::Error {
+        Ok(JsonVal::String(s))
+    }
+
+    fn visit_i64<E>(&mut self, i: i64) -> Result<JsonVal, E>
+        where E: de::Error {
+        Ok(JsonVal::I64(i))
+    }
+
+    fn visit_u64<E>(&mut self, u: u64) -> Result<JsonVal, E>
+        where E: de::Error {
+        Ok(JsonVal::U64(u))
+    }
+
+    fn visit_f64<E>(&mut self, f: f64) -> Result<JsonVal, E>
+        where E: de::Error {
+        Ok(JsonVal::F64(f))
+    }
+
+    fn visit_bool<E>(&mut self, b: bool) -> Result<JsonVal, E>
+        where E: de::Error {
+        Ok(JsonVal::Boolean(b))
+    }
+}
+
+// TODO - deprecated
+// impl ToJson for JsonVal {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &JsonVal::String(ref str) => str.to_json(),
+//             &JsonVal::I64(i)          => Json::I64(i),
+//             &JsonVal::U64(u)          => Json::U64(u),
+//             &JsonVal::F64(f)          => Json::F64(f),
+//             &JsonVal::Boolean(b)      => Json::Boolean(b)
+//         }
+//     }
+// }
 
 from!(String, JsonVal, String);
 
@@ -477,15 +535,16 @@ from_exp!(u32, JsonVal, from, JsonVal::U64(from as u64));
 from!(u64, JsonVal, U64);
 from!(bool, JsonVal, Boolean);
 
-impl<'a> From<&'a Json> for JsonVal {
-    fn from(from: &'a Json) -> JsonVal {
-        match from {
-            &Json::String(ref s) => JsonVal::String(s.clone()),
-            &Json::F64(f)        => JsonVal::F64(f),
-            &Json::I64(f)        => JsonVal::I64(f),
-            &Json::U64(f)        => JsonVal::U64(f),
-            &Json::Boolean(b)    => JsonVal::Boolean(b),
-            _                    => panic!("Not a String, F64, I64, U64 or Boolean")
-        }
-    }
-}
+// TODO - deprecated
+// impl<'a> From<&'a Json> for JsonVal {
+//     fn from(from: &'a Json) -> JsonVal {
+//         match from {
+//             &Json::String(ref s) => JsonVal::String(s.clone()),
+//             &Json::F64(f)        => JsonVal::F64(f),
+//             &Json::I64(f)        => JsonVal::I64(f),
+//             &Json::U64(f)        => JsonVal::U64(f),
+//             &Json::Boolean(b)    => JsonVal::Boolean(b),
+//             _                    => panic!("Not a String, F64, I64, U64 or Boolean")
+//         }
+//     }
+// }

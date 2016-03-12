@@ -32,29 +32,30 @@ pub enum Function {
     Decay(Decay)
 }
 
-impl ToJson for Function {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        match self {
-            &Function::ScriptScore(ref q) => {
-                d.insert("script_score".to_owned(), q.to_json());
-            },
-            &Function::Weight(ref q) => {
-                d.insert("weight".to_owned(), q.to_json());
-            },
-            &Function::RandomScore(ref q) => {
-                d.insert("random_score".to_owned(), q.to_json());
-            },
-            &Function::FieldValueFactor(ref q) => {
-                d.insert("field_value_factor".to_owned(), q.to_json());
-            },
-            &Function::Decay(ref q) => {
-                q.add_to_json(&mut d);
-            }
-        }
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for Function {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         match self {
+//             &Function::ScriptScore(ref q) => {
+//                 d.insert("script_score".to_owned(), q.to_json());
+//             },
+//             &Function::Weight(ref q) => {
+//                 d.insert("weight".to_owned(), q.to_json());
+//             },
+//             &Function::RandomScore(ref q) => {
+//                 d.insert("random_score".to_owned(), q.to_json());
+//             },
+//             &Function::FieldValueFactor(ref q) => {
+//                 d.insert("field_value_factor".to_owned(), q.to_json());
+//             },
+//             &Function::Decay(ref q) => {
+//                 q.add_to_json(&mut d);
+//             }
+//         }
+//         Json::Object(d)
+//     }
+// }
 
 /// ScriptScore function
 #[derive(Debug, Default)]
@@ -97,15 +98,16 @@ impl ScriptScore {
     }
 }
 
-impl ToJson for ScriptScore {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("inline".to_owned(), self.inline.to_json());
-        d.insert("params".to_owned(), self.params.to_json());
-        optional_add!(self, d, lang);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for ScriptScore {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("inline".to_owned(), self.inline.to_json());
+//         d.insert("params".to_owned(), self.params.to_json());
+//         optional_add!(self, d, lang);
+//         Json::Object(d)
+//     }
+// }
 
 /// Weight function
 #[derive(Debug, Default)]
@@ -125,11 +127,12 @@ impl Weight {
     }
 }
 
-impl ToJson for Weight {
-    fn to_json(&self) -> Json {
-        self.0.to_json()
-    }
-}
+// TODO - deprecated
+// impl ToJson for Weight {
+//     fn to_json(&self) -> Json {
+//         self.0.to_json()
+//     }
+// }
 
 /// Random score function
 #[derive(Debug, Default)]
@@ -149,11 +152,12 @@ impl RandomScore {
     }
 }
 
-impl ToJson for RandomScore {
-    fn to_json(&self) -> Json {
-        self.0.to_json()
-    }
-}
+// TODO - deprecated
+// impl ToJson for RandomScore {
+//     fn to_json(&self) -> Json {
+//         self.0.to_json()
+//     }
+// }
 
 /// Field value factor function
 #[derive(Debug, Default)]
@@ -185,16 +189,17 @@ impl FieldValueFactor {
     }
 }
 
-impl ToJson for FieldValueFactor {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("field".to_owned(), self.field.to_json());
-        optional_add!(self, d, factor);
-        optional_add!(self, d, modifier);
-        optional_add!(self, d, missing);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for FieldValueFactor {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("field".to_owned(), self.field.to_json());
+//         optional_add!(self, d, factor);
+//         optional_add!(self, d, modifier);
+//         optional_add!(self, d, missing);
+//         Json::Object(d)
+//     }
+// }
 
 /// Modifier for the FieldValueFactor function
 #[derive(Debug)]
@@ -211,22 +216,23 @@ pub enum Modifier {
     Reciprocal,
 }
 
-impl ToJson for Modifier {
-    fn to_json(&self) -> Json {
-        match self {
-            &Modifier::None => "none".to_json(),
-            &Modifier::Log => "log".to_json(),
-            &Modifier::Log1p => "log1p".to_json(),
-            &Modifier::Log2p => "log2p".to_json(),
-            &Modifier::Ln => "ln".to_json(),
-            &Modifier::Ln1p => "ln1p".to_json(),
-            &Modifier::Ln2p => "ln2p".to_json(),
-            &Modifier::Square => "square".to_json(),
-            &Modifier::Sqrt => "sqrt".to_json(),
-            &Modifier::Reciprocal => "reciprocal".to_json(),
-        }
-    }
-}
+// TODO - deprecated
+// impl ToJson for Modifier {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &Modifier::None => "none".to_json(),
+//             &Modifier::Log => "log".to_json(),
+//             &Modifier::Log1p => "log1p".to_json(),
+//             &Modifier::Log2p => "log2p".to_json(),
+//             &Modifier::Ln => "ln".to_json(),
+//             &Modifier::Ln1p => "ln1p".to_json(),
+//             &Modifier::Ln2p => "ln2p".to_json(),
+//             &Modifier::Square => "square".to_json(),
+//             &Modifier::Sqrt => "sqrt".to_json(),
+//             &Modifier::Reciprocal => "reciprocal".to_json(),
+//         }
+//     }
+// }
 
 // Decay functions
 /// Type of decay functions
@@ -298,15 +304,17 @@ impl Decay {
     }
 
     pub fn add_to_json(&self, d: &mut BTreeMap<String, Json>) {
-        let mut inner = BTreeMap::new();
-        let mut params = BTreeMap::new();
-        params.insert("origin".to_owned(), self.origin.to_json());
-        params.insert("scale".to_owned(), self.scale.to_json());
-        optional_add!(self, params, offset);
-        optional_add!(self, params, decay);
-        inner.insert(self.field.clone(), Json::Object(params));
-        optional_add!(self, inner, multi_value_mode);
-        d.insert(self.decay_function.to_string(), Json::Object(inner));
+        // TODO - deprecated
+        // let mut inner = BTreeMap::new();
+        // let mut params = BTreeMap::new();
+        // params.insert("origin".to_owned(), self.origin.to_json());
+        // params.insert("scale".to_owned(), self.scale.to_json());
+        // optional_add!(self, params, offset);
+        // optional_add!(self, params, decay);
+        // inner.insert(self.field.clone(), Json::Object(params));
+        // optional_add!(self, inner, multi_value_mode);
+        // d.insert(self.decay_function.to_string(), Json::Object(inner));
+        unimplemented!()
     }
 }
 
@@ -334,17 +342,18 @@ from!(f64, Origin, F64);
 from!(Location, Origin, Location);
 from!(String, Origin, Date);
 
-impl ToJson for Origin {
-    fn to_json(&self) -> Json {
-        match self {
-            &Origin::I64(orig)          => Json::I64(orig),
-            &Origin::U64(orig)          => Json::U64(orig),
-            &Origin::F64(orig)          => Json::F64(orig),
-            &Origin::Location(ref orig) => orig.to_json(),
-            &Origin::Date(ref orig)     => Json::String(orig.clone())
-        }
-    }
-}
+// TODO - deprecated
+// impl ToJson for Origin {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &Origin::I64(orig)          => Json::I64(orig),
+//             &Origin::U64(orig)          => Json::U64(orig),
+//             &Origin::F64(orig)          => Json::F64(orig),
+//             &Origin::Location(ref orig) => orig.to_json(),
+//             &Origin::Date(ref orig)     => Json::String(orig.clone())
+//         }
+//     }
+// }
 
 /// Scale used by decay function
 #[derive(Debug)]
@@ -368,17 +377,18 @@ from!(f64, Scale, F64);
 from!(Distance, Scale, Distance);
 from!(Duration, Scale, Duration);
 
-impl ToJson for Scale {
-    fn to_json(&self) -> Json {
-        match self {
-            &Scale::I64(s)          => Json::I64(s),
-            &Scale::U64(s)          => Json::U64(s),
-            &Scale::F64(s)          => Json::F64(s),
-            &Scale::Distance(ref s) => s.to_json(),
-            &Scale::Duration(ref s) => s.to_json()
-        }
-    }
-}
+// TODO - deprecated
+// impl ToJson for Scale {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &Scale::I64(s)          => Json::I64(s),
+//             &Scale::U64(s)          => Json::U64(s),
+//             &Scale::F64(s)          => Json::F64(s),
+//             &Scale::Distance(ref s) => s.to_json(),
+//             &Scale::Duration(ref s) => s.to_json()
+//         }
+//     }
+// }
 
 /// Values for multi_value_mode
 #[derive(Debug)]
@@ -389,13 +399,14 @@ pub enum MultiValueMode {
     Sum
 }
 
-impl ToJson for MultiValueMode {
-    fn to_json(&self) -> Json {
-        match self {
-            &MultiValueMode::Min => "min".to_json(),
-            &MultiValueMode::Max => "max".to_json(),
-            &MultiValueMode::Avg => "avg".to_json(),
-            &MultiValueMode::Sum => "sum".to_json(),
-        }
-    }
-}
+// TODO - deprecated
+// impl ToJson for MultiValueMode {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &MultiValueMode::Min => "min".to_json(),
+//             &MultiValueMode::Max => "max".to_json(),
+//             &MultiValueMode::Avg => "avg".to_json(),
+//             &MultiValueMode::Sum => "sum".to_json(),
+//         }
+//     }
+// }

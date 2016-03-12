@@ -20,18 +20,19 @@ use std::collections::{BTreeMap, HashMap};
 
 use serde::ser;
 use serde::ser::{Serialize, Serializer};
-use serde_json::{to_value, Value};
+use serde_json::{from_value, to_value, Value};
 
 // TODO - deprecated
 use rustc_serialize::json::{Json, ToJson};
 
+use ::error::EsError;
 use ::json::NoOuter;
 use ::units::JsonVal;
 
 // TODO - deprecated
 use super::FieldOrScript;
 
-use super::Aggregation;
+use super::{Aggregation, AggregationResult};
 use super::common::{Agg, Script};
 
 macro_rules! metrics_agg {
@@ -51,13 +52,9 @@ macro_rules! metrics_agg {
 pub struct Min<'a>(Agg<'a, NoOuter>);
 metrics_agg!(Min);
 
-// /// Max aggregation
-// #[derive(Debug)]
-// pub struct Max<'a>(FieldOrScript<'a>);
-
-// field_or_script_new!(Max);
-// field_or_script_to_json!(Max);
-// metrics_agg!(Max);
+#[derive(Debug)]
+pub struct Max<'a>(Agg<'a, NoOuter>);
+metrics_agg!(Max);
 
 // /// Sum aggregation
 // #[derive(Debug)]
@@ -287,33 +284,34 @@ impl<'a> ScriptedMetric<'a> {
     add_field!(with_reduce_script_id, reduce_script_id, &'a str);
 }
 
-impl<'a> ToJson for ScriptedMetric<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("map_script".to_owned(), self.map_script.to_json());
-        optional_add!(self, d, init_script);
-        optional_add!(self, d, combine_script);
-        optional_add!(self, d, reduce_script);
-        optional_add!(self, d, params);
-        optional_add!(self, d, reduce_params);
-        optional_add!(self, d, lang);
-        optional_add!(self, d, init_script_file);
-        optional_add!(self, d, init_script_id);
-        optional_add!(self, d, map_script_file);
-        optional_add!(self, d, map_script_id);
-        optional_add!(self, d, combine_script_file);
-        optional_add!(self, d, combine_script_id);
-        optional_add!(self, d, reduce_script_file);
-        optional_add!(self, d, reduce_script_id);
-        Json::Object(d)
-    }
-}
+// DEPRECATED
+// impl<'a> ToJson for ScriptedMetric<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("map_script".to_owned(), self.map_script.to_json());
+//         optional_add!(self, d, init_script);
+//         optional_add!(self, d, combine_script);
+//         optional_add!(self, d, reduce_script);
+//         optional_add!(self, d, params);
+//         optional_add!(self, d, reduce_params);
+//         optional_add!(self, d, lang);
+//         optional_add!(self, d, init_script_file);
+//         optional_add!(self, d, init_script_id);
+//         optional_add!(self, d, map_script_file);
+//         optional_add!(self, d, map_script_id);
+//         optional_add!(self, d, combine_script_file);
+//         optional_add!(self, d, combine_script_id);
+//         optional_add!(self, d, reduce_script_file);
+//         optional_add!(self, d, reduce_script_id);
+//         Json::Object(d)
+//     }
+// }
 
 /// Individual aggregations and their options
 #[derive(Debug)]
 pub enum MetricsAggregation<'a> {
     Min(Min<'a>),
-    // Max(Max<'a>),
+    Max(Max<'a>),
     // Sum(Sum<'a>),
     // Avg(Avg<'a>),
     // Stats(Stats<'a>),
@@ -330,7 +328,8 @@ impl<'a> MetricsAggregation<'a> {
     pub fn details(&self) -> &'static str {
         use self::MetricsAggregation::*;
         match self {
-            &Min(_) => "min"
+            &Min(_) => "min",
+            &Max(_) => "max",
         }
     }
 }
@@ -340,9 +339,101 @@ impl<'a> Serialize for MetricsAggregation<'a> {
         where S: Serializer {
         use self::MetricsAggregation::*;
         match self {
-            &Min(ref min) => min.serialize(serializer)
+            &Min(ref min) => min.serialize(serializer),
+            &Max(ref max) => max.serialize(serializer)
         }
     }
+}
+
+// results
+
+#[derive(Debug)]
+pub enum MetricsAggregationResult {
+    Min(MinResult),
+    Max(MaxResult)
+}
+
+impl MetricsAggregationResult {
+    pub fn from<'a>(ma: &MetricsAggregation<'a>, json: &Value) -> Result<Self, EsError> {
+        use self::MetricsAggregation::*;
+        // TODO - must be a more efficient way to do this
+        let json = json.clone();
+        Ok(match ma {
+            &Min(_) => {
+                MetricsAggregationResult::Min(try!(from_value(json)))
+            },
+            &Max(_) => {
+                MetricsAggregationResult::Max(try!(from_value(json)))
+            },
+            // &MetricsAggregation::Max(_) => {
+            //     AggregationResult::Max(MaxResult::from(json))
+            // },
+            // &MetricsAggregation::Sum(_) => {
+            //     AggregationResult::Sum(SumResult::from(json))
+            // },
+            // &MetricsAggregation::Avg(_) => {
+            //     AggregationResult::Avg(AvgResult::from(json))
+            // },
+            // &MetricsAggregation::Stats(_) => {
+            //     AggregationResult::Stats(StatsResult::from(json))
+            // },
+            // &MetricsAggregation::ExtendedStats(_) => {
+            //     AggregationResult::ExtendedStats(ExtendedStatsResult::from(json))
+            // },
+            // &MetricsAggregation::ValueCount(_) => {
+            //     AggregationResult::ValueCount(ValueCountResult::from(json))
+            // }
+            // &MetricsAggregation::Percentiles(_) => {
+            //     AggregationResult::Percentiles(PercentilesResult::from(json))
+            // },
+            // &MetricsAggregation::PercentileRanks(_) => {
+            //     AggregationResult::PercentileRanks(PercentileRanksResult::from(json))
+            // },
+            // &MetricsAggregation::Cardinality(_) => {
+            //     AggregationResult::Cardinality(CardinalityResult::from(json))
+            // },
+            // &MetricsAggregation::GeoBounds(_) => {
+            //     AggregationResult::GeoBounds(GeoBoundsResult::from(json))
+            // },
+            // &MetricsAggregation::ScriptedMetric(_) => {
+            //     AggregationResult::ScriptedMetric(ScriptedMetricResult::from(json))
+            // }
+        })
+    }
+}
+
+macro_rules! metrics_agg_as {
+    ($n:ident,$t:ident,$rt:ty) => {
+        agg_as!($n,Metrics,MetricsAggregationResult,$t,$rt);
+    }
+}
+
+impl AggregationResult {
+    metrics_agg_as!(as_min, Min, MinResult);
+    metrics_agg_as!(as_max, Max, MaxResult);
+    // agg_as!(as_sum, Sum, SumResult);
+    // agg_as!(as_avg, Avg, AvgResult);
+    // agg_as!(as_stats, Stats, StatsResult);
+    // agg_as!(as_extended_stats, ExtendedStats, ExtendedStatsResult);
+    // agg_as!(as_value_count, ValueCount, ValueCountResult);
+    // agg_as!(as_percentiles, Percentiles, PercentilesResult);
+    // agg_as!(as_percentile_ranks, PercentileRanks, PercentileRanksResult);
+    // agg_as!(as_cardinality, Cardinality, CardinalityResult);
+    // agg_as!(as_geo_bounds, GeoBounds, GeoBoundsResult);
+    // agg_as!(as_scripted_metric, ScriptedMetric, ScriptedMetricResult);
+}
+
+// specific result objects
+
+/// Min Result
+#[derive(Debug, Deserialize)]
+pub struct MinResult {
+    pub value: JsonVal
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MaxResult {
+    pub value: JsonVal
 }
 
 #[cfg(test)]
