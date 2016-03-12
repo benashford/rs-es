@@ -16,6 +16,9 @@
 
 //! Implementation of ElasticSearch [aggregations](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations.html)
 
+#[macro_use]
+mod common;
+
 pub mod metrics;
 pub mod bucket;
 
