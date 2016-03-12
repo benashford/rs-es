@@ -402,6 +402,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 3. Move longer examples from README to the rustdocs instead.
 4. rustc-serialize appears to be deprecated, retrofit `rs-es` to Serde: https://github.com/serde-rs/serde
 5. Tests
+6. Concrete (de)serialization for aggregations and aggregation results
 6. Stop panicking on unexpected JSON, etc., to guard against surprises with future versions; return a result instead.
 7. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
 8. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html
