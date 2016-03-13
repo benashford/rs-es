@@ -24,7 +24,6 @@ use std::fmt::Debug;
 use hyper::status::StatusCode;
 
 use rustc_serialize::Decodable;
-use rustc_serialize::json::{Json, ToJson};
 
 use serde::de::Deserialize;
 use serde::ser::{Serialize, Serializer};
@@ -32,7 +31,7 @@ use serde_json::Value;
 
 use ::{Client, EsResponse};
 use ::error::EsError;
-use ::json::ShouldSkip;
+use ::json::{FieldBased, NoOuter, ShouldSkip};
 use ::query::Query;
 use ::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
 use ::util::StrJoin;
@@ -143,37 +142,41 @@ impl<S: Into<String>> From<S> for Missing {
 
 /// Representing sort options for a specific field, can be combined with others
 /// to produce the full sort clause
-// TODO - this has an outer and an inner structure, similar to query fields, should refactor
 #[derive(Serialize)]
-pub struct SortField {
-    field:         String,
+pub struct SortField(FieldBased<String, SortFieldInner, NoOuter>);
+
+#[derive(Default, Serialize)]
+pub struct SortFieldInner {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     order:         Option<Order>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     mode:          Option<Mode>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     nested_path:   Option<String>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     nested_filter: Option<Query>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     missing:       Option<Missing>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     unmapped_type: Option<String>
 }
 
 impl SortField {
     /// Create a `SortField` for a given `field` and `order`
     pub fn new<S: Into<String>>(field: S, order: Option<Order>) -> SortField {
-        SortField {
-            field:         field.into(),
-            order:         order,
-            mode:          None,
-            nested_path:   None,
-            nested_filter: None,
-            missing:       None,
-            unmapped_type: None
-        }
+        SortField(FieldBased::new(field.into(),
+                                  SortFieldInner {
+                                      order: order,
+                                      ..Default::default()
+                                  },
+                                  NoOuter))
     }
 
-    add_field!(with_mode, mode, Mode);
-    add_field!(with_nested_path, nested_path, String);
-    add_field!(with_nested_filter, nested_filter, Query);
-    add_field!(with_missing, missing, Missing);
-    add_field!(with_unmapped_type, unmapped_type, String);
+    add_inner_field!(with_mode, mode, Mode);
+    add_inner_field!(with_nested_path, nested_path, String);
+    add_inner_field!(with_nested_filter, nested_filter, Query);
+    add_inner_field!(with_missing, missing, Missing);
+    add_inner_field!(with_unmapped_type, unmapped_type, String);
 
     pub fn build(self) -> SortBy {
         SortBy::Field(self)
@@ -183,8 +186,8 @@ impl SortField {
 impl ToString for SortField {
     fn to_string(&self) -> String {
         let mut s = String::new();
-        s.push_str(&self.field);
-        match self.order {
+        s.push_str(&self.0.field);
+        match self.0.inner.order {
             Some(ref order) => {
                 s.push_str(":");
                 // TODO - find less clumsy way of implementing the following
@@ -370,9 +373,16 @@ impl ToString for SortBy {
 // }
 
 /// A full sort clause
-#[derive(Serialize)]
 pub struct Sort {
     fields: Vec<SortBy>
+}
+
+impl Serialize for Sort {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        self.fields.serialize(serializer)
+    }
 }
 
 impl Sort {
@@ -792,6 +802,32 @@ pub struct SearchHitsHitsResult<T: Deserialize> {
 pub struct SearchHitsResult<T: Deserialize> {
     pub total: u64,
     pub hits:  Vec<SearchHitsHitsResult<T>>
+}
+
+impl<T> SearchHitsResult<T>
+    where T: Deserialize {
+
+    pub fn hits(mut self) -> Option<Vec<Box<T>>> {
+        let mut r = Vec::with_capacity(self.hits.len());
+        for b in self.hits.into_iter() {
+            match b.source {
+                Some(val) => r.push(val),
+                None      => return None,
+            }
+        }
+        Some(r)
+    }
+
+    pub fn hits_ref(&self) -> Option<Vec<&T>> {
+        let mut r = Vec::with_capacity(self.hits.len());
+        for b in self.hits.iter() {
+            match b.source {
+                Some(ref v) => r.push(v.as_ref()),
+                None        => return None,
+            }
+        }
+        Some(r)
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -1254,80 +1290,80 @@ mod tests {
         }
     }
 
-    // #[test]
-    // fn test_sort() {
-    //     let mut client = ::tests::make_client();
-    //     let index_name = "test_sort";
-    //     ::tests::clean_db(&mut client, index_name);
+    #[test]
+    fn test_sort() {
+        let mut client = ::tests::make_client();
+        let index_name = "test_sort";
+        ::tests::clean_db(&mut client, index_name);
 
-    //     client.bulk(&[Action::index(TestDocument::new().with_str_field("B").with_int_field(10)),
-    //                   Action::index(TestDocument::new().with_str_field("C").with_int_field(4)),
-    //                   Action::index(TestDocument::new().with_str_field("A").with_int_field(99))])
-    //         .with_index(index_name)
-    //         .with_doc_type("doc_type")
-    //         .send()
-    //         .unwrap();
+        client.bulk(&[Action::index(TestDocument::new().with_str_field("B").with_int_field(10)),
+                      Action::index(TestDocument::new().with_str_field("C").with_int_field(4)),
+                      Action::index(TestDocument::new().with_str_field("A").with_int_field(99))])
+            .with_index(index_name)
+            .with_doc_type("doc_type")
+            .send()
+            .unwrap();
 
-    //     client.refresh().with_indexes(&[index_name]).send().unwrap();
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
 
-    //     {
-    //         let result = client.search_uri()
-    //             .with_indexes(&[index_name])
-    //             .with_sort(&Sort::field("str_field"))
-    //             .send()
-    //             .unwrap();
+        {
+            let result:SearchResult<TestDocument> = client.search_uri()
+                .with_indexes(&[index_name])
+                .with_sort(&Sort::field("str_field"))
+                .send()
+                .unwrap();
 
-    //         let result_str:Vec<String> = result.hits.hits()
-    //             .unwrap()
-    //             .into_iter()
-    //             .map(|doc:TestDocument| doc.str_field)
-    //             .collect();
+            let result_str:Vec<String> = result.hits.hits()
+                .unwrap()
+                .into_iter()
+                .map(|doc| doc.str_field)
+                .collect();
 
-    //         let expected_result_str:Vec<String> = vec!["A", "B", "C"].into_iter()
-    //             .map(|x| x.to_owned())
-    //             .collect();
+            let expected_result_str:Vec<String> = vec!["A", "B", "C"].into_iter()
+                .map(|x| x.to_owned())
+                .collect();
 
-    //         assert_eq!(expected_result_str, result_str);
-    //     }
-    //     {
-    //         let result = client.search_query()
-    //             .with_indexes(&[index_name])
-    //             .with_sort(&Sort::field("str_field"))
-    //             .send()
-    //             .unwrap();
+            assert_eq!(expected_result_str, result_str);
+        }
+        {
+            let result:SearchResult<TestDocument> = client.search_query()
+                .with_indexes(&[index_name])
+                .with_sort(&Sort::field("str_field"))
+                .send()
+                .unwrap();
 
-    //         let result_str:Vec<String> = result.hits.hits()
-    //             .unwrap()
-    //             .into_iter()
-    //             .map(|doc:TestDocument| doc.str_field)
-    //             .collect();
+            let result_str:Vec<String> = result.hits.hits()
+                .unwrap()
+                .into_iter()
+                .map(|doc| doc.str_field)
+                .collect();
 
-    //         let expected_result_str:Vec<String> = vec!["A", "B", "C"].into_iter()
-    //             .map(|x| x.to_owned())
-    //             .collect();
+            let expected_result_str:Vec<String> = vec!["A", "B", "C"].into_iter()
+                .map(|x| x.to_owned())
+                .collect();
 
-    //         assert_eq!(expected_result_str,
-    //                    result_str);
-    //     }
-    //     {
-    //         let result = client.search_query()
-    //             .with_indexes(&[index_name])
-    //             .with_sort(&Sort::field("int_field"))
-    //             .send()
-    //             .unwrap();
+            assert_eq!(expected_result_str,
+                       result_str);
+        }
+        {
+            let result:SearchResult<TestDocument> = client.search_query()
+                .with_indexes(&[index_name])
+                .with_sort(&Sort::field("int_field"))
+                .send()
+                .unwrap();
 
-    //         let result_str:Vec<String> = result.hits.hits()
-    //             .unwrap()
-    //             .into_iter()
-    //             .map(|doc:TestDocument| doc.str_field)
-    //             .collect();
+            let result_str:Vec<String> = result.hits.hits()
+                .unwrap()
+                .into_iter()
+                .map(|doc| doc.str_field)
+                .collect();
 
-    //         let expected_result_str:Vec<String> = vec!["C", "B", "A"].into_iter()
-    //             .map(|x| x.to_owned())
-    //             .collect();
+            let expected_result_str:Vec<String> = vec!["C", "B", "A"].into_iter()
+                .map(|x| x.to_owned())
+                .collect();
 
-    //         assert_eq!(expected_result_str,
-    //                    result_str);
-    //     }
-    // }
+            assert_eq!(expected_result_str,
+                       result_str);
+        }
+    }
 }
