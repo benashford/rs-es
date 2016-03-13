@@ -19,9 +19,6 @@
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
-// TODO - deprecated
-use rustc_serialize::json::{Json, ToJson};
-
 use serde::ser::{Serialize, Serializer};
 use serde_json::{to_value, Value};
 
@@ -97,13 +94,6 @@ impl<'a> Global<'a> {
         Global {
             phantom: PhantomData
         }
-    }
-}
-
-// TODO - deprecated
-impl<'a> ToJson for Global<'a> {
-    fn to_json(&self) -> Json {
-        Json::Object(BTreeMap::new())
     }
 }
 
@@ -479,15 +469,16 @@ impl<'a> DateRangeInst<'a> {
     add_field!(with_to, to, &'a str);
 }
 
-impl<'a> ToJson for DateRangeInst<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        optional_add!(self, d, from);
-        optional_add!(self, d, to);
+// TODO - deprecated
+// impl<'a> ToJson for DateRangeInst<'a> {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         optional_add!(self, d, from);
+//         optional_add!(self, d, to);
 
-        Json::Object(d)
-    }
-}
+//         Json::Object(d)
+//     }
+// }
 
 // /// Date range aggregation.  See: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-daterange-aggregation.html
 // #[derive(Debug)]
@@ -540,15 +531,16 @@ impl ExtendedBounds {
     }
 }
 
-impl ToJson for ExtendedBounds {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("min".to_owned(), Json::I64(self.min));
-        d.insert("max".to_owned(), Json::I64(self.max));
+// TODO - deprecated
+// impl ToJson for ExtendedBounds {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("min".to_owned(), Json::I64(self.min));
+//         d.insert("max".to_owned(), Json::I64(self.max));
 
-        Json::Object(d)
-    }
-}
+//         Json::Object(d)
+//     }
+// }
 
 impl From<(i64, i64)> for ExtendedBounds {
     fn from(from: (i64, i64)) -> ExtendedBounds {
