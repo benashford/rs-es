@@ -18,8 +18,6 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use rustc_serialize::json::{Json, ToJson};
-
 use ::units::{Distance, Duration, JsonVal, Location};
 
 /// Function
@@ -303,19 +301,19 @@ impl Decay {
         Function::Decay(self)
     }
 
-    pub fn add_to_json(&self, d: &mut BTreeMap<String, Json>) {
-        // TODO - deprecated
-        // let mut inner = BTreeMap::new();
-        // let mut params = BTreeMap::new();
-        // params.insert("origin".to_owned(), self.origin.to_json());
-        // params.insert("scale".to_owned(), self.scale.to_json());
-        // optional_add!(self, params, offset);
-        // optional_add!(self, params, decay);
-        // inner.insert(self.field.clone(), Json::Object(params));
-        // optional_add!(self, inner, multi_value_mode);
-        // d.insert(self.decay_function.to_string(), Json::Object(inner));
-        unimplemented!()
-    }
+    // pub fn add_to_json(&self, d: &mut BTreeMap<String, Json>) {
+    //     // TODO - deprecated
+    //     // let mut inner = BTreeMap::new();
+    //     // let mut params = BTreeMap::new();
+    //     // params.insert("origin".to_owned(), self.origin.to_json());
+    //     // params.insert("scale".to_owned(), self.scale.to_json());
+    //     // optional_add!(self, params, offset);
+    //     // optional_add!(self, params, decay);
+    //     // inner.insert(self.field.clone(), Json::Object(params));
+    //     // optional_add!(self, inner, multi_value_mode);
+    //     // d.insert(self.decay_function.to_string(), Json::Object(inner));
+    //     unimplemented!()
+    // }
 }
 
 // options used by decay functions
