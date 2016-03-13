@@ -869,8 +869,9 @@ pub struct AggregationsResult(HashMap<String, AggregationResult>);
 /// Loads a Json object of aggregation results into an `AggregationsResult`.
 fn object_to_result(aggs: &Aggregations,
                     object: &BTreeMap<String, Value>) -> Result<AggregationsResult, EsError> {
-    let mut ar_map = HashMap::new();
     use self::Aggregation::*;
+
+    let mut ar_map = HashMap::new();
     for (&key, val) in aggs.0.iter() {
         let owned_key = key.to_owned();
         let json = match object.get(&owned_key) {
