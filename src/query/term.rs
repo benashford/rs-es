@@ -16,8 +16,6 @@
 
 //! Specific Term level queries
 
-use std::collections::BTreeMap;
-
 use rustc_serialize::json::{Json, ToJson};
 
 use serde::{Serialize, Serializer};

@@ -1219,40 +1219,40 @@ mod tests {
         }
     }
 
-    // #[test]
-    // fn test_aggs() {
-    //     let mut client = ::tests::make_client();
-    //     let index_name = "test_aggs";
-    //     ::tests::clean_db(&mut client, index_name);
+    #[test]
+    fn test_aggs() {
+        let mut client = ::tests::make_client();
+        let index_name = "test_aggs";
+        ::tests::clean_db(&mut client, index_name);
 
-    //     client.bulk(&[Action::index(TestDocument::new().with_int_field(10)),
-    //                   Action::index(TestDocument::new().with_int_field(1))])
-    //         .with_index(index_name)
-    //         .with_doc_type("doc_type")
-    //         .send()
-    //         .unwrap();
+        client.bulk(&[Action::index(TestDocument::new().with_int_field(10)),
+                      Action::index(TestDocument::new().with_int_field(1))])
+            .with_index(index_name)
+            .with_doc_type("doc_type")
+            .send()
+            .unwrap();
 
-    //     client.refresh().with_indexes(&[index_name]).send().unwrap();
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
 
-    //     let result = client.search_query()
-    //         .with_indexes(&[index_name])
-    //         .with_aggs(&Aggregations::from(("min_int_field", Min::new("int_field"))))
-    //         .send()
-    //         .unwrap();
+        let result:SearchResult<TestDocument> = client.search_query()
+            .with_indexes(&[index_name])
+            .with_aggs(&Aggregations::from(("min_int_field", Min::field("int_field"))))
+            .send()
+            .unwrap();
 
-    //     let min = &result.aggs_ref()
-    //         .unwrap()
-    //         .get("min_int_field")
-    //         .unwrap()
-    //         .as_min()
-    //         .unwrap()
-    //         .value;
+        let min = &result.aggs_ref()
+            .unwrap()
+            .get("min_int_field")
+            .unwrap()
+            .as_min()
+            .unwrap()
+            .value;
 
-    //     match min {
-    //         &JsonVal::F64(i) => assert_eq!(1.0, i),
-    //         _                => panic!("Not an integer")
-    //     }
-    // }
+        match min {
+            &JsonVal::F64(i) => assert_eq!(1.0, i),
+            _                => panic!("Not an integer")
+        }
+    }
 
     // #[test]
     // fn test_sort() {
