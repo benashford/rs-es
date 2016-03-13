@@ -114,141 +114,100 @@ impl<'a> Filter<'a> {
 
 bucket_agg!(Filter);
 
-// /// Filters aggregation
-// #[derive(Debug)]
-// pub struct Filters<'a> {
-//     filters: HashMap<&'a str, &'a query::Query>
-// }
+/// Filters aggregation
+#[derive(Debug, Serialize)]
+pub struct Filters<'a> {
+    filters: HashMap<&'a str, &'a query::Query>
+}
 
-// impl<'a> Filters<'a> {
-//     pub fn new(filters: HashMap<&'a str, &'a query::Query>) -> Filters<'a> {
-//         Filters {
-//             filters: filters
-//         }
-//     }
-// }
+impl<'a> Filters<'a> {
+    pub fn new(filters: HashMap<&'a str, &'a query::Query>) -> Filters<'a> {
+        Filters {
+            filters: filters
+        }
+    }
+}
 
-// impl<'a> From<Vec<(&'a str, &'a query::Query)>> for Filters<'a> {
-//     fn from(from: Vec<(&'a str, &'a query::Query)>) -> Filters<'a> {
-//         let mut filters = HashMap::with_capacity(from.len());
-//         for (k, v) in from {
-//             filters.insert(k, v);
-//         }
-//         Filters::new(filters)
-//     }
-// }
+impl<'a> From<Vec<(&'a str, &'a query::Query)>> for Filters<'a> {
+    fn from(from: Vec<(&'a str, &'a query::Query)>) -> Filters<'a> {
+        let mut filters = HashMap::with_capacity(from.len());
+        for (k, v) in from {
+            filters.insert(k, v);
+        }
+        Filters::new(filters)
+    }
+}
 
-// impl<'a> ToJson for Filters<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-//         for (&k, v) in self.filters.iter() {
-//             inner.insert(k.to_owned(), v.to_json());
-//         }
-//         d.insert("filters".to_owned(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
+bucket_agg!(Filters);
 
-// bucket_agg!(Filters);
+/// Missing aggregation
+#[derive(Debug, Serialize)]
+pub struct Missing<'a> {
+    pub field: &'a str
+}
 
-// /// Missing aggregation
-// #[derive(Debug)]
-// pub struct Missing<'a> {
-//     pub field: &'a str
-// }
+impl<'a> Missing<'a> {
+    pub fn new(field: &'a str) -> Missing<'a> {
+        Missing {
+            field: field
+        }
+    }
+}
 
-// impl<'a> Missing<'a> {
-//     pub fn new(field: &'a str) -> Missing<'a> {
-//         Missing {
-//             field: field
-//         }
-//     }
-// }
+bucket_agg!(Missing);
 
-// impl<'a> ToJson for Missing<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("field".to_owned(), self.field.to_json());
-//         Json::Object(d)
-//     }
-// }
+/// Nested aggregation
+#[derive(Debug, Serialize)]
+pub struct Nested<'a> {
+    pub path: &'a str
+}
 
-// bucket_agg!(Missing);
+impl<'a> Nested<'a> {
+    pub fn new(path: &'a str) -> Nested<'a> {
+        Nested {
+            path: path
+        }
+    }
+}
 
-// /// Nested aggregation
-// #[derive(Debug)]
-// pub struct Nested<'a> {
-//     pub path: &'a str
-// }
+bucket_agg!(Nested);
 
-// impl<'a> Nested<'a> {
-//     pub fn new(path: &'a str) -> Nested<'a> {
-//         Nested {
-//             path: path
-//         }
-//     }
-// }
+/// Reverse nested aggregation, will produce an error if used anywhere other than
+/// inside a nested aggregation.
+///
+/// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-reverse-nested-aggregation.html
+#[derive(Debug, Serialize)]
+pub struct ReverseNested<'a> {
+    /// Needed for lifecycle reasons
+    phantom: PhantomData<&'a str>
+}
 
-// impl<'a> ToJson for Nested<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("path".to_owned(), self.path.to_json());
-//         Json::Object(d)
-//     }
-// }
+impl<'a> ReverseNested<'a> {
+    pub fn new() -> ReverseNested<'a> {
+        ReverseNested {
+            phantom: PhantomData
+        }
+    }
+}
 
-// bucket_agg!(Nested);
+bucket_agg!(ReverseNested);
 
-// /// Reverse nested aggregation, will produce an error if used anywhere other than
-// /// inside a nested aggregation.
-// ///
-// /// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-reverse-nested-aggregation.html
-// #[derive(Debug)]
-// pub struct ReverseNested<'a> {
-//     /// Needed for lifecycle reasons
-//     phantom: PhantomData<&'a str>
-// }
+/// Children aggregation - sub-aggregations run against the child document
+#[derive(Debug, Serialize)]
+pub struct Children<'a> {
+    #[serde(rename="type")]
+    doc_type: &'a str
+}
 
-// impl<'a> ReverseNested<'a> {
-//     pub fn new() -> ReverseNested<'a> {
-//         ReverseNested {
-//             phantom: PhantomData
-//         }
-//     }
-// }
+impl<'a> Children<'a> {
+    pub fn new(doc_type: &'a str) -> Children<'a> {
+        Children {
+            doc_type: doc_type
+        }
+    }
+}
 
-// impl<'a> ToJson for ReverseNested<'a> {
-//     fn to_json(&self) -> Json {
-//         Json::Object(BTreeMap::new())
-//     }
-// }
-
-// bucket_agg!(ReverseNested);
-
-// /// Children aggregation - sub-aggregations run against the child document
-// #[derive(Debug)]
-// pub struct Children<'a> {
-//     doc_type: &'a str
-// }
-
-// impl<'a> Children<'a> {
-//     pub fn new(doc_type: &'a str) -> Children<'a> {
-//         Children {
-//             doc_type: doc_type
-//         }
-//     }
-// }
-
-// impl<'a> ToJson for Children<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("type".to_owned(), self.doc_type.to_json());
-//         Json::Object(d)
-//     }
-// }
-
-// bucket_agg!(Children);
+bucket_agg!(Children);
 
 /// Order - used for some bucketing aggregations to determine the order of
 /// buckets
@@ -277,18 +236,6 @@ impl<'a> AsRef<str> for OrderKey<'a> {
         }
     }
 }
-
-// TODO - deprecated
-// impl<'a> ToString for OrderKey<'a> {
-//     fn to_string(&self) -> String {
-//         match *self {
-//             OrderKey::Count   => "_count".to_owned(),
-//             OrderKey::Key     => "_key".to_owned(),
-//             OrderKey::Term    => "_term".to_owned(),
-//             OrderKey::Expr(e) => e.to_owned()
-//         }
-//     }
-// }
 
 /// Used to define the ordering of buckets in a some bucketted aggregations
 ///
@@ -800,11 +747,11 @@ pub enum Interval {
 pub enum BucketAggregation<'a> {
     Global(Global<'a>),
     Filter(Filter<'a>),
-    // Filters(Filters<'a>),
-    // Missing(Missing<'a>),
-    // Nested(Nested<'a>),
-    // ReverseNested(ReverseNested<'a>),
-    // Children(Children<'a>),
+    Filters(Filters<'a>),
+    Missing(Missing<'a>),
+    Nested(Nested<'a>),
+    ReverseNested(ReverseNested<'a>),
+    Children(Children<'a>),
     Terms(Terms<'a>),
     // Range(Range<'a>),
     // DateRange(DateRange<'a>),
@@ -820,6 +767,11 @@ impl<'a> BucketAggregation<'a> {
         match self {
             &Global(_) => "global",
             &Filter(_) => "filter",
+            &Filters(_) => "filters",
+            &Missing(_) => "missing",
+            &Nested(_) => "nested",
+            &ReverseNested(_) => "reverse_nested",
+            &Children(_) => "children",
             &Terms(_) => "terms",
         }
     }
@@ -832,6 +784,11 @@ impl<'a> Serialize for BucketAggregation<'a> {
         match self {
             &Global(ref g) => g.serialize(serializer),
             &Filter(ref f) => f.serialize(serializer),
+            &Filters(ref f) => f.serialize(serializer),
+            &Missing(ref m) => m.serialize(serializer),
+            &Nested(ref n) => n.serialize(serializer),
+            &ReverseNested(ref r) => r.serialize(serializer),
+            &Children(ref c) => c.serialize(serializer),
             &Terms(ref t) => t.serialize(serializer)
         }
     }
@@ -842,6 +799,11 @@ impl<'a> Serialize for BucketAggregation<'a> {
 pub enum BucketAggregationResult {
     Global(GlobalResult),
     Filter(FilterResult),
+    Filters(FiltersResult),
+    Missing(MissingResult),
+    Nested(NestedResult),
+    ReverseNested(ReverseNestedResult),
+    Children(ChildrenResult),
     Terms(TermsResult)
 }
 
@@ -857,22 +819,22 @@ impl BucketAggregationResult {
             &BucketAggregation::Filter(_) => {
                 BucketAggregationResult::Filter(try!(FilterResult::from(json, aggs)))
             },
-            // &BucketAggregation::Filters(_) => {
-            //     AggregationResult::Filters(FiltersResult::from(json, aggs))
-            // },
-            // &BucketAggregation::Missing(_) => {
-            //     AggregationResult::Missing(MissingResult::from(json, aggs))
-            // },
-            // &BucketAggregation::Nested(_) => {
-            //     AggregationResult::Nested(NestedResult::from(json, aggs))
-            // },
-            // &BucketAggregation::ReverseNested(_) => {
-            //     AggregationResult::ReverseNested(ReverseNestedResult::from(json,
-            //                                                                aggs))
-            // },
-            // &BucketAggregation::Children(_) => {
-            //     AggregationResult::Children(ChildrenResult::from(json, aggs))
-            // },
+            &BucketAggregation::Filters(_) => {
+                BucketAggregationResult::Filters(try!(FiltersResult::from(json, aggs)))
+            },
+            &BucketAggregation::Missing(_) => {
+                BucketAggregationResult::Missing(try!(MissingResult::from(json, aggs)))
+            },
+            &BucketAggregation::Nested(_) => {
+                BucketAggregationResult::Nested(try!(NestedResult::from(json, aggs)))
+            },
+            &BucketAggregation::ReverseNested(_) => {
+                BucketAggregationResult::ReverseNested(try!(ReverseNestedResult::from(json,
+                                                                                      aggs)))
+            },
+            &BucketAggregation::Children(_) => {
+                BucketAggregationResult::Children(try!(ChildrenResult::from(json, aggs)))
+            },
             &BucketAggregation::Terms(_) => {
                 BucketAggregationResult::Terms(try!(TermsResult::from(json, aggs)))
             },
@@ -1003,6 +965,107 @@ pub struct FilterResult {
 impl FilterResult {
     fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
         Ok(FilterResult {
+            doc_count: from_json!(from, "doc_count", as_u64),
+            aggs: extract_aggs!(from, aggs)
+        })
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
+pub struct FiltersBucketResult {
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl FiltersBucketResult {
+    fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        Ok(FiltersBucketResult {
+            doc_count: from_json!(from, "doc_count", as_u64),
+            aggs: extract_aggs!(from, aggs)
+        })
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
+pub struct FiltersResult {
+    pub buckets: HashMap<String, FiltersBucketResult>
+}
+
+impl FiltersResult {
+    fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        Ok(FiltersResult {
+            buckets: {
+                let raw_buckets = from_json!(from, "buckets", as_object);
+                let mut buckets = HashMap::with_capacity(raw_buckets.len());
+                for (k, v) in raw_buckets.iter() {
+                    buckets.insert(k.clone(), try!(FiltersBucketResult::from(v, aggs)));
+                }
+                buckets
+            }
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct MissingResult {
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl MissingResult {
+    fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        Ok(MissingResult {
+            doc_count: from_json!(from, "doc_count", as_u64),
+            aggs: extract_aggs!(from, aggs)
+        })
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
+pub struct NestedResult {
+    pub aggs: Option<AggregationsResult>
+}
+
+impl NestedResult {
+    fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        Ok(NestedResult {
+            aggs: extract_aggs!(from, aggs)
+        })
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
+pub struct ReverseNestedResult {
+    pub aggs: Option<AggregationsResult>
+}
+
+impl ReverseNestedResult {
+    fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        Ok(ReverseNestedResult {
+            aggs: extract_aggs!(from, aggs)
+        })
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
+pub struct ChildrenResult {
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl ChildrenResult {
+    fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        Ok(ChildrenResult {
             doc_count: from_json!(from, "doc_count", as_u64),
             aggs: extract_aggs!(from, aggs)
         })
