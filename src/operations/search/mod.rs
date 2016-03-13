@@ -37,7 +37,6 @@ use ::query::Query;
 use ::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
 use ::util::StrJoin;
 use super::common::{Options, OptionVal};
-use super::decode_json;
 use super::format_indexes_and_types;
 use super::ShardCountResult;
 
@@ -94,13 +93,6 @@ impl Serialize for Order {
     }
 }
 
-// TODO - deprecated
-impl ToJson for Order {
-    fn to_json(&self) -> Json {
-        Json::String(self.to_string())
-    }
-}
-
 /// The (Sort mode option)[https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_sort_mode_option].
 pub enum Mode {
     Min,
@@ -122,18 +114,6 @@ impl Serialize for Mode {
     }
 }
 
-// TODO - deprecated
-impl ToJson for Mode {
-    fn to_json(&self) -> Json {
-        Json::String(match self {
-            &Mode::Min => "min",
-            &Mode::Max => "max",
-            &Mode::Sum => "sum",
-            &Mode::Avg => "avg"
-        }.to_owned())
-    }
-}
-
 /// Options for handling (missing values)[https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_missing_values]
 pub enum Missing {
     First,
@@ -150,17 +130,6 @@ impl Serialize for Missing {
             &Missing::Last  => "last".serialize(serializer),
             &Missing::Custom(ref s) => s.serialize(serializer)
         }
-    }
-}
-
-// TODO - deprecated
-impl ToJson for Missing {
-    fn to_json(&self) -> Json {
-        Json::String(match self {
-            &Missing::First         => "_first".to_owned(),
-            &Missing::Last          => "_last".to_owned(),
-            &Missing::Custom(ref s) => s.clone()
-        })
     }
 }
 
@@ -228,22 +197,23 @@ impl ToString for SortField {
     }
 }
 
-impl ToJson for SortField {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
+// TODO - deprecated
+// impl ToJson for SortField {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
 
-        optional_add!(self, inner, order);
-        optional_add!(self, inner, mode);
-        optional_add!(self, inner, nested_path);
-        optional_add!(self, inner, nested_filter);
-        optional_add!(self, inner, missing);
-        optional_add!(self, inner, unmapped_type);
+//         optional_add!(self, inner, order);
+//         optional_add!(self, inner, mode);
+//         optional_add!(self, inner, nested_path);
+//         optional_add!(self, inner, nested_filter);
+//         optional_add!(self, inner, missing);
+//         optional_add!(self, inner, unmapped_type);
 
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+//         d.insert(self.field.clone(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 /// Representing sort options for sort by geodistance
 // TODO - fix structure to represent reality
@@ -291,22 +261,23 @@ impl GeoDistance {
     }
 }
 
-impl ToJson for GeoDistance {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
+// TODO - deprecated
+// impl ToJson for GeoDistance {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
 
-        inner.insert(self.field.clone(), self.location.to_json());
+//         inner.insert(self.field.clone(), self.location.to_json());
 
-        optional_add!(self, inner, order);
-        optional_add!(self, inner, unit);
-        optional_add!(self, inner, mode);
-        optional_add!(self, inner, distance_type);
+//         optional_add!(self, inner, order);
+//         optional_add!(self, inner, unit);
+//         optional_add!(self, inner, mode);
+//         optional_add!(self, inner, distance_type);
 
-        d.insert("_geo_distance".to_owned(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+//         d.insert("_geo_distance".to_owned(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 /// Representing options for sort by script
 // TODO - fix structure
@@ -346,19 +317,20 @@ impl Script {
     }
 }
 
-impl ToJson for Script {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
+// TODO - deprecated
+// impl ToJson for Script {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
 
-        inner.insert("script".to_owned(), self.script.to_json());
-        inner.insert("type".to_owned(), self.script_type.to_json());
-        inner.insert("params".to_owned(), self.params.to_json());
+//         inner.insert("script".to_owned(), self.script.to_json());
+//         inner.insert("type".to_owned(), self.script_type.to_json());
+//         inner.insert("params".to_owned(), self.params.to_json());
 
-        d.insert("_script".to_owned(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+//         d.insert("_script".to_owned(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 pub enum SortBy {
     Field(SortField),
@@ -387,15 +359,15 @@ impl ToString for SortBy {
     }
 }
 
-impl ToJson for SortBy {
-    fn to_json(&self) -> Json {
-        match self {
-            &SortBy::Field(ref field)   => field.to_json(),
-            &SortBy::Distance(ref dist) => dist.to_json(),
-            &SortBy::Script(ref scr)    => scr.to_json()
-        }
-    }
-}
+// impl ToJson for SortBy {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &SortBy::Field(ref field)   => field.to_json(),
+//             &SortBy::Distance(ref dist) => dist.to_json(),
+//             &SortBy::Script(ref scr)    => scr.to_json()
+//         }
+//     }
+// }
 
 /// A full sort clause
 #[derive(Serialize)]
@@ -458,11 +430,12 @@ impl<'a> From<&'a Sort> for OptionVal {
     }
 }
 
-impl ToJson for Sort {
-    fn to_json(&self) -> Json {
-        self.fields.to_json()
-    }
-}
+// TODO - deprecated
+// impl ToJson for Sort {
+//     fn to_json(&self) -> Json {
+//         self.fields.to_json()
+//     }
+// }
 
 impl<'a, 'b> SearchURIOperation<'a, 'b> {
     pub fn new(client: &'a mut Client) -> SearchURIOperation<'a, 'b> {
@@ -575,36 +548,6 @@ impl<'a> Source<'a> {
     /// An include and exclude source filter
     pub fn filter(incl: &'a [&'a str], excl: &'a [&'a str]) -> Source<'a> {
         Source::Filter(Some(incl), Some(excl))
-    }
-}
-
-/// Convenience function to Json-ify a reference to a slice of references of
-/// items that can be converted to Json
-// TODO - deprecated
-fn slice_to_json<J: ToJson + ?Sized>(slice: &[&J]) -> Json {
-    Json::Array(slice.iter().map(|e| {
-        e.to_json()
-    }).collect())
-}
-
-// TODO - deprecated
-impl<'a> ToJson for Source<'a> {
-    fn to_json(&self) -> Json {
-        match self {
-            &Source::Off                => Json::Boolean(false),
-            &Source::Filter(incl, excl) => {
-                let mut d = BTreeMap::new();
-                match incl {
-                    Some(val) => { d.insert("include".to_owned(), slice_to_json(val)); },
-                    None      => (),
-                }
-                match excl {
-                    Some(val) => { d.insert("exclude".to_owned(), slice_to_json(val)); },
-                    None      => (),
-                }
-                Json::Object(d)
-            }
-        }
     }
 }
 
@@ -861,6 +804,7 @@ pub struct SearchResultInterim<T: Deserialize> {
     pub hits:      SearchHitsResult<T>,
 
     /// Optional field populated if aggregations are specified
+    #[serde(rename="aggregations")]
     pub aggs:      Option<Value>,
 
     /// Optional field populated during scanning and scrolling
@@ -978,6 +922,7 @@ pub struct ScanResultInterim<T: Deserialize> {
     #[serde(rename="_shards")]
     shards:    ShardCountResult,
     hits:      SearchHitsResult<T>,
+    #[serde(rename="aggregations")]
     aggs:      Option<Value>
 }
 
@@ -1063,6 +1008,8 @@ mod tests {
     extern crate env_logger;
     extern crate regex;
 
+    use serde_json::Value;
+
     use ::Client;
     use ::tests::TestDocument;
 
@@ -1071,10 +1018,13 @@ mod tests {
 
     use super::ScanResult;
     use super::SearchHitsHitsResult;
+    use super::SearchResult;
     use super::Sort;
     use super::Source;
 
-//    use super::aggregations::{Aggregations, Min, Order, OrderKey, Terms};
+    use super::aggregations::Aggregations;
+    use super::aggregations::bucket::{Order, OrderKey, Terms};
+    use super::aggregations::metrics::Min;
 
     fn make_document(idx: i64) -> TestDocument {
         TestDocument::new()
@@ -1176,130 +1126,133 @@ mod tests {
         assert_eq!(200, hits.len());
     }
 
-    // #[test]
-    // fn test_source_filter() {
-    //     let mut client = ::tests::make_client();
-    //     let index_name = "test_source_filter";
-    //     ::tests::clean_db(&mut client, index_name);
+    #[test]
+    fn test_source_filter() {
+        let mut client = ::tests::make_client();
+        let index_name = "test_source_filter";
+        ::tests::clean_db(&mut client, index_name);
 
-    //     client.index(index_name, "test").with_doc(&make_document(100)).send().unwrap();
-    //     client.refresh().with_indexes(&[index_name]).send().unwrap();
+        client.index(index_name, "test").with_doc(&make_document(100)).send().unwrap();
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
 
-    //     let mut result = client.search_query()
-    //         .with_indexes(&[index_name])
-    //         .with_source(Source::include(&["str_field"]))
-    //         .send()
-    //         .unwrap();
+        // Use of `Value` is necessary as the JSON returned is an arbitrary format
+        // determined by the source filter
+        let mut result:SearchResult<Value> = client.search_query()
+            .with_indexes(&[index_name])
+            .with_source(Source::include(&["str_field"]))
+            .send()
+            .unwrap();
 
-    //     assert_eq!(1, result.hits.hits.len());
-    //     let json = result.hits.hits.remove(0).source.unwrap();
+        assert_eq!(1, result.hits.hits.len());
+        let json = result.hits.hits.remove(0).source.unwrap();
 
-    //     assert_eq!(true, json.find("str_field").is_some());
-    //     assert_eq!(false, json.find("int_field").is_some());
-    // }
+        assert_eq!(true, json.find("str_field").is_some());
+        assert_eq!(false, json.find("int_field").is_some());
+    }
 
-    // #[test]
-    // fn test_bucket_aggs() {
-    //     let mut client = ::tests::make_client();
-    //     let index_name = "test_bucket_aggs";
-    //     ::tests::clean_db(&mut client, index_name);
+    #[test]
+    fn test_bucket_aggs() {
+        let mut client = ::tests::make_client();
+        let index_name = "test_bucket_aggs";
+        ::tests::clean_db(&mut client, index_name);
 
-    //     client.bulk(&[Action::index(TestDocument::new().with_str_field("A").with_int_field(2)),
-    //                   Action::index(TestDocument::new().with_str_field("B").with_int_field(3)),
-    //                   Action::index(TestDocument::new().with_str_field("A").with_int_field(1)),
-    //                   Action::index(TestDocument::new().with_str_field("B").with_int_field(2))])
-    //         .with_index(index_name)
-    //         .with_doc_type("doc_type")
-    //         .send()
-    //         .unwrap();
+        client.bulk(&[Action::index(TestDocument::new().with_str_field("A").with_int_field(2)),
+                      Action::index(TestDocument::new().with_str_field("B").with_int_field(3)),
+                      Action::index(TestDocument::new().with_str_field("A").with_int_field(1)),
+                      Action::index(TestDocument::new().with_str_field("B").with_int_field(2))])
+            .with_index(index_name)
+            .with_doc_type("doc_type")
+            .send()
+            .unwrap();
 
-    //     client.refresh().with_indexes(&[index_name]).send().unwrap();
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
 
-    //     let aggs = Aggregations::from(("str",
-    //                                    (Terms::new("str_field").with_order(Order::asc(OrderKey::Term)),
-    //                                     Aggregations::from(("int",
-    //                                                         Min::new("int_field"))))));
+        let aggs = Aggregations::from(("str",
+                                       (Terms::field("str_field")
+                                        .with_order(Order::asc(OrderKey::Term)),
+                                        Aggregations::from(("int",
+                                                            Min::field("int_field"))))));
 
-    //     let result = client.search_query()
-    //         .with_indexes(&[index_name])
-    //         .with_aggs(&aggs)
-    //         .send()
-    //         .unwrap();
+        let result:SearchResult<TestDocument> = client.search_query()
+            .with_indexes(&[index_name])
+            .with_aggs(&aggs)
+            .send()
+            .unwrap();
 
-    //     let buckets = &result.aggs_ref()
-    //         .unwrap()
-    //         .get("str")
-    //         .unwrap()
-    //         .as_terms()
-    //         .unwrap()
-    //         .buckets;
+        let buckets = &result.aggs_ref()
+            .unwrap()
+            .get("str")
+            .unwrap()
+            .as_terms()
+            .unwrap()
+            .buckets;
 
-    //     let bucket_a = &buckets[0];
-    //     let bucket_b = &buckets[1];
+        let bucket_a = &buckets[0];
+        let bucket_b = &buckets[1];
 
-    //     assert_eq!(2, bucket_a.doc_count);
-    //     assert_eq!(2, bucket_b.doc_count);
+        assert_eq!(2, bucket_a.doc_count);
+        assert_eq!(2, bucket_b.doc_count);
 
-    //     let min_a = &bucket_a.aggs_ref()
-    //         .unwrap()
-    //         .get("int")
-    //         .unwrap()
-    //         .as_min()
-    //         .unwrap()
-    //         .value;
+        let min_a = &bucket_a.aggs_ref()
+            .unwrap()
+            .get("int")
+            .unwrap()
+            .as_min()
+            .unwrap()
+            .value;
 
-    //     let min_b = &bucket_b.aggs_ref()
-    //         .unwrap()
-    //         .get("int")
-    //         .unwrap()
-    //         .as_min()
-    //         .unwrap()
-    //         .value;
+        let min_b = &bucket_b.aggs_ref()
+            .unwrap()
+            .get("int")
+            .unwrap()
+            .as_min()
+            .unwrap()
+            .value;
 
-    //     match min_a {
-    //         &JsonVal::F64(i) => assert_eq!(1.0, i),
-    //         _                => panic!("Not an integer")
-    //     }
-    //     match min_b {
-    //         &JsonVal::F64(i) => assert_eq!(2.0, i),
-    //         _                => panic!("Not an integer")
-    //     }
-    // }
+        match min_a {
+            &JsonVal::F64(i) => assert_eq!(1.0, i),
+            _                => panic!("Not an integer")
+        }
+        match min_b {
+            &JsonVal::F64(i) => assert_eq!(2.0, i),
+            _                => panic!("Not an integer")
+        }
+    }
 
-    // #[test]
-    // fn test_aggs() {
-    //     let mut client = ::tests::make_client();
-    //     let index_name = "test_aggs";
-    //     ::tests::clean_db(&mut client, index_name);
+    #[test]
+    fn test_aggs() {
+        let mut client = ::tests::make_client();
+        let index_name = "test_aggs";
+        ::tests::clean_db(&mut client, index_name);
 
-    //     client.bulk(&[Action::index(TestDocument::new().with_int_field(10)),
-    //                   Action::index(TestDocument::new().with_int_field(1))])
-    //         .with_index(index_name)
-    //         .with_doc_type("doc_type")
-    //         .send()
-    //         .unwrap();
+        client.bulk(&[Action::index(TestDocument::new().with_int_field(10)),
+                      Action::index(TestDocument::new().with_int_field(1))])
+            .with_index(index_name)
+            .with_doc_type("doc_type")
+            .send()
+            .unwrap();
 
-    //     client.refresh().with_indexes(&[index_name]).send().unwrap();
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
 
-    //     let result = client.search_query()
-    //         .with_indexes(&[index_name])
-    //         .with_aggs(&Aggregations::from(("min_int_field", Min::new("int_field"))))
-    //         .send()
-    //         .unwrap();
+        let result:SearchResult<TestDocument> = client.search_query()
+            .with_indexes(&[index_name])
+            .with_aggs(&Aggregations::from(("min_int_field", Min::field("int_field"))))
+            .send()
+            .unwrap();
 
-    //     let min = &result.aggs_ref()
-    //         .unwrap()
-    //         .get("min_int_field")
-    //         .unwrap()
-    //         .as_min()
-    //         .unwrap()
-    //         .value;
+        let min = &result.aggs_ref()
+            .unwrap()
+            .get("min_int_field")
+            .unwrap()
+            .as_min()
+            .unwrap()
+            .value;
 
-    //     match min {
-    //         &JsonVal::F64(i) => assert_eq!(1.0, i),
-    //         _                => panic!("Not an integer")
-    //     }
-    // }
+        match min {
+            &JsonVal::F64(i) => assert_eq!(1.0, i),
+            _                => panic!("Not an integer")
+        }
+    }
 
     // #[test]
     // fn test_sort() {

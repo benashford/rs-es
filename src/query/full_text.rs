@@ -16,10 +16,6 @@
 
 //! Implementations of full-text ES queries
 
-use std::collections::BTreeMap;
-
-use rustc_serialize::json::{Json, ToJson};
-
 use ::units::JsonVal;
 
 use super::{Flags, Fuzziness, MinimumShouldMatch, Query};
@@ -32,15 +28,16 @@ pub enum MatchType {
     PhrasePrefix
 }
 
-impl ToJson for MatchType {
-    fn to_json(&self) -> Json {
-        match self {
-            &MatchType::Boolean => "boolean",
-            &MatchType::Phrase => "phrase",
-            &MatchType::PhrasePrefix => "phrase_prefix"
-        }.to_json()
-    }
-}
+// TODO - deprecated
+// impl ToJson for MatchType {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &MatchType::Boolean => "boolean",
+//             &MatchType::Phrase => "phrase",
+//             &MatchType::PhrasePrefix => "phrase_prefix"
+//         }.to_json()
+//     }
+// }
 
 /// Zero Terms Query
 
@@ -50,14 +47,15 @@ pub enum ZeroTermsQuery {
     All
 }
 
-impl ToJson for ZeroTermsQuery {
-    fn to_json(&self) -> Json {
-        match self {
-            &ZeroTermsQuery::None => "none",
-            &ZeroTermsQuery::All => "all"
-        }.to_json()
-    }
-}
+// TODO - deprecated
+// impl ToJson for ZeroTermsQuery {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &ZeroTermsQuery::None => "none",
+//             &ZeroTermsQuery::All => "all"
+//         }.to_json()
+//     }
+// }
 
 /// MatchQueryType - the type of the multi Match Query
 #[derive(Debug)]
@@ -69,17 +67,18 @@ pub enum MatchQueryType {
     PhrasePrefix,
 }
 
-impl ToJson for MatchQueryType {
-    fn to_json(&self) -> Json {
-        match self {
-            &MatchQueryType::BestFields => "best_fields",
-            &MatchQueryType::MostFields => "most_fields",
-            &MatchQueryType::CrossFields => "cross_fields",
-            &MatchQueryType::Phrase => "phrase",
-            &MatchQueryType::PhrasePrefix => "phrase_prefix",
-        }.to_json()
-    }
-}
+// TODO - deprecated
+// impl ToJson for MatchQueryType {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &MatchQueryType::BestFields => "best_fields",
+//             &MatchQueryType::MostFields => "most_fields",
+//             &MatchQueryType::CrossFields => "cross_fields",
+//             &MatchQueryType::Phrase => "phrase",
+//             &MatchQueryType::PhrasePrefix => "phrase_prefix",
+//         }.to_json()
+//     }
+// }
 
 /// Match query
 
@@ -130,28 +129,29 @@ impl MatchQuery {
     //build!(Match);
 }
 
-impl ToJson for MatchQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        inner.insert("query".to_owned(), self.query.to_json());
-        optional_add!(self, inner, match_type);
-        optional_add!(self, inner, cutoff_frequency);
-        optional_add!(self, inner, lenient);
-        optional_add!(self, inner, analyzer);
-        optional_add!(self, inner, boost);
-        optional_add!(self, inner, operator);
-        optional_add!(self, inner, minimum_should_match);
-        optional_add!(self, inner, fuzziness);
-        optional_add!(self, inner, prefix_length);
-        optional_add!(self, inner, max_expansions);
-        optional_add!(self, inner, rewrite);
-        optional_add!(self, inner, zero_terms_query);
-        optional_add!(self, inner, slop);
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for MatchQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
+//         inner.insert("query".to_owned(), self.query.to_json());
+//         optional_add!(self, inner, match_type);
+//         optional_add!(self, inner, cutoff_frequency);
+//         optional_add!(self, inner, lenient);
+//         optional_add!(self, inner, analyzer);
+//         optional_add!(self, inner, boost);
+//         optional_add!(self, inner, operator);
+//         optional_add!(self, inner, minimum_should_match);
+//         optional_add!(self, inner, fuzziness);
+//         optional_add!(self, inner, prefix_length);
+//         optional_add!(self, inner, max_expansions);
+//         optional_add!(self, inner, rewrite);
+//         optional_add!(self, inner, zero_terms_query);
+//         optional_add!(self, inner, slop);
+//         d.insert(self.field.clone(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 /// Multi Match Query
 #[derive(Debug, Default)]
@@ -203,27 +203,28 @@ impl MultiMatchQuery {
     //build!(MultiMatch);
 }
 
-impl ToJson for MultiMatchQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("fields".to_owned(), self.fields.to_json());
-        d.insert("query".to_owned(), self.query.to_json());
-        optional_add!(self, d, match_type);
-        optional_add!(self, d, tie_breaker);
-        optional_add!(self, d, analyzer);
-        optional_add!(self, d, boost);
-        optional_add!(self, d, operator);
-        optional_add!(self, d, minimum_should_match);
-        optional_add!(self, d, fuzziness);
-        optional_add!(self, d, prefix_length);
-        optional_add!(self, d, max_expansions);
-        optional_add!(self, d, rewrite);
-        optional_add!(self, d, zero_terms_query);
-        optional_add!(self, d, cutoff_frequency);
-        optional_add!(self, d, slop);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for MultiMatchQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("fields".to_owned(), self.fields.to_json());
+//         d.insert("query".to_owned(), self.query.to_json());
+//         optional_add!(self, d, match_type);
+//         optional_add!(self, d, tie_breaker);
+//         optional_add!(self, d, analyzer);
+//         optional_add!(self, d, boost);
+//         optional_add!(self, d, operator);
+//         optional_add!(self, d, minimum_should_match);
+//         optional_add!(self, d, fuzziness);
+//         optional_add!(self, d, prefix_length);
+//         optional_add!(self, d, max_expansions);
+//         optional_add!(self, d, rewrite);
+//         optional_add!(self, d, zero_terms_query);
+//         optional_add!(self, d, cutoff_frequency);
+//         optional_add!(self, d, slop);
+//         Json::Object(d)
+//     }
+// }
 
 /// Common terms query
 #[derive(Debug, Default)]
@@ -260,22 +261,23 @@ impl CommonQuery {
     //build!(Common);
 }
 
-impl ToJson for CommonQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        inner.insert("query".to_owned(), self.query.to_json());
-        optional_add!(self, inner, cutoff_frequency);
-        optional_add!(self, inner, low_freq_operator);
-        optional_add!(self, inner, high_freq_operator);
-        optional_add!(self, inner, minimum_should_match);
-        optional_add!(self, inner, boost);
-        optional_add!(self, inner, analyzer);
-        optional_add!(self, inner, disable_coord);
-        d.insert("body".to_owned(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for CommonQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
+//         inner.insert("query".to_owned(), self.query.to_json());
+//         optional_add!(self, inner, cutoff_frequency);
+//         optional_add!(self, inner, low_freq_operator);
+//         optional_add!(self, inner, high_freq_operator);
+//         optional_add!(self, inner, minimum_should_match);
+//         optional_add!(self, inner, boost);
+//         optional_add!(self, inner, analyzer);
+//         optional_add!(self, inner, disable_coord);
+//         d.insert("body".to_owned(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 /// Query string query
 #[derive(Debug, Default)]
@@ -337,33 +339,34 @@ impl QueryStringQuery {
     //build!(QueryString);
 }
 
-impl ToJson for QueryStringQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("query".to_owned(), self.query.to_json());
-        optional_add!(self, d, default_field);
-        optional_add!(self, d, fields);
-        optional_add!(self, d, default_operator);
-        optional_add!(self, d, analyzer);
-        optional_add!(self, d, allow_leading_wildcard);
-        optional_add!(self, d, lowercase_expanded_terms);
-        optional_add!(self, d, enable_position_increments);
-        optional_add!(self, d, fuzzy_max_expansions);
-        optional_add!(self, d, fuzziness);
-        optional_add!(self, d, fuzzy_prefix_length);
-        optional_add!(self, d, phrase_slop);
-        optional_add!(self, d, boost);
-        optional_add!(self, d, analyze_wildcard);
-        optional_add!(self, d, auto_generate_phrase_queries);
-        optional_add!(self, d, max_determined_states);
-        optional_add!(self, d, minimum_should_match);
-        optional_add!(self, d, lenient);
-        optional_add!(self, d, locale);
-        optional_add!(self, d, time_zone);
-        optional_add!(self, d, use_dis_max);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for QueryStringQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("query".to_owned(), self.query.to_json());
+//         optional_add!(self, d, default_field);
+//         optional_add!(self, d, fields);
+//         optional_add!(self, d, default_operator);
+//         optional_add!(self, d, analyzer);
+//         optional_add!(self, d, allow_leading_wildcard);
+//         optional_add!(self, d, lowercase_expanded_terms);
+//         optional_add!(self, d, enable_position_increments);
+//         optional_add!(self, d, fuzzy_max_expansions);
+//         optional_add!(self, d, fuzziness);
+//         optional_add!(self, d, fuzzy_prefix_length);
+//         optional_add!(self, d, phrase_slop);
+//         optional_add!(self, d, boost);
+//         optional_add!(self, d, analyze_wildcard);
+//         optional_add!(self, d, auto_generate_phrase_queries);
+//         optional_add!(self, d, max_determined_states);
+//         optional_add!(self, d, minimum_should_match);
+//         optional_add!(self, d, lenient);
+//         optional_add!(self, d, locale);
+//         optional_add!(self, d, time_zone);
+//         optional_add!(self, d, use_dis_max);
+//         Json::Object(d)
+//     }
+// }
 
 /// Flags for the SimpleQueryString query
 #[derive(Debug)]
@@ -441,18 +444,19 @@ impl SimpleQueryStringQuery {
     //build!(SimpleQueryString);
 }
 
-impl ToJson for SimpleQueryStringQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("query".to_owned(), self.query.to_json());
-        optional_add!(self, d, fields);
-        optional_add!(self, d, analyzer);
-        optional_add!(self, d, flags);
-        optional_add!(self, d, lowercase_expanded_terms);
-        optional_add!(self, d, analyze_wildcard);
-        optional_add!(self, d, locale);
-        optional_add!(self, d, lenient);
-        optional_add!(self, d, minimum_should_match);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for SimpleQueryStringQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("query".to_owned(), self.query.to_json());
+//         optional_add!(self, d, fields);
+//         optional_add!(self, d, analyzer);
+//         optional_add!(self, d, flags);
+//         optional_add!(self, d, lowercase_expanded_terms);
+//         optional_add!(self, d, analyze_wildcard);
+//         optional_add!(self, d, locale);
+//         optional_add!(self, d, lenient);
+//         optional_add!(self, d, minimum_should_match);
+//         Json::Object(d)
+//     }
+// }

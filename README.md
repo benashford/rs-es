@@ -393,6 +393,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 0. Allow static &str for error messages.
 0. Ensure all tests are in the same file as the code being tested.
 0. Tests for aggregations
+0. Not all options for all aggregations are currently implemented, these need to be checked and (re)enabled.
 1. Decide whether it's best in structs that contain a "document" to box the document or not?
 2. Re-enable UPDATE BULK option. (may be related to Script refactoring)
 2. Find way of switching off source document when scan-and-scroll for deleting purposes.
@@ -402,6 +403,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 3. Move longer examples from README to the rustdocs instead.
 4. rustc-serialize appears to be deprecated, retrofit `rs-es` to Serde: https://github.com/serde-rs/serde
 5. Tests
+6. Concrete (de)serialization for aggregations and aggregation results
 6. Stop panicking on unexpected JSON, etc., to guard against surprises with future versions; return a result instead.
 7. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
 8. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html

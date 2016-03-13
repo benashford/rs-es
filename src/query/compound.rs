@@ -16,10 +16,6 @@
 
 //! Compound queries
 
-use std::collections::BTreeMap;
-
-use rustc_serialize::json::{Json, ToJson};
-
 use serde::{Serialize, Serializer};
 
 use ::json::ShouldSkip;
@@ -39,18 +35,18 @@ pub enum BoostMode {
     Min
 }
 
-impl ToJson for BoostMode {
-    fn to_json(&self) -> Json {
-        match self {
-            &BoostMode::Multiply => "multiply",
-            &BoostMode::Replace => "replace",
-            &BoostMode::Sum => "sum",
-            &BoostMode::Avg => "avg",
-            &BoostMode::Max => "max",
-            &BoostMode::Min => "min"
-        }.to_json()
-    }
-}
+// impl ToJson for BoostMode {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &BoostMode::Multiply => "multiply",
+//             &BoostMode::Replace => "replace",
+//             &BoostMode::Sum => "sum",
+//             &BoostMode::Avg => "avg",
+//             &BoostMode::Max => "max",
+//             &BoostMode::Min => "min"
+//         }.to_json()
+//     }
+// }
 
 /// Constant score query
 #[derive(Debug, Default)]
@@ -76,14 +72,15 @@ impl ConstantScoreQuery {
     //build!(ConstantScore);
 }
 
-impl ToJson for ConstantScoreQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("query".to_owned(), self.query.to_json());
-        optional_add!(self, d, boost);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for ConstantScoreQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("query".to_owned(), self.query.to_json());
+//         optional_add!(self, d, boost);
+//         Json::Object(d)
+//     }
+// }
 
 /// Bool query
 #[derive(Debug, Default, Serialize)]
@@ -122,20 +119,6 @@ impl BoolQuery {
     build!(Bool);
 }
 
-impl ToJson for BoolQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        optional_add!(self, d, must);
-        optional_add!(self, d, filter);
-        optional_add!(self, d, should);
-        optional_add!(self, d, must_not);
-        optional_add!(self, d, minimum_should_match);
-        optional_add!(self, d, boost);
-        optional_add!(self, d, disable_coord);
-        Json::Object(d)
-    }
-}
-
 /// DisMax query
 #[derive(Debug, Default)]
 pub struct DisMaxQuery {
@@ -162,15 +145,16 @@ impl DisMaxQuery {
     //build!(DisMax);
 }
 
-impl ToJson for DisMaxQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("queries".to_owned(), self.queries.to_json());
-        optional_add!(self, d, tie_breaker);
-        optional_add!(self, d, boost);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for DisMaxQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("queries".to_owned(), self.queries.to_json());
+//         optional_add!(self, d, tie_breaker);
+//         optional_add!(self, d, boost);
+//         Json::Object(d)
+//     }
+// }
 
 /// Function Score query
 #[derive(Debug, Default)]
@@ -211,19 +195,20 @@ impl FunctionScoreQuery {
     //build!(FunctionScore);
 }
 
-impl ToJson for FunctionScoreQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("functions".to_owned(), self.functions.to_json());
-        optional_add!(self, d, query);
-        optional_add!(self, d, boost);
-        optional_add!(self, d, max_boost);
-        optional_add!(self, d, score_mode);
-        optional_add!(self, d, boost_mode);
-        optional_add!(self, d, min_score);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for FunctionScoreQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("functions".to_owned(), self.functions.to_json());
+//         optional_add!(self, d, query);
+//         optional_add!(self, d, boost);
+//         optional_add!(self, d, max_boost);
+//         optional_add!(self, d, score_mode);
+//         optional_add!(self, d, boost_mode);
+//         optional_add!(self, d, min_score);
+//         Json::Object(d)
+//     }
+// }
 
 /// Boosting query
 #[derive(Debug, Default)]
@@ -247,15 +232,16 @@ impl BoostingQuery {
     //build!(Boosting);
 }
 
-impl ToJson for BoostingQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        optional_add!(self, d, positive);
-        optional_add!(self, d, negative);
-        optional_add!(self, d, negative_boost);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for BoostingQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         optional_add!(self, d, positive);
+//         optional_add!(self, d, negative);
+//         optional_add!(self, d, negative_boost);
+//         Json::Object(d)
+//     }
+// }
 
 /// Indices query
 #[derive(Debug, Default)]
@@ -283,15 +269,16 @@ impl IndicesQuery {
     //build!(Indices);
 }
 
-impl ToJson for IndicesQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("indices".to_owned(), self.indices.to_json());
-        d.insert("query".to_owned(), self.query.to_json());
-        optional_add!(self, d, no_match_query);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for IndicesQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("indices".to_owned(), self.indices.to_json());
+//         d.insert("query".to_owned(), self.query.to_json());
+//         optional_add!(self, d, no_match_query);
+//         Json::Object(d)
+//     }
+// }
 
 /// Options for the `no_match_query` option of IndicesQuery
 #[derive(Debug)]
@@ -303,12 +290,13 @@ pub enum NoMatchQuery {
 
 from_exp!(Query, NoMatchQuery, from, NoMatchQuery::Query(from));
 
-impl ToJson for NoMatchQuery {
-    fn to_json(&self) -> Json {
-        match self {
-            &NoMatchQuery::None => "none".to_json(),
-            &NoMatchQuery::All => "all".to_json(),
-            &NoMatchQuery::Query(ref q) => q.to_json()
-        }
-    }
-}
+// TODO - deprecated
+// impl ToJson for NoMatchQuery {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &NoMatchQuery::None => "none".to_json(),
+//             &NoMatchQuery::All => "all".to_json(),
+//             &NoMatchQuery::Query(ref q) => q.to_json()
+//         }
+//     }
+// }
