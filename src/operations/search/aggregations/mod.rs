@@ -500,49 +500,6 @@ impl <'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
 //     }
 // }
 
-// // Range result objects
-
-// #[derive(Debug)]
-// pub struct RangeBucketResult {
-//     pub from:      Option<JsonVal>,
-//     pub to:        Option<JsonVal>,
-//     pub doc_count: u64,
-//     pub aggs:      Option<AggregationsResult>
-// }
-
-// impl RangeBucketResult {
-//     fn from(from: &Json, aggs: &Option<Aggregations>) -> RangeBucketResult {
-//         RangeBucketResult {
-//             from:      from.find("from").and_then(|from| Some(from.into())),
-//             to:        from.find("to").and_then(|to| Some(to.into())),
-//             doc_count: get_json_u64!(from, "doc_count"),
-//             aggs:      extract_aggs!(from, aggs)
-//         }
-//     }
-
-//     add_aggs_ref!();
-// }
-
-// #[derive(Debug)]
-// pub struct RangeResult {
-//     pub buckets: HashMap<String, RangeBucketResult>,
-// }
-
-// impl RangeResult {
-//     fn from(from: &Json, aggs: &Option<Aggregations>) -> RangeResult {
-//         let bucket_obj = get_json_object!(from, "buckets");
-//         let mut buckets = HashMap::with_capacity(bucket_obj.len());
-
-//         for (k, v) in bucket_obj.into_iter() {
-//             buckets.insert(k.clone(), RangeBucketResult::from(v, aggs));
-//         }
-
-//         RangeResult {
-//             buckets: buckets
-//         }
-//     }
-// }
-
 // // Date range result objects
 
 // #[derive(Debug)]

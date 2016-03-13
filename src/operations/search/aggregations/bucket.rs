@@ -315,20 +315,19 @@ fos_bucket_agg!(Terms);
 // Range aggs and dependencies
 
 /// A specific range, there will be many of these making up a range aggregation
-#[derive(Debug)]
+#[derive(Debug, Default, Serialize)]
 pub struct RangeInst<'a> {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     from: Option<JsonVal>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     to:   Option<JsonVal>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     key:  Option<&'a str>
 }
 
 impl<'a> RangeInst<'a> {
-    pub fn new() -> RangeInst<'a> {
-        RangeInst {
-            from: None,
-            to:   None,
-            key:  None
-        }
+    pub fn new() -> Self {
+        Default::default()
     }
 
     add_field!(with_from, from, JsonVal);
@@ -336,30 +335,44 @@ impl<'a> RangeInst<'a> {
     add_field!(with_key, key, &'a str);
 }
 
-// TODO - deprecated
-// impl<'a> ToJson for RangeInst<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
+/// Range aggregations
+///
+/// The keyed option will always be used.
+///
+/// https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-range-aggregation.html
+#[derive(Debug)]
+pub struct Range<'a>(Agg<'a, RangeInner<'a>>);
 
-//         optional_add!(self, d, from);
-//         optional_add!(self, d, to);
-//         optional_add!(self, d, key);
+#[derive(Debug, Serialize)]
+pub struct RangeInner<'a> {
+    keyed: bool,
+    ranges: Vec<RangeInst<'a>>
+}
 
-//         Json::Object(d)
-//     }
-// }
+impl<'a> Range<'a> {
+    pub fn with_keyed<B: Into<bool>>(mut self, keyed: B) -> Self {
+        self.0.extra.keyed = keyed.into();
+        self
+    }
 
-// /// Range aggregations
-// ///
-// /// The keyed option will always be used.
-// ///
-// /// https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-range-aggregation.html
-// #[derive(Debug)]
-// pub struct Range<'a> {
-//     field: FieldOrScript<'a>,
-//     keyed: bool,
-//     ranges: Vec<RangeInst<'a>>
-// }
+    pub fn with_ranges<R>(mut self, ranges: R) -> Self
+        where R: Into<Vec<RangeInst<'a>>> {
+
+        self.0.extra.ranges = ranges.into();
+        self
+    }
+}
+
+impl<'a> Default for RangeInner<'a> {
+    fn default() -> Self {
+        RangeInner {
+            keyed: true,
+            ranges: Default::default()
+        }
+    }
+}
+
+fos_bucket_agg!(Range);
 
 // impl<'a> Range<'a> {
 //     pub fn new<FOS: Into<FieldOrScript<'a>>>(field: FOS,
@@ -753,7 +766,7 @@ pub enum BucketAggregation<'a> {
     ReverseNested(ReverseNested<'a>),
     Children(Children<'a>),
     Terms(Terms<'a>),
-    // Range(Range<'a>),
+    Range(Range<'a>),
     // DateRange(DateRange<'a>),
     // Histogram(Histogram<'a>),
     // DateHistogram(DateHistogram<'a>),
@@ -773,6 +786,7 @@ impl<'a> BucketAggregation<'a> {
             &ReverseNested(_) => "reverse_nested",
             &Children(_) => "children",
             &Terms(_) => "terms",
+            &Range(_) => "range",
         }
     }
 }
@@ -789,7 +803,8 @@ impl<'a> Serialize for BucketAggregation<'a> {
             &Nested(ref n) => n.serialize(serializer),
             &ReverseNested(ref r) => r.serialize(serializer),
             &Children(ref c) => c.serialize(serializer),
-            &Terms(ref t) => t.serialize(serializer)
+            &Terms(ref t) => t.serialize(serializer),
+            &Range(ref r) => r.serialize(serializer)
         }
     }
 }
@@ -804,7 +819,8 @@ pub enum BucketAggregationResult {
     Nested(NestedResult),
     ReverseNested(ReverseNestedResult),
     Children(ChildrenResult),
-    Terms(TermsResult)
+    Terms(TermsResult),
+    Range(RangeResult)
 }
 
 impl BucketAggregationResult {
@@ -838,9 +854,9 @@ impl BucketAggregationResult {
             &BucketAggregation::Terms(_) => {
                 BucketAggregationResult::Terms(try!(TermsResult::from(json, aggs)))
             },
-            // &BucketAggregation::Range(_) => {
-            //     AggregationResult::Range(RangeResult::from(json, aggs))
-            // },
+            &BucketAggregation::Range(_) => {
+                BucketAggregationResult::Range(try!(RangeResult::from(json, aggs)))
+            },
             // &BucketAggregation::DateRange(_) => {
             //     AggregationResult::DateRange(DateRangeResult::from(json, aggs))
             // },
@@ -871,13 +887,13 @@ macro_rules! bucket_agg_as {
 impl AggregationResult {
     bucket_agg_as!(as_global, Global, GlobalResult);
     bucket_agg_as!(as_filter, Filter, FilterResult);
-    // agg_as!(as_filters, Filters, FiltersResult);
-    // agg_as!(as_missing, Missing, MissingResult);
-    // agg_as!(as_nested, Nested, NestedResult);
-    // agg_as!(as_reverse_nested, ReverseNested, ReverseNestedResult);
-    // agg_as!(as_children, Children, ChildrenResult);
+    bucket_agg_as!(as_filters, Filters, FiltersResult);
+    bucket_agg_as!(as_missing, Missing, MissingResult);
+    bucket_agg_as!(as_nested, Nested, NestedResult);
+    bucket_agg_as!(as_reverse_nested, ReverseNested, ReverseNestedResult);
+    bucket_agg_as!(as_children, Children, ChildrenResult);
     bucket_agg_as!(as_terms, Terms, TermsResult);
-    // agg_as!(as_range, Range, RangeResult);
+    bucket_agg_as!(as_range, Range, RangeResult);
     // agg_as!(as_date_range, DateRange, DateRangeResult);
     // agg_as!(as_histogram, Histogram, HistogramResult);
     // agg_as!(as_date_histogram, DateHistogram, DateHistogramResult);
@@ -1122,6 +1138,49 @@ impl TermsBucketResult {
     }
 
     add_aggs_ref!();
+}
+
+// Range result objects
+
+#[derive(Debug)]
+pub struct RangeBucketResult {
+    pub from:      Option<JsonVal>,
+    pub to:        Option<JsonVal>,
+    pub doc_count: u64,
+    pub aggs:      Option<AggregationsResult>
+}
+
+impl RangeBucketResult {
+    fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        Ok(RangeBucketResult {
+            from:      from.find("from").and_then(|from| Some(from.into())),
+            to:        from.find("to").and_then(|to| Some(to.into())),
+            doc_count: from_json!(from, "doc_count", as_u64),
+            aggs:      extract_aggs!(from, aggs)
+        })
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
+pub struct RangeResult {
+    pub buckets: HashMap<String, RangeBucketResult>,
+}
+
+impl RangeResult {
+    fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        let bucket_obj = get_json_object!(from, "buckets");
+        let mut buckets = HashMap::with_capacity(bucket_obj.len());
+
+        for (k, v) in bucket_obj.into_iter() {
+            buckets.insert(k.clone(), try!(RangeBucketResult::from(v, aggs)));
+        }
+
+        Ok(RangeResult {
+            buckets: buckets
+        })
+    }
 }
 
 #[cfg(test)]
