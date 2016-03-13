@@ -500,50 +500,6 @@ impl <'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
 //     }
 // }
 
-// // Date range result objects
-
-// #[derive(Debug)]
-// pub struct DateRangeBucketResult {
-//     pub from:           Option<f64>,
-//     pub from_as_string: Option<String>,
-//     pub to:             Option<f64>,
-//     pub to_as_string:   Option<String>,
-//     pub doc_count:      u64,
-//     pub aggs:           Option<AggregationsResult>
-// }
-
-// impl DateRangeBucketResult {
-//     fn from(from: &Json, aggs: &Option<Aggregations>) -> DateRangeBucketResult {
-//         DateRangeBucketResult {
-//             from:           optional_json_f64!(from, "from"),
-//             from_as_string: optional_json_string!(from, "from_as_string"),
-//             to:             optional_json_f64!(from, "to"),
-//             to_as_string:   optional_json_string!(from, "to_as_string"),
-//             doc_count:      get_json_u64!(from, "doc_count"),
-//             aggs:           extract_aggs!(from, aggs)
-//         }
-//     }
-
-//     add_aggs_ref!();
-// }
-
-// #[derive(Debug)]
-// pub struct DateRangeResult {
-//     pub buckets: Vec<DateRangeBucketResult>
-// }
-
-// impl DateRangeResult {
-//     fn from(from: &Json, aggs: &Option<Aggregations>) -> DateRangeResult {
-//         DateRangeResult {
-//             buckets: from.find("buckets").expect("No buckets")
-//                 .as_array().expect("Not an array")
-//                 .iter().map(|bucket| {
-//                     DateRangeBucketResult::from(bucket, aggs)
-//                 }).collect()
-//         }
-//     }
-// }
-
 // /// Used for histogram results
 // #[derive(Debug)]
 // pub struct HistogramBucketResult {

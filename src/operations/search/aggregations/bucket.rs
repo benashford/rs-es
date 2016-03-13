@@ -374,97 +374,44 @@ impl<'a> Default for RangeInner<'a> {
 
 fos_bucket_agg!(Range);
 
-// impl<'a> Range<'a> {
-//     pub fn new<FOS: Into<FieldOrScript<'a>>>(field: FOS,
-//                                              ranges: Vec<RangeInst<'a>>) -> Range<'a> {
-//         Range {
-//             field:  field.into(),
-//             keyed:  true,
-//             ranges: ranges
-//         }
-//     }
-
-//     pub fn inst() -> RangeInst<'a> {
-//         RangeInst::new()
-//     }
-// }
-
-// impl<'a> ToJson for Range<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut json = BTreeMap::new();
-//         self.field.add_to_object(&mut json);
-//         json.insert("keyed".to_owned(), Json::Boolean(self.keyed));
-//         json.insert("ranges".to_owned(), self.ranges.to_json());
-//         Json::Object(json)
-//     }
-// }
-
-// bucket_agg!(Range);
-
 /// A specific element of a range for a `DateRange` aggregation
-#[derive(Debug)]
+#[derive(Debug, Default, Serialize)]
 pub struct DateRangeInst<'a> {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     from: Option<&'a str>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     to:   Option<&'a str>
 }
 
 impl<'a> DateRangeInst<'a> {
     pub fn new() -> DateRangeInst<'a> {
-        DateRangeInst {
-            from: None,
-            to:   None
-        }
+        Default::default()
     }
 
     add_field!(with_from, from, &'a str);
     add_field!(with_to, to, &'a str);
 }
 
-// TODO - deprecated
-// impl<'a> ToJson for DateRangeInst<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         optional_add!(self, d, from);
-//         optional_add!(self, d, to);
+/// Date range aggregation.  See: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-daterange-aggregation.html
+#[derive(Debug)]
+pub struct DateRange<'a>(Agg<'a, DateRangeInner<'a>>);
 
-//         Json::Object(d)
-//     }
-// }
+#[derive(Debug, Default, Serialize)]
+pub struct DateRangeInner<'a> {
+    format: Option<&'a str>,
+    ranges: Vec<DateRangeInst<'a>>
+}
 
-// /// Date range aggregation.  See: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-daterange-aggregation.html
-// #[derive(Debug)]
-// pub struct DateRange<'a> {
-//     field: FieldOrScript<'a>,
-//     format: Option<&'a str>,
-//     ranges: Vec<DateRangeInst<'a>>
-// }
+impl<'a> DateRange<'a> {
+    add_extra_option!(with_format, format, &'a str);
 
-// impl<'a> DateRange<'a> {
-//     pub fn new<FOS: Into<FieldOrScript<'a>>>(field: FOS,
-//                                              ranges: Vec<DateRangeInst<'a>>) -> DateRange<'a> {
-//         DateRange {
-//             field: field.into(),
-//             format: None,
-//             ranges: ranges
-//         }
-//     }
+    fn with_ranges<A: Into<Vec<DateRangeInst<'a>>>>(mut self, ranges: A) -> Self {
+        self.0.extra.ranges = ranges.into();
+        self
+    }
+}
 
-//     pub fn inst() -> DateRangeInst<'a> {
-//         DateRangeInst::new()
-//     }
-// }
-
-// impl<'a> ToJson for DateRange<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut json = BTreeMap::new();
-//         self.field.add_to_object(&mut json);
-//         optional_add!(self, json, format);
-//         json.insert("ranges".to_owned(), self.ranges.to_json());
-//         Json::Object(json)
-//     }
-// }
-
-// bucket_agg!(DateRange);
+fos_bucket_agg!(DateRange);
 
 /// Histogram aggregation.
 #[derive(Debug)]
@@ -767,7 +714,7 @@ pub enum BucketAggregation<'a> {
     Children(Children<'a>),
     Terms(Terms<'a>),
     Range(Range<'a>),
-    // DateRange(DateRange<'a>),
+    DateRange(DateRange<'a>),
     // Histogram(Histogram<'a>),
     // DateHistogram(DateHistogram<'a>),
     // GeoDistance(GeoDistance<'a>),
@@ -787,6 +734,7 @@ impl<'a> BucketAggregation<'a> {
             &Children(_) => "children",
             &Terms(_) => "terms",
             &Range(_) => "range",
+            &DateRange(_) => "date_range"
         }
     }
 }
@@ -804,7 +752,8 @@ impl<'a> Serialize for BucketAggregation<'a> {
             &ReverseNested(ref r) => r.serialize(serializer),
             &Children(ref c) => c.serialize(serializer),
             &Terms(ref t) => t.serialize(serializer),
-            &Range(ref r) => r.serialize(serializer)
+            &Range(ref r) => r.serialize(serializer),
+            &DateRange(ref d) => d.serialize(serializer)
         }
     }
 }
@@ -820,7 +769,8 @@ pub enum BucketAggregationResult {
     ReverseNested(ReverseNestedResult),
     Children(ChildrenResult),
     Terms(TermsResult),
-    Range(RangeResult)
+    Range(RangeResult),
+    DateRange(DateRangeResult)
 }
 
 impl BucketAggregationResult {
@@ -857,9 +807,9 @@ impl BucketAggregationResult {
             &BucketAggregation::Range(_) => {
                 BucketAggregationResult::Range(try!(RangeResult::from(json, aggs)))
             },
-            // &BucketAggregation::DateRange(_) => {
-            //     AggregationResult::DateRange(DateRangeResult::from(json, aggs))
-            // },
+            &BucketAggregation::DateRange(_) => {
+                BucketAggregationResult::DateRange(try!(DateRangeResult::from(json, aggs)))
+            },
             // &BucketAggregation::Histogram(_) => {
             //     AggregationResult::Histogram(HistogramResult::from(json, aggs))
             // },
@@ -894,7 +844,7 @@ impl AggregationResult {
     bucket_agg_as!(as_children, Children, ChildrenResult);
     bucket_agg_as!(as_terms, Terms, TermsResult);
     bucket_agg_as!(as_range, Range, RangeResult);
-    // agg_as!(as_date_range, DateRange, DateRangeResult);
+    bucket_agg_as!(as_date_range, DateRange, DateRangeResult);
     // agg_as!(as_histogram, Histogram, HistogramResult);
     // agg_as!(as_date_histogram, DateHistogram, DateHistogramResult);
     // agg_as!(as_geo_distance, GeoDistance, GeoDistanceResult);
@@ -921,6 +871,20 @@ macro_rules! return_error {
 macro_rules! return_no_field {
     ($f:expr) => {
         return_error!(format!("No valid field: {}", $f))
+    }
+}
+
+macro_rules! optional_json {
+    ($j:ident, $f:expr, $a:ident) => {
+        match $j.find($f) {
+            Some(val) => {
+                match val.$a() {
+                    Some(field_val) => Some(field_val),
+                    None => return_no_field!($f)
+                }
+            },
+            None => None
+        }
     }
 }
 
@@ -1179,6 +1143,53 @@ impl RangeResult {
 
         Ok(RangeResult {
             buckets: buckets
+        })
+    }
+}
+
+// Date range result objects
+
+#[derive(Debug)]
+pub struct DateRangeBucketResult {
+    pub from:           Option<f64>,
+    pub from_as_string: Option<String>,
+    pub to:             Option<f64>,
+    pub to_as_string:   Option<String>,
+    pub doc_count:      u64,
+    pub aggs:           Option<AggregationsResult>
+}
+
+impl DateRangeBucketResult {
+    fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        Ok(DateRangeBucketResult {
+            from:           optional_json!(from, "from", as_f64),
+            from_as_string: optional_json!(from, "from_as_string", as_string).map(|s| s.to_owned()),
+            to:             optional_json!(from, "to", as_f64),
+            to_as_string:   optional_json!(from, "to_as_string", as_string).map(|s| s.to_owned()),
+            doc_count:      from_json!(from, "doc_count", as_u64),
+            aggs:           extract_aggs!(from, aggs)
+        })
+    }
+
+    add_aggs_ref!();
+}
+
+#[derive(Debug)]
+pub struct DateRangeResult {
+    pub buckets: Vec<DateRangeBucketResult>
+}
+
+impl DateRangeResult {
+    fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        Ok(DateRangeResult {
+            buckets: {
+                let raw_buckets = from_json!(from, "buckets", as_array);
+                let mut buckets = Vec::with_capacity(raw_buckets.len());
+                for bucket in raw_buckets.iter() {
+                    buckets.push(try!(DateRangeBucketResult::from(bucket, aggs)))
+                }
+                buckets
+            }
         })
     }
 }
