@@ -23,8 +23,6 @@ use std::fmt::Debug;
 
 use hyper::status::StatusCode;
 
-use rustc_serialize::Decodable;
-
 use serde::de::Deserialize;
 use serde::ser::{Serialize, Serializer};
 use serde_json::Value;

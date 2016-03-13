@@ -24,6 +24,7 @@ use serde_json::{to_value, Value};
 
 use ::error::EsError;
 use ::json::ShouldSkip;
+use ::query;
 use ::units::{JsonVal, OneOrMany};
 
 use super::{Aggregation,
@@ -99,29 +100,19 @@ impl<'a> Global<'a> {
 
 bucket_agg!(Global);
 
-// /// Filter aggregation
-// #[derive(Debug)]
-// pub struct Filter<'a> {
-//     // TODO - Query is now an enum with a `Box` it might be simpler, with little
-//     // side-effects to own it instead
-//     filter: &'a query::Query
-// }
+/// Filter aggregation
+// TODO - Query is now an enum with a `Box` it might be simpler, with little
+// side-effects to own it instead
+#[derive(Debug, Serialize)]
+pub struct Filter<'a>(&'a query::Query);
 
-// impl<'a> Filter<'a> {
-//     pub fn new(filter: &'a query::Query) -> Filter<'a> {
-//         Filter {
-//             filter: filter
-//         }
-//     }
-// }
+impl<'a> Filter<'a> {
+    pub fn new(filter: &'a query::Query) -> Filter<'a> {
+        Filter(filter)
+    }
+}
 
-// impl<'a> ToJson for Filter<'a> {
-//     fn to_json(&self) -> Json {
-//         self.filter.to_json()
-//     }
-// }
-
-// bucket_agg!(Filter);
+bucket_agg!(Filter);
 
 // /// Filters aggregation
 // #[derive(Debug)]
@@ -808,7 +799,7 @@ pub enum Interval {
 // TODO - make sure all these are uncommented
 pub enum BucketAggregation<'a> {
     Global(Global<'a>),
-    // Filter(Filter<'a>),
+    Filter(Filter<'a>),
     // Filters(Filters<'a>),
     // Missing(Missing<'a>),
     // Nested(Nested<'a>),
@@ -828,7 +819,8 @@ impl<'a> BucketAggregation<'a> {
         use self::BucketAggregation::*;
         match self {
             &Global(_) => "global",
-            &Terms(_) => "terms"
+            &Filter(_) => "filter",
+            &Terms(_) => "terms",
         }
     }
 }
@@ -839,6 +831,7 @@ impl<'a> Serialize for BucketAggregation<'a> {
         use self::BucketAggregation::*;
         match self {
             &Global(ref g) => g.serialize(serializer),
+            &Filter(ref f) => f.serialize(serializer),
             &Terms(ref t) => t.serialize(serializer)
         }
     }
@@ -848,6 +841,7 @@ impl<'a> Serialize for BucketAggregation<'a> {
 #[derive(Debug)]
 pub enum BucketAggregationResult {
     Global(GlobalResult),
+    Filter(FilterResult),
     Terms(TermsResult)
 }
 
@@ -860,9 +854,9 @@ impl BucketAggregationResult {
             &Global(_) => {
                 BucketAggregationResult::Global(try!(GlobalResult::from(json, aggs)))
             },
-            // &BucketAggregation::Filter(_) => {
-            //     AggregationResult::Filter(FilterResult::from(json, aggs))
-            // },
+            &BucketAggregation::Filter(_) => {
+                BucketAggregationResult::Filter(try!(FilterResult::from(json, aggs)))
+            },
             // &BucketAggregation::Filters(_) => {
             //     AggregationResult::Filters(FiltersResult::from(json, aggs))
             // },
@@ -914,7 +908,7 @@ macro_rules! bucket_agg_as {
 
 impl AggregationResult {
     bucket_agg_as!(as_global, Global, GlobalResult);
-    // agg_as!(as_filter, Filter, FilterResult);
+    bucket_agg_as!(as_filter, Filter, FilterResult);
     // agg_as!(as_filters, Filters, FiltersResult);
     // agg_as!(as_missing, Missing, MissingResult);
     // agg_as!(as_nested, Nested, NestedResult);
@@ -993,6 +987,24 @@ impl GlobalResult {
         Ok(GlobalResult {
             doc_count: from_json!(json, "doc_count", as_u64),
             aggs: extract_aggs!(json, aggs)
+        })
+    }
+
+    add_aggs_ref!();
+}
+
+/// Filter result
+#[derive(Debug)]
+pub struct FilterResult {
+    pub doc_count: u64,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl FilterResult {
+    fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
+        Ok(FilterResult {
+            doc_count: from_json!(from, "doc_count", as_u64),
+            aggs: extract_aggs!(from, aggs)
         })
     }
 

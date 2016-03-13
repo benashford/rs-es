@@ -500,25 +500,6 @@ impl <'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
 //     }
 // }
 
-// Buckets result
-
-// #[derive(Debug)]
-// pub struct FilterResult {
-//     pub doc_count: u64,
-//     pub aggs: Option<AggregationsResult>
-// }
-
-// impl FilterResult {
-//     fn from(from: &Json, aggs: &Option<Aggregations>) -> FilterResult {
-//         FilterResult {
-//             doc_count: get_json_u64!(from, "doc_count"),
-//             aggs: extract_aggs!(from, aggs)
-//         }
-//     }
-
-//     add_aggs_ref!();
-// }
-
 // #[derive(Debug)]
 // pub struct FiltersBucketResult {
 //     pub doc_count: u64,
