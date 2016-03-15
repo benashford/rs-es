@@ -35,7 +35,7 @@ use serde_json::{to_value, Value};
 
 use ::error::EsError;
 use ::query;
-use ::units::{DistanceType, DistanceUnit, Duration, GeoBox, JsonVal, Location};
+use ::units::{DistanceType, DistanceUnit};
 
 use self::bucket::BucketAggregationResult;
 use self::metrics::MetricsAggregationResult;
@@ -496,41 +496,6 @@ impl <'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
 //     fn from(from: &'a Json) -> ScriptedMetricResult {
 //         ScriptedMetricResult {
 //             value: JsonVal::from(from.find("value").expect("No 'value' field"))
-//         }
-//     }
-// }
-
-// #[derive(Debug)]
-// pub struct GeoHashBucketResult {
-//     pub key:       String,
-//     pub doc_count: u64,
-//     pub aggs:      Option<AggregationsResult>
-// }
-
-// impl GeoHashBucketResult {
-//     fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoHashBucketResult {
-//         GeoHashBucketResult {
-//             key: get_json_string!(from, "key"),
-//             doc_count: get_json_u64!(from, "doc_count"),
-//             aggs: extract_aggs!(from, aggs)
-//         }
-//     }
-
-//     add_aggs_ref!();
-// }
-
-// #[derive(Debug)]
-// pub struct GeoHashResult {
-//     pub buckets: Vec<GeoHashBucketResult>
-// }
-
-// impl GeoHashResult {
-//     fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoHashResult {
-//         GeoHashResult {
-//             buckets: from.find("buckets").expect("No buckets")
-//                 .as_array().expect("Not an array")
-//                 .iter().map(|bucket| GeoHashBucketResult::from(bucket, aggs))
-//                 .collect()
 //         }
 //     }
 // }
