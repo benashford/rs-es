@@ -108,67 +108,42 @@ impl<'a> Percentiles<'a> {
     add_extra_option!(with_compression, compression, u64);
 }
 
-// metrics_agg!(Percentiles);
+/// Percentile Ranks aggregation
+#[derive(Debug)]
+pub struct PercentileRanks<'a>(Agg<'a, PercentileRanksExtra>);
+metrics_agg!(PercentileRanks);
 
-// /// Percentile Ranks aggregation
-// #[derive(Debug)]
-// pub struct PercentileRanks<'a> {
-//     fos:    FieldOrScript<'a>,
-//     values: Vec<f64>
-// }
+#[derive(Debug, Default, Serialize)]
+pub struct PercentileRanksExtra {
+    values: Vec<f64>
+}
 
-// impl<'a> PercentileRanks<'a> {
-//     pub fn new<F: Into<FieldOrScript<'a>>>(fos: F, vals: Vec<f64>) -> PercentileRanks<'a> {
-//         PercentileRanks {
-//             fos:    fos.into(),
-//             values: vals
-//         }
-//     }
-// }
+impl<'a> PercentileRanks<'a> {
+    pub fn with_values<A>(mut self, values: A) -> Self
+        where A: Into<Vec<f64>> {
 
-// impl<'a> ToJson for PercentileRanks<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         self.fos.add_to_object(&mut d);
-//         d.insert("values".to_owned(), self.values.to_json());
-//         Json::Object(d)
-//     }
-// }
+        self.0.extra.values = values.into();
+        self
+    }
+}
 
-// metrics_agg!(PercentileRanks);
+/// Cardinality aggregation
+#[derive(Debug)]
+pub struct Cardinality<'a>(Agg<'a, CardinalityExtra>);
+metrics_agg!(Cardinality);
 
-// /// Cardinality aggregation
-// #[derive(Debug)]
-// pub struct Cardinality<'a> {
-//     fos:                 FieldOrScript<'a>,
-//     precision_threshold: Option<u64>,
-//     rehash:              Option<bool>
-// }
+#[derive(Debug, Default, Serialize)]
+pub struct CardinalityExtra {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    precision_threshold: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    rehash:              Option<bool>
+}
 
-// impl<'a> Cardinality<'a> {
-//     pub fn new<F: Into<FieldOrScript<'a>>>(fos: F) -> Cardinality<'a> {
-//         Cardinality {
-//             fos:                 fos.into(),
-//             precision_threshold: None,
-//             rehash:              None
-//         }
-//     }
-
-//     add_field!(with_precision_threshold, precision_threshold, u64);
-//     add_field!(with_rehash, rehash, bool);
-// }
-
-// impl<'a> ToJson for Cardinality<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         self.fos.add_to_object(&mut d);
-//         optional_add!(self, d, precision_threshold);
-//         optional_add!(self, d, rehash);
-//         Json::Object(d)
-//     }
-// }
-
-// metrics_agg!(Cardinality);
+impl<'a> Cardinality<'a> {
+    add_extra_option!(with_precision_threshold, precision_threshold, u64);
+    add_extra_option!(with_rehash, rehash, bool);
+}
 
 // /// Geo Bounds aggregation
 // #[derive(Debug)]
@@ -290,8 +265,8 @@ pub enum MetricsAggregation<'a> {
     ExtendedStats(ExtendedStats<'a>),
     ValueCount(ValueCount<'a>),
     Percentiles(Percentiles<'a>),
-    // PercentileRanks(PercentileRanks<'a>),
-    // Cardinality(Cardinality<'a>),
+    PercentileRanks(PercentileRanks<'a>),
+    Cardinality(Cardinality<'a>),
     // GeoBounds(GeoBounds<'a>),
     // ScriptedMetric(ScriptedMetric<'a>)
 }
@@ -307,7 +282,9 @@ impl<'a> MetricsAggregation<'a> {
             &Stats(_) => "stats",
             &ExtendedStats(_) => "extended_stats",
             &ValueCount(_) => "value_count",
-            &Percentiles(_) => "percentiles"
+            &Percentiles(_) => "percentiles",
+            &PercentileRanks(_) => "percentile_ranks",
+            &Cardinality(_) => "cardinality"
         }
     }
 }
@@ -324,7 +301,9 @@ impl<'a> Serialize for MetricsAggregation<'a> {
             &Stats(ref stats) => stats.serialize(serializer),
             &ExtendedStats(ref extended_stats) => extended_stats.serialize(serializer),
             &ValueCount(ref value_count) => value_count.serialize(serializer),
-            &Percentiles(ref percentiles) => percentiles.serialize(serializer)
+            &Percentiles(ref percentiles) => percentiles.serialize(serializer),
+            &PercentileRanks(ref percentile_ranks) => percentile_ranks.serialize(serializer),
+            &Cardinality(ref cardinality) => cardinality.serialize(serializer)
         }
     }
 }
@@ -340,7 +319,9 @@ pub enum MetricsAggregationResult {
     Stats(StatsResult),
     ExtendedStats(ExtendedStatsResult),
     ValueCount(ValueCountResult),
-    Percentiles(PercentilesResult)
+    Percentiles(PercentilesResult),
+    PercentileRanks(PercentileRanksResult),
+    Cardinality(CardinalityResult)
 }
 
 impl MetricsAggregationResult {
@@ -373,12 +354,12 @@ impl MetricsAggregationResult {
             &Percentiles(_) => {
                 MetricsAggregationResult::Percentiles(try!(from_value(json)))
             },
-            // &MetricsAggregation::PercentileRanks(_) => {
-            //     AggregationResult::PercentileRanks(PercentileRanksResult::from(json))
-            // },
-            // &MetricsAggregation::Cardinality(_) => {
-            //     AggregationResult::Cardinality(CardinalityResult::from(json))
-            // },
+            &PercentileRanks(_) => {
+                MetricsAggregationResult::PercentileRanks(try!(from_value(json)))
+            },
+            &Cardinality(_) => {
+                MetricsAggregationResult::Cardinality(try!(from_value(json)))
+            },
             // &MetricsAggregation::GeoBounds(_) => {
             //     AggregationResult::GeoBounds(GeoBoundsResult::from(json))
             // },
@@ -404,8 +385,8 @@ impl AggregationResult {
     metrics_agg_as!(as_extended_stats, ExtendedStats, ExtendedStatsResult);
     metrics_agg_as!(as_value_count, ValueCount, ValueCountResult);
     metrics_agg_as!(as_percentiles, Percentiles, PercentilesResult);
-    // agg_as!(as_percentile_ranks, PercentileRanks, PercentileRanksResult);
-    // agg_as!(as_cardinality, Cardinality, CardinalityResult);
+    metrics_agg_as!(as_percentile_ranks, PercentileRanks, PercentileRanksResult);
+    metrics_agg_as!(as_cardinality, Cardinality, CardinalityResult);
     // agg_as!(as_geo_bounds, GeoBounds, GeoBoundsResult);
     // agg_as!(as_scripted_metric, ScriptedMetric, ScriptedMetricResult);
 }
@@ -470,6 +451,16 @@ pub struct ValueCountResult {
 #[derive(Debug, Deserialize)]
 pub struct PercentilesResult {
     pub values: HashMap<String, f64>
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PercentileRanksResult {
+    pub values: HashMap<String, f64>
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CardinalityResult {
+    pub value: u64
 }
 
 #[cfg(test)]
