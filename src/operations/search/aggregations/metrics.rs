@@ -56,17 +56,15 @@ metrics_agg!(Min);
 pub struct Max<'a>(Agg<'a, NoOuter>);
 metrics_agg!(Max);
 
-// /// Sum aggregation
-// #[derive(Debug)]
-// pub struct Sum<'a>(FieldOrScript<'a>);
+/// Sum aggregation
+#[derive(Debug)]
+pub struct Sum<'a>(Agg<'a, NoOuter>);
+metrics_agg!(Sum);
 
-// field_or_script_new!(Sum);
-// field_or_script_to_json!(Sum);
-// metrics_agg!(Sum);
-
-// /// Avg aggregation
-// #[derive(Debug)]
-// pub struct Avg<'a>(FieldOrScript<'a>);
+/// Avg aggregation
+#[derive(Debug)]
+pub struct Avg<'a>(Agg<'a, NoOuter>);
+metrics_agg!(Avg);
 
 // field_or_script_new!(Avg);
 // field_or_script_to_json!(Avg);
@@ -312,8 +310,8 @@ impl<'a> ScriptedMetric<'a> {
 pub enum MetricsAggregation<'a> {
     Min(Min<'a>),
     Max(Max<'a>),
-    // Sum(Sum<'a>),
-    // Avg(Avg<'a>),
+    Sum(Sum<'a>),
+    Avg(Avg<'a>),
     // Stats(Stats<'a>),
     // ExtendedStats(ExtendedStats<'a>),
     // ValueCount(ValueCount<'a>),
@@ -330,6 +328,8 @@ impl<'a> MetricsAggregation<'a> {
         match self {
             &Min(_) => "min",
             &Max(_) => "max",
+            &Sum(_) => "sum",
+            &Avg(_) => "avg"
         }
     }
 }
@@ -340,7 +340,9 @@ impl<'a> Serialize for MetricsAggregation<'a> {
         use self::MetricsAggregation::*;
         match self {
             &Min(ref min) => min.serialize(serializer),
-            &Max(ref max) => max.serialize(serializer)
+            &Max(ref max) => max.serialize(serializer),
+            &Sum(ref sum) => sum.serialize(serializer),
+            &Avg(ref avg) => avg.serialize(serializer)
         }
     }
 }
@@ -350,7 +352,9 @@ impl<'a> Serialize for MetricsAggregation<'a> {
 #[derive(Debug)]
 pub enum MetricsAggregationResult {
     Min(MinResult),
-    Max(MaxResult)
+    Max(MaxResult),
+    Sum(SumResult),
+    Avg(AvgResult)
 }
 
 impl MetricsAggregationResult {
@@ -365,15 +369,12 @@ impl MetricsAggregationResult {
             &Max(_) => {
                 MetricsAggregationResult::Max(try!(from_value(json)))
             },
-            // &MetricsAggregation::Max(_) => {
-            //     AggregationResult::Max(MaxResult::from(json))
-            // },
-            // &MetricsAggregation::Sum(_) => {
-            //     AggregationResult::Sum(SumResult::from(json))
-            // },
-            // &MetricsAggregation::Avg(_) => {
-            //     AggregationResult::Avg(AvgResult::from(json))
-            // },
+            &Sum(_) => {
+                MetricsAggregationResult::Sum(try!(from_value(json)))
+            },
+            &Avg(_) => {
+                MetricsAggregationResult::Avg(try!(from_value(json)))
+            },
             // &MetricsAggregation::Stats(_) => {
             //     AggregationResult::Stats(StatsResult::from(json))
             // },
@@ -411,8 +412,8 @@ macro_rules! metrics_agg_as {
 impl AggregationResult {
     metrics_agg_as!(as_min, Min, MinResult);
     metrics_agg_as!(as_max, Max, MaxResult);
-    // agg_as!(as_sum, Sum, SumResult);
-    // agg_as!(as_avg, Avg, AvgResult);
+    metrics_agg_as!(as_sum, Sum, SumResult);
+    metrics_agg_as!(as_avg, Avg, AvgResult);
     // agg_as!(as_stats, Stats, StatsResult);
     // agg_as!(as_extended_stats, ExtendedStats, ExtendedStatsResult);
     // agg_as!(as_value_count, ValueCount, ValueCountResult);
@@ -434,6 +435,16 @@ pub struct MinResult {
 #[derive(Debug, Deserialize)]
 pub struct MaxResult {
     pub value: JsonVal
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SumResult {
+    pub value: f64
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AvgResult {
+    pub value: f64
 }
 
 #[cfg(test)]

@@ -299,46 +299,9 @@ impl <'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
     }
 }
 
-// TODO - deprecated
-// impl<'a> ToJson for Aggregations<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         for (k, ref v) in self.0.iter() {
-//             d.insert((*k).to_owned(), v.to_json());
-//         }
-//         Json::Object(d)
-//     }
-// }
-
 // Result objects
 
 // Metrics result
-
-// #[derive(Debug)]
-// pub struct SumResult {
-//     pub value: f64
-// }
-
-// impl<'a> From<&'a Json> for SumResult {
-//     fn from(from: &'a Json) -> SumResult {
-//         SumResult {
-//             value: get_json_f64!(from, "value")
-//         }
-//     }
-// }
-
-// #[derive(Debug)]
-// pub struct AvgResult {
-//     pub value: f64
-// }
-
-// impl<'a> From<&'a Json> for AvgResult {
-//     fn from(from: &'a Json) -> AvgResult {
-//         AvgResult {
-//             value: get_json_f64!(from, "value")
-//         }
-//     }
-// }
 
 // #[derive(Debug)]
 // pub struct StatsResult {
@@ -532,7 +495,6 @@ fn object_to_result(aggs: &Aggregations,
                 AggregationResult::Metrics(try!(MetricsAggregationResult::from(ma, json)))
             },
             &Aggregation::Bucket(ref ba, ref aggs) => {
-                use self::bucket::BucketAggregation::*;
                 AggregationResult::Bucket(try!(BucketAggregationResult::from(ba,
                                                                              json,
                                                                              aggs)))
