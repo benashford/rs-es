@@ -26,7 +26,7 @@ use serde_json::{from_value, to_value, Value};
 use rustc_serialize::json::{Json, ToJson};
 
 use ::error::EsError;
-use ::json::NoOuter;
+use ::json::{NoOuter, ShouldSkip};
 use ::units::JsonVal;
 
 // TODO - deprecated
@@ -76,53 +76,37 @@ metrics_agg!(Stats);
 pub struct ExtendedStats<'a>(Agg<'a, NoOuter>);
 metrics_agg!(ExtendedStats);
 
-// /// Value count aggregation
-// #[derive(Debug)]
-// pub struct ValueCount<'a>(FieldOrScript<'a>);
+/// Value count aggregation
+#[derive(Debug)]
+pub struct ValueCount<'a>(Agg<'a, NoOuter>);
+metrics_agg!(ValueCount);
 
-// field_or_script_new!(ValueCount);
-// field_or_script_to_json!(ValueCount);
-// metrics_agg!(ValueCount);
+/// Percentiles aggregation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-percentile-aggregation.html
+///
+/// # Examples
+///
+/// ```
+/// use rs_es::operations::search::aggregations::metrics::Percentiles;
+///
+/// let p1 = Percentiles::field("field_name").with_compression(100u64);
+/// let p2 = Percentiles::field("field_name").with_percents(vec![10.0, 20.0]);
+/// ```
+#[derive(Debug)]
+pub struct Percentiles<'a>(Agg<'a, PercentilesExtra>);
+metrics_agg!(Percentiles);
 
-// /// Percentiles aggregation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-percentile-aggregation.html
-// ///
-// /// # Examples
-// ///
-// /// ```
-// /// use rs_es::operations::search::aggregations::Percentiles;
-// ///
-// /// let p1 = Percentiles::new("field_name").with_compression(100u64);
-// /// let p2 = Percentiles::new("field_name").with_percents(vec![10.0, 20.0]);
-// /// ```
-// #[derive(Debug)]
-// pub struct Percentiles<'a> {
-//     fos:         FieldOrScript<'a>,
-//     percents:    Option<Vec<f64>>,
-//     compression: Option<u64>
-// }
+#[derive(Debug, Default, Serialize)]
+pub struct PercentilesExtra {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    percents:    Option<Vec<f64>>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    compression: Option<u64>
+}
 
-// impl<'a> Percentiles<'a> {
-//     pub fn new<F: Into<FieldOrScript<'a>>>(fos: F) -> Percentiles<'a> {
-//         Percentiles {
-//             fos:         fos.into(),
-//             percents:    None,
-//             compression: None
-//         }
-//     }
-
-//     add_field!(with_percents, percents, Vec<f64>);
-//     add_field!(with_compression, compression, u64);
-// }
-
-// impl<'a> ToJson for Percentiles<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         self.fos.add_to_object(&mut d);
-//         optional_add!(self, d, percents);
-//         optional_add!(self, d, compression);
-//         Json::Object(d)
-//     }
-// }
+impl<'a> Percentiles<'a> {
+    add_extra_option!(with_percents, percents, Vec<f64>);
+    add_extra_option!(with_compression, compression, u64);
+}
 
 // metrics_agg!(Percentiles);
 
@@ -304,8 +288,8 @@ pub enum MetricsAggregation<'a> {
     Avg(Avg<'a>),
     Stats(Stats<'a>),
     ExtendedStats(ExtendedStats<'a>),
-    // ValueCount(ValueCount<'a>),
-    // Percentiles(Percentiles<'a>),
+    ValueCount(ValueCount<'a>),
+    Percentiles(Percentiles<'a>),
     // PercentileRanks(PercentileRanks<'a>),
     // Cardinality(Cardinality<'a>),
     // GeoBounds(GeoBounds<'a>),
@@ -322,6 +306,8 @@ impl<'a> MetricsAggregation<'a> {
             &Avg(_) => "avg",
             &Stats(_) => "stats",
             &ExtendedStats(_) => "extended_stats",
+            &ValueCount(_) => "value_count",
+            &Percentiles(_) => "percentiles"
         }
     }
 }
@@ -336,7 +322,9 @@ impl<'a> Serialize for MetricsAggregation<'a> {
             &Sum(ref sum) => sum.serialize(serializer),
             &Avg(ref avg) => avg.serialize(serializer),
             &Stats(ref stats) => stats.serialize(serializer),
-            &ExtendedStats(ref extended_stats) => extended_stats.serialize(serializer)
+            &ExtendedStats(ref extended_stats) => extended_stats.serialize(serializer),
+            &ValueCount(ref value_count) => value_count.serialize(serializer),
+            &Percentiles(ref percentiles) => percentiles.serialize(serializer)
         }
     }
 }
@@ -350,7 +338,9 @@ pub enum MetricsAggregationResult {
     Sum(SumResult),
     Avg(AvgResult),
     Stats(StatsResult),
-    ExtendedStats(ExtendedStatsResult)
+    ExtendedStats(ExtendedStatsResult),
+    ValueCount(ValueCountResult),
+    Percentiles(PercentilesResult)
 }
 
 impl MetricsAggregationResult {
@@ -377,12 +367,12 @@ impl MetricsAggregationResult {
             &ExtendedStats(_) => {
                 MetricsAggregationResult::ExtendedStats(try!(from_value(json)))
             },
-            // &MetricsAggregation::ValueCount(_) => {
-            //     AggregationResult::ValueCount(ValueCountResult::from(json))
-            // }
-            // &MetricsAggregation::Percentiles(_) => {
-            //     AggregationResult::Percentiles(PercentilesResult::from(json))
-            // },
+            &ValueCount(_) => {
+                MetricsAggregationResult::ValueCount(try!(from_value(json)))
+            }
+            &Percentiles(_) => {
+                MetricsAggregationResult::Percentiles(try!(from_value(json)))
+            },
             // &MetricsAggregation::PercentileRanks(_) => {
             //     AggregationResult::PercentileRanks(PercentileRanksResult::from(json))
             // },
@@ -412,8 +402,8 @@ impl AggregationResult {
     metrics_agg_as!(as_avg, Avg, AvgResult);
     metrics_agg_as!(as_stats, Stats, StatsResult);
     metrics_agg_as!(as_extended_stats, ExtendedStats, ExtendedStatsResult);
-    // agg_as!(as_value_count, ValueCount, ValueCountResult);
-    // agg_as!(as_percentiles, Percentiles, PercentilesResult);
+    metrics_agg_as!(as_value_count, ValueCount, ValueCountResult);
+    metrics_agg_as!(as_percentiles, Percentiles, PercentilesResult);
     // agg_as!(as_percentile_ranks, PercentileRanks, PercentileRanksResult);
     // agg_as!(as_cardinality, Cardinality, CardinalityResult);
     // agg_as!(as_geo_bounds, GeoBounds, GeoBoundsResult);
@@ -470,6 +460,16 @@ pub struct ExtendedStatsResult {
     pub variance: f64,
     pub std_deviation: f64,
     pub std_deviation_bounds: Bounds
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ValueCountResult {
+    pub value: u64
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PercentilesResult {
+    pub values: HashMap<String, f64>
 }
 
 #[cfg(test)]

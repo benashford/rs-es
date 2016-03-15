@@ -303,39 +303,6 @@ impl <'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
 // Metrics result
 
 // #[derive(Debug)]
-// pub struct ValueCountResult {
-//     pub value: u64
-// }
-
-// impl<'a> From<&'a Json> for ValueCountResult {
-//     fn from(from: &'a Json) -> ValueCountResult {
-//         ValueCountResult {
-//             value: get_json_u64!(from, "value")
-//         }
-//     }
-// }
-
-// #[derive(Debug)]
-// pub struct PercentilesResult {
-//     pub values: HashMap<String, f64>
-// }
-
-// impl<'a> From<&'a Json> for PercentilesResult {
-//     fn from(from: &'a Json) -> PercentilesResult {
-//         let val_obj = get_json_object!(from, "values");
-//         let mut vals = HashMap::with_capacity(val_obj.len());
-
-//         for (k, v) in val_obj.into_iter() {
-//             vals.insert(k.clone(), v.as_f64().expect("Not numeric value"));
-//         }
-
-//         PercentilesResult {
-//             values: vals
-//         }
-//     }
-// }
-
-// #[derive(Debug)]
 // pub struct PercentileRanksResult {
 //     pub values: HashMap<String, f64>
 // }
