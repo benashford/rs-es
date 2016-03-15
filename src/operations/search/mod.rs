@@ -23,8 +23,6 @@ use std::fmt::Debug;
 
 use hyper::status::StatusCode;
 
-use rustc_serialize::Decodable;
-
 use serde::de::Deserialize;
 use serde::ser::{Serialize, Serializer};
 use serde_json::Value;
@@ -200,24 +198,6 @@ impl ToString for SortField {
     }
 }
 
-// TODO - deprecated
-// impl ToJson for SortField {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-
-//         optional_add!(self, inner, order);
-//         optional_add!(self, inner, mode);
-//         optional_add!(self, inner, nested_path);
-//         optional_add!(self, inner, nested_filter);
-//         optional_add!(self, inner, missing);
-//         optional_add!(self, inner, unmapped_type);
-
-//         d.insert(self.field.clone(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
-
 /// Representing sort options for sort by geodistance
 // TODO - fix structure to represent reality
 #[derive(Serialize)]
@@ -362,16 +342,6 @@ impl ToString for SortBy {
     }
 }
 
-// impl ToJson for SortBy {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &SortBy::Field(ref field)   => field.to_json(),
-//             &SortBy::Distance(ref dist) => dist.to_json(),
-//             &SortBy::Script(ref scr)    => scr.to_json()
-//         }
-//     }
-// }
-
 /// A full sort clause
 pub struct Sort {
     fields: Vec<SortBy>
@@ -439,13 +409,6 @@ impl<'a> From<&'a Sort> for OptionVal {
         OptionVal(from.fields.iter().map(|f| f.to_string()).join(","))
     }
 }
-
-// TODO - deprecated
-// impl ToJson for Sort {
-//     fn to_json(&self) -> Json {
-//         self.fields.to_json()
-//     }
-// }
 
 impl<'a, 'b> SearchURIOperation<'a, 'b> {
     pub fn new(client: &'a mut Client) -> SearchURIOperation<'a, 'b> {

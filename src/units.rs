@@ -535,16 +535,16 @@ from_exp!(u32, JsonVal, from, JsonVal::U64(from as u64));
 from!(u64, JsonVal, U64);
 from!(bool, JsonVal, Boolean);
 
-// TODO - deprecated
-// impl<'a> From<&'a Json> for JsonVal {
-//     fn from(from: &'a Json) -> JsonVal {
-//         match from {
-//             &Json::String(ref s) => JsonVal::String(s.clone()),
-//             &Json::F64(f)        => JsonVal::F64(f),
-//             &Json::I64(f)        => JsonVal::I64(f),
-//             &Json::U64(f)        => JsonVal::U64(f),
-//             &Json::Boolean(b)    => JsonVal::Boolean(b),
-//             _                    => panic!("Not a String, F64, I64, U64 or Boolean")
-//         }
-//     }
-// }
+impl<'a> From<&'a Value> for JsonVal {
+    fn from(from: &'a Value) -> Self {
+        use serde_json::Value::*;
+        match from {
+            &String(ref s) => JsonVal::String(s.clone()),
+            &F64(f) => JsonVal::F64(f),
+            &I64(f) => JsonVal::I64(f),
+            &U64(f) => JsonVal::U64(f),
+            &Bool(b) => JsonVal::Boolean(b),
+            _ => panic!("Not a String, F64, I64, U64 or Boolean")
+        }
+    }
+}
