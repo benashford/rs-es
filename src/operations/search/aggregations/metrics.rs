@@ -66,25 +66,15 @@ metrics_agg!(Sum);
 pub struct Avg<'a>(Agg<'a, NoOuter>);
 metrics_agg!(Avg);
 
-// field_or_script_new!(Avg);
-// field_or_script_to_json!(Avg);
-// metrics_agg!(Avg);
+/// Stats aggregation
+#[derive(Debug)]
+pub struct Stats<'a>(Agg<'a, NoOuter>);
+metrics_agg!(Stats);
 
-// /// Stats aggregation
-// #[derive(Debug)]
-// pub struct Stats<'a>(FieldOrScript<'a>);
-
-// field_or_script_new!(Stats);
-// field_or_script_to_json!(Stats);
-// metrics_agg!(Stats);
-
-// /// Extended stats aggregation
-// #[derive(Debug)]
-// pub struct ExtendedStats<'a>(FieldOrScript<'a>);
-
-// field_or_script_new!(ExtendedStats);
-// field_or_script_to_json!(ExtendedStats);
-// metrics_agg!(ExtendedStats);
+/// Extended stats aggregation
+#[derive(Debug)]
+pub struct ExtendedStats<'a>(Agg<'a, NoOuter>);
+metrics_agg!(ExtendedStats);
 
 // /// Value count aggregation
 // #[derive(Debug)]
@@ -312,8 +302,8 @@ pub enum MetricsAggregation<'a> {
     Max(Max<'a>),
     Sum(Sum<'a>),
     Avg(Avg<'a>),
-    // Stats(Stats<'a>),
-    // ExtendedStats(ExtendedStats<'a>),
+    Stats(Stats<'a>),
+    ExtendedStats(ExtendedStats<'a>),
     // ValueCount(ValueCount<'a>),
     // Percentiles(Percentiles<'a>),
     // PercentileRanks(PercentileRanks<'a>),
@@ -329,7 +319,9 @@ impl<'a> MetricsAggregation<'a> {
             &Min(_) => "min",
             &Max(_) => "max",
             &Sum(_) => "sum",
-            &Avg(_) => "avg"
+            &Avg(_) => "avg",
+            &Stats(_) => "stats",
+            &ExtendedStats(_) => "extended_stats",
         }
     }
 }
@@ -342,7 +334,9 @@ impl<'a> Serialize for MetricsAggregation<'a> {
             &Min(ref min) => min.serialize(serializer),
             &Max(ref max) => max.serialize(serializer),
             &Sum(ref sum) => sum.serialize(serializer),
-            &Avg(ref avg) => avg.serialize(serializer)
+            &Avg(ref avg) => avg.serialize(serializer),
+            &Stats(ref stats) => stats.serialize(serializer),
+            &ExtendedStats(ref extended_stats) => extended_stats.serialize(serializer)
         }
     }
 }
@@ -354,7 +348,9 @@ pub enum MetricsAggregationResult {
     Min(MinResult),
     Max(MaxResult),
     Sum(SumResult),
-    Avg(AvgResult)
+    Avg(AvgResult),
+    Stats(StatsResult),
+    ExtendedStats(ExtendedStatsResult)
 }
 
 impl MetricsAggregationResult {
@@ -375,12 +371,12 @@ impl MetricsAggregationResult {
             &Avg(_) => {
                 MetricsAggregationResult::Avg(try!(from_value(json)))
             },
-            // &MetricsAggregation::Stats(_) => {
-            //     AggregationResult::Stats(StatsResult::from(json))
-            // },
-            // &MetricsAggregation::ExtendedStats(_) => {
-            //     AggregationResult::ExtendedStats(ExtendedStatsResult::from(json))
-            // },
+            &Stats(_) => {
+                MetricsAggregationResult::Stats(try!(from_value(json)))
+            },
+            &ExtendedStats(_) => {
+                MetricsAggregationResult::ExtendedStats(try!(from_value(json)))
+            },
             // &MetricsAggregation::ValueCount(_) => {
             //     AggregationResult::ValueCount(ValueCountResult::from(json))
             // }
@@ -414,8 +410,8 @@ impl AggregationResult {
     metrics_agg_as!(as_max, Max, MaxResult);
     metrics_agg_as!(as_sum, Sum, SumResult);
     metrics_agg_as!(as_avg, Avg, AvgResult);
-    // agg_as!(as_stats, Stats, StatsResult);
-    // agg_as!(as_extended_stats, ExtendedStats, ExtendedStatsResult);
+    metrics_agg_as!(as_stats, Stats, StatsResult);
+    metrics_agg_as!(as_extended_stats, ExtendedStats, ExtendedStatsResult);
     // agg_as!(as_value_count, ValueCount, ValueCountResult);
     // agg_as!(as_percentiles, Percentiles, PercentilesResult);
     // agg_as!(as_percentile_ranks, PercentileRanks, PercentileRanksResult);
@@ -445,6 +441,35 @@ pub struct SumResult {
 #[derive(Debug, Deserialize)]
 pub struct AvgResult {
     pub value: f64
+}
+
+#[derive(Debug, Deserialize)]
+pub struct StatsResult {
+    pub count: u64,
+    pub min: f64,
+    pub max: f64,
+    pub avg: f64,
+    pub sum: f64
+}
+
+/// Used by the `ExtendedStatsResult`
+#[derive(Debug, Deserialize)]
+pub struct Bounds {
+    pub upper: f64,
+    pub lower: f64
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ExtendedStatsResult {
+    pub count: u64,
+    pub min: f64,
+    pub max: f64,
+    pub avg: f64,
+    pub sum: f64,
+    pub sum_of_squares: f64,
+    pub variance: f64,
+    pub std_deviation: f64,
+    pub std_deviation_bounds: Bounds
 }
 
 #[cfg(test)]
