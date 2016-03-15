@@ -21,7 +21,7 @@
 //! This isn't all types. Types that are specific to one API are defined in the
 //! appropriate place, e.g. types only used by the Query DSL are in `query.rs`
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use rustc_serialize::json::{Json, ToJson};
 
@@ -148,13 +148,27 @@ impl Default for Location {
     }
 }
 
-impl<'a> From<&'a Json> for Location {
-    fn from(from: &'a Json) -> Location {
-        Location::LatLon(
-            get_json_f64!(from, "lat"),
-            get_json_f64!(from, "lon"))
+impl Deserialize for Location {
+    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        where D: Deserializer {
+
+        // TODO - maybe use a specific struct?
+        let mut raw_location = try!(HashMap::<String, f64>::deserialize(deserializer));
+        Ok(Location::LatLon(
+            raw_location.remove("lat").unwrap(),
+            raw_location.remove("lon").unwrap()
+        ))
     }
 }
+
+// TODO - deprecated
+// impl<'a> From<&'a Json> for Location {
+//     fn from(from: &'a Json) -> Location {
+//         Location::LatLon(
+//             get_json_f64!(from, "lat"),
+//             get_json_f64!(from, "lon"))
+//     }
+// }
 
 from_exp!((f64, f64), Location, from, Location::LatLon(from.0, from.1));
 from!(String, Location, GeoHash);
@@ -211,19 +225,23 @@ impl Deserialize for GeoBox {
     fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
         where D: Deserializer {
 
-        // TODO - finish this
-        unimplemented!()
+        // TODO - maybe use a specific struct?
+        let mut raw_geo_box = try!(HashMap::<String, Location>::deserialize(deserializer));
+        Ok(GeoBox::Corners(
+            raw_geo_box.remove("top_left").unwrap(),
+            raw_geo_box.remove("bottom_right").unwrap()
+        ))
     }
 }
 
 // TODO - deprecated
-impl<'a> From<&'a Json> for GeoBox {
-    fn from(from: &'a Json) -> GeoBox {
-        GeoBox::Corners(
-            Location::from(from.find("top_left").expect("No 'top_left' field")),
-            Location::from(from.find("bottom_right").expect("No 'bottom_right' field")))
-    }
-}
+// impl<'a> From<&'a Json> for GeoBox {
+//     fn from(from: &'a Json) -> GeoBox {
+//         GeoBox::Corners(
+//             Location::from(from.find("top_left").expect("No 'top_left' field")),
+//             Location::from(from.find("bottom_right").expect("No 'bottom_right' field")))
+//     }
+// }
 
 from_exp!((Location, Location), GeoBox, from, GeoBox::Corners(from.0, from.1));
 from_exp!(((f64, f64), (f64, f64)),
