@@ -207,6 +207,16 @@ impl Default for GeoBox {
     }
 }
 
+impl Deserialize for GeoBox {
+    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        where D: Deserializer {
+
+        // TODO - finish this
+        unimplemented!()
+    }
+}
+
+// TODO - deprecated
 impl<'a> From<&'a Json> for GeoBox {
     fn from(from: &'a Json) -> GeoBox {
         GeoBox::Corners(

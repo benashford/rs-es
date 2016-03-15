@@ -27,7 +27,7 @@ use rustc_serialize::json::{Json, ToJson};
 
 use ::error::EsError;
 use ::json::{NoOuter, ShouldSkip};
-use ::units::JsonVal;
+use ::units::{GeoBox, JsonVal};
 
 // TODO - deprecated
 use super::FieldOrScript;
@@ -145,81 +145,72 @@ impl<'a> Cardinality<'a> {
     add_extra_option!(with_rehash, rehash, bool);
 }
 
-// /// Geo Bounds aggregation
-// #[derive(Debug)]
-// pub struct GeoBounds<'a> {
-//     field:          &'a str,
-//     wrap_longitude: Option<bool>
-// }
+/// Geo Bounds aggregation
+#[derive(Debug, Default, Serialize)]
+pub struct GeoBounds<'a> {
+    field:          &'a str,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    wrap_longitude: Option<bool>
+}
 
-// impl<'a> GeoBounds<'a> {
-//     pub fn new(field: &'a str) -> GeoBounds {
-//         GeoBounds {
-//             field: field,
-//             wrap_longitude: None
-//         }
-//     }
+impl<'a> GeoBounds<'a> {
+    pub fn new(field: &'a str) -> Self {
+        GeoBounds {
+            field: field,
+            ..Default::default()
+        }
+    }
 
-//     add_field!(with_wrap_longitude, wrap_longitude, bool);
-// }
-
-// impl<'a> ToJson for GeoBounds<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("field".to_owned(), self.field.to_json());
-//         optional_add!(self, d, wrap_longitude);
-//         Json::Object(d)
-//     }
-// }
-
-// metrics_agg!(GeoBounds);
+    add_field!(with_wrap_longitude, wrap_longitude, bool);
+}
 
 /// Scripted method aggregation
-#[derive(Debug)]
+#[derive(Debug, Default, Serialize)]
 pub struct ScriptedMetric<'a> {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     init_script:         Option<&'a str>,
     map_script:          &'a str,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     combine_script:      Option<&'a str>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     reduce_script:       Option<&'a str>,
-    params:              Option<Json>,
-    reduce_params:       Option<Json>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    params:              Option<Value>, // TODO - should this be generified?
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    reduce_params:       Option<Value>, // TODO - should this be generified?
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     lang:                Option<&'a str>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     init_script_file:    Option<&'a str>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     init_script_id:      Option<&'a str>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     map_script_file:     Option<&'a str>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     map_script_id:       Option<&'a str>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     combine_script_file: Option<&'a str>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     combine_script_id:   Option<&'a str>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     reduce_script_file:  Option<&'a str>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     reduce_script_id:    Option<&'a str>
 }
 
 impl<'a> ScriptedMetric<'a> {
     pub fn new(map_script: &'a str) -> ScriptedMetric<'a> {
         ScriptedMetric {
-            init_script:         None,
-            map_script:          map_script,
-            combine_script:      None,
-            reduce_script:       None,
-            params:              None,
-            reduce_params:       None,
-            lang:                None,
-            init_script_file:    None,
-            init_script_id:      None,
-            map_script_file:     None,
-            map_script_id:       None,
-            combine_script_file: None,
-            combine_script_id:   None,
-            reduce_script_file:  None,
-            reduce_script_id:    None
+            map_script: map_script,
+            ..Default::default()
         }
     }
 
     add_field!(with_init_script, init_script, &'a str);
     add_field!(with_combine_script, combine_script, &'a str);
     add_field!(with_reduce_script, reduce_script, &'a str);
-    add_field!(with_params, params, Json);
-    add_field!(with_reduce_params, reduce_params, Json);
+    add_field!(with_params, params, Value);
+    add_field!(with_reduce_params, reduce_params, Value);
     add_field!(with_lang, lang, &'a str);
     add_field!(with_init_script_file, init_script_file, &'a str);
     add_field!(with_init_script_id, init_script_id, &'a str);
@@ -230,29 +221,6 @@ impl<'a> ScriptedMetric<'a> {
     add_field!(with_reduce_script_file, reduce_script_file, &'a str);
     add_field!(with_reduce_script_id, reduce_script_id, &'a str);
 }
-
-// DEPRECATED
-// impl<'a> ToJson for ScriptedMetric<'a> {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("map_script".to_owned(), self.map_script.to_json());
-//         optional_add!(self, d, init_script);
-//         optional_add!(self, d, combine_script);
-//         optional_add!(self, d, reduce_script);
-//         optional_add!(self, d, params);
-//         optional_add!(self, d, reduce_params);
-//         optional_add!(self, d, lang);
-//         optional_add!(self, d, init_script_file);
-//         optional_add!(self, d, init_script_id);
-//         optional_add!(self, d, map_script_file);
-//         optional_add!(self, d, map_script_id);
-//         optional_add!(self, d, combine_script_file);
-//         optional_add!(self, d, combine_script_id);
-//         optional_add!(self, d, reduce_script_file);
-//         optional_add!(self, d, reduce_script_id);
-//         Json::Object(d)
-//     }
-// }
 
 /// Individual aggregations and their options
 #[derive(Debug)]
@@ -267,8 +235,8 @@ pub enum MetricsAggregation<'a> {
     Percentiles(Percentiles<'a>),
     PercentileRanks(PercentileRanks<'a>),
     Cardinality(Cardinality<'a>),
-    // GeoBounds(GeoBounds<'a>),
-    // ScriptedMetric(ScriptedMetric<'a>)
+    GeoBounds(GeoBounds<'a>),
+    ScriptedMetric(ScriptedMetric<'a>)
 }
 
 impl<'a> MetricsAggregation<'a> {
@@ -284,7 +252,9 @@ impl<'a> MetricsAggregation<'a> {
             &ValueCount(_) => "value_count",
             &Percentiles(_) => "percentiles",
             &PercentileRanks(_) => "percentile_ranks",
-            &Cardinality(_) => "cardinality"
+            &Cardinality(_) => "cardinality",
+            &GeoBounds(_) => "geo_bounds",
+            &ScriptedMetric(_) => "scripted_metric"
         }
     }
 }
@@ -303,7 +273,9 @@ impl<'a> Serialize for MetricsAggregation<'a> {
             &ValueCount(ref value_count) => value_count.serialize(serializer),
             &Percentiles(ref percentiles) => percentiles.serialize(serializer),
             &PercentileRanks(ref percentile_ranks) => percentile_ranks.serialize(serializer),
-            &Cardinality(ref cardinality) => cardinality.serialize(serializer)
+            &Cardinality(ref cardinality) => cardinality.serialize(serializer),
+            &GeoBounds(ref geo_bounds) => geo_bounds.serialize(serializer),
+            &ScriptedMetric(ref scripted_metric) => scripted_metric.serialize(serializer)
         }
     }
 }
@@ -321,7 +293,9 @@ pub enum MetricsAggregationResult {
     ValueCount(ValueCountResult),
     Percentiles(PercentilesResult),
     PercentileRanks(PercentileRanksResult),
-    Cardinality(CardinalityResult)
+    Cardinality(CardinalityResult),
+    GeoBounds(GeoBoundsResult),
+    ScriptedMetric(ScriptedMetricResult)
 }
 
 impl MetricsAggregationResult {
@@ -360,12 +334,12 @@ impl MetricsAggregationResult {
             &Cardinality(_) => {
                 MetricsAggregationResult::Cardinality(try!(from_value(json)))
             },
-            // &MetricsAggregation::GeoBounds(_) => {
-            //     AggregationResult::GeoBounds(GeoBoundsResult::from(json))
-            // },
-            // &MetricsAggregation::ScriptedMetric(_) => {
-            //     AggregationResult::ScriptedMetric(ScriptedMetricResult::from(json))
-            // }
+            &GeoBounds(_) => {
+                MetricsAggregationResult::GeoBounds(try!(from_value(json)))
+            },
+            &ScriptedMetric(_) => {
+                MetricsAggregationResult::ScriptedMetric(try!(from_value(json)))
+            }
         })
     }
 }
@@ -387,8 +361,8 @@ impl AggregationResult {
     metrics_agg_as!(as_percentiles, Percentiles, PercentilesResult);
     metrics_agg_as!(as_percentile_ranks, PercentileRanks, PercentileRanksResult);
     metrics_agg_as!(as_cardinality, Cardinality, CardinalityResult);
-    // agg_as!(as_geo_bounds, GeoBounds, GeoBoundsResult);
-    // agg_as!(as_scripted_metric, ScriptedMetric, ScriptedMetricResult);
+    metrics_agg_as!(as_geo_bounds, GeoBounds, GeoBoundsResult);
+    metrics_agg_as!(as_scripted_metric, ScriptedMetric, ScriptedMetricResult);
 }
 
 // specific result objects
@@ -461,6 +435,16 @@ pub struct PercentileRanksResult {
 #[derive(Debug, Deserialize)]
 pub struct CardinalityResult {
     pub value: u64
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GeoBoundsResult {
+    pub bounds: GeoBox
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ScriptedMetricResult {
+    pub value: JsonVal
 }
 
 #[cfg(test)]

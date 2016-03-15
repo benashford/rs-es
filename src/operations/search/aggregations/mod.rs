@@ -298,36 +298,6 @@ impl <'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
     }
 }
 
-// Result objects
-
-// Metrics result
-
-// #[derive(Debug)]
-// pub struct GeoBoundsResult {
-//     pub bounds: GeoBox
-// }
-
-// impl<'a> From<&'a Json> for GeoBoundsResult {
-//     fn from(from: &'a Json) -> GeoBoundsResult {
-//         GeoBoundsResult {
-//             bounds: GeoBox::from(from.find("bounds").expect("No 'bounds' field"))
-//         }
-//     }
-// }
-
-// #[derive(Debug)]
-// pub struct ScriptedMetricResult {
-//     pub value: JsonVal
-// }
-
-// impl<'a> From<&'a Json> for ScriptedMetricResult {
-//     fn from(from: &'a Json) -> ScriptedMetricResult {
-//         ScriptedMetricResult {
-//             value: JsonVal::from(from.find("value").expect("No 'value' field"))
-//         }
-//     }
-// }
-
 /// The result of one specific aggregation
 ///
 /// The data returned varies depending on aggregation type
