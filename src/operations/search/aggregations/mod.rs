@@ -500,46 +500,6 @@ impl <'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
 //     }
 // }
 
-// // GeoDistance results
-// #[derive(Debug)]
-// pub struct GeoDistanceBucketResult {
-//     pub key: String,
-//     pub from: Option<f64>,
-//     pub to: Option<f64>,
-//     pub doc_count: u64,
-//     pub aggs: Option<AggregationsResult>
-// }
-
-// impl GeoDistanceBucketResult {
-//     fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoDistanceBucketResult {
-//         GeoDistanceBucketResult {
-//             key: get_json_string!(from, "key"),
-//             from: optional_json_f64!(from, "from"),
-//             to: optional_json_f64!(from, "to"),
-//             doc_count: get_json_u64!(from, "doc_count"),
-//             aggs: extract_aggs!(from, aggs)
-//         }
-//     }
-
-//     add_aggs_ref!();
-// }
-
-// #[derive(Debug)]
-// pub struct GeoDistanceResult {
-//     pub buckets: Vec<GeoDistanceBucketResult>
-// }
-
-// impl GeoDistanceResult {
-//     fn from(from: &Json, aggs: &Option<Aggregations>) -> GeoDistanceResult {
-//         GeoDistanceResult {
-//             buckets: from.find("buckets").expect("No buckets")
-//                 .as_array().expect("Not an array")
-//                 .iter().map(|bucket| GeoDistanceBucketResult::from(bucket, aggs))
-//                 .collect()
-//         }
-//     }
-// }
-
 // #[derive(Debug)]
 // pub struct GeoHashBucketResult {
 //     pub key:       String,

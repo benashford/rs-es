@@ -68,27 +68,28 @@ impl GeoShapeQuery {
     //build!(GeoShape);
 }
 
-impl ToJson for GeoShapeQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        match self.shape {
-            Some(ref o) => {
-                match o {
-                    &Or::A(ref shape) => {
-                        inner.insert("shape".to_owned(), shape.to_json());
-                    },
-                    &Or::B(ref shape) => {
-                        inner.insert("indexed_shape".to_owned(), shape.to_json());
-                    }
-                }
-            },
-            None => ()
-        }
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for GeoShapeQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
+//         match self.shape {
+//             Some(ref o) => {
+//                 match o {
+//                     &Or::A(ref shape) => {
+//                         inner.insert("shape".to_owned(), shape.to_json());
+//                     },
+//                     &Or::B(ref shape) => {
+//                         inner.insert("indexed_shape".to_owned(), shape.to_json());
+//                     }
+//                 }
+//             },
+//             None => ()
+//         }
+//         d.insert(self.field.clone(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 // Required for GeoShape
 
@@ -191,16 +192,17 @@ impl GeoBoundingBoxQuery {
     //build!(GeoBoundingBox);
 }
 
-impl ToJson for GeoBoundingBoxQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert(self.field.clone(), self.geo_box.to_json());
-        optional_add!(self, d, coerce);
-        optional_add!(self, d, ignore_malformed);
-        optional_add!(self, d, filter_type, "type");
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for GeoBoundingBoxQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert(self.field.clone(), self.geo_box.to_json());
+//         optional_add!(self, d, coerce);
+//         optional_add!(self, d, ignore_malformed);
+//         optional_add!(self, d, filter_type, "type");
+//         Json::Object(d)
+//     }
+// }
 
 /// Geo Bounding Box filter type
 #[derive(Debug)]
@@ -257,18 +259,18 @@ impl GeoDistanceQuery {
     //build!(GeoDistance);
 }
 
-impl ToJson for GeoDistanceQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("distance".to_owned(), self.distance.to_json());
-        optional_add!(self, d, distance_type);
-        optional_add!(self, d, optimize_bbox);
-        d.insert(self.field.clone(), self.location.to_json());
-        optional_add!(self, d, coerce);
-        optional_add!(self, d, ignore_malformed);
-        Json::Object(d)
-    }
-}
+// impl ToJson for GeoDistanceQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("distance".to_owned(), self.distance.to_json());
+//         optional_add!(self, d, distance_type);
+//         optional_add!(self, d, optimize_bbox);
+//         d.insert(self.field.clone(), self.location.to_json());
+//         optional_add!(self, d, coerce);
+//         optional_add!(self, d, ignore_malformed);
+//         Json::Object(d)
+//     }
+// }
 
 /// Options for `optimize_bbox`
 #[derive(Debug)]
@@ -317,15 +319,15 @@ impl GeoPolygonQuery {
     //build!(GeoPolygon);
 }
 
-impl ToJson for GeoPolygonQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        inner.insert("points".to_owned(), self.points.to_json());
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
+// impl ToJson for GeoPolygonQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         let mut inner = BTreeMap::new();
+//         inner.insert("points".to_owned(), self.points.to_json());
+//         d.insert(self.field.clone(), Json::Object(inner));
+//         Json::Object(d)
+//     }
+// }
 
 /// Geohash cell query
 #[derive(Debug, Default)]
@@ -355,15 +357,15 @@ impl GeohashCellQuery {
     //build!(GeohashCell);
 }
 
-impl ToJson for GeohashCellQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert(self.field.clone(), self.location.to_json());
-        optional_add!(self, d, precision);
-        optional_add!(self, d, neighbors);
-        Json::Object(d)
-    }
-}
+// impl ToJson for GeohashCellQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert(self.field.clone(), self.location.to_json());
+//         optional_add!(self, d, precision);
+//         optional_add!(self, d, neighbors);
+//         Json::Object(d)
+//     }
+// }
 
 #[derive(Debug)]
 pub enum Precision {

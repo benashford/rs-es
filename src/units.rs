@@ -178,21 +178,21 @@ impl Serialize for Location {
 }
 
 // TODO - deprecated
-impl ToJson for Location {
-    fn to_json(&self) -> Json {
-        match self {
-            &Location::LatLon(lat, lon) => {
-                let mut d = BTreeMap::new();
-                d.insert("lat".to_owned(), Json::F64(lat));
-                d.insert("lon".to_owned(), Json::F64(lon));
-                Json::Object(d)
-            },
-            &Location::GeoHash(ref geo_hash) => {
-                Json::String(geo_hash.clone())
-            }
-        }
-    }
-}
+// impl ToJson for Location {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &Location::LatLon(lat, lon) => {
+//                 let mut d = BTreeMap::new();
+//                 d.insert("lat".to_owned(), Json::F64(lat));
+//                 d.insert("lon".to_owned(), Json::F64(lon));
+//                 Json::Object(d)
+//             },
+//             &Location::GeoHash(ref geo_hash) => {
+//                 Json::String(geo_hash.clone())
+//             }
+//         }
+//     }
+// }
 
 /// Representing a geographic box
 #[derive(Debug)]
@@ -226,24 +226,25 @@ from_exp!((f64, f64, f64, f64),
           from,
           GeoBox::Vertices(from.0, from.1, from.2, from.3));
 
-impl ToJson for GeoBox {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        match self {
-            &GeoBox::Corners(ref top_left, ref bottom_right) => {
-                d.insert("top_left".to_owned(), top_left.to_json());
-                d.insert("bottom_right".to_owned(), bottom_right.to_json());
-            },
-            &GeoBox::Vertices(ref top, ref left, ref bottom, ref right) => {
-                d.insert("top".to_owned(), top.to_json());
-                d.insert("left".to_owned(), left.to_json());
-                d.insert("bottom".to_owned(), bottom.to_json());
-                d.insert("right".to_owned(), right.to_json());
-            }
-        }
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for GeoBox {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         match self {
+//             &GeoBox::Corners(ref top_left, ref bottom_right) => {
+//                 d.insert("top_left".to_owned(), top_left.to_json());
+//                 d.insert("bottom_right".to_owned(), bottom_right.to_json());
+//             },
+//             &GeoBox::Vertices(ref top, ref left, ref bottom, ref right) => {
+//                 d.insert("top".to_owned(), top.to_json());
+//                 d.insert("left".to_owned(), left.to_json());
+//                 d.insert("bottom".to_owned(), bottom.to_json());
+//                 d.insert("right".to_owned(), right.to_json());
+//             }
+//         }
+//         Json::Object(d)
+//     }
+// }
 
 /// A non-specific holder for an option which can either be a single thing, or
 /// multiple instances of that thing.
