@@ -16,8 +16,6 @@
 
 //! Specific Term level queries
 
-use rustc_serialize::json::{Json, ToJson};
-
 use serde::{Serialize, Serializer};
 
 use ::json::{NoOuter, ShouldSkip};
@@ -353,12 +351,17 @@ impl AsRef<str> for RegexpQueryFlags {
 }
 
 /// Regexp query
-#[derive(Debug, Default)]
-pub struct RegexpQuery {
-    field: String,
+#[derive(Debug, Serialize)]
+pub struct RegexpQuery(FieldBasedQuery<RegexpQueryInner, NoOuter>);
+
+#[derive(Debug, Default, Serialize)]
+pub struct RegexpQueryInner {
     value: String,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     flags: Option<Flags<RegexpQueryFlags>>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     max_determined_states: Option<u64>
 }
 
@@ -366,45 +369,37 @@ impl Query {
     pub fn build_query<A, B>(field: A, value: B) -> RegexpQuery
         where A: Into<String>,
               B: Into<String> {
-        RegexpQuery {
-            field: field.into(),
-            value: value.into(),
-            ..Default::default()
-        }
+        RegexpQuery(FieldBasedQuery::new(field.into(),
+                                         RegexpQueryInner {
+                                             value: value.into(),
+                                             ..Default::default()
+                                         },
+                                         NoOuter))
     }
 }
 
 impl RegexpQuery {
-    add_option!(with_boost, boost, f64);
-    add_option!(with_flags, flags, Flags<RegexpQueryFlags>);
-    add_option!(with_max_determined_states, max_determined_states, u64);
+    add_inner_option!(with_boost, boost, f64);
+    add_inner_option!(with_flags, flags, Flags<RegexpQueryFlags>);
+    add_inner_option!(with_max_determined_states, max_determined_states, u64);
 
-    //build!(Regexp);
+    build!(Regexp);
 }
 
-// impl ToJson for RegexpQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-
-//         inner.insert("value".to_owned(), self.value.to_json());
-//         optional_add!(self, inner, boost);
-//         optional_add!(self, inner, flags);
-//         optional_add!(self, inner, max_determined_states);
-
-//         d.insert(self.field.clone(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
-
 /// Fuzzy query
-#[derive(Debug, Default)]
-pub struct FuzzyQuery {
-    field: String,
+#[derive(Debug, Serialize)]
+pub struct FuzzyQuery(FieldBasedQuery<FuzzyQueryInner, NoOuter>);
+
+#[derive(Debug, Default, Serialize)]
+pub struct FuzzyQueryInner {
     value: String,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     fuzziness: Option<Fuzziness>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     prefix_length: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     max_expansions: Option<u64>
 }
 
@@ -412,39 +407,26 @@ impl Query {
     pub fn build_fuzzy<A, B>(field: A, value: B) -> FuzzyQuery
         where A: Into<String>,
               B: Into<String> {
-        FuzzyQuery {
-            field: field.into(),
-            value: value.into(),
-            ..Default::default()
-        }
+        FuzzyQuery(FieldBasedQuery::new(field.into(),
+                                        FuzzyQueryInner {
+                                            value: value.into(),
+                                            ..Default::default()
+                                        },
+                                        NoOuter))
     }
 }
 
 impl FuzzyQuery {
-    add_option!(with_boost, boost, f64);
-    add_option!(with_fuzziness, fuzziness, Fuzziness);
-    add_option!(with_prefix_length, prefix_length, u64);
-    add_option!(with_max_expansions, max_expansions, u64);
+    add_inner_option!(with_boost, boost, f64);
+    add_inner_option!(with_fuzziness, fuzziness, Fuzziness);
+    add_inner_option!(with_prefix_length, prefix_length, u64);
+    add_inner_option!(with_max_expansions, max_expansions, u64);
 
-    //build!(Fuzzy);
+    build!(Fuzzy);
 }
 
-// impl ToJson for FuzzyQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-//         inner.insert("value".to_owned(), self.value.to_json());
-//         optional_add!(self, inner, boost);
-//         optional_add!(self, inner, fuzziness);
-//         optional_add!(self, inner, prefix_length);
-//         optional_add!(self, inner, max_expansions);
-//         d.insert(self.field.clone(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
-
 /// Type query
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct TypeQuery {
     value: String
 }
@@ -460,20 +442,13 @@ impl Query {
 }
 
 impl TypeQuery {
-    //build!(Type);
+    build!(Type);
 }
 
-// impl ToJson for TypeQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("value".to_owned(), self.value.to_json());
-//         Json::Object(d)
-//     }
-// }
-
 /// Ids query
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct IdsQuery {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     doc_type: Option<OneOrMany<String>>,
     values: Vec<JsonVal>
 }
@@ -492,14 +467,5 @@ impl Query {
 impl IdsQuery {
     add_option!(with_type, doc_type, OneOrMany<String>);
 
-    //build!(Ids);
+    build!(Ids);
 }
-
-// impl ToJson for IdsQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("values".to_owned(), self.values.to_json());
-//         optional_add!(self, d, doc_type, "type");
-//         Json::Object(d)
-//     }
-// }

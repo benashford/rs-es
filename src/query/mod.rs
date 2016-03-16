@@ -167,17 +167,18 @@ pub enum Fuzziness {
 from!(i64, Fuzziness, LevenshteinDistance);
 from!(f64, Fuzziness, Proportionate);
 
-// TODO - deprecated
-// impl ToJson for Fuzziness {
-//     fn to_json(&self) -> Json {
-//         use self::Fuzziness::{Auto, LevenshteinDistance, Proportionate};
-//         match self {
-//             &Auto                      => "auto".to_json(),
-//             &LevenshteinDistance(dist) => dist.to_json(),
-//             &Proportionate(prop)       => prop.to_json()
-//         }
-//     }
-// }
+impl Serialize for Fuzziness {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        use self::Fuzziness::*;
+        match self {
+            &Auto => "auto".serialize(serializer),
+            &LevenshteinDistance(dist) => dist.serialize(serializer),
+            &Proportionate(p) => p.serialize(serializer)
+        }
+    }
+}
 
 // Flags
 
@@ -188,15 +189,19 @@ from!(f64, Fuzziness, Proportionate);
 pub struct Flags<A>(Vec<A>)
     where A: AsRef<str>;
 
-impl<A> ToJson for Flags<A>
-where A: AsRef<str> {
-    fn to_json(&self) -> Json {
-        Json::String(self.0.iter().join("|"))
+impl<A> Serialize for Flags<A>
+    where A: AsRef<str> {
+
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        self.0.iter().join("|").serialize(serializer)
     }
 }
 
 impl<A> From<Vec<A>> for Flags<A>
-where A: AsRef<str> {
+    where A: AsRef<str> {
+
     fn from(from: Vec<A>) -> Self {
         Flags(from)
     }
@@ -261,10 +266,14 @@ pub enum Query {
     Prefix(Box<term::PrefixQuery>),
     #[serde(rename="wildcard")]
     Wildcard(Box<term::WildcardQuery>),
-    // Regexp(Box<term::RegexpQuery>),
-    // Fuzzy(Box<term::FuzzyQuery>),
-    // Type(Box<term::TypeQuery>),
-    // Ids(Box<term::IdsQuery>),
+    #[serde(rename="regexp")]
+    Regexp(Box<term::RegexpQuery>),
+    #[serde(rename="fuzzy")]
+    Fuzzy(Box<term::FuzzyQuery>),
+    #[serde(rename="type")]
+    Type(Box<term::TypeQuery>),
+    #[serde(rename="ids")]
+    Ids(Box<term::IdsQuery>),
 
     // // Compound queries
     // ConstantScore(Box<compound::ConstantScoreQuery>),
@@ -358,8 +367,8 @@ mod tests {
     fn test_simple_query_string_flags() {
         let opts = vec![SimpleQueryStringFlags::And, SimpleQueryStringFlags::Not];
         let flags:Flags<SimpleQueryStringFlags> = opts.into();
-        let json = flags.to_json();
-        assert_eq!("AND|NOT", json.as_string().unwrap());
+        let json = serde_json::to_string(&flags);
+        assert_eq!("\"AND|NOT\"", json.unwrap());
     }
 
     #[test]
