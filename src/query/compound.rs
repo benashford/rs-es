@@ -35,18 +35,20 @@ pub enum BoostMode {
     Min
 }
 
-// impl ToJson for BoostMode {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &BoostMode::Multiply => "multiply",
-//             &BoostMode::Replace => "replace",
-//             &BoostMode::Sum => "sum",
-//             &BoostMode::Avg => "avg",
-//             &BoostMode::Max => "max",
-//             &BoostMode::Min => "min"
-//         }.to_json()
-//     }
-// }
+impl Serialize for BoostMode {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
+            &BoostMode::Multiply => "multiply",
+            &BoostMode::Replace => "replace",
+            &BoostMode::Sum => "sum",
+            &BoostMode::Avg => "avg",
+            &BoostMode::Max => "max",
+            &BoostMode::Min => "min"
+        }.serialize(serializer)
+    }
+}
 
 /// Constant score query
 #[derive(Debug, Default, Serialize)]
@@ -139,8 +141,7 @@ impl DisMaxQuery {
 }
 
 /// Function Score query
-// TODO: derive(Serialize)
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct FunctionScoreQuery {
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     query: Option<Query>,
@@ -181,8 +182,7 @@ impl FunctionScoreQuery {
         self
     }
 
-    // TODO - renable this
-    //build!(FunctionScore);
+    build!(FunctionScore);
 }
 
 /// Boosting query

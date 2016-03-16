@@ -18,46 +18,35 @@
 
 use std::collections::{BTreeMap, HashMap};
 
+use serde::{Serialize, Serializer};
+
+use ::json::ShouldSkip;
+
 use ::units::{Distance, Duration, JsonVal, Location};
 
 /// Function
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum Function {
+    #[serde(rename="script_score")]
     ScriptScore(ScriptScore),
+    #[serde(rename="weight")]
     Weight(Weight),
+    #[serde(rename="random_score")]
     RandomScore(RandomScore),
+    #[serde(rename="field_value_factor")]
     FieldValueFactor(FieldValueFactor),
-    Decay(Decay)
+    #[serde(rename="linear")]
+    Linear(Decay),
+    #[serde(rename="exp")]
+    Exp(Decay),
+    #[serde(rename="gauss")]
+    Gauss(Decay)
 }
 
-// TODO - deprecated
-// impl ToJson for Function {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         match self {
-//             &Function::ScriptScore(ref q) => {
-//                 d.insert("script_score".to_owned(), q.to_json());
-//             },
-//             &Function::Weight(ref q) => {
-//                 d.insert("weight".to_owned(), q.to_json());
-//             },
-//             &Function::RandomScore(ref q) => {
-//                 d.insert("random_score".to_owned(), q.to_json());
-//             },
-//             &Function::FieldValueFactor(ref q) => {
-//                 d.insert("field_value_factor".to_owned(), q.to_json());
-//             },
-//             &Function::Decay(ref q) => {
-//                 q.add_to_json(&mut d);
-//             }
-//         }
-//         Json::Object(d)
-//     }
-// }
-
 /// ScriptScore function
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct ScriptScore {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     lang: Option<String>,
     params: HashMap<String, JsonVal>,
     inline: String
@@ -96,19 +85,8 @@ impl ScriptScore {
     }
 }
 
-// TODO - deprecated
-// impl ToJson for ScriptScore {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("inline".to_owned(), self.inline.to_json());
-//         d.insert("params".to_owned(), self.params.to_json());
-//         optional_add!(self, d, lang);
-//         Json::Object(d)
-//     }
-// }
-
 /// Weight function
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct Weight(f64);
 
 impl Function {
@@ -125,15 +103,8 @@ impl Weight {
     }
 }
 
-// TODO - deprecated
-// impl ToJson for Weight {
-//     fn to_json(&self) -> Json {
-//         self.0.to_json()
-//     }
-// }
-
 /// Random score function
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct RandomScore(i64);
 
 impl Function {
@@ -150,19 +121,15 @@ impl RandomScore {
     }
 }
 
-// TODO - deprecated
-// impl ToJson for RandomScore {
-//     fn to_json(&self) -> Json {
-//         self.0.to_json()
-//     }
-// }
-
 /// Field value factor function
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct FieldValueFactor {
     field: String,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     factor: Option<f64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     modifier: Option<Modifier>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     missing: Option<JsonVal>
 }
 
@@ -187,18 +154,6 @@ impl FieldValueFactor {
     }
 }
 
-// TODO - deprecated
-// impl ToJson for FieldValueFactor {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("field".to_owned(), self.field.to_json());
-//         optional_add!(self, d, factor);
-//         optional_add!(self, d, modifier);
-//         optional_add!(self, d, missing);
-//         Json::Object(d)
-//     }
-// }
-
 /// Modifier for the FieldValueFactor function
 #[derive(Debug)]
 pub enum Modifier {
@@ -214,58 +169,35 @@ pub enum Modifier {
     Reciprocal,
 }
 
-// TODO - deprecated
-// impl ToJson for Modifier {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &Modifier::None => "none".to_json(),
-//             &Modifier::Log => "log".to_json(),
-//             &Modifier::Log1p => "log1p".to_json(),
-//             &Modifier::Log2p => "log2p".to_json(),
-//             &Modifier::Ln => "ln".to_json(),
-//             &Modifier::Ln1p => "ln1p".to_json(),
-//             &Modifier::Ln2p => "ln2p".to_json(),
-//             &Modifier::Square => "square".to_json(),
-//             &Modifier::Sqrt => "sqrt".to_json(),
-//             &Modifier::Reciprocal => "reciprocal".to_json(),
-//         }
-//     }
-// }
-
-// Decay functions
-/// Type of decay functions
-#[derive(Debug)]
-pub enum DecayFunction {
-    Linear,
-    Exp,
-    Gauss
-}
-
-impl Default for DecayFunction {
-    fn default() -> Self {
-        DecayFunction::Linear
-    }
-}
-
-impl ToString for DecayFunction {
-    fn to_string(&self) -> String {
+impl Serialize for Modifier {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
         match self {
-            &DecayFunction::Linear => "linear",
-            &DecayFunction::Exp => "exp",
-            &DecayFunction::Gauss => "gauss"
-        }.to_owned()
+            &Modifier::None => "none".serialize(serializer),
+            &Modifier::Log => "log".serialize(serializer),
+            &Modifier::Log1p => "log1p".serialize(serializer),
+            &Modifier::Log2p => "log2p".serialize(serializer),
+            &Modifier::Ln => "ln".serialize(serializer),
+            &Modifier::Ln1p => "ln1p".serialize(serializer),
+            &Modifier::Ln2p => "ln2p".serialize(serializer),
+            &Modifier::Square => "square".serialize(serializer),
+            &Modifier::Sqrt => "sqrt".serialize(serializer),
+            &Modifier::Reciprocal => "reciprocal".serialize(serializer),
+        }
     }
 }
 
 /// Decay functions
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct Decay {
-    decay_function: DecayFunction,
     field: String,
     origin: Origin,
     scale: Scale,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     offset: Option<Scale>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     decay: Option<f64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     multi_value_mode: Option<MultiValueMode>
 }
 
@@ -287,9 +219,17 @@ macro_rules! build_decay_fn {
 }
 
 impl Function {
-    build_decay_fn!(build_linear_decay, DecayFunction::Linear);
-    build_decay_fn!(build_exp_decay, DecayFunction::Exp);
-    build_decay_fn!(build_gauss_decay, DecayFunction::Gauss);
+    pub fn build_decay<A, B, C>(field: A, origin: B, scale: C) -> Decay
+        where A: Into<String>,
+              B: Into<Origin>,
+              C: Into<Scale> {
+        Decay {
+            field: field.into(),
+            origin: origin.into(),
+            scale: scale.into(),
+            ..Default::default()
+        }
+    }
 }
 
 impl Decay {
@@ -297,23 +237,17 @@ impl Decay {
     add_option!(with_decay, decay, f64);
     add_option!(with_multi_value_mode, multi_value_mode, MultiValueMode);
 
-    pub fn build(self) -> Function {
-        Function::Decay(self)
+    pub fn build_linear(self) -> Function {
+        Function::Linear(self)
     }
 
-    // pub fn add_to_json(&self, d: &mut BTreeMap<String, Json>) {
-    //     // TODO - deprecated
-    //     // let mut inner = BTreeMap::new();
-    //     // let mut params = BTreeMap::new();
-    //     // params.insert("origin".to_owned(), self.origin.to_json());
-    //     // params.insert("scale".to_owned(), self.scale.to_json());
-    //     // optional_add!(self, params, offset);
-    //     // optional_add!(self, params, decay);
-    //     // inner.insert(self.field.clone(), Json::Object(params));
-    //     // optional_add!(self, inner, multi_value_mode);
-    //     // d.insert(self.decay_function.to_string(), Json::Object(inner));
-    //     unimplemented!()
-    // }
+    pub fn build_exp(self) -> Function {
+        Function::Exp(self)
+    }
+
+    pub fn build_gauss(self) -> Function {
+        Function::Gauss(self)
+    }
 }
 
 // options used by decay functions
@@ -340,18 +274,19 @@ from!(f64, Origin, F64);
 from!(Location, Origin, Location);
 from!(String, Origin, Date);
 
-// TODO - deprecated
-// impl ToJson for Origin {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &Origin::I64(orig)          => Json::I64(orig),
-//             &Origin::U64(orig)          => Json::U64(orig),
-//             &Origin::F64(orig)          => Json::F64(orig),
-//             &Origin::Location(ref orig) => orig.to_json(),
-//             &Origin::Date(ref orig)     => Json::String(orig.clone())
-//         }
-//     }
-// }
+impl Serialize for Origin {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
+            &Origin::I64(orig)          => orig.serialize(serializer),
+            &Origin::U64(orig)          => orig.serialize(serializer),
+            &Origin::F64(orig)          => orig.serialize(serializer),
+            &Origin::Location(ref orig) => orig.serialize(serializer),
+            &Origin::Date(ref orig)     => orig.serialize(serializer)
+        }
+    }
+}
 
 /// Scale used by decay function
 #[derive(Debug)]
@@ -375,18 +310,19 @@ from!(f64, Scale, F64);
 from!(Distance, Scale, Distance);
 from!(Duration, Scale, Duration);
 
-// TODO - deprecated
-// impl ToJson for Scale {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &Scale::I64(s)          => Json::I64(s),
-//             &Scale::U64(s)          => Json::U64(s),
-//             &Scale::F64(s)          => Json::F64(s),
-//             &Scale::Distance(ref s) => s.to_json(),
-//             &Scale::Duration(ref s) => s.to_json()
-//         }
-//     }
-// }
+impl Serialize for Scale {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
+            &Scale::I64(s) => s.serialize(serializer),
+            &Scale::U64(s) => s.serialize(serializer),
+            &Scale::F64(s) => s.serialize(serializer),
+            &Scale::Distance(ref s) => s.serialize(serializer),
+            &Scale::Duration(ref s) => s.serialize(serializer)
+        }
+    }
+}
 
 /// Values for multi_value_mode
 #[derive(Debug)]
@@ -397,14 +333,15 @@ pub enum MultiValueMode {
     Sum
 }
 
-// TODO - deprecated
-// impl ToJson for MultiValueMode {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &MultiValueMode::Min => "min".to_json(),
-//             &MultiValueMode::Max => "max".to_json(),
-//             &MultiValueMode::Avg => "avg".to_json(),
-//             &MultiValueMode::Sum => "sum".to_json(),
-//         }
-//     }
-// }
+impl Serialize for MultiValueMode {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        use self::MultiValueMode::*;
+        match self {
+            &Min => "min",
+            &Max => "max",
+            &Avg => "avg",
+            &Sum => "sum"
+        }.serialize(serializer)
+    }
+}

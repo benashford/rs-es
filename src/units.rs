@@ -416,9 +416,11 @@ impl Distance {
     }
 }
 
-impl ToJson for Distance {
-    fn to_json(&self) -> Json {
-        Json::String(format!("{}{}", self.amt, self.unit.to_string()))
+impl Serialize for Distance {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        format!("{}{}", self.amt, self.unit.to_string()).serialize(serializer)
     }
 }
 

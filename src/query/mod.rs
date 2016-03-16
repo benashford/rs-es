@@ -218,19 +218,19 @@ pub enum ScoreMode {
     Min
 }
 
-// TODO - DEPRECATED
-// impl ToJson for ScoreMode {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &ScoreMode::Multiply => "multiply".to_json(),
-//             &ScoreMode::Sum => "sum".to_json(),
-//             &ScoreMode::Avg => "avg".to_json(),
-//             &ScoreMode::First => "first".to_json(),
-//             &ScoreMode::Max => "max".to_json(),
-//             &ScoreMode::Min => "min".to_json()
-//         }
-//     }
-// }
+impl Serialize for ScoreMode {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        match self {
+            &ScoreMode::Multiply => "multiply".serialize(serializer),
+            &ScoreMode::Sum => "sum".serialize(serializer),
+            &ScoreMode::Avg => "avg".serialize(serializer),
+            &ScoreMode::First => "first".serialize(serializer),
+            &ScoreMode::Max => "max".serialize(serializer),
+            &ScoreMode::Min => "min".serialize(serializer)
+        }
+    }
+}
 
 /// Query represents all available queries
 ///
@@ -287,9 +287,8 @@ pub enum Query {
     Bool(Box<compound::BoolQuery>),
     #[serde(rename="dis_max")]
     DisMax(Box<compound::DisMaxQuery>),
-    // TODO - enable
-    //#[serde(rename="function_score")]
-    //FunctionScore(Box<compound::FunctionScoreQuery>),
+    #[serde(rename="function_score")]
+    FunctionScore(Box<compound::FunctionScoreQuery>),
     #[serde(rename="boosting")]
     Boosting(Box<compound::BoostingQuery>),
     #[serde(rename="indices")]

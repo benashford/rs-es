@@ -382,11 +382,12 @@ impl Default for Precision {
 from!(u64, Precision, Geohash);
 from!(Distance, Precision, Distance);
 
-impl ToJson for Precision {
-    fn to_json(&self) -> Json {
-        match self {
-            &Precision::Geohash(geohash_precision) => Json::U64(geohash_precision),
-            &Precision::Distance(ref distance)     => distance.to_json()
-        }
-    }
-}
+// TODO - deprecated
+// impl ToJson for Precision {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &Precision::Geohash(geohash_precision) => Json::U64(geohash_precision),
+//             &Precision::Distance(ref distance)     => distance.to_json()
+//         }
+//     }
+// }
