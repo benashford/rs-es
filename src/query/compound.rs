@@ -49,9 +49,10 @@ pub enum BoostMode {
 // }
 
 /// Constant score query
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct ConstantScoreQuery {
     query: Query,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>
 }
 
@@ -69,18 +70,8 @@ impl Query {
 impl ConstantScoreQuery {
     add_option!(with_boost, boost, f64);
 
-    //build!(ConstantScore);
+    build!(ConstantScore);
 }
-
-// TODO - deprecated
-// impl ToJson for ConstantScoreQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("query".to_owned(), self.query.to_json());
-//         optional_add!(self, d, boost);
-//         Json::Object(d)
-//     }
-// }
 
 /// Bool query
 #[derive(Debug, Default, Serialize)]
@@ -120,9 +111,11 @@ impl BoolQuery {
 }
 
 /// DisMax query
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct DisMaxQuery {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     tie_breaker: Option<f64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>,
     queries: Vec<Query>
 }
@@ -142,29 +135,25 @@ impl DisMaxQuery {
     add_option!(with_tie_breaker, tie_breaker, f64);
     add_option!(with_boost, boost, f64);
 
-    //build!(DisMax);
+    build!(DisMax);
 }
 
-// TODO - deprecated
-// impl ToJson for DisMaxQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("queries".to_owned(), self.queries.to_json());
-//         optional_add!(self, d, tie_breaker);
-//         optional_add!(self, d, boost);
-//         Json::Object(d)
-//     }
-// }
-
 /// Function Score query
+// TODO: derive(Serialize)
 #[derive(Debug, Default)]
 pub struct FunctionScoreQuery {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     query: Option<Query>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>,
     functions: Vec<Function>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     max_boost: Option<f64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     score_mode: Option<ScoreMode>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost_mode: Option<BoostMode>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     min_score: Option<f64>
 }
 
@@ -192,29 +181,18 @@ impl FunctionScoreQuery {
         self
     }
 
+    // TODO - renable this
     //build!(FunctionScore);
 }
 
-// TODO - deprecated
-// impl ToJson for FunctionScoreQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("functions".to_owned(), self.functions.to_json());
-//         optional_add!(self, d, query);
-//         optional_add!(self, d, boost);
-//         optional_add!(self, d, max_boost);
-//         optional_add!(self, d, score_mode);
-//         optional_add!(self, d, boost_mode);
-//         optional_add!(self, d, min_score);
-//         Json::Object(d)
-//     }
-// }
-
 /// Boosting query
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct BoostingQuery {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     positive: Option<Query>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     negative: Option<Query>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     negative_boost: Option<f64>
 }
 
@@ -229,25 +207,15 @@ impl BoostingQuery {
     add_option!(with_negative, negative, Query);
     add_option!(with_negative_boost, negative_boost, f64);
 
-    //build!(Boosting);
+    build!(Boosting);
 }
 
-// TODO - deprecated
-// impl ToJson for BoostingQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         optional_add!(self, d, positive);
-//         optional_add!(self, d, negative);
-//         optional_add!(self, d, negative_boost);
-//         Json::Object(d)
-//     }
-// }
-
 /// Indices query
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct IndicesQuery {
     indices: OneOrMany<String>,
     query: Query,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     no_match_query: Option<NoMatchQuery>
 }
 
@@ -266,19 +234,8 @@ impl Query {
 impl IndicesQuery {
     add_option!(with_no_match_query, no_match_query, NoMatchQuery);
 
-    //build!(Indices);
+    build!(Indices);
 }
-
-// TODO - deprecated
-// impl ToJson for IndicesQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("indices".to_owned(), self.indices.to_json());
-//         d.insert("query".to_owned(), self.query.to_json());
-//         optional_add!(self, d, no_match_query);
-//         Json::Object(d)
-//     }
-// }
 
 /// Options for the `no_match_query` option of IndicesQuery
 #[derive(Debug)]
@@ -290,13 +247,14 @@ pub enum NoMatchQuery {
 
 from_exp!(Query, NoMatchQuery, from, NoMatchQuery::Query(from));
 
-// TODO - deprecated
-// impl ToJson for NoMatchQuery {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &NoMatchQuery::None => "none".to_json(),
-//             &NoMatchQuery::All => "all".to_json(),
-//             &NoMatchQuery::Query(ref q) => q.to_json()
-//         }
-//     }
-// }
+impl Serialize for NoMatchQuery {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        use self::NoMatchQuery::*;
+        match self {
+            &None => "none".serialize(serializer),
+            &All => "all".serialize(serializer),
+            &Query(ref q) => q.serialize(serializer)
+        }
+    }
+}

@@ -280,14 +280,20 @@ pub enum Query {
     #[serde(rename="ids")]
     Ids(Box<term::IdsQuery>),
 
-    // // Compound queries
-    // ConstantScore(Box<compound::ConstantScoreQuery>),
+    // Compound queries
+    #[serde(rename="constant_score")]
+    ConstantScore(Box<compound::ConstantScoreQuery>),
     #[serde(rename="bool")]
     Bool(Box<compound::BoolQuery>),
-    // DisMax(Box<compound::DisMaxQuery>),
-    // FunctionScore(Box<compound::FunctionScoreQuery>),
-    // Boosting(Box<compound::BoostingQuery>),
-    // Indices(Box<compound::IndicesQuery>),
+    #[serde(rename="dis_max")]
+    DisMax(Box<compound::DisMaxQuery>),
+    // TODO - enable
+    //#[serde(rename="function_score")]
+    //FunctionScore(Box<compound::FunctionScoreQuery>),
+    #[serde(rename="boosting")]
+    Boosting(Box<compound::BoostingQuery>),
+    #[serde(rename="indices")]
+    Indices(Box<compound::IndicesQuery>),
     // // Not implementing the And query, as it's deprecated, use `bool` instead.
     // // Not implementing the Not query, as it's deprecated
     // // Not implementing the Or query, as it's deprecated, use `bool` instead.
