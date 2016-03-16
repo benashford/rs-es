@@ -244,8 +244,9 @@ pub enum Query {
     #[serde(rename="match_all")]
     MatchAll(Box<MatchAllQuery>),
 
-    // // Full-text queries
-    // Match(Box<full_text::MatchQuery>),
+    // Full-text queries
+    #[serde(rename="match")]
+    Match(Box<full_text::MatchQuery>),
     // MultiMatch(Box<full_text::MultiMatchQuery>),
     // Common(Box<full_text::CommonQuery>),
     // QueryString(Box<full_text::QueryStringQuery>),

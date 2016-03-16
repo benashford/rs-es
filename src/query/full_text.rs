@@ -18,7 +18,12 @@
 
 use ::units::JsonVal;
 
+use serde::{Serialize, Serializer};
+
+use ::json::{NoOuter, ShouldSkip};
+
 use super::{Flags, Fuzziness, MinimumShouldMatch, Query};
+use super::common::FieldBasedQuery;
 
 /// MatchType - the type of Match query
 #[derive(Debug)]
@@ -28,16 +33,17 @@ pub enum MatchType {
     PhrasePrefix
 }
 
-// TODO - deprecated
-// impl ToJson for MatchType {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &MatchType::Boolean => "boolean",
-//             &MatchType::Phrase => "phrase",
-//             &MatchType::PhrasePrefix => "phrase_prefix"
-//         }.to_json()
-//     }
-// }
+impl Serialize for MatchType {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        use self::MatchType::*;
+        match self {
+            &Boolean => "boolean",
+            &Phrase => "phrase",
+            &PhrasePrefix => "phrase_prefix"
+        }.serialize(serializer)
+    }
+}
 
 /// Zero Terms Query
 
@@ -47,15 +53,16 @@ pub enum ZeroTermsQuery {
     All
 }
 
-// TODO - deprecated
-// impl ToJson for ZeroTermsQuery {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &ZeroTermsQuery::None => "none",
-//             &ZeroTermsQuery::All => "all"
-//         }.to_json()
-//     }
-// }
+impl Serialize for ZeroTermsQuery {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
+            &ZeroTermsQuery::None => "none",
+            &ZeroTermsQuery::All => "all"
+        }.serialize(serializer)
+    }
+}
 
 /// MatchQueryType - the type of the multi Match Query
 #[derive(Debug)]
@@ -82,76 +89,70 @@ pub enum MatchQueryType {
 
 /// Match query
 
-#[derive(Debug, Default)]
-pub struct MatchQuery {
-    field: String,
+#[derive(Debug, Serialize)]
+pub struct MatchQuery(FieldBasedQuery<MatchQueryInner, NoOuter>);
+
+#[derive(Debug, Default, Serialize)]
+pub struct MatchQueryInner {
     query: JsonVal,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     match_type: Option<MatchType>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     cutoff_frequency: Option<f64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     lenient: Option<bool>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     analyzer: Option<String>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     operator: Option<String>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     minimum_should_match: Option<MinimumShouldMatch>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     fuzziness: Option<Fuzziness>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     prefix_length: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     max_expansions: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     rewrite: Option<String>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     zero_terms_query: Option<ZeroTermsQuery>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     slop: Option<i64>
 }
 
 impl Query {
-    pub fn build_match<A: Into<String>, B: Into<JsonVal>>(field: A, query: B) -> MatchQuery {
-        MatchQuery {
-            field: field.into(),
-            query: query.into(),
-            ..Default::default()
-        }
+    pub fn build_match<A, B>(field: A, query: B) -> MatchQuery
+        where A: Into<String>,
+              B: Into<JsonVal> {
+        MatchQuery(FieldBasedQuery::new(field.into(),
+                                        MatchQueryInner {
+                                            query: query.into(),
+                                            ..Default::default()
+                                        },
+                                        NoOuter))
     }
 }
 
 impl MatchQuery {
-    add_option!(with_type, match_type, MatchType);
-    add_option!(with_cutoff_frequency, cutoff_frequency, f64);
-    add_option!(with_lenient, lenient, bool);
-    add_option!(with_analyzer, analyzer, String);
-    add_option!(with_boost, boost, f64);
-    add_option!(with_operator, operator, String);
-    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
-    add_option!(with_fuzziness, fuzziness, Fuzziness);
-    add_option!(with_prefix_length, prefix_length, u64);
-    add_option!(with_max_expansions, max_expansions, u64);
-    add_option!(with_rewrite, rewrite, String);
-    add_option!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
-    add_option!(with_slop, slop, i64);
+    add_inner_option!(with_type, match_type, MatchType);
+    add_inner_option!(with_cutoff_frequency, cutoff_frequency, f64);
+    add_inner_option!(with_lenient, lenient, bool);
+    add_inner_option!(with_analyzer, analyzer, String);
+    add_inner_option!(with_boost, boost, f64);
+    add_inner_option!(with_operator, operator, String);
+    add_inner_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_inner_option!(with_fuzziness, fuzziness, Fuzziness);
+    add_inner_option!(with_prefix_length, prefix_length, u64);
+    add_inner_option!(with_max_expansions, max_expansions, u64);
+    add_inner_option!(with_rewrite, rewrite, String);
+    add_inner_option!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
+    add_inner_option!(with_slop, slop, i64);
 
-    //build!(Match);
+    build!(Match);
 }
-
-// TODO - deprecated
-// impl ToJson for MatchQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-//         inner.insert("query".to_owned(), self.query.to_json());
-//         optional_add!(self, inner, match_type);
-//         optional_add!(self, inner, cutoff_frequency);
-//         optional_add!(self, inner, lenient);
-//         optional_add!(self, inner, analyzer);
-//         optional_add!(self, inner, boost);
-//         optional_add!(self, inner, operator);
-//         optional_add!(self, inner, minimum_should_match);
-//         optional_add!(self, inner, fuzziness);
-//         optional_add!(self, inner, prefix_length);
-//         optional_add!(self, inner, max_expansions);
-//         optional_add!(self, inner, rewrite);
-//         optional_add!(self, inner, zero_terms_query);
-//         optional_add!(self, inner, slop);
-//         d.insert(self.field.clone(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
 
 /// Multi Match Query
 #[derive(Debug, Default)]
