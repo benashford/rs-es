@@ -257,8 +257,10 @@ pub enum Query {
     Exists(Box<term::ExistsQuery>),
     // // Not implementing the Missing query, as it's deprecated, use `must_not` and `Exists`
     // // instead
+    #[serde(rename="prefix")]
     Prefix(Box<term::PrefixQuery>),
-    // Wildcard(Box<term::WildcardQuery>),
+    #[serde(rename="wildcard")]
+    Wildcard(Box<term::WildcardQuery>),
     // Regexp(Box<term::RegexpQuery>),
     // Fuzzy(Box<term::FuzzyQuery>),
     // Type(Box<term::TypeQuery>),
@@ -266,6 +268,7 @@ pub enum Query {
 
     // // Compound queries
     // ConstantScore(Box<compound::ConstantScoreQuery>),
+    #[serde(rename="bool")]
     Bool(Box<compound::BoolQuery>),
     // DisMax(Box<compound::DisMaxQuery>),
     // FunctionScore(Box<compound::FunctionScoreQuery>),

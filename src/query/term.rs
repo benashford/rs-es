@@ -292,24 +292,16 @@ impl PrefixQuery {
     build!(Prefix);
 }
 
-// impl ToJson for PrefixQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-//         inner.insert("value".to_owned(), self.value.to_json());
-//         optional_add!(self, inner, boost);
-//         optional_add!(self, inner, rewrite);
-//         d.insert(self.field.clone(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
-
 /// Wildcard query
-#[derive(Debug, Default)]
-pub struct WildcardQuery {
-    field: String,
+#[derive(Debug, Serialize)]
+pub struct WildcardQuery(FieldBasedQuery<WildcardQueryInner, NoOuter>);
+
+#[derive(Debug, Default, Serialize)]
+pub struct WildcardQueryInner {
     value: String,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     rewrite: Option<Rewrite>
 }
 
@@ -317,32 +309,21 @@ impl Query {
     pub fn build_wildcard<A, B>(field: A, value: B) -> WildcardQuery
         where A: Into<String>,
               B: Into<String> {
-        WildcardQuery {
-            field: field.into(),
-            value: value.into(),
-            ..Default::default()
-        }
+        WildcardQuery(FieldBasedQuery::new(field.into(),
+                                           WildcardQueryInner {
+                                               value: value.into(),
+                                               ..Default::default()
+                                           },
+                                           NoOuter))
     }
 }
 
 impl WildcardQuery {
-    add_option!(with_boost, boost, f64);
-    add_option!(with_rewrite, rewrite, Rewrite);
+    add_inner_option!(with_boost, boost, f64);
+    add_inner_option!(with_rewrite, rewrite, Rewrite);
 
-    //build!(Wildcard);
+    build!(Wildcard);
 }
-
-// impl ToJson for WildcardQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-//         inner.insert("value".to_owned(), self.value.to_json());
-//         optional_add!(self, inner, boost);
-//         optional_add!(self, inner, rewrite);
-//         d.insert(self.field.clone(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
 
 // Regexp query
 /// Flags for the Regexp query
