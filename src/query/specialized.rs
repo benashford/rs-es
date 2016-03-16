@@ -70,28 +70,29 @@ impl MoreLikeThisQuery {
     //build!(MoreLikeThis);
 }
 
-impl ToJson for MoreLikeThisQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        optional_add!(self, d, fields);
-        optional_add!(self, d, like_text);
-        optional_add!(self, d, ids);
-        optional_add!(self, d, docs);
-        optional_add!(self, d, max_query_terms);
-        optional_add!(self, d, min_term_freq);
-        optional_add!(self, d, min_doc_freq);
-        optional_add!(self, d, max_doc_freq);
-        optional_add!(self, d, min_word_length);
-        optional_add!(self, d, max_word_length);
-        optional_add!(self, d, stop_words);
-        optional_add!(self, d, analyzer);
-        optional_add!(self, d, minimum_should_match);
-        optional_add!(self, d, boost_terms);
-        optional_add!(self, d, include);
-        optional_add!(self, d, boost);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for MoreLikeThisQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         optional_add!(self, d, fields);
+//         optional_add!(self, d, like_text);
+//         optional_add!(self, d, ids);
+//         optional_add!(self, d, docs);
+//         optional_add!(self, d, max_query_terms);
+//         optional_add!(self, d, min_term_freq);
+//         optional_add!(self, d, min_doc_freq);
+//         optional_add!(self, d, max_doc_freq);
+//         optional_add!(self, d, min_word_length);
+//         optional_add!(self, d, max_word_length);
+//         optional_add!(self, d, stop_words);
+//         optional_add!(self, d, analyzer);
+//         optional_add!(self, d, minimum_should_match);
+//         optional_add!(self, d, boost_terms);
+//         optional_add!(self, d, include);
+//         optional_add!(self, d, boost);
+//         Json::Object(d)
+//     }
+// }
 
 // A document can be provided as an example
 #[derive(Debug)]

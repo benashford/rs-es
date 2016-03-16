@@ -136,29 +136,6 @@ impl ToString for MinimumShouldMatch {
     }
 }
 
-impl ToJson for MinimumShouldMatch {
-    fn to_json(&self) -> Json {
-        match self {
-            &MinimumShouldMatch::Integer(val) => val.to_json(),
-            &MinimumShouldMatch::Percentage(_) => {
-                self.to_string().to_json()
-            },
-            &MinimumShouldMatch::Combination(ref comb) => {
-                comb.to_json()
-            },
-            &MinimumShouldMatch::MultipleCombination(ref combs) => {
-                Json::String(combs.iter().map(|c| c.to_string()).join(" "))
-            }
-            &MinimumShouldMatch::LowHigh(low, high) => {
-                let mut d = BTreeMap::new();
-                d.insert("low_freq".to_owned(), low.to_json());
-                d.insert("high_freq".to_owned(), high.to_json());
-                Json::Object(d)
-            }
-        }
-    }
-}
-
 impl Serialize for MinimumShouldMatch {
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
         where S: Serializer {
@@ -190,16 +167,17 @@ pub enum Fuzziness {
 from!(i64, Fuzziness, LevenshteinDistance);
 from!(f64, Fuzziness, Proportionate);
 
-impl ToJson for Fuzziness {
-    fn to_json(&self) -> Json {
-        use self::Fuzziness::{Auto, LevenshteinDistance, Proportionate};
-        match self {
-            &Auto                      => "auto".to_json(),
-            &LevenshteinDistance(dist) => dist.to_json(),
-            &Proportionate(prop)       => prop.to_json()
-        }
-    }
-}
+// TODO - deprecated
+// impl ToJson for Fuzziness {
+//     fn to_json(&self) -> Json {
+//         use self::Fuzziness::{Auto, LevenshteinDistance, Proportionate};
+//         match self {
+//             &Auto                      => "auto".to_json(),
+//             &LevenshteinDistance(dist) => dist.to_json(),
+//             &Proportionate(prop)       => prop.to_json()
+//         }
+//     }
+// }
 
 // Flags
 
@@ -235,18 +213,19 @@ pub enum ScoreMode {
     Min
 }
 
-impl ToJson for ScoreMode {
-    fn to_json(&self) -> Json {
-        match self {
-            &ScoreMode::Multiply => "multiply".to_json(),
-            &ScoreMode::Sum => "sum".to_json(),
-            &ScoreMode::Avg => "avg".to_json(),
-            &ScoreMode::First => "first".to_json(),
-            &ScoreMode::Max => "max".to_json(),
-            &ScoreMode::Min => "min".to_json()
-        }
-    }
-}
+// TODO - DEPRECATED
+// impl ToJson for ScoreMode {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &ScoreMode::Multiply => "multiply".to_json(),
+//             &ScoreMode::Sum => "sum".to_json(),
+//             &ScoreMode::Avg => "avg".to_json(),
+//             &ScoreMode::First => "first".to_json(),
+//             &ScoreMode::Max => "max".to_json(),
+//             &ScoreMode::Min => "min".to_json()
+//         }
+//     }
+// }
 
 /// Query represents all available queries
 ///
@@ -274,7 +253,8 @@ pub enum Query {
     Terms(Box<term::TermsQuery>),
     #[serde(rename="range")]
     Range(Box<term::RangeQuery>),
-    // Exists(Box<term::ExistsQuery>),
+    #[serde(rename="exists")]
+    Exists(Box<term::ExistsQuery>),
     // // Not implementing the Missing query, as it's deprecated, use `must_not` and `Exists`
     // // instead
     // Prefix(Box<term::PrefixQuery>),
@@ -335,15 +315,6 @@ impl Default for Query {
     }
 }
 
-/// Convert a Query to Json
-// TODO - remove
-impl ToJson for Query {
-    fn to_json(&self) -> Json {
-        // TODO - remove this entirely
-        unimplemented!()
-    }
-}
-
 // Specific query types go here
 
 /// Match all query
@@ -364,14 +335,6 @@ impl MatchAllQuery {
     add_option!(with_boost, boost, f64);
 
     build!(MatchAll);
-}
-
-impl ToJson for MatchAllQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        optional_add!(self, d, boost);
-        Json::Object(d)
-    }
 }
 
 #[cfg(test)]

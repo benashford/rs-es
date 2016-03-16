@@ -48,15 +48,16 @@ impl NestedQuery {
     //build!(Nested);
 }
 
-impl ToJson for NestedQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("path".to_owned(), self.path.to_json());
-        d.insert("query".to_owned(), self.query.to_json());
-        optional_add!(self, d, score_mode);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for NestedQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("path".to_owned(), self.path.to_json());
+//         d.insert("query".to_owned(), self.query.to_json());
+//         optional_add!(self, d, score_mode);
+//         Json::Object(d)
+//     }
+// }
 
 /// Has Child query
 #[derive(Debug, Default)]
@@ -112,24 +113,26 @@ impl HasParentQuery {
     //build!(HasParent);
 }
 
-impl ToJson for HasChildQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("type".to_owned(), self.doc_type.to_json());
-        d.insert("query".to_owned(), self.query.to_json());
-        optional_add!(self, d, score_mode);
-        optional_add!(self, d, min_children);
-        optional_add!(self, d, max_children);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for HasChildQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("type".to_owned(), self.doc_type.to_json());
+//         d.insert("query".to_owned(), self.query.to_json());
+//         optional_add!(self, d, score_mode);
+//         optional_add!(self, d, min_children);
+//         optional_add!(self, d, max_children);
+//         Json::Object(d)
+//     }
+// }
 
-impl ToJson for HasParentQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("parent_type".to_owned(), self.parent_type.to_json());
-        d.insert("query".to_owned(), self.query.to_json());
-        optional_add!(self, d, score_mode);
-        Json::Object(d)
-    }
-}
+// TODO - deprecated
+// impl ToJson for HasParentQuery {
+//     fn to_json(&self) -> Json {
+//         let mut d = BTreeMap::new();
+//         d.insert("parent_type".to_owned(), self.parent_type.to_json());
+//         d.insert("query".to_owned(), self.query.to_json());
+//         optional_add!(self, d, score_mode);
+//         Json::Object(d)
+//     }
+// }

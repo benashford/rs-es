@@ -38,19 +38,20 @@ pub enum Rewrite {
     TopTermsBlendedFreqs(i64),
 }
 
-impl ToJson for Rewrite {
-    fn to_json(&self) -> Json {
-        match self {
-            &Rewrite::ConstantScoreAuto => "constant_score_auto".to_json(),
-            &Rewrite::ScoringBoolean => "scoring_boolean".to_json(),
-            &Rewrite::ConstantScoreBoolean => "constant_score_boolean".to_json(),
-            &Rewrite::ConstantScoreFilter => "constant_score_filter".to_json(),
-            &Rewrite::TopTerms(n) => format!("top_terms_{}", n).to_json(),
-            &Rewrite::TopTermsBoost(n) => format!("top_terms_boost_{}", n).to_json(),
-            &Rewrite::TopTermsBlendedFreqs(n) => format!("top_terms_blended_freqs_{}", n).to_json()
-        }
-    }
-}
+// TODO - deprecated
+// impl ToJson for Rewrite {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &Rewrite::ConstantScoreAuto => "constant_score_auto".to_json(),
+//             &Rewrite::ScoringBoolean => "scoring_boolean".to_json(),
+//             &Rewrite::ConstantScoreBoolean => "constant_score_boolean".to_json(),
+//             &Rewrite::ConstantScoreFilter => "constant_score_filter".to_json(),
+//             &Rewrite::TopTerms(n) => format!("top_terms_{}", n).to_json(),
+//             &Rewrite::TopTermsBoost(n) => format!("top_terms_boost_{}", n).to_json(),
+//             &Rewrite::TopTermsBlendedFreqs(n) => format!("top_terms_blended_freqs_{}", n).to_json()
+//         }
+//     }
+// }
 
 /// Term query
 #[derive(Debug, Default, Serialize)]
@@ -117,19 +118,6 @@ impl<'a> TermsQueryLookup {
     add_option!(with_routing, routing, String);
 }
 
-// TODO - deprecated
-// impl ToJson for TermsQueryLookup {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("id".to_owned(), self.id.to_json());
-//         d.insert("path".to_owned(), self.path.to_json());
-//         optional_add!(self, d, index);
-//         optional_add!(self, d, doc_type, "type");
-//         optional_add!(self, d, routing);
-//         Json::Object(d)
-//     }
-// }
-
 /// TermsQueryIn
 #[derive(Debug)]
 pub enum TermsQueryIn {
@@ -156,16 +144,6 @@ impl Default for TermsQueryIn {
         TermsQueryIn::Values(Default::default())
     }
 }
-
-// TODO - deprecated
-// impl ToJson for TermsQueryIn {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &TermsQueryIn::Values(ref v) => v.to_json(),
-//             &TermsQueryIn::Lookup(ref l) => l.to_json()
-//         }
-//     }
-// }
 
 impl From<TermsQueryLookup> for TermsQueryIn {
     fn from(from: TermsQueryLookup) -> TermsQueryIn {
@@ -263,32 +241,20 @@ impl RangeQuery {
 }
 
 /// Exists query
-#[derive(Debug)]
-pub struct ExistsQuery {
-    field: String
-}
+#[derive(Debug, Serialize)]
+pub struct ExistsQuery(FieldBasedQuery<NoOuter, NoOuter>);
 
 impl Query {
     pub fn build_exists<A>(field: A) -> ExistsQuery
         where A: Into<String> {
 
-        ExistsQuery {
-            field: field.into()
-        }
+        ExistsQuery(FieldBasedQuery::new(field.into(), NoOuter, NoOuter))
     }
 }
 
 impl ExistsQuery {
-    //build!(Exists);
+    build!(Exists);
 }
-
-// impl ToJson for ExistsQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("field".to_owned(), self.field.to_json());
-//         Json::Object(d)
-//     }
-// }
 
 /// Prefix query
 #[derive(Debug, Default)]
