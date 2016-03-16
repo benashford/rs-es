@@ -38,20 +38,23 @@ pub enum Rewrite {
     TopTermsBlendedFreqs(i64),
 }
 
-// TODO - deprecated
-// impl ToJson for Rewrite {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &Rewrite::ConstantScoreAuto => "constant_score_auto".to_json(),
-//             &Rewrite::ScoringBoolean => "scoring_boolean".to_json(),
-//             &Rewrite::ConstantScoreBoolean => "constant_score_boolean".to_json(),
-//             &Rewrite::ConstantScoreFilter => "constant_score_filter".to_json(),
-//             &Rewrite::TopTerms(n) => format!("top_terms_{}", n).to_json(),
-//             &Rewrite::TopTermsBoost(n) => format!("top_terms_boost_{}", n).to_json(),
-//             &Rewrite::TopTermsBlendedFreqs(n) => format!("top_terms_blended_freqs_{}", n).to_json()
-//         }
-//     }
-// }
+impl Serialize for Rewrite {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        use self::Rewrite::*;
+        match self {
+            &ConstantScoreAuto => "constant_score_auto".serialize(serializer),
+            &ScoringBoolean => "scoring_boolean".serialize(serializer),
+            &ConstantScoreBoolean => "constant_score_boolean".serialize(serializer),
+            &ConstantScoreFilter => "constant_score_filter".serialize(serializer),
+            &TopTerms(n) => format!("top_terms_{}", n).serialize(serializer),
+            &TopTermsBoost(n) => format!("top_terms_boost_{}", n).serialize(serializer),
+            &TopTermsBlendedFreqs(n) => {
+                format!("top_terms_blended_freqs_{}", n).serialize(serializer)
+            }
+        }
+    }
+}
 
 /// Term query
 #[derive(Debug, Default, Serialize)]
@@ -257,11 +260,15 @@ impl ExistsQuery {
 }
 
 /// Prefix query
-#[derive(Debug, Default)]
-pub struct PrefixQuery {
-    field: String,
+#[derive(Debug, Serialize)]
+pub struct PrefixQuery(FieldBasedQuery<PrefixQueryInner, NoOuter>);
+
+#[derive(Debug, Default, Serialize)]
+pub struct PrefixQueryInner {
     value: String,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     rewrite: Option<Rewrite>
 }
 
@@ -269,19 +276,20 @@ impl Query {
     pub fn build_prefix<A, B>(field: A, value: B) -> PrefixQuery
         where A: Into<String>,
               B: Into<String> {
-        PrefixQuery {
-            field: field.into(),
-            value: value.into(),
-            ..Default::default()
-        }
+        PrefixQuery(FieldBasedQuery::new(field.into(),
+                                         PrefixQueryInner {
+                                             value: value.into(),
+                                             ..Default::default()
+                                         },
+                                         NoOuter))
     }
 }
 
 impl PrefixQuery {
-    add_option!(with_boost, boost, f64);
-    add_option!(with_rewrite, rewrite, Rewrite);
+    add_inner_option!(with_boost, boost, f64);
+    add_inner_option!(with_rewrite, rewrite, Rewrite);
 
-    //build!(Prefix);
+    build!(Prefix);
 }
 
 // impl ToJson for PrefixQuery {

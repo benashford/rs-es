@@ -257,7 +257,7 @@ pub enum Query {
     Exists(Box<term::ExistsQuery>),
     // // Not implementing the Missing query, as it's deprecated, use `must_not` and `Exists`
     // // instead
-    // Prefix(Box<term::PrefixQuery>),
+    Prefix(Box<term::PrefixQuery>),
     // Wildcard(Box<term::WildcardQuery>),
     // Regexp(Box<term::RegexpQuery>),
     // Fuzzy(Box<term::FuzzyQuery>),
