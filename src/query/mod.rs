@@ -247,10 +247,14 @@ pub enum Query {
     // Full-text queries
     #[serde(rename="match")]
     Match(Box<full_text::MatchQuery>),
-    // MultiMatch(Box<full_text::MultiMatchQuery>),
-    // Common(Box<full_text::CommonQuery>),
-    // QueryString(Box<full_text::QueryStringQuery>),
-    // SimpleQueryString(Box<full_text::SimpleQueryStringQuery>),
+    #[serde(rename="multi_match")]
+    MultiMatch(Box<full_text::MultiMatchQuery>),
+    #[serde(rename="common")]
+    Common(Box<full_text::CommonQuery>),
+    #[serde(rename="query_string")]
+    QueryString(Box<full_text::QueryStringQuery>),
+    #[serde(rename="simple_query_string")]
+    SimpleQueryString(Box<full_text::SimpleQueryStringQuery>),
 
     // // Term level queries
     #[serde(rename="term")]

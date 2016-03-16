@@ -20,9 +20,6 @@ use std::collections::BTreeMap;
 
 use hyper::status::StatusCode;
 
-use rustc_serialize::json;
-use rustc_serialize::json::{Json, ToJson};
-
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{Error, MapVisitor, Visitor};
 use serde_json;
