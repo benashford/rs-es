@@ -396,16 +396,15 @@ mod tests {
                    serde_json::to_string(&terms_query_3).unwrap());
     }
 
-    // TODO - re-enable
-    // #[test]
-    // fn test_function_score_query() {
-    //     let function_score_query = Query::build_function_score()
-    //         .with_function(Function::build_script_score("this_is_a_script")
-    //                        .with_lang("made_up")
-    //                        .add_param("A", 12)
-    //                        .build())
-    //         .build();
-    //     assert_eq!("{\"function_score\":{\"functions\":[{\"script_score\":{\"inline\":\"this_is_a_script\",\"lang\":\"made_up\",\"params\":{\"A\":12}}}]}}",
-    //                function_score_query.to_json().to_string());
-    // }
+    #[test]
+    fn test_function_score_query() {
+        let function_score_query = Query::build_function_score()
+            .with_function(Function::build_script_score("this_is_a_script")
+                           .with_lang("made_up")
+                           .add_param("A", 12)
+                           .build())
+            .build();
+        assert_eq!("{\"function_score\":{\"functions\":[{\"script_score\":{\"lang\":\"made_up\",\"params\":{\"A\":12},\"inline\":\"this_is_a_script\"}}]}}",
+                   serde_json::to_string(&function_score_query).unwrap());
+    }
 }
