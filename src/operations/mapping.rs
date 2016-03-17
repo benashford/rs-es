@@ -81,7 +81,7 @@ pub mod tests {
 
     use super::MappingOperation;
 
-    #[derive(Debug, RustcDecodable, RustcEncodable, Serialize)]
+    #[derive(Debug, Serialize)]
     pub struct Author {
         pub name: String
     }

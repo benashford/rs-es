@@ -25,9 +25,6 @@ pub mod bucket;
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
-// TODO - deprecated
-use rustc_serialize::json::{Json, ToJson};
-
 use serde::de::Deserialize;
 use serde::ser;
 use serde::ser::{Serialize, Serializer};
@@ -39,20 +36,20 @@ use ::query;
 use self::bucket::BucketAggregationResult;
 use self::metrics::MetricsAggregationResult;
 
-// TODO - deprecated
-#[derive(Debug)]
-pub enum Scripts<'a> {
-    Inline(&'a str, Option<&'a str>),
-    Id(&'a str)
-}
+// // TODO - deprecated
+// #[derive(Debug)]
+// pub enum Scripts<'a> {
+//     Inline(&'a str, Option<&'a str>),
+//     Id(&'a str)
+// }
 
-// TODO - deprecated
-/// Script attributes for various attributes
-#[derive(Debug)]
-pub struct Script<'a> {
-    script: Scripts<'a>,
-    params: Option<Json>
-}
+// // TODO - deprecated
+// /// Script attributes for various attributes
+// #[derive(Debug)]
+// pub struct Script<'a> {
+//     script: Scripts<'a>,
+//     params: Option<Json>
+// }
 
 // TODO - deprecated
 // impl<'a> Script<'a> {
@@ -107,27 +104,27 @@ pub struct Script<'a> {
 //     }
 // }
 
-/// A common pattern is for an aggregation to accept a field or a script
-#[derive(Debug)]
-// TODO - deprecated
-pub enum FieldOrScript<'a> {
-    Field(&'a str),
-    Script(Script<'a>)
-}
+// /// A common pattern is for an aggregation to accept a field or a script
+// #[derive(Debug)]
+// // TODO - deprecated
+// pub enum FieldOrScript<'a> {
+//     Field(&'a str),
+//     Script(Script<'a>)
+// }
 
-impl<'a> FieldOrScript<'a> {
-    // TODO - deprecated
-    // fn add_to_object(&self, obj: &mut BTreeMap<String, Json>) {
-    //     match self {
-    //         &FieldOrScript::Field(field) => {
-    //             obj.insert("field".to_owned(), field.to_json());
-    //         },
-    //         &FieldOrScript::Script(ref script) => {
-    //             script.add_to_object(obj);
-    //         }
-    //     }
-    // }
-}
+// impl<'a> FieldOrScript<'a> {
+//     // TODO - deprecated
+//     // fn add_to_object(&self, obj: &mut BTreeMap<String, Json>) {
+//     //     match self {
+//     //         &FieldOrScript::Field(field) => {
+//     //             obj.insert("field".to_owned(), field.to_json());
+//     //         },
+//     //         &FieldOrScript::Script(ref script) => {
+//     //             script.add_to_object(obj);
+//     //         }
+//     //     }
+//     // }
+// }
 
 // impl<'a> From<&'a str> for FieldOrScript<'a> {
 //     fn from(from: &'a str) -> FieldOrScript<'a> {

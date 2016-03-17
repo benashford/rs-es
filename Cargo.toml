@@ -25,7 +25,6 @@ syntex = "^0.30"
 
 [dependencies]
 hyper = "^0.7"
-rustc-serialize = "^0.3"
 log = "^0.3"
 maplit = "^0.1"
 serde = "^0.7"

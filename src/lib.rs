@@ -34,7 +34,6 @@ extern crate serde_json;
 #[macro_use]
 extern crate log;
 extern crate hyper;
-extern crate rustc_serialize;
 
 #[macro_use]
 extern crate maplit;

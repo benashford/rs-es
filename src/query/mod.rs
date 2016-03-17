@@ -42,8 +42,6 @@
 
 use std::collections::BTreeMap;
 
-use rustc_serialize::json::{Json, ToJson};
-
 use serde::{Serialize, Serializer};
 
 use ::json::ShouldSkip;
@@ -87,12 +85,6 @@ impl CombinationMinimumShouldMatch {
 impl ToString for CombinationMinimumShouldMatch {
     fn to_string(&self) -> String {
         format!("{}<{}", self.first.to_string(), self.second.to_string())
-    }
-}
-
-impl ToJson for CombinationMinimumShouldMatch {
-    fn to_json(&self) -> Json {
-        Json::String(self.to_string())
     }
 }
 
@@ -368,12 +360,7 @@ impl MatchAllQuery {
 
 #[cfg(test)]
 mod tests {
-    // TODO: replace with Serde
-    extern crate rustc_serialize;
-
     extern crate serde_json;
-
-    use rustc_serialize::json::ToJson;
 
     use super::{Flags, Query};
     use super::full_text::SimpleQueryStringFlags;

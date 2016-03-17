@@ -23,8 +23,6 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use rustc_serialize::json::{Json, ToJson};
-
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de;
 use serde_json::Value;
@@ -118,12 +116,6 @@ impl Duration {
 impl ToString for Duration {
     fn to_string(&self) -> String {
         format!("{}{}", self.amt, self.unit.to_string())
-    }
-}
-
-impl ToJson for Duration {
-    fn to_json(&self) -> Json {
-        Json::String(self.to_string())
     }
 }
 
@@ -289,15 +281,6 @@ impl<T> From<Vec<T>> for OneOrMany<T> {
     }
 }
 
-impl<T: ToJson> ToJson for OneOrMany<T> {
-    fn to_json(&self) -> Json {
-        match self {
-            &OneOrMany::One(ref t)  => t.to_json(),
-            &OneOrMany::Many(ref t) => t.to_json()
-        }
-    }
-}
-
 /// DistanceType
 #[derive(Debug)]
 pub enum DistanceType {
@@ -315,16 +298,6 @@ impl Serialize for DistanceType {
             &DistanceType::Arc       => "arc",
             &DistanceType::Plane     => "plane"
         }.serialize(serializer)
-    }
-}
-
-impl ToJson for DistanceType {
-    fn to_json(&self) -> Json {
-        Json::String(match self {
-            &DistanceType::SloppyArc => "sloppy_arc",
-            &DistanceType::Arc       => "arc",
-            &DistanceType::Plane     => "plane"
-        }.to_owned())
     }
 }
 
@@ -369,12 +342,6 @@ impl Serialize for DistanceUnit {
         where S: Serializer {
 
         self.to_string().serialize(serializer)
-    }
-}
-
-impl ToJson for DistanceUnit {
-    fn to_json(&self) -> Json {
-        Json::String(self.to_string())
     }
 }
 

@@ -24,9 +24,6 @@ use std::io::Read;
 use hyper;
 use hyper::client::response;
 
-// TODO - remove
-use rustc_serialize::json;
-
 use serde_json;
 
 // Error handling
@@ -48,16 +45,7 @@ pub enum EsError {
     IoError(io::Error),
 
     /// JSON error
-    JsonError(serde_json::error::Error),
-
-    /// Miscellaneous JSON decoding error - DEPRECATED
-    JsonDecoderError(json::DecoderError),
-
-    /// Miscellaneous JSON encoding error - DEPRECATED
-    JsonEncoderError(json::EncoderError),
-
-    /// Miscllenaeous JSON building error - DEPRECATED
-    JsonBuilderError(json::BuilderError)
+    JsonError(serde_json::error::Error)
 }
 
 impl From<io::Error> for EsError {
@@ -75,24 +63,6 @@ impl From<hyper::error::Error> for EsError {
 impl From<serde_json::error::Error> for EsError {
     fn from(err: serde_json::error::Error) -> EsError {
         EsError::JsonError(err)
-    }
-}
-
-impl From<json::DecoderError> for EsError {
-    fn from(err: json::DecoderError) -> EsError {
-        EsError::JsonDecoderError(err)
-    }
-}
-
-impl From<json::EncoderError> for EsError {
-    fn from(err: json::EncoderError) -> EsError {
-        EsError::JsonEncoderError(err)
-    }
-}
-
-impl From<json::BuilderError> for EsError {
-    fn from(err: json::BuilderError) -> EsError {
-        EsError::JsonBuilderError(err)
     }
 }
 
@@ -120,10 +90,7 @@ impl Error for EsError {
             EsError::EsServerError(ref err) => err,
             EsError::HttpError(ref err) => err.description(),
             EsError::IoError(ref err) => err.description(),
-            EsError::JsonError(ref err) => err.description(),
-            EsError::JsonDecoderError(ref err) => err.description(),
-            EsError::JsonEncoderError(ref err) => err.description(),
-            EsError::JsonBuilderError(ref err) => err.description()
+            EsError::JsonError(ref err) => err.description()
         }
     }
 
@@ -133,10 +100,7 @@ impl Error for EsError {
             EsError::EsServerError(_)          => None,
             EsError::HttpError(ref err)        => Some(err as &Error),
             EsError::IoError(ref err)          => Some(err as &Error),
-            EsError::JsonError(ref err)        => Some(err as &Error),
-            EsError::JsonDecoderError(ref err) => Some(err as &Error),
-            EsError::JsonEncoderError(ref err) => Some(err as &Error),
-            EsError::JsonBuilderError(ref err) => Some(err as &Error)
+            EsError::JsonError(ref err)        => Some(err as &Error)
         }
     }
 }
@@ -148,10 +112,7 @@ impl fmt::Display for EsError {
             EsError::EsServerError(ref s) => fmt::Display::fmt(s, f),
             EsError::HttpError(ref err) => fmt::Display::fmt(err, f),
             EsError::IoError(ref err) => fmt::Display::fmt(err, f),
-            EsError::JsonError(ref err) => fmt::Display::fmt(err, f),
-            EsError::JsonDecoderError(ref err) => fmt::Display::fmt(err, f),
-            EsError::JsonEncoderError(ref err) => fmt::Display::fmt(err, f),
-            EsError::JsonBuilderError(ref err) => fmt::Display::fmt(err, f)
+            EsError::JsonError(ref err) => fmt::Display::fmt(err, f)
         }
     }
 }

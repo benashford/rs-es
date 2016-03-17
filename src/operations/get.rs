@@ -16,16 +16,12 @@
 
 //! Implementation of the Get API
 
-use rustc_serialize::Decodable;
-use rustc_serialize::json::Json;
-
-use serde::de::Deserialize;
+use serde::Deserialize;
 
 use ::{Client, EsResponse};
 use ::error::EsError;
 use ::util::StrJoin;
 use super::common::{Options, OptionVal};
-use super::decode_json;
 
 /// Values for the `preference` query parameter
 pub enum Preference {
@@ -98,7 +94,7 @@ impl<'a, 'b> GetOperation<'a, 'b> {
 
     pub fn send<T>(&'b mut self) -> Result<GetResult<T>, EsError>
         where T: Deserialize {
-        
+
         let url = format!("/{}/{}/{}{}",
                           self.index,
                           self.doc_type.expect("No doc_type specified"),

@@ -22,9 +22,6 @@
 
 use hyper::status::StatusCode;
 
-use rustc_serialize::Decodable;
-use rustc_serialize::json::{Decoder, Json};
-
 use ::{Client, EsResponse};
 use ::error::EsError;
 use ::util::StrJoin;
@@ -100,16 +97,9 @@ impl<'a, 'b> RefreshOperation<'a, 'b> {
 
 // Results
 
-// Result helpers
-
-// TODO - deprecated, replace with Serde
-fn decode_json<T: Decodable>(doc: Json) -> Result<T, EsError> {
-    Ok(try!(Decodable::decode(&mut Decoder::new(doc))))
-}
-
 /// Shared struct for operations that include counts of success/failed shards.
 /// This is returned within various other result structs.
-#[derive(Debug, RustcDecodable, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ShardCountResult {
     pub total:      u64,
     pub successful: u64,
@@ -121,17 +111,4 @@ pub struct ShardCountResult {
 pub struct RefreshResult {
     #[serde(rename="_shards")]
     pub shards: ShardCountResult
-}
-
-// TODO - obsolete
-impl<'a> From<&'a Json> for RefreshResult {
-    fn from(r: &'a Json) -> RefreshResult {
-        RefreshResult {
-            shards: decode_json(
-                r.find("_shards")
-                    .expect("No field '_shards'")
-                    .clone())
-                .unwrap()
-        }
-    }
 }

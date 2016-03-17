@@ -18,8 +18,6 @@
 
 use hyper::status::StatusCode;
 
-use rustc_serialize::json::Json;
-
 use ::{Client, EsResponse};
 use ::error::EsError;
 use super::common::{Options, OptionVal};

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ben Ashford
+ * Copyright 2015-2016 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 
 //! Implementation of ElasticSearch Index operation
-
-use rustc_serialize::Encodable;
-use rustc_serialize::json::Json;
 
 use serde::ser::Serialize;
 
@@ -133,17 +130,4 @@ pub struct IndexResult {
     #[serde(rename="_version")]
     pub version:  u64,
     pub created:  bool
-}
-
-// TODO - deprecated - delete me
-impl<'a> From<&'a Json> for IndexResult {
-    fn from(r: &'a Json) -> IndexResult {
-        IndexResult {
-            index:    get_json_string!(r, "_index"),
-            doc_type: get_json_string!(r, "_type"),
-            id:       get_json_string!(r, "_id"),
-            version:  get_json_u64!(r, "_version"),
-            created:  get_json_bool!(r, "created")
-        }
-    }
 }

@@ -19,9 +19,6 @@
 use serde::{Serialize, Serializer};
 use serde::ser::{MapVisitor, SeqVisitor};
 
-// TODO: this contains Serde related functions, there are old rustc_serialize helpers
-// elsewhere, they should be deleted or moved/updated here.
-
 /// To tell Serde to skip various fields
 pub trait ShouldSkip {
     fn should_skip(&self) -> bool;

@@ -22,15 +22,9 @@ use serde::ser;
 use serde::ser::{Serialize, Serializer};
 use serde_json::{from_value, to_value, Value};
 
-// TODO - deprecated
-use rustc_serialize::json::{Json, ToJson};
-
 use ::error::EsError;
 use ::json::{NoOuter, ShouldSkip};
 use ::units::{GeoBox, JsonVal};
-
-// TODO - deprecated
-use super::FieldOrScript;
 
 use super::{Aggregation, AggregationResult};
 use super::common::{Agg, Script};

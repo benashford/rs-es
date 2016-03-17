@@ -18,8 +18,6 @@
 
 use std::collections::BTreeMap;
 
-use rustc_serialize::json::{Json, ToJson};
-
 use serde::{Serialize, Serializer};
 
 use ::json::{NoOuter, ShouldSkip};

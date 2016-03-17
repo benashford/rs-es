@@ -18,9 +18,6 @@
 
 use std::fmt;
 
-// TODO - remove
-use rustc_serialize::json::{Json, ToJson};
-
 use serde::ser::{Serialize, Serializer};
 
 use util::StrJoin;
@@ -133,13 +130,6 @@ impl ToString for VersionType {
 }
 
 from_exp!(VersionType, OptionVal, from, OptionVal(from.to_string()));
-
-// TODO - deprecated
-impl ToJson for VersionType {
-    fn to_json(&self) -> Json {
-        Json::String(self.to_string())
-    }
-}
 
 /// The consistency query parameter
 pub enum Consistency {

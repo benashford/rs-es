@@ -17,9 +17,6 @@
 
 //! Implementation of ElasticSearch Analyze operation
 
-// TODO - deprecated
-use rustc_serialize::json::Json;
-
 use ::do_req;
 use ::{Client, EsResponse};
 use ::error::EsError;
@@ -89,23 +86,4 @@ pub struct Token {
     pub position: u64,
     pub start_offset: u64,
     pub end_offset: u64
-}
-
-// DEPRECATED
-impl<'a> From<&'a Json> for AnalyzeResult {
-    fn from(r: &'a Json) -> AnalyzeResult {
-        let mut tokens = Vec::new();
-        for t in get_json_array!(r, "tokens") {
-            tokens.push(Token {
-                token: get_json_string!(t, "token"),
-                token_type: get_json_string!(t, "type"),
-                position: get_json_u64!(t, "position"),
-                start_offset: get_json_u64!(t, "start_offset"),
-                end_offset: get_json_u64!(t, "end_offset")
-            })
-        }
-        AnalyzeResult {
-            tokens: tokens
-        }
-    }
 }

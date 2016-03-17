@@ -18,8 +18,6 @@
 
 use std::collections::BTreeMap;
 
-use rustc_serialize::json::{Json, ToJson};
-
 use ::json::ShouldSkip;
 
 use super::{ScoreMode, Query};
