@@ -300,17 +300,25 @@ pub enum Query {
     // // Not implementing the Limit query, as it's deprecated.
 
     // Joining queries
+    #[serde(rename="nested")]
     Nested(Box<joining::NestedQuery>),
+    #[serde(rename="has_child")]
     HasChild(Box<joining::HasChildQuery>),
+    #[serde(rename="has_parent")]
     HasParent(Box<joining::HasParentQuery>),
 
     // Geo queries
+    #[serde(rename="geo_shape")]
     GeoShape(Box<geo::GeoShapeQuery>),
+    #[serde(rename="geo_bounding_box")]
     GeoBoundingBox(Box<geo::GeoBoundingBoxQuery>),
+    #[serde(rename="geo_distance")]
     GeoDistance(Box<geo::GeoDistanceQuery>),
     // TODO: implement me - pending changes to range query
     //GeoDistanceRange(Box<geo::GeoDistanceRangeQuery>)
+    #[serde(rename="geo_polygon")]
     GeoPolygon(Box<geo::GeoPolygonQuery>),
+    #[serde(rename="geohash_cell")]
     GeohashCell(Box<geo::GeohashCellQuery>),
 
     // // Specialized queries
@@ -331,9 +339,7 @@ pub enum Query {
 
 impl Default for Query {
     fn default() -> Query {
-        // TODO - put this back
-        //Query::MatchAll(Default::default())
-        Query::build_terms("test_idx").build()
+        Query::MatchAll(Default::default())
     }
 }
 
