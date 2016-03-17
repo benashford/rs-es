@@ -18,28 +18,46 @@
 
 use std::collections::BTreeMap;
 
-use rustc_serialize::json::{Json, ToJson};
+use serde_json::Value;
+
+use ::json::ShouldSkip;
 
 use super::{MinimumShouldMatch, Query};
 
 /// More like this query
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct MoreLikeThisQuery {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     fields: Option<Vec<String>>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     like_text: Option<String>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     ids: Option<Vec<String>>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     docs: Option<Vec<Doc>>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     max_query_terms: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     min_term_freq: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     min_doc_freq: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     max_doc_freq: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     min_word_length: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     max_word_length: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     stop_words: Option<Vec<String>>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     analyzer: Option<String>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     minimum_should_match: Option<MinimumShouldMatch>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost_terms: Option<f64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     include: Option<bool>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>
 }
 
@@ -67,44 +85,25 @@ impl MoreLikeThisQuery {
     add_option!(with_include, include, bool);
     add_option!(with_boost, boost, f64);
 
-    //build!(MoreLikeThis);
+    build!(MoreLikeThis);
 }
 
-// TODO - deprecated
-// impl ToJson for MoreLikeThisQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         optional_add!(self, d, fields);
-//         optional_add!(self, d, like_text);
-//         optional_add!(self, d, ids);
-//         optional_add!(self, d, docs);
-//         optional_add!(self, d, max_query_terms);
-//         optional_add!(self, d, min_term_freq);
-//         optional_add!(self, d, min_doc_freq);
-//         optional_add!(self, d, max_doc_freq);
-//         optional_add!(self, d, min_word_length);
-//         optional_add!(self, d, max_word_length);
-//         optional_add!(self, d, stop_words);
-//         optional_add!(self, d, analyzer);
-//         optional_add!(self, d, minimum_should_match);
-//         optional_add!(self, d, boost_terms);
-//         optional_add!(self, d, include);
-//         optional_add!(self, d, boost);
-//         Json::Object(d)
-//     }
-// }
-
 // A document can be provided as an example
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Doc {
+    #[serde(rename="_index")]
     index:    String,
+    #[serde(rename="_type")]
     doc_type: String,
-    doc:      Option<Json>,
+    // TODO - consider generifying this option
+    #[serde(skip_serializing_if="ShouldSkip::should_skip", rename="doc")]
+    doc:      Option<Value>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip", rename="_id")]
     id:       Option<String>
 }
 
 impl Doc {
-    pub fn from_doc<A, B>(index: A, doc_type: B, doc: Json) -> Doc
+    pub fn from_doc<A, B>(index: A, doc_type: B, doc: Value) -> Doc
         where A: Into<String>, B: Into<String>
     {
         Doc {
@@ -124,18 +123,5 @@ impl Doc {
             doc:      None,
             id:       Some(id.into())
         }
-    }
-}
-
-impl ToJson for Doc {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("_index".to_owned(), self.index.to_json());
-        d.insert("_type".to_owned(), self.doc_type.to_json());
-
-        // optional_add!(self, d, self.doc, "doc");
-        // optional_add!(self, d, self.id, "_id");
-
-        Json::Object(d)
     }
 }

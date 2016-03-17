@@ -321,20 +321,21 @@ pub enum Query {
     #[serde(rename="geohash_cell")]
     GeohashCell(Box<geo::GeohashCellQuery>),
 
-    // // Specialized queries
-    // MoreLikeThis(Box<specialized::MoreLikeThisQuery>),
-    // // TODO: template queries
-    // // TODO: Search by script
+    // Specialized queries
+    #[serde(rename="more_like_this")]
+    MoreLikeThis(Box<specialized::MoreLikeThisQuery>),
+    // TODO: template queries
+    // TODO: Search by script
 
-    // // Span queries
-    // // TODO: SpanTerm(Box<term::TermQuery>),
-    // // TODO: Span multi term query
-    // // TODO: Span first query
-    // // TODO: Span near query
-    // // TODO: Span or query
-    // // TODO: Span not query
-    // // TODO: Span containing query
-    // // TODO: Span within query
+    // Span queries
+    // TODO: SpanTerm(Box<term::TermQuery>),
+    // TODO: Span multi term query
+    // TODO: Span first query
+    // TODO: Span near query
+    // TODO: Span or query
+    // TODO: Span not query
+    // TODO: Span containing query
+    // TODO: Span within query
 }
 
 impl Default for Query {
