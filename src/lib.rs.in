@@ -57,14 +57,7 @@ impl EsResponse for client::response::Response {
     fn read_response<R>(mut self) -> Result<R, EsError>
         where R: Deserialize {
 
-        // TODO - read directly from response, this is here to aide debugging
-        // by first reading to a string.
-        let mut response_str = String::new();
-        let size = try!(self.read_to_string(&mut response_str));
-
-        println!("Bytes: {}, Response string: {}", size, response_str);
-
-        Ok(try!(serde_json::from_str(&response_str)))
+        Ok(try!(serde_json::from_reader(self)))
     }
 }
 
