@@ -28,141 +28,12 @@ use std::marker::PhantomData;
 use serde::de::Deserialize;
 use serde::ser;
 use serde::ser::{Serialize, Serializer};
-use serde_json::{to_value, Value};
+use serde_json::Value;
 
 use ::error::EsError;
-use ::query;
 
 use self::bucket::BucketAggregationResult;
 use self::metrics::MetricsAggregationResult;
-
-// // TODO - deprecated
-// #[derive(Debug)]
-// pub enum Scripts<'a> {
-//     Inline(&'a str, Option<&'a str>),
-//     Id(&'a str)
-// }
-
-// // TODO - deprecated
-// /// Script attributes for various attributes
-// #[derive(Debug)]
-// pub struct Script<'a> {
-//     script: Scripts<'a>,
-//     params: Option<Json>
-// }
-
-// TODO - deprecated
-// impl<'a> Script<'a> {
-//     pub fn id(script_id: &'a str) -> Script<'a> {
-//         Script {
-//             script: Scripts::Id(script_id),
-//             params: None
-//         }
-//     }
-
-//     pub fn script(script: &'a str) -> Script<'a> {
-//         Script {
-//             script: Scripts::Inline(script, None),
-//             params: None
-//         }
-//     }
-
-//     pub fn script_and_field(script: &'a str, field: &'a str) -> Script<'a> {
-//         Script {
-//             script: Scripts::Inline(script, Some(field)),
-//             params: None
-//         }
-//     }
-
-//     fn add_to_object(&self, obj: &mut BTreeMap<&'static str, Value>) {
-//         match self.script {
-//             Scripts::Inline(script, field) => {
-//                 obj.insert("script", to_value(script));
-//                 match field {
-//                     Some(f) => {
-//                         obj.insert("field", to_value(f));
-//                     },
-//                     None    => ()
-//                 }
-//             },
-//             Scripts::Id(script_id) => {
-//                 obj.insert("script_id", to_value(script_id));
-//             }
-//         };
-//         // TODO - fix this
-//         // match self.params {
-//         //     Some(ref json) => {
-//         //         obj.insert("params".to_owned(), json.clone());
-//         //     },
-//         //     None           => ()
-//         // };
-//     }
-
-//     pub fn with_params(mut self, params: Json) -> Self {
-//         self.params = Some(params);
-//         self
-//     }
-// }
-
-// /// A common pattern is for an aggregation to accept a field or a script
-// #[derive(Debug)]
-// // TODO - deprecated
-// pub enum FieldOrScript<'a> {
-//     Field(&'a str),
-//     Script(Script<'a>)
-// }
-
-// impl<'a> FieldOrScript<'a> {
-//     // TODO - deprecated
-//     // fn add_to_object(&self, obj: &mut BTreeMap<String, Json>) {
-//     //     match self {
-//     //         &FieldOrScript::Field(field) => {
-//     //             obj.insert("field".to_owned(), field.to_json());
-//     //         },
-//     //         &FieldOrScript::Script(ref script) => {
-//     //             script.add_to_object(obj);
-//     //         }
-//     //     }
-//     // }
-// }
-
-// impl<'a> From<&'a str> for FieldOrScript<'a> {
-//     fn from(from: &'a str) -> FieldOrScript<'a> {
-//         FieldOrScript::Field(from)
-//     }
-// }
-
-// impl<'a> From<Script<'a>> for FieldOrScript<'a> {
-//     fn from(from: Script<'a>) -> FieldOrScript<'a> {
-//         FieldOrScript::Script(from)
-//     }
-// }
-
-// /// Macros to build simple `FieldOrScript` based aggregations
-// macro_rules! field_or_script_new {
-//     ($t:ident) => {
-//         impl<'a> $t<'a> {
-//             pub fn new<FOS: Into<FieldOrScript<'a>>>(fos: FOS) -> $t<'a> {
-//                 $t(fos.into())
-//             }
-//         }
-//     }
-// }
-
-// // TODO - deprecated
-// macro_rules! field_or_script_to_json {
-//     ($t:ident) => {
-//         impl<'a> ToJson for $t<'a> {
-//             fn to_json(&self) -> Json {
-//                 // DEPRECATED
-//                 // let mut d = BTreeMap::new();
-//                 // self.0.add_to_object(&mut d);
-//                 // Json::Object(d)
-//                 unimplemented!()
-//             }
-//         }
-//     }
-// }
 
 /// Aggregations are either metrics or bucket-based aggregations
 #[derive(Debug)]
@@ -224,28 +95,6 @@ impl<'a> ser::MapVisitor for AggregationVisitor<'a> {
         }
     }
 }
-
-// TODO - deprecated
-// impl<'a> ToJson for Aggregation<'a> {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &Aggregation::Metrics(ref ma)          => {
-//                 ma.to_json()
-//             },
-//             &Aggregation::Bucket(ref ba, ref aggs) => {
-//                 let mut d = BTreeMap::new();
-//                 ba.add_to_object(&mut d);
-//                 match aggs {
-//                     &Some(ref a) => {
-//                         d.insert("aggs".to_owned(), a.to_json());
-//                     },
-//                     &None        => ()
-//                 }
-//                 Json::Object(d)
-//             }
-//         }
-//     }
-// }
 
 /// The set of aggregations
 ///

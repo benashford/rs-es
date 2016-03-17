@@ -122,20 +122,3 @@ pub struct GetResult<T> {
     #[serde(rename="_source")]
     pub source:   Option<T>
 }
-
-// TODO - deprecated
-// impl<'a> From<&'a Json> for GetResult {
-//     fn from(r: &'a Json) -> GetResult {
-//         info!("GetResult FROM: {:?}", r);
-//         GetResult {
-//             index:    get_json_string!(r, "_index"),
-//             doc_type: get_json_string!(r, "_type"),
-//             id:       get_json_string!(r, "_id"),
-//             version:  r.search("_version").map(|v| {
-//                 v.as_u64().expect("Field '_search' not an integer")
-//             }),
-//             found:    get_json_bool!(r, "found"),
-//             source:   r.search("_source").map(|source| source.clone())
-//         }
-//     }
-// }

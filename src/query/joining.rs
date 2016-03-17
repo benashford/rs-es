@@ -16,8 +16,6 @@
 
 //! Joining queries
 
-use std::collections::BTreeMap;
-
 use ::json::ShouldSkip;
 
 use super::{ScoreMode, Query};

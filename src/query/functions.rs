@@ -16,7 +16,7 @@
 
 //! Specific options for the Function option of various queries
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use serde::{Serialize, Serializer};
 

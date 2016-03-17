@@ -204,9 +204,13 @@ impl ToString for SortField {
 pub struct GeoDistance {
     field:         String,
     location:      OneOrMany<Location>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     order:         Option<Order>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     unit:          Option<DistanceUnit>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     mode:          Option<Mode>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     distance_type: Option<DistanceType>,
 }
 
@@ -244,31 +248,17 @@ impl GeoDistance {
     }
 }
 
-// TODO - deprecated
-// impl ToJson for GeoDistance {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-
-//         inner.insert(self.field.clone(), self.location.to_json());
-
-//         optional_add!(self, inner, order);
-//         optional_add!(self, inner, unit);
-//         optional_add!(self, inner, mode);
-//         optional_add!(self, inner, distance_type);
-
-//         d.insert("_geo_distance".to_owned(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
-
 /// Representing options for sort by script
 // TODO - fix structure
+// TODO - there are other 'Script's defined elsewhere, perhaps de-duplicate them
+// if it makes sense. 
 #[derive(Serialize)]
 pub struct Script {
     script:      String,
+    #[serde(rename="type")]
     script_type: String,
     params:      HashMap<String, JsonVal>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     order:       Option<Order>
 }
 
@@ -299,21 +289,6 @@ impl Script {
         SortBy::Script(self)
     }
 }
-
-// TODO - deprecated
-// impl ToJson for Script {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-
-//         inner.insert("script".to_owned(), self.script.to_json());
-//         inner.insert("type".to_owned(), self.script_type.to_json());
-//         inner.insert("params".to_owned(), self.params.to_json());
-
-//         d.insert("_script".to_owned(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
 
 pub enum SortBy {
     Field(SortField),
@@ -770,7 +745,7 @@ pub struct SearchHitsResult<T: Deserialize> {
 impl<T> SearchHitsResult<T>
     where T: Deserialize {
 
-    pub fn hits(mut self) -> Option<Vec<Box<T>>> {
+    pub fn hits(self) -> Option<Vec<Box<T>>> {
         let mut r = Vec::with_capacity(self.hits.len());
         for b in self.hits.into_iter() {
             match b.source {

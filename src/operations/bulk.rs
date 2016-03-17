@@ -49,23 +49,6 @@ impl Serialize for ActionType {
     }
 }
 
-// TODO - deprecated
-impl<'a> From<&'a String> for ActionType {
-    fn from(from: &'a String) -> ActionType {
-        if from == "index" {
-            ActionType::Index
-        } else if from == "create" {
-            ActionType::Create
-        } else if from == "delete" {
-            ActionType::Delete
-        } else if from == "update" {
-            ActionType::Update
-        } else {
-            panic!("Unknown action type: {}", from)
-        }
-    }
-}
-
 impl ToString for ActionType {
     fn to_string(&self) -> String {
         match *self {

@@ -153,15 +153,6 @@ impl Deserialize for Location {
     }
 }
 
-// TODO - deprecated
-// impl<'a> From<&'a Json> for Location {
-//     fn from(from: &'a Json) -> Location {
-//         Location::LatLon(
-//             get_json_f64!(from, "lat"),
-//             get_json_f64!(from, "lon"))
-//     }
-// }
-
 from_exp!((f64, f64), Location, from, Location::LatLon(from.0, from.1));
 from!(String, Location, GeoHash);
 

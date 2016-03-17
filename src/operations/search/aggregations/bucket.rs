@@ -1091,7 +1091,7 @@ pub struct RangeResult {
 
 impl RangeResult {
     fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
-        let bucket_obj = get_json_object!(from, "buckets");
+        let bucket_obj = from_json!(from, "buckets", as_object);
         let mut buckets = HashMap::with_capacity(bucket_obj.len());
 
         for (k, v) in bucket_obj.into_iter() {
