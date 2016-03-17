@@ -23,9 +23,7 @@ pub mod metrics;
 pub mod bucket;
 
 use std::collections::{BTreeMap, HashMap};
-use std::marker::PhantomData;
 
-use serde::de::Deserialize;
 use serde::ser;
 use serde::ser::{Serialize, Serializer};
 use serde_json::Value;

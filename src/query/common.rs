@@ -16,8 +16,6 @@
 
 //! Common macros, utilities, etc. for the query crate
 
-use serde::{Serialize, Serializer};
-
 use ::json::FieldBased;
 
 // Helper macros

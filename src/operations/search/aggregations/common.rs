@@ -21,11 +21,8 @@ use std::collections::HashMap;
 use serde::ser;
 use serde::ser::{Serialize, Serializer};
 
-use ::error::EsError;
 use ::json::MergeSerializer;
 use ::units::JsonVal;
-
-use super::Aggregation;
 
 macro_rules! agg {
     ($b:ident) => {

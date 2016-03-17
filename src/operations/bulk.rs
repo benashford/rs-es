@@ -16,8 +16,6 @@
 
 //! Implementation of the Bulk API
 
-use std::collections::BTreeMap;
-
 use hyper::status::StatusCode;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -241,11 +239,11 @@ impl<'a, 'b, S> BulkOperation<'a, 'b, S>
         let body = self.format_actions();
         println!("Sending: {}", body);
         // Doesn't use the standard macros as it's not standard JSON
-        let mut result = try!(self.client.http_client
-                              .post(&full_url)
-                              .body(&body)
-                              .send());
-
+        let result = try!(self.client.http_client
+                          .post(&full_url)
+                          .body(&body)
+                          .send());
+        
         let response = try!(do_req(result));
 
         match response.status_code() {

@@ -16,8 +16,6 @@
 
 //! Geo queries
 
-use std::collections::BTreeMap;
-
 use serde::{Serialize, Serializer};
 
 use ::json::{NoOuter, ShouldSkip};

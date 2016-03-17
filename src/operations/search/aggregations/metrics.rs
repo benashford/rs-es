@@ -16,11 +16,10 @@
 
 //! For metrics-based aggregations
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
-use serde::ser;
 use serde::ser::{Serialize, Serializer};
-use serde_json::{from_value, to_value, Value};
+use serde_json::{from_value, Value};
 
 use ::error::EsError;
 use ::json::{NoOuter, ShouldSkip};

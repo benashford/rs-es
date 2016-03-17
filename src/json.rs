@@ -38,7 +38,7 @@ impl<T> ShouldSkip for Option<T> {
 pub struct NoOuter;
 
 impl Serialize for NoOuter {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, _: &mut S) -> Result<(), S::Error>
         where S: Serializer {
 
         // No-op

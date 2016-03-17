@@ -16,11 +16,11 @@
 
 //! Bucket-based aggregations
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
 use serde::ser::{Serialize, Serializer};
-use serde_json::{to_value, Value};
+use serde_json::Value;
 
 use ::error::EsError;
 use ::json::ShouldSkip;
@@ -405,7 +405,7 @@ pub struct DateRangeInner<'a> {
 impl<'a> DateRange<'a> {
     add_extra_option!(with_format, format, &'a str);
 
-    fn with_ranges<A: Into<Vec<DateRangeInst<'a>>>>(mut self, ranges: A) -> Self {
+    pub fn with_ranges<A: Into<Vec<DateRangeInst<'a>>>>(mut self, ranges: A) -> Self {
         self.0.extra.ranges = ranges.into();
         self
     }

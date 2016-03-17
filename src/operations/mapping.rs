@@ -64,7 +64,7 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
 
         let url = format!("{}", self.index);
         // TODO - actually check the response
-        let response = try!(self.client.put_body_op(&url, &body));
+        let _ = try!(self.client.put_body_op(&url, &body));
         Ok(MappingResult)
     }
 }
@@ -93,7 +93,7 @@ pub mod tests {
 
         // TODO - this fails in many cases (specifically on TravisCI), but we ignore the
         // failures anyway
-        client.delete_index(index_name);
+        let _ = client.delete_index(index_name);
 
         let mapping = hashmap! { // DocTypes
             "post" => hashmap! { // DocType
