@@ -299,10 +299,10 @@ pub enum Query {
     // // Not implementing the Filtered query, as it's deprecated.
     // // Not implementing the Limit query, as it's deprecated.
 
-    // // Joining queries
-    // Nested(Box<joining::NestedQuery>),
-    // HasChild(Box<joining::HasChildQuery>),
-    // HasParent(Box<joining::HasParentQuery>),
+    // Joining queries
+    Nested(Box<joining::NestedQuery>),
+    HasChild(Box<joining::HasChildQuery>),
+    HasParent(Box<joining::HasParentQuery>),
 
     // // Geo queries
     // GeoShape(Box<geo::GeoShapeQuery>),

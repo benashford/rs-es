@@ -20,12 +20,15 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
+use ::json::ShouldSkip;
+
 use super::{ScoreMode, Query};
 
 /// Nested query
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct NestedQuery {
     path: String,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     score_mode: Option<ScoreMode>,
     query: Query
 }
@@ -45,35 +48,28 @@ impl Query {
 impl NestedQuery {
     add_option!(with_score_mode, score_mode, ScoreMode);
 
-    //build!(Nested);
+    build!(Nested);
 }
 
-// TODO - deprecated
-// impl ToJson for NestedQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("path".to_owned(), self.path.to_json());
-//         d.insert("query".to_owned(), self.query.to_json());
-//         optional_add!(self, d, score_mode);
-//         Json::Object(d)
-//     }
-// }
-
 /// Has Child query
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct HasChildQuery {
     doc_type: String,
     query: Query,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     score_mode: Option<ScoreMode>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     min_children: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     max_children: Option<u64>
 }
 
 /// Has Parent query
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct HasParentQuery {
     parent_type: String,
     query: Query,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     score_mode: Option<ScoreMode>
 }
 
@@ -104,35 +100,11 @@ impl HasChildQuery {
     add_option!(with_min_children, min_children, u64);
     add_option!(with_max_children, max_children, u64);
 
-    //build!(HasChild);
+    build!(HasChild);
 }
 
 impl HasParentQuery {
     add_option!(with_score_mode, score_mode, ScoreMode);
 
-    //build!(HasParent);
+    build!(HasParent);
 }
-
-// TODO - deprecated
-// impl ToJson for HasChildQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("type".to_owned(), self.doc_type.to_json());
-//         d.insert("query".to_owned(), self.query.to_json());
-//         optional_add!(self, d, score_mode);
-//         optional_add!(self, d, min_children);
-//         optional_add!(self, d, max_children);
-//         Json::Object(d)
-//     }
-// }
-
-// TODO - deprecated
-// impl ToJson for HasParentQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("parent_type".to_owned(), self.parent_type.to_json());
-//         d.insert("query".to_owned(), self.query.to_json());
-//         optional_add!(self, d, score_mode);
-//         Json::Object(d)
-//     }
-// }
