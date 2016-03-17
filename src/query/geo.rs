@@ -20,33 +20,34 @@ use std::collections::BTreeMap;
 
 use rustc_serialize::json::{Json, ToJson};
 
+use serde::{Serialize, Serializer};
+
+use ::json::{NoOuter, ShouldSkip};
 use ::units::{Distance, DistanceType, GeoBox, Location};
 
 use super::Query;
+use super::common::FieldBasedQuery;
 
-/// Or
-/// TODO: should probably be general purpose
-#[derive(Debug)]
-pub enum Or<A, B> {
-    A(A),
-    B(B)
+#[derive(Debug, Serialize)]
+pub enum ShapeOption {
+    #[serde(rename="shape")]
+    Shape(Shape),
+    #[serde(rename="indexed_shape")]
+    IndexedShape(IndexedShape)
 }
+
+from!(Shape, ShapeOption, Shape);
+from!(IndexedShape, ShapeOption, IndexedShape);
 
 /// GeoShape query
-#[derive(Debug, Default)]
-pub struct GeoShapeQuery {
-    field: String,
-    shape: Option<Or<Shape, IndexedShape>>
-}
+#[derive(Debug, Serialize)]
+pub struct GeoShapeQuery(FieldBasedQuery<Option<ShapeOption>, NoOuter>);
 
 impl Query {
     pub fn build_geo_shape<A>(field: A) -> GeoShapeQuery
         where A: Into<String> {
 
-        GeoShapeQuery {
-            field: field.into(),
-            ..Default::default()
-        }
+        GeoShapeQuery(FieldBasedQuery::new(field.into(), None, NoOuter))
     }
 }
 
@@ -54,47 +55,24 @@ impl GeoShapeQuery {
     pub fn with_shape<A>(mut self, shape: A) -> Self
         where A: Into<Shape> {
 
-        self.shape = Some(Or::A(shape.into()));
+        self.0.inner = Some(ShapeOption::Shape(shape.into()));
         self
     }
 
     pub fn with_indexed_shape<A>(mut self, indexed_shape: A) -> Self
         where A: Into<IndexedShape> {
 
-        self.shape = Some(Or::B(indexed_shape.into()));
+        self.0.inner = Some(ShapeOption::IndexedShape(indexed_shape.into()));
         self
     }
 
-    //build!(GeoShape);
+    build!(GeoShape);
 }
 
-// TODO - deprecated
-// impl ToJson for GeoShapeQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-//         match self.shape {
-//             Some(ref o) => {
-//                 match o {
-//                     &Or::A(ref shape) => {
-//                         inner.insert("shape".to_owned(), shape.to_json());
-//                     },
-//                     &Or::B(ref shape) => {
-//                         inner.insert("indexed_shape".to_owned(), shape.to_json());
-//                     }
-//                 }
-//             },
-//             None => ()
-//         }
-//         d.insert(self.field.clone(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
-
 // Required for GeoShape
-
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Shape {
+    #[serde(rename="type")]
     shape_type: String,
     coordinates: Vec<(f64, f64)>
 }
@@ -108,25 +86,7 @@ impl Shape {
     }
 }
 
-impl ToJson for Shape {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-
-        inner.insert("type".to_owned(), self.shape_type.to_json());
-
-        let coordinates:Vec<Vec<f64>> = self.coordinates
-            .iter()
-            .map (|&(a, b)| vec![a, b])
-            .collect();
-        inner.insert("coordinates".to_owned(), coordinates.to_json());
-
-        d.insert("shape".to_owned(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct IndexedShape {
     id:       String,
     doc_type: String,
@@ -149,26 +109,18 @@ impl IndexedShape {
     }
 }
 
-impl ToJson for IndexedShape {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        inner.insert("id".to_owned(), self.id.to_json());
-        inner.insert("type".to_owned(), self.doc_type.to_json());
-        inner.insert("index".to_owned(), self.index.to_json());
-        inner.insert("path".to_owned(), self.path.to_json());
-        d.insert("indexed_shape".to_owned(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
-
 /// Geo Bounding Box Query
-#[derive(Debug, Default)]
-pub struct GeoBoundingBoxQuery {
-    field: String,
+#[derive(Debug, Serialize)]
+pub struct GeoBoundingBoxQuery(FieldBasedQuery<GeoBoundingBoxQueryInner, NoOuter>);
+
+#[derive(Debug, Default, Serialize)]
+pub struct GeoBoundingBoxQueryInner {
     geo_box: GeoBox,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     coerce: Option<bool>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     ignore_malformed: Option<bool>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip", rename="type")]
     filter_type: Option<Type>
 }
 
@@ -176,33 +128,22 @@ impl Query {
     pub fn build_geo_bounding_box<A, B>(field: A, geo_box: B) -> GeoBoundingBoxQuery
         where A: Into<String>,
               B: Into<GeoBox> {
-        GeoBoundingBoxQuery {
-            field: field.into(),
-            geo_box: geo_box.into(),
-            ..Default::default()
-        }
+        GeoBoundingBoxQuery(FieldBasedQuery::new(field.into(),
+                                                 GeoBoundingBoxQueryInner {
+                                                     geo_box: geo_box.into(),
+                                                     ..Default::default()
+                                                 },
+                                                 NoOuter))
     }
 }
 
 impl GeoBoundingBoxQuery {
-    add_option!(with_coerce, coerce, bool);
-    add_option!(with_ignore_malformed, ignore_malformed, bool);
-    add_option!(with_type, filter_type, Type);
+    add_inner_option!(with_coerce, coerce, bool);
+    add_inner_option!(with_ignore_malformed, ignore_malformed, bool);
+    add_inner_option!(with_type, filter_type, Type);
 
-    //build!(GeoBoundingBox);
+    build!(GeoBoundingBox);
 }
-
-// TODO - deprecated
-// impl ToJson for GeoBoundingBoxQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert(self.field.clone(), self.geo_box.to_json());
-//         optional_add!(self, d, coerce);
-//         optional_add!(self, d, ignore_malformed);
-//         optional_add!(self, d, filter_type, "type");
-//         Json::Object(d)
-//     }
-// }
 
 /// Geo Bounding Box filter type
 #[derive(Debug)]
@@ -211,19 +152,21 @@ pub enum Type {
     Memory
 }
 
-impl ToJson for Type {
-    fn to_json(&self) -> Json {
+impl Serialize for Type {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        use self::Type::*;
         match self {
-            &Type::Indexed => "indexed",
-            &Type::Memory => "memory"
-        }.to_json()
+            &Indexed => "indexed",
+            &Memory => "memory"
+        }.serialize(serializer)
     }
 }
 
 /// Geo Distance query
 ///
 /// TODO: Specific full unit test for querying with a generated query from here
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct GeoDistanceQuery {
     field: String,
     location: Location,
@@ -256,21 +199,8 @@ impl GeoDistanceQuery {
     add_option!(with_coerce, coerce, bool);
     add_option!(with_ignore_malformed, ignore_malformed, bool);
 
-    //build!(GeoDistance);
+    build!(GeoDistance);
 }
-
-// impl ToJson for GeoDistanceQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert("distance".to_owned(), self.distance.to_json());
-//         optional_add!(self, d, distance_type);
-//         optional_add!(self, d, optimize_bbox);
-//         d.insert(self.field.clone(), self.location.to_json());
-//         optional_add!(self, d, coerce);
-//         optional_add!(self, d, ignore_malformed);
-//         Json::Object(d)
-//     }
-// }
 
 /// Options for `optimize_bbox`
 #[derive(Debug)]
@@ -280,22 +210,28 @@ pub enum OptimizeBbox {
     None
 }
 
-impl ToJson for OptimizeBbox {
-    fn to_json(&self) -> Json {
+impl Serialize for OptimizeBbox {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        use self::OptimizeBbox::*;
         match self {
-            &OptimizeBbox::Memory => "memory".to_json(),
-            &OptimizeBbox::Indexed => "indexed".to_json(),
-            &OptimizeBbox::None => "none".to_json()
+            &Memory => "memory".serialize(serializer),
+            &Indexed => "indexed".serialize(serializer),
+            &None => "none".serialize(serializer)
         }
     }
 }
 
 /// Geo Polygon query
-#[derive(Debug, Default)]
-pub struct GeoPolygonQuery {
-    field: String,
+#[derive(Debug, Serialize)]
+pub struct GeoPolygonQuery(FieldBasedQuery<GeoPolygonQueryInner, NoOuter>);
+
+#[derive(Debug, Default, Serialize)]
+pub struct GeoPolygonQueryInner {
     points: Vec<Location>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     coerce: Option<bool>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     ignore_malformed: Option<bool>
 }
 
@@ -304,37 +240,31 @@ impl Query {
                                    points: B) -> GeoPolygonQuery
         where A: Into<String>,
               B: Into<Vec<Location>> {
-        GeoPolygonQuery {
-            field: field.into(),
-            points: points.into(),
-            ..Default::default()
-        }
+        GeoPolygonQuery(FieldBasedQuery::new(field.into(),
+                                             GeoPolygonQueryInner {
+                                                 points: points.into(),
+                                                 ..Default::default()
+                                             },
+                                             NoOuter))
     }
 }
 
 impl GeoPolygonQuery {
-    add_option!(with_coerce, coerce, bool);
-    add_option!(with_ignore_malformed, ignore_malformed, bool);
+    add_inner_option!(with_coerce, coerce, bool);
+    add_inner_option!(with_ignore_malformed, ignore_malformed, bool);
 
-    //build!(GeoPolygon);
+    build!(GeoPolygon);
 }
 
-// impl ToJson for GeoPolygonQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         let mut inner = BTreeMap::new();
-//         inner.insert("points".to_owned(), self.points.to_json());
-//         d.insert(self.field.clone(), Json::Object(inner));
-//         Json::Object(d)
-//     }
-// }
-
 /// Geohash cell query
-#[derive(Debug, Default)]
-pub struct GeohashCellQuery {
-    field: String,
-    location: Location,
+#[derive(Debug, Serialize)]
+pub struct GeohashCellQuery(FieldBasedQuery<Location, GeohashCellQueryOuter>);
+
+#[derive(Debug, Default, Serialize)]
+pub struct GeohashCellQueryOuter {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     precision: Option<Precision>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     neighbors: Option<bool>,
 }
 
@@ -342,30 +272,18 @@ impl Query {
     pub fn build_geohash_cell<A, B>(field: A, location: B) -> GeohashCellQuery
         where A: Into<String>,
               B: Into<Location> {
-        GeohashCellQuery {
-            field: field.into(),
-            location: location.into(),
-            ..Default::default()
-        }
+        GeohashCellQuery(FieldBasedQuery::new(field.into(),
+                                              location.into(),
+                                              Default::default()))
     }
 }
 
 impl GeohashCellQuery {
-    add_option!(with_precision, precision, Precision);
-    add_option!(with_neighbors, neighbors, bool);
+    add_outer_option!(with_precision, precision, Precision);
+    add_outer_option!(with_neighbors, neighbors, bool);
 
-    //build!(GeohashCell);
+    build!(GeohashCell);
 }
-
-// impl ToJson for GeohashCellQuery {
-//     fn to_json(&self) -> Json {
-//         let mut d = BTreeMap::new();
-//         d.insert(self.field.clone(), self.location.to_json());
-//         optional_add!(self, d, precision);
-//         optional_add!(self, d, neighbors);
-//         Json::Object(d)
-//     }
-// }
 
 #[derive(Debug)]
 pub enum Precision {
@@ -382,12 +300,13 @@ impl Default for Precision {
 from!(u64, Precision, Geohash);
 from!(Distance, Precision, Distance);
 
-// TODO - deprecated
-// impl ToJson for Precision {
-//     fn to_json(&self) -> Json {
-//         match self {
-//             &Precision::Geohash(geohash_precision) => Json::U64(geohash_precision),
-//             &Precision::Distance(ref distance)     => distance.to_json()
-//         }
-//     }
-// }
+impl Serialize for Precision {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        use self::Precision::*;
+        match self {
+            &Geohash(precision) => precision.serialize(serializer),
+            &Distance(ref dist) => dist.serialize(serializer)
+        }
+    }
+}

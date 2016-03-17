@@ -304,14 +304,14 @@ pub enum Query {
     HasChild(Box<joining::HasChildQuery>),
     HasParent(Box<joining::HasParentQuery>),
 
-    // // Geo queries
-    // GeoShape(Box<geo::GeoShapeQuery>),
-    // GeoBoundingBox(Box<geo::GeoBoundingBoxQuery>),
-    // GeoDistance(Box<geo::GeoDistanceQuery>),
-    // // TODO: implement me - pending changes to range query
-    // //GeoDistanceRange(Box<geo::GeoDistanceRangeQuery>)
-    // GeoPolygon(Box<geo::GeoPolygonQuery>),
-    // GeohashCell(Box<geo::GeohashCellQuery>),
+    // Geo queries
+    GeoShape(Box<geo::GeoShapeQuery>),
+    GeoBoundingBox(Box<geo::GeoBoundingBoxQuery>),
+    GeoDistance(Box<geo::GeoDistanceQuery>),
+    // TODO: implement me - pending changes to range query
+    //GeoDistanceRange(Box<geo::GeoDistanceRangeQuery>)
+    GeoPolygon(Box<geo::GeoPolygonQuery>),
+    GeohashCell(Box<geo::GeohashCellQuery>),
 
     // // Specialized queries
     // MoreLikeThis(Box<specialized::MoreLikeThisQuery>),

@@ -396,6 +396,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 0. Allow static &str for error messages.
 0. Ensure all tests are in the same file as the code being tested.
 0. Tests for aggregations
+0. Tests for geo queries
 0. Not all options for all aggregations are currently implemented, these need to be checked and (re)enabled.
 0. Make sure all sorting options are tested.
 1. Decide whether it's best in structs that contain a "document" to box the document or not?
