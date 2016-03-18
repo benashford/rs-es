@@ -21,16 +21,20 @@
 //! This isn't all types. Types that are specific to one API are defined in the
 //! appropriate place, e.g. types only used by the Query DSL are in `query.rs`
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
-use rustc_serialize::json::{Json, ToJson};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de;
+use serde_json::Value;
 
+use ::error::EsError;
 use ::operations::common::OptionVal;
 
 /// The units by which duration is measured.
 ///
 /// TODO - this list is incomplete, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#time-units
-#[derive(Debug)]
+/// TODO - ensure deserialization works correctly
+#[derive(Debug, Serialize, Deserialize)]
 pub enum DurationUnit {
     Month,
     Week,
@@ -64,7 +68,9 @@ impl ToString for DurationUnit {
 ///
 /// assert_eq!("100d", Duration::new(100, DurationUnit::Day).to_string());
 /// ```
-#[derive(Debug)]
+///
+/// TODO - implement Deserialize correctly
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Duration {
     amt: i64,
     unit: DurationUnit
@@ -113,12 +119,6 @@ impl ToString for Duration {
     }
 }
 
-impl ToJson for Duration {
-    fn to_json(&self) -> Json {
-        Json::String(self.to_string())
-    }
-}
-
 impl<'a> From<&'a Duration> for OptionVal {
     fn from(from: &'a Duration) -> OptionVal {
         OptionVal(from.to_string())
@@ -140,34 +140,42 @@ impl Default for Location {
     }
 }
 
-impl<'a> From<&'a Json> for Location {
-    fn from(from: &'a Json) -> Location {
-        Location::LatLon(
-            get_json_f64!(from, "lat"),
-            get_json_f64!(from, "lon"))
+impl Deserialize for Location {
+    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        where D: Deserializer {
+
+        // TODO - maybe use a specific struct?
+        let mut raw_location = try!(HashMap::<String, f64>::deserialize(deserializer));
+        Ok(Location::LatLon(
+            raw_location.remove("lat").unwrap(),
+            raw_location.remove("lon").unwrap()
+        ))
     }
 }
 
 from_exp!((f64, f64), Location, from, Location::LatLon(from.0, from.1));
 from!(String, Location, GeoHash);
 
-impl ToJson for Location {
-    fn to_json(&self) -> Json {
+impl Serialize for Location {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
         match self {
             &Location::LatLon(lat, lon) => {
                 let mut d = BTreeMap::new();
-                d.insert("lat".to_owned(), Json::F64(lat));
-                d.insert("lon".to_owned(), Json::F64(lon));
-                Json::Object(d)
+                d.insert("lat", lat);
+                d.insert("lon", lon);
+                d.serialize(serializer)
             },
             &Location::GeoHash(ref geo_hash) => {
-                Json::String(geo_hash.clone())
+                geo_hash.serialize(serializer)
             }
         }
     }
 }
 
 /// Representing a geographic box
+// TODO - this could probably refactored in a way that makes serialization easier
 #[derive(Debug)]
 pub enum GeoBox {
     Corners(Location, Location),
@@ -180,11 +188,16 @@ impl Default for GeoBox {
     }
 }
 
-impl<'a> From<&'a Json> for GeoBox {
-    fn from(from: &'a Json) -> GeoBox {
-        GeoBox::Corners(
-            Location::from(from.find("top_left").expect("No 'top_left' field")),
-            Location::from(from.find("bottom_right").expect("No 'bottom_right' field")))
+impl Deserialize for GeoBox {
+    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        where D: Deserializer {
+
+        // TODO - maybe use a specific struct?
+        let mut raw_geo_box = try!(HashMap::<String, Location>::deserialize(deserializer));
+        Ok(GeoBox::Corners(
+            raw_geo_box.remove("top_left").unwrap(),
+            raw_geo_box.remove("bottom_right").unwrap()
+        ))
     }
 }
 
@@ -199,22 +212,26 @@ from_exp!((f64, f64, f64, f64),
           from,
           GeoBox::Vertices(from.0, from.1, from.2, from.3));
 
-impl ToJson for GeoBox {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
+impl Serialize for GeoBox {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        use self::GeoBox::*;
         match self {
-            &GeoBox::Corners(ref top_left, ref bottom_right) => {
-                d.insert("top_left".to_owned(), top_left.to_json());
-                d.insert("bottom_right".to_owned(), bottom_right.to_json());
+            &Corners(ref top_left, ref bottom_right) => {
+                let mut d = BTreeMap::new();
+                d.insert("top_left", top_left);
+                d.insert("bottom_right", bottom_right);
+                d.serialize(serializer)
             },
-            &GeoBox::Vertices(ref top, ref left, ref bottom, ref right) => {
-                d.insert("top".to_owned(), top.to_json());
-                d.insert("left".to_owned(), left.to_json());
-                d.insert("bottom".to_owned(), bottom.to_json());
-                d.insert("right".to_owned(), right.to_json());
+            &Vertices(top, left, bottom, right) => {
+                let mut d = BTreeMap::new();
+                d.insert("top", top);
+                d.insert("left", left);
+                d.insert("bottom", bottom);
+                d.insert("right", right);
+                d.serialize(serializer)
             }
         }
-        Json::Object(d)
     }
 }
 
@@ -232,6 +249,17 @@ impl<T: Default> Default for OneOrMany<T> {
     }
 }
 
+impl<T> Serialize for OneOrMany<T>
+    where T: Serialize {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        match self {
+            &OneOrMany::One(ref t) => t.serialize(serializer),
+            &OneOrMany::Many(ref t) => t.serialize(serializer)
+        }
+    }
+}
+
 impl<T> From<T> for OneOrMany<T> {
     fn from(from: T) -> OneOrMany<T> {
         OneOrMany::One(from)
@@ -244,15 +272,6 @@ impl<T> From<Vec<T>> for OneOrMany<T> {
     }
 }
 
-impl<T: ToJson> ToJson for OneOrMany<T> {
-    fn to_json(&self) -> Json {
-        match self {
-            &OneOrMany::One(ref t)  => t.to_json(),
-            &OneOrMany::Many(ref t) => t.to_json()
-        }
-    }
-}
-
 /// DistanceType
 #[derive(Debug)]
 pub enum DistanceType {
@@ -261,13 +280,15 @@ pub enum DistanceType {
     Plane
 }
 
-impl ToJson for DistanceType {
-    fn to_json(&self) -> Json {
-        Json::String(match self {
+impl Serialize for DistanceType {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
             &DistanceType::SloppyArc => "sloppy_arc",
             &DistanceType::Arc       => "arc",
             &DistanceType::Plane     => "plane"
-        }.to_owned())
+        }.serialize(serializer)
     }
 }
 
@@ -307,9 +328,11 @@ impl ToString for DistanceUnit {
     }
 }
 
-impl ToJson for DistanceUnit {
-    fn to_json(&self) -> Json {
-        Json::String(self.to_string())
+impl Serialize for DistanceUnit {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        self.to_string().serialize(serializer)
     }
 }
 
@@ -329,9 +352,11 @@ impl Distance {
     }
 }
 
-impl ToJson for Distance {
-    fn to_json(&self) -> Json {
-        Json::String(format!("{}{}", self.amt, self.unit.to_string()))
+impl Serialize for Distance {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        format!("{}{}", self.amt, self.unit.to_string()).serialize(serializer)
     }
 }
 
@@ -375,23 +400,91 @@ pub enum JsonVal {
     Boolean(bool)
 }
 
+impl JsonVal {
+    pub fn from(from: &Value) -> Result<Self, EsError> {
+        use serde_json::Value::*;
+        Ok(match from {
+            &String(ref string) => JsonVal::String(string.clone()),
+            &Bool(b) => JsonVal::Boolean(b),
+            &I64(i) => JsonVal::I64(i),
+            &U64(u) => JsonVal::U64(u),
+            &F64(f) => JsonVal::F64(f),
+            _ => return Err(EsError::EsError(format!("Not a JsonVal: {:?}",
+                                                     from)))
+        })
+    }
+}
+
 impl Default for JsonVal {
     fn default() -> Self {
         JsonVal::String(Default::default())
     }
 }
 
-impl ToJson for JsonVal {
-    fn to_json(&self) -> Json {
+impl Serialize for JsonVal {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
         match self {
-            &JsonVal::String(ref str) => str.to_json(),
-            &JsonVal::I64(i)          => Json::I64(i),
-            &JsonVal::U64(u)          => Json::U64(u),
-            &JsonVal::F64(f)          => Json::F64(f),
-            &JsonVal::Boolean(b)      => Json::Boolean(b)
+            &JsonVal::String(ref s) => s.serialize(serializer),
+            &JsonVal::I64(i) => i.serialize(serializer),
+            &JsonVal::U64(u) => u.serialize(serializer),
+            &JsonVal::F64(f) => f.serialize(serializer),
+            &JsonVal::Boolean(b) => b.serialize(serializer)
         }
     }
 }
+
+impl Deserialize for JsonVal {
+    fn deserialize<D>(deserializer: &mut D) -> Result<JsonVal, D::Error>
+        where D: Deserializer {
+
+        deserializer.deserialize(JsonValVisitor)
+    }
+}
+
+struct JsonValVisitor;
+
+impl de::Visitor for JsonValVisitor {
+    type Value = JsonVal;
+
+    fn visit_string<E>(&mut self, s: String) -> Result<JsonVal, E>
+        where E: de::Error {
+        Ok(JsonVal::String(s))
+    }
+
+    fn visit_i64<E>(&mut self, i: i64) -> Result<JsonVal, E>
+        where E: de::Error {
+        Ok(JsonVal::I64(i))
+    }
+
+    fn visit_u64<E>(&mut self, u: u64) -> Result<JsonVal, E>
+        where E: de::Error {
+        Ok(JsonVal::U64(u))
+    }
+
+    fn visit_f64<E>(&mut self, f: f64) -> Result<JsonVal, E>
+        where E: de::Error {
+        Ok(JsonVal::F64(f))
+    }
+
+    fn visit_bool<E>(&mut self, b: bool) -> Result<JsonVal, E>
+        where E: de::Error {
+        Ok(JsonVal::Boolean(b))
+    }
+}
+
+// TODO - deprecated
+// impl ToJson for JsonVal {
+//     fn to_json(&self) -> Json {
+//         match self {
+//             &JsonVal::String(ref str) => str.to_json(),
+//             &JsonVal::I64(i)          => Json::I64(i),
+//             &JsonVal::U64(u)          => Json::U64(u),
+//             &JsonVal::F64(f)          => Json::F64(f),
+//             &JsonVal::Boolean(b)      => Json::Boolean(b)
+//         }
+//     }
+// }
 
 from!(String, JsonVal, String);
 
@@ -409,15 +502,16 @@ from_exp!(u32, JsonVal, from, JsonVal::U64(from as u64));
 from!(u64, JsonVal, U64);
 from!(bool, JsonVal, Boolean);
 
-impl<'a> From<&'a Json> for JsonVal {
-    fn from(from: &'a Json) -> JsonVal {
+impl<'a> From<&'a Value> for JsonVal {
+    fn from(from: &'a Value) -> Self {
+        use serde_json::Value::*;
         match from {
-            &Json::String(ref s) => JsonVal::String(s.clone()),
-            &Json::F64(f)        => JsonVal::F64(f),
-            &Json::I64(f)        => JsonVal::I64(f),
-            &Json::U64(f)        => JsonVal::U64(f),
-            &Json::Boolean(b)    => JsonVal::Boolean(b),
-            _                    => panic!("Not a String, F64, I64, U64 or Boolean")
+            &String(ref s) => JsonVal::String(s.clone()),
+            &F64(f) => JsonVal::F64(f),
+            &I64(f) => JsonVal::I64(f),
+            &U64(f) => JsonVal::U64(f),
+            &Bool(b) => JsonVal::Boolean(b),
+            _ => panic!("Not a String, F64, I64, U64 or Boolean")
         }
     }
 }

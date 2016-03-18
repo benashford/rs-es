@@ -62,8 +62,9 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
 
         let body = hashmap! { "mappings" => mappings };
 
-        let url    = format!("{}", self.index);
-        let (_, _) = try!(self.client.put_body_op(&url, &body));
+        let url = format!("{}", self.index);
+        // TODO - actually check the response
+        let _ = try!(self.client.put_body_op(&url, &body));
         Ok(MappingResult)
     }
 }
@@ -80,7 +81,7 @@ pub mod tests {
 
     use super::MappingOperation;
 
-    #[derive(Debug, RustcDecodable, RustcEncodable)]
+    #[derive(Debug, Serialize)]
     pub struct Author {
         pub name: String
     }
@@ -92,7 +93,7 @@ pub mod tests {
 
         // TODO - this fails in many cases (specifically on TravisCI), but we ignore the
         // failures anyway
-        client.delete_index(index_name);
+        let _ = client.delete_index(index_name);
 
         let mapping = hashmap! { // DocTypes
             "post" => hashmap! { // DocType
@@ -114,6 +115,7 @@ pub mod tests {
             },
         };
 
+        // TODO add appropriate functions to the `Client` struct
         let result = MappingOperation::new(&mut client, index_name, &mapping).send();
         assert!(result.is_ok());
 

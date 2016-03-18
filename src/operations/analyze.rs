@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ben Ashford
+ * Copyright 2015-2016 Ben Ashford
  * Copyright 2015 Astro
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +17,8 @@
 
 //! Implementation of ElasticSearch Analyze operation
 
-use rustc_serialize::json::Json;
-
 use ::do_req;
-use ::Client;
+use ::{Client, EsResponse};
 use ::error::EsError;
 
 pub struct AnalyzeOperation<'a, 'b> {
@@ -65,44 +63,27 @@ impl<'a, 'b> AnalyzeOperation<'a, 'b> {
         }
         let client = &self.client;
         let full_url = client.full_url(&url);
-        let mut req = try!(client.http_client
-                           .post(&full_url)
-                           .body(self.body)
-                           .send());
-        let (_, result) = try!(do_req(&mut req));
-        Ok(AnalyzeResult::from(&result.expect("No Json payload")))
+        let req = try!(client.http_client
+                       .post(&full_url)
+                       .body(self.body)
+                       .send());
+        let response = try!(do_req(req));
+        Ok(try!(response.read_response()))
     }
 }
 
 /// The result of an analyze operation
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct AnalyzeResult {
     pub tokens: Vec<Token>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Token {
     pub token: String,
+    #[serde(rename="type")]
     pub token_type: String,
     pub position: u64,
     pub start_offset: u64,
     pub end_offset: u64
-}
-
-impl<'a> From<&'a Json> for AnalyzeResult {
-    fn from(r: &'a Json) -> AnalyzeResult {
-        let mut tokens = Vec::new();
-        for t in get_json_array!(r, "tokens") {
-            tokens.push(Token {
-                token: get_json_string!(t, "token"),
-                token_type: get_json_string!(t, "type"),
-                position: get_json_u64!(t, "position"),
-                start_offset: get_json_u64!(t, "start_offset"),
-                end_offset: get_json_u64!(t, "end_offset")
-            })
-        }
-        AnalyzeResult {
-            tokens: tokens
-        }
-    }
 }

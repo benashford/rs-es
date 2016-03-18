@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ben Ashford
+ * Copyright 2015-2016 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,84 +16,34 @@
 
 //! Implementation of the Bulk API
 
-use std::collections::BTreeMap;
-
 use hyper::status::StatusCode;
 
-use rustc_serialize::json;
-use rustc_serialize::json::{Json, ToJson};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{Error, MapVisitor, Visitor};
+use serde_json;
 
-use ::Client;
+use ::{Client, EsResponse};
 use ::do_req;
 use ::error::EsError;
+use ::json::{FieldBased, NoOuter, ShouldSkip};
 use ::units::Duration;
 
+use super::ShardCountResult;
 use super::common::{Options, OptionVal, VersionType};
-
-pub struct ActionSource {
-    doc:           Option<Json>,
-    upsert:        Option<Json>,
-    doc_as_upsert: Option<bool>,
-    script:        Option<String>,
-    params:        Option<Json>,
-    lang:          Option<String>
-}
-
-impl ActionSource {
-    pub fn new() -> ActionSource {
-        ActionSource {
-            doc:           None,
-            upsert:        None,
-            doc_as_upsert: None,
-            script:        None,
-            params:        None,
-            lang:          None
-        }
-    }
-
-    add_field!(with_doc, doc, Json);
-    add_field!(with_upsert, upsert, Json);
-    add_field!(with_doc_as_upsert, doc_as_upsert, bool);
-    add_field!(with_script, script, String);
-    add_field!(with_params, params, Json);
-    add_field!(with_lang, lang, String);
-}
-
-impl ToJson for ActionSource {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-
-        optional_add!(self, d, doc);
-        optional_add!(self, d, upsert);
-        optional_add!(self, d, doc_as_upsert);
-        optional_add!(self, d, script);
-        optional_add!(self, d, params);
-        optional_add!(self, d, lang);
-
-        Json::Object(d)
-    }
-}
 
 pub enum ActionType {
     Index,
     Create,
     Delete,
+    /// WARNING - currently un-implemented
     Update
 }
 
-impl<'a> From<&'a String> for ActionType {
-    fn from(from: &'a String) -> ActionType {
-        if from == "index" {
-            ActionType::Index
-        } else if from == "create" {
-            ActionType::Create
-        } else if from == "delete" {
-            ActionType::Delete
-        } else if from == "update" {
-            ActionType::Update
-        } else {
-            panic!("Unknown action type: {}", from)
-        }
+impl Serialize for ActionType {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        self.to_string().serialize(serializer)
     }
 }
 
@@ -108,125 +58,64 @@ impl ToString for ActionType {
     }
 }
 
-/// A bulk operation consists of one or more `Action`s.
-pub struct Action {
-    action:            ActionType,
+#[derive(Default, Serialize)]
+pub struct ActionOptions {
+    #[serde(rename="_index", skip_serializing_if="ShouldSkip::should_skip")]
     index:             Option<String>,
+    #[serde(rename="_type", skip_serializing_if="ShouldSkip::should_skip")]
     doc_type:          Option<String>,
+    #[serde(rename="_id", skip_serializing_if="ShouldSkip::should_skip")]
     id:                Option<String>,
+    #[serde(rename="_version", skip_serializing_if="ShouldSkip::should_skip")]
     version:           Option<u64>,
+    #[serde(rename="_version_type", skip_serializing_if="ShouldSkip::should_skip")]
     version_type:      Option<VersionType>,
+    #[serde(rename="_routing", skip_serializing_if="ShouldSkip::should_skip")]
     routing:           Option<String>,
+    #[serde(rename="_parent", skip_serializing_if="ShouldSkip::should_skip")]
     parent:            Option<String>,
+    #[serde(rename="_timestamp", skip_serializing_if="ShouldSkip::should_skip")]
     timestamp:         Option<String>,
+    #[serde(rename="_ttl", skip_serializing_if="ShouldSkip::should_skip")]
     ttl:               Option<Duration>,
+    #[serde(rename="_retry_on_conflict", skip_serializing_if="ShouldSkip::should_skip")]
     retry_on_conflict: Option<u64>,
-    source:            Option<Json>
 }
 
-impl Action {
+#[derive(Serialize)]
+pub struct Action<X>(FieldBased<ActionType, ActionOptions, NoOuter>, Option<X>);
+
+impl<S> Action<S>
+    where S: Serialize {
     /// An index action.
     ///
     /// Takes the document to be indexed, other parameters can be set as
     /// optional on the `Action` struct returned.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use rs_es::operations::bulk::Action;
-    ///
-    /// let delete_action = Action::delete("doc_id");
-    /// ```
-    pub fn index<E: ToJson>(document: E) -> Action {
-        Action {
-            action:            ActionType::Index,
-            index:             None,
-            doc_type:          None,
-            id:                None,
-            version:           None,
-            version_type:      None,
-            routing:           None,
-            parent:            None,
-            timestamp:         None,
-            ttl:               None,
-            retry_on_conflict: None,
-            source:            Some(document.to_json())
-        }
+    pub fn index(document: S) -> Self {
+        Action(FieldBased::new(ActionType::Index,
+                               Default::default(),
+                               NoOuter),
+               Some(document))
     }
 
     /// Create action
-    pub fn create<E: ToJson>(document: E) -> Action {
-        Action {
-            action:            ActionType::Create,
-            index:             None,
-            doc_type:          None,
-            id:                None,
-            version:           None,
-            version_type:      None,
-            routing:           None,
-            parent:            None,
-            timestamp:         None,
-            ttl:               None,
-            retry_on_conflict: None,
-            source:            Some(document.to_json())
-        }
+    pub fn create(document: S) -> Self {
+        Action(FieldBased::new(ActionType::Create,
+                               Default::default(),
+                               NoOuter),
+               Some(document))
     }
-
-    pub fn delete<S: Into<String>>(id: S) -> Action {
-        Action {
-            action:            ActionType::Delete,
-            index:             None,
-            doc_type:          None,
-            id:                Some(id.into()),
-            version:           None,
-            version_type:      None,
-            routing:           None,
-            parent:            None,
-            timestamp:         None,
-            ttl:               None,
-            retry_on_conflict: None,
-            source:            None
-        }
-    }
-
-    pub fn update<S: Into<String>>(id: S, update: &ActionSource) -> Action {
-        Action {
-            action:            ActionType::Update,
-            index:             None,
-            doc_type:          None,
-            id:                Some(id.into()),
-            version:           None,
-            version_type:      None,
-            routing:           None,
-            parent:            None,
-            timestamp:         None,
-            ttl:               None,
-            retry_on_conflict: None,
-            source:            Some(update.to_json())
-        }
-    }
-
-    add_field!(with_index, index, String);
-    add_field!(with_doc_type, doc_type, String);
-    add_field!(with_id, id, String);
-    add_field!(with_version, version, u64);
-    add_field!(with_version_type, version_type, VersionType);
-    add_field!(with_routing, routing, String);
-    add_field!(with_parent, parent, String);
-    add_field!(with_timestamp, timestamp, String);
-    add_field!(with_ttl, ttl, Duration);
-    add_field!(with_retry_on_conflict, retry_on_conflict, u64);
 
     /// Add the serialized version of this action to the bulk `String`.
     fn add(&self, actstr: &mut String) -> Result<(), EsError> {
-        let command_str = try!(json::encode(&self.to_json()));
+        let command_str = try!(serde_json::to_string(&self.0));
 
         actstr.push_str(&command_str);
         actstr.push_str("\n");
 
-        match self.source {
+        match self.1 {
             Some(ref source) => {
-                let payload_str = try!(json::encode(source));
+                let payload_str = try!(serde_json::to_string(source));
                 actstr.push_str(&payload_str);
                 actstr.push_str("\n");
             },
@@ -236,37 +125,53 @@ impl Action {
     }
 }
 
-impl ToJson for Action {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-
-        optional_add!(self, inner, index, "_index");
-        optional_add!(self, inner, doc_type, "_type");
-        optional_add!(self, inner, id, "_id");
-        optional_add!(self, inner, version, "_version");
-        optional_add!(self, inner, version_type, "_version_type");
-        optional_add!(self, inner, routing, "_routing");
-        optional_add!(self, inner, parent, "_parent");
-        optional_add!(self, inner, timestamp, "_timestamp");
-        optional_add!(self, inner, ttl, "_ttl");
-        optional_add!(self, inner, retry_on_conflict, "_retry_on_conflict");
-
-        d.insert(self.action.to_string(), Json::Object(inner));
-        Json::Object(d)
+impl<S> Action<S> {
+    /// Delete a document based on ID.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rs_es::operations::bulk::Action;
+    ///
+    /// let delete_action:Action<()> = Action::delete("doc_id");
+    /// let delete_with_index:Action<()> = Action::delete("doc_id").with_index("index_name");
+    /// ```
+    pub fn delete<A: Into<String>>(id: A) -> Self {
+        Action(FieldBased::new(ActionType::Delete,
+                               ActionOptions {
+                                   id: Some(id.into()),
+                                   ..Default::default()
+                               },
+                               NoOuter),
+               None)
     }
+
+    // TODO - implement update
+
+    add_inner_field!(with_index, index, String);
+    add_inner_field!(with_doc_type, doc_type, String);
+    add_inner_field!(with_id, id, String);
+    add_inner_field!(with_version, version, u64);
+    add_inner_field!(with_version_type, version_type, VersionType);
+    add_inner_field!(with_routing, routing, String);
+    add_inner_field!(with_parent, parent, String);
+    add_inner_field!(with_timestamp, timestamp, String);
+    add_inner_field!(with_ttl, ttl, Duration);
+    add_inner_field!(with_retry_on_conflict, retry_on_conflict, u64);
 }
 
-pub struct BulkOperation<'a, 'b> {
+pub struct BulkOperation<'a, 'b, S: 'b> {
     client:   &'a mut Client,
     index:    Option<&'b str>,
     doc_type: Option<&'b str>,
-    actions:  &'b [Action],
+    actions:  &'b [Action<S>],
     options:  Options<'b>
 }
 
-impl<'a, 'b> BulkOperation<'a, 'b> {
-    pub fn new(client: &'a mut Client, actions: &'b [Action]) -> BulkOperation<'a, 'b> {
+impl<'a, 'b, S> BulkOperation<'a, 'b, S>
+    where S: Serialize {
+
+    pub fn new(client: &'a mut Client, actions: &'b [Action<S>]) -> Self {
         BulkOperation {
             client:   client,
             index:    None,
@@ -332,70 +237,87 @@ impl<'a, 'b> BulkOperation<'a, 'b> {
             self.client.full_url(&url)
         };
         let body = self.format_actions();
+        println!("Sending: {}", body);
+        // Doesn't use the standard macros as it's not standard JSON
+        let result = try!(self.client.http_client
+                          .post(&full_url)
+                          .body(&body)
+                          .send());
+        
+        let response = try!(do_req(result));
 
-        let mut result = try!(self.client.http_client
-                              .post(&full_url)
-                              .body(&body)
-                              .send());
-
-        let (status_code, json_opt) = try!(do_req(&mut result));
-
-        match status_code {
-            StatusCode::Ok => Ok(BulkResult::from(&json_opt.expect("No Json payload"))),
-            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        match response.status_code() {
+            &StatusCode::Ok => Ok(try!(response.read_response())),
+            _              => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
         }
     }
 }
 
 /// The result of specific actions
 pub struct ActionResult {
-    pub action:   ActionType,
-    pub index:    String,
-    pub doc_type: String,
-    pub version:  u64,
-    pub status:   u64
+    pub action: ActionType,
+    pub inner: ActionResultInner
 }
 
-impl<'a> From<&'a Json> for ActionResult {
-    fn from(from: &'a Json) -> ActionResult {
-        info!("ActionResult from: {:?}", from);
+impl Deserialize for ActionResult {
+    fn deserialize<D>(deserializer: &mut D) -> Result<ActionResult, D::Error>
+        where D: Deserializer {
 
-        let d = from.as_object().expect("Not a Json object");
-        assert_eq!(1, d.len());
-        let (key, inner) = d.iter().next().expect("No content");
+        struct ActionResultVisitor;
 
-        ActionResult {
-            action:   ActionType::from(key),
-            index:    get_json_string!(inner, "_index"),
-            doc_type: get_json_string!(inner, "_type"),
-            version:  get_json_u64!(inner, "_version"),
-            status:   get_json_u64!(inner, "status")
+        impl Visitor for ActionResultVisitor {
+            type Value = ActionResult;
+
+            fn visit_map<V>(&mut self, mut visitor: V) -> Result<ActionResult, V::Error>
+                where V: MapVisitor {
+
+                let visited:Option<(String, ActionResultInner)> = try!(visitor.visit());
+                let (key, value) = match visited {
+                    Some((key, value)) => (key, value),
+                    None               => return Err(V::Error::custom("expecting at least one field"))
+                };
+                println!("Found key: {:?}, value: {:?}", key, value);
+                try!(visitor.end());
+
+                let result = ActionResult {
+                    action: match key.as_ref() {
+                        "index" => ActionType::Index,
+                        "create" => ActionType::Create,
+                        "delete" => ActionType::Delete,
+                        "update" => ActionType::Update,
+                        _ => {
+                            return Err(V::Error::custom(format!("Unrecognised key: {}", key)))
+                        }
+                    },
+                    inner:  value
+                };
+
+                Ok(result)
+            }
         }
+
+        deserializer.deserialize(ActionResultVisitor)
     }
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ActionResultInner {
+    #[serde(rename="_index")]
+    pub index:    String,
+    #[serde(rename="_type")]
+    pub doc_type: String,
+    #[serde(rename="_version")]
+    pub version:  u64,
+    pub status:   u64,
+    #[serde(rename="_shards")]
+    pub shards:   ShardCountResult,
+    pub found:    Option<bool>
+}
+
 /// The result of a bulk operation
+#[derive(Deserialize)]
 pub struct BulkResult {
     pub errors: bool,
     pub items:  Vec<ActionResult>,
     pub took:   u64
-}
-
-impl<'a> From<&'a Json> for BulkResult {
-    fn from(from: &'a Json) -> BulkResult {
-        info!("Bulk result, result: {:?}", from);
-        BulkResult {
-            errors: get_json_bool!(from, "errors"),
-            items:  from.find("items")
-                .expect("No field called 'items'")
-                .as_array()
-                .expect("Field 'items' not expected array")
-                .iter()
-                .map(|item| {
-                    ActionResult::from(item)
-                })
-                .collect(),
-            took:   get_json_u64!(from, "took")
-        }
-    }
 }

@@ -22,12 +22,9 @@
 
 use hyper::status::StatusCode;
 
-use rustc_serialize::Decodable;
-use rustc_serialize::json::{Decoder, Json};
-
-use Client;
-use error::EsError;
-use util::StrJoin;
+use ::{Client, EsResponse};
+use ::error::EsError;
+use ::util::StrJoin;
 
 // Specific operations
 #[macro_use]
@@ -40,6 +37,7 @@ pub mod index;
 pub mod search;
 pub mod analyze;
 pub mod mapping;
+pub mod version;
 
 // Common utility functions
 
@@ -64,6 +62,7 @@ fn format_indexes_and_types(indexes: &[&str], types: &[&str]) -> String {
     }
 }
 
+// TODO: move to refresh.rs
 pub struct RefreshOperation<'a, 'b> {
     /// The HTTP client
     client: &'a mut Client,
@@ -88,25 +87,19 @@ impl<'a, 'b> RefreshOperation<'a, 'b> {
     pub fn send(&mut self) -> Result<RefreshResult, EsError> {
         let url = format!("/{}/_refresh",
                           format_multi(&self.indexes));
-        let (status_code, result) = try!(self.client.post_op(&url));
-        match status_code {
-            StatusCode::Ok => Ok(RefreshResult::from(&result.expect("No Json payload"))),
-            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        let response = try!(self.client.post_op(&url));
+        match response.status_code() {
+            &StatusCode::Ok => Ok(try!(response.read_response())),
+            _              => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
         }
     }
 }
 
 // Results
 
-// Result helpers
-
-fn decode_json<T: Decodable>(doc: Json) -> Result<T, EsError> {
-    Ok(try!(Decodable::decode(&mut Decoder::new(doc))))
-}
-
 /// Shared struct for operations that include counts of success/failed shards.
 /// This is returned within various other result structs.
-#[derive(Debug, RustcDecodable)]
+#[derive(Debug, Deserialize)]
 pub struct ShardCountResult {
     pub total:      u64,
     pub successful: u64,
@@ -114,18 +107,8 @@ pub struct ShardCountResult {
 }
 
 /// Result of a refresh request
+#[derive(Deserialize)]
 pub struct RefreshResult {
+    #[serde(rename="_shards")]
     pub shards: ShardCountResult
-}
-
-impl<'a> From<&'a Json> for RefreshResult {
-    fn from(r: &'a Json) -> RefreshResult {
-        RefreshResult {
-            shards: decode_json(
-                r.find("_shards")
-                    .expect("No field '_shards'")
-                    .clone())
-                .unwrap()
-        }
-    }
 }

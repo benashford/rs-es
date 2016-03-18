@@ -16,6 +16,8 @@
 
 //! Common macros, utilities, etc. for the query crate
 
+use ::json::FieldBased;
+
 // Helper macros
 
 /// This package is full of builder interfaces, with much repeated code for adding
@@ -29,6 +31,24 @@ macro_rules! add_option {
     )
 }
 
+macro_rules! add_inner_option {
+    ($n:ident, $e:ident, $t:ty) => (
+        pub fn $n<T: Into<$t>>(mut self, val: T) -> Self {
+            self.0.inner.$e = Some(val.into());
+            self
+        }
+    )
+}
+
+macro_rules! add_outer_option {
+    ($n:ident, $e:ident, $t:ty) => (
+        pub fn $n<T: Into<$t>>(mut self, val: T) -> Self {
+            self.0.outer.$e = Some(val.into());
+            self
+        }
+    )
+}
+
 /// Build the `build` function for each builder struct
 macro_rules! build {
     ($t:ident) => (
@@ -37,3 +57,5 @@ macro_rules! build {
         }
     )
 }
+
+pub type FieldBasedQuery<I, O> = FieldBased<String, I, O>;

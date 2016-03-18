@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ben Ashford
+ * Copyright 2015-2016 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,9 @@
 
 //! Implementation of ElasticSearch Index operation
 
-use rustc_serialize::Encodable;
-use rustc_serialize::json::Json;
+use serde::ser::Serialize;
 
-use ::Client;
+use ::{Client, EsResponse};
 use ::error::EsError;
 use super::common::{Options, OptionVal};
 
@@ -37,7 +36,7 @@ impl From<OpType> for OptionVal {
 }
 
 /// An indexing operation
-pub struct IndexOperation<'a, 'b, E: Encodable + 'b> {
+pub struct IndexOperation<'a, 'b, E: Serialize + 'b> {
     /// The HTTP client that this operation will use
     client:   &'a mut Client,
 
@@ -57,7 +56,7 @@ pub struct IndexOperation<'a, 'b, E: Encodable + 'b> {
     document: Option<&'b E>
 }
 
-impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
+impl<'a, 'b, E: Serialize + 'b> IndexOperation<'a, 'b, E> {
     pub fn new(client: &'a mut Client, index: &'b str, doc_type: &'b str) -> IndexOperation<'a, 'b, E> {
         IndexOperation {
             client:   client,
@@ -92,7 +91,7 @@ impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
     pub fn send(&'b mut self) -> Result<IndexResult, EsError> {
         // Ignoring status_code as everything should return an IndexResult or
         // already be an error
-        let (_, result) = try!(match self.id {
+        let response = try!(match self.id {
             Some(ref id) => {
                 let url = format!("/{}/{}/{}{}",
                                   self.index,
@@ -115,28 +114,20 @@ impl<'a, 'b, E: Encodable + 'b> IndexOperation<'a, 'b, E> {
                 }
             }
         });
-        Ok(IndexResult::from(&result.expect("No Json payload")))
+        Ok(try!(response.read_response()))
     }
 }
 
 /// The result of an index operation
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct IndexResult {
+    #[serde(rename="_index")]
     pub index:    String,
+    #[serde(rename="_type")]
     pub doc_type: String,
+    #[serde(rename="_id")]
     pub id:       String,
+    #[serde(rename="_version")]
     pub version:  u64,
     pub created:  bool
-}
-
-impl<'a> From<&'a Json> for IndexResult {
-    fn from(r: &'a Json) -> IndexResult {
-        IndexResult {
-            index:    get_json_string!(r, "_index"),
-            doc_type: get_json_string!(r, "_type"),
-            id:       get_json_string!(r, "_id"),
-            version:  get_json_u64!(r, "_version"),
-            created:  get_json_bool!(r, "created")
-        }
-    }
 }

@@ -19,19 +19,21 @@
 pub mod aggregations;
 
 use std::collections::{BTreeMap, HashMap};
+use std::fmt::Debug;
 
 use hyper::status::StatusCode;
 
-use rustc_serialize::Decodable;
-use rustc_serialize::json::{Json, ToJson};
+use serde::de::Deserialize;
+use serde::ser::{Serialize, Serializer};
+use serde_json::Value;
 
-use ::Client;
+use ::{Client, EsResponse};
 use ::error::EsError;
+use ::json::{FieldBased, NoOuter, ShouldSkip};
 use ::query::Query;
 use ::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
 use ::util::StrJoin;
 use super::common::{Options, OptionVal};
-use super::decode_json;
 use super::format_indexes_and_types;
 use super::ShardCountResult;
 
@@ -80,9 +82,11 @@ impl ToString for Order {
     }
 }
 
-impl ToJson for Order {
-    fn to_json(&self) -> Json {
-        Json::String(self.to_string())
+impl Serialize for Order {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        self.to_string().serialize(serializer)
     }
 }
 
@@ -94,14 +98,16 @@ pub enum Mode {
     Avg
 }
 
-impl ToJson for Mode {
-    fn to_json(&self) -> Json {
-        Json::String(match self {
+impl Serialize for Mode {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
             &Mode::Min => "min",
             &Mode::Max => "max",
             &Mode::Sum => "sum",
             &Mode::Avg => "avg"
-        }.to_owned())
+        }.serialize(serializer)
     }
 }
 
@@ -112,13 +118,15 @@ pub enum Missing {
     Custom(String)
 }
 
-impl ToJson for Missing {
-    fn to_json(&self) -> Json {
-        Json::String(match self {
-            &Missing::First         => "_first".to_owned(),
-            &Missing::Last          => "_last".to_owned(),
-            &Missing::Custom(ref s) => s.clone()
-        })
+impl Serialize for Missing {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
+            &Missing::First => "first".serialize(serializer),
+            &Missing::Last  => "last".serialize(serializer),
+            &Missing::Custom(ref s) => s.serialize(serializer)
+        }
     }
 }
 
@@ -132,35 +140,41 @@ impl<S: Into<String>> From<S> for Missing {
 
 /// Representing sort options for a specific field, can be combined with others
 /// to produce the full sort clause
-pub struct SortField {
-    field:         String,
+#[derive(Serialize)]
+pub struct SortField(FieldBased<String, SortFieldInner, NoOuter>);
+
+#[derive(Default, Serialize)]
+pub struct SortFieldInner {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     order:         Option<Order>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     mode:          Option<Mode>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     nested_path:   Option<String>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     nested_filter: Option<Query>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     missing:       Option<Missing>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     unmapped_type: Option<String>
 }
 
 impl SortField {
     /// Create a `SortField` for a given `field` and `order`
     pub fn new<S: Into<String>>(field: S, order: Option<Order>) -> SortField {
-        SortField {
-            field:         field.into(),
-            order:         order,
-            mode:          None,
-            nested_path:   None,
-            nested_filter: None,
-            missing:       None,
-            unmapped_type: None
-        }
+        SortField(FieldBased::new(field.into(),
+                                  SortFieldInner {
+                                      order: order,
+                                      ..Default::default()
+                                  },
+                                  NoOuter))
     }
 
-    add_field!(with_mode, mode, Mode);
-    add_field!(with_nested_path, nested_path, String);
-    add_field!(with_nested_filter, nested_filter, Query);
-    add_field!(with_missing, missing, Missing);
-    add_field!(with_unmapped_type, unmapped_type, String);
+    add_inner_field!(with_mode, mode, Mode);
+    add_inner_field!(with_nested_path, nested_path, String);
+    add_inner_field!(with_nested_filter, nested_filter, Query);
+    add_inner_field!(with_missing, missing, Missing);
+    add_inner_field!(with_unmapped_type, unmapped_type, String);
 
     pub fn build(self) -> SortBy {
         SortBy::Field(self)
@@ -170,8 +184,8 @@ impl SortField {
 impl ToString for SortField {
     fn to_string(&self) -> String {
         let mut s = String::new();
-        s.push_str(&self.field);
-        match self.order {
+        s.push_str(&self.0.field);
+        match self.0.inner.order {
             Some(ref order) => {
                 s.push_str(":");
                 // TODO - find less clumsy way of implementing the following
@@ -184,30 +198,19 @@ impl ToString for SortField {
     }
 }
 
-impl ToJson for SortField {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-
-        optional_add!(self, inner, order);
-        optional_add!(self, inner, mode);
-        optional_add!(self, inner, nested_path);
-        optional_add!(self, inner, nested_filter);
-        optional_add!(self, inner, missing);
-        optional_add!(self, inner, unmapped_type);
-
-        d.insert(self.field.clone(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
-
 /// Representing sort options for sort by geodistance
+// TODO - fix structure to represent reality
+#[derive(Serialize)]
 pub struct GeoDistance {
     field:         String,
     location:      OneOrMany<Location>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     order:         Option<Order>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     unit:          Option<DistanceUnit>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     mode:          Option<Mode>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     distance_type: Option<DistanceType>,
 }
 
@@ -245,28 +248,17 @@ impl GeoDistance {
     }
 }
 
-impl ToJson for GeoDistance {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-
-        inner.insert(self.field.clone(), self.location.to_json());
-
-        optional_add!(self, inner, order);
-        optional_add!(self, inner, unit);
-        optional_add!(self, inner, mode);
-        optional_add!(self, inner, distance_type);
-
-        d.insert("_geo_distance".to_owned(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
-
 /// Representing options for sort by script
+// TODO - fix structure
+// TODO - there are other 'Script's defined elsewhere, perhaps de-duplicate them
+// if it makes sense. 
+#[derive(Serialize)]
 pub struct Script {
     script:      String,
+    #[serde(rename="type")]
     script_type: String,
     params:      HashMap<String, JsonVal>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     order:       Option<Order>
 }
 
@@ -298,24 +290,22 @@ impl Script {
     }
 }
 
-impl ToJson for Script {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-
-        inner.insert("script".to_owned(), self.script.to_json());
-        inner.insert("type".to_owned(), self.script_type.to_json());
-        inner.insert("params".to_owned(), self.params.to_json());
-
-        d.insert("_script".to_owned(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
-
 pub enum SortBy {
     Field(SortField),
     Distance(GeoDistance),
     Script(Script)
+}
+
+impl Serialize for SortBy {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
+            &SortBy::Field(ref f) => f.serialize(serializer),
+            &SortBy::Distance(ref d) => d.serialize(serializer),
+            &SortBy::Script(ref s) => s.serialize(serializer),
+        }
+    }
 }
 
 impl ToString for SortBy {
@@ -327,19 +317,17 @@ impl ToString for SortBy {
     }
 }
 
-impl ToJson for SortBy {
-    fn to_json(&self) -> Json {
-        match self {
-            &SortBy::Field(ref field)   => field.to_json(),
-            &SortBy::Distance(ref dist) => dist.to_json(),
-            &SortBy::Script(ref scr)    => scr.to_json()
-        }
-    }
-}
-
 /// A full sort clause
 pub struct Sort {
     fields: Vec<SortBy>
+}
+
+impl Serialize for Sort {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        self.fields.serialize(serializer)
+    }
 }
 
 impl Sort {
@@ -397,12 +385,6 @@ impl<'a> From<&'a Sort> for OptionVal {
     }
 }
 
-impl ToJson for Sort {
-    fn to_json(&self) -> Json {
-        self.fields.to_json()
-    }
-}
-
 impl<'a, 'b> SearchURIOperation<'a, 'b> {
     pub fn new(client: &'a mut Client) -> SearchURIOperation<'a, 'b> {
         SearchURIOperation {
@@ -450,16 +432,21 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
         self
     }
 
-    pub fn send(&'b mut self) -> Result<SearchResult, EsError> {
+    pub fn send<T>(&'b mut self) -> Result<SearchResult<T>, EsError>
+        where T: Deserialize {
+
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
         info!("Searching with: {}", url);
-        let (status_code, result) = try!(self.client.get_op(&url));
-        info!("Search result (status: {}, result: {:?})", status_code, result);
-        match status_code {
-            StatusCode::Ok => Ok(SearchResult::from(&result.expect("No Json payload"))),
-            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+        let response = try!(self.client.get_op(&url));
+        match response.status_code() {
+            &StatusCode::Ok => {
+                let interim:SearchResultInterim<T> = try!(response.read_response());
+                Ok(interim.finalize())
+            },
+            _ => Err(EsError::EsError(format!("Unexpected status: {}",
+                                              response.status_code())))
         }
     }
 }
@@ -471,6 +458,28 @@ pub enum Source<'a> {
 
     /// Filtering
     Filter(Option<&'a [&'a str]>, Option<&'a [&'a str]>)
+}
+
+impl<'a> Serialize for Source<'a> {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self {
+            &Source::Off => false.serialize(serializer),
+            &Source::Filter(incl, excl) => {
+                let mut d = BTreeMap::new();
+                match incl {
+                    Some(val) => { d.insert("include".to_owned(), val); },
+                    None      => (),
+                }
+                match excl {
+                    Some(val) => { d.insert("exclude".to_owned(), val); },
+                    None      => (),
+                }
+                d.serialize(serializer)
+            }
+        }
+    }
 }
 
 impl<'a> Source<'a> {
@@ -490,85 +499,51 @@ impl<'a> Source<'a> {
     }
 }
 
-/// Convenience function to Json-ify a reference to a slice of references of
-/// items that can be converted to Json
-fn slice_to_json<J: ToJson + ?Sized>(slice: &[&J]) -> Json {
-    Json::Array(slice.iter().map(|e| {
-        e.to_json()
-    }).collect())
-}
-
-impl<'a> ToJson for Source<'a> {
-    fn to_json(&self) -> Json {
-        match self {
-            &Source::Off                => Json::Boolean(false),
-            &Source::Filter(incl, excl) => {
-                let mut d = BTreeMap::new();
-                match incl {
-                    Some(val) => { d.insert("include".to_owned(), slice_to_json(val)); },
-                    None      => (),
-                }
-                match excl {
-                    Some(val) => { d.insert("exclude".to_owned(), slice_to_json(val)); },
-                    None      => (),
-                }
-                Json::Object(d)
-            }
-        }
-    }
-}
-
+#[derive(Default, Serialize)]
 struct SearchQueryOperationBody<'b> {
     /// The query
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     query: Option<&'b Query>,
 
     /// Timeout
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     timeout: Option<&'b str>,
 
     /// From
-    from: u64,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    from: Option<u64>,
 
     /// Size
-    size: u64,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    size: Option<u64>,
 
     /// Terminate early (marked as experimental in the ES docs)
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     terminate_after: Option<u64>,
 
     /// Stats groups to which the query belongs
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     stats: Option<Vec<String>>,
 
     /// Minimum score to use
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     min_score: Option<f64>,
 
     /// Sort fields
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     sort: Option<&'b Sort>,
 
     /// Track scores
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     track_scores: Option<bool>,
 
     /// Source filtering
+    #[serde(rename="_source", skip_serializing_if="ShouldSkip::should_skip")]
     source: Option<Source<'b>>,
 
     /// Aggregations
+    #[serde(rename="aggregations", skip_serializing_if="ShouldSkip::should_skip")]
     aggs: Option<&'b aggregations::Aggregations<'b>>
-}
-
-impl<'a> ToJson for SearchQueryOperationBody<'a> {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        d.insert("from".to_owned(), self.from.to_json());
-        d.insert("size".to_owned(), self.size.to_json());
-        optional_add!(self, d, query);
-        optional_add!(self, d, timeout);
-        optional_add!(self, d, terminate_after);
-        optional_add!(self, d, stats);
-        optional_add!(self, d, min_score);
-        optional_add!(self, d, sort);
-        optional_add!(self, d, track_scores);
-        optional_add!(self, d, source, "_source");
-        optional_add!(self, d, aggs);
-        Json::Object(d)
-    }
 }
 
 pub struct SearchQueryOperation<'a, 'b> {
@@ -595,19 +570,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
             indexes:   &[],
             doc_types: &[],
             options:   Options::new(),
-            body:      SearchQueryOperationBody {
-                query:           None,
-                timeout:         None,
-                from:            0,
-                size:            10,
-                terminate_after: None,
-                stats:           None,
-                min_score:       None,
-                sort:            None,
-                track_scores:    None,
-                source:          None,
-                aggs:            None
-            }
+            body:      Default::default()
         }
     }
 
@@ -632,12 +595,12 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
     }
 
     pub fn with_from(&'b mut self, from: u64) -> &'b mut Self {
-        self.body.from = from;
+        self.body.from = Some(from);
         self
     }
 
     pub fn with_size(&'b mut self, size: u64) -> &'b mut Self {
-        self.body.size = size;
+        self.body.size = Some(size);
         self
     }
 
@@ -690,167 +653,186 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
     add_option!(with_query_cache, "query_cache");
 
     /// Performs the search with the specified query and options
-    pub fn send(&'b mut self) -> Result<SearchResult, EsError> {
+    pub fn send<T>(&'b mut self) -> Result<SearchResult<T>, EsError>
+        where T: Deserialize {
+
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
-        let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
-        match status_code {
-            StatusCode::Ok => {
-                let result_json = result.expect("No Json payload");
-                let mut search_result = SearchResult::from(&result_json);
-                match self.body.aggs {
-                    Some(ref aggs) => {
-                        search_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
+        let response = try!(self.client.post_body_op(&url, &self.body));
+        match response.status_code() {
+            &StatusCode::Ok => {
+                let interim:SearchResultInterim<T> = try!(response.read_response());
+                let aggs = match &interim.aggs {
+                    &Some(ref raw_aggs) => {
+                        let req_aggs = match &self.body.aggs {
+                            &Some(ref aggs) => aggs,
+                            &None => return Err(EsError::EsError("No aggs despite being in results".to_owned()))
+                        };
+                        Some(try!(AggregationsResult::from(req_aggs,
+                                                           raw_aggs)))
                     },
-                    _              => ()
-                }
-                Ok(search_result)
+                    &None => None
+                };
+                let mut result = interim.finalize();
+                result.aggs = aggs;
+                Ok(result)
             },
-            _              => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+            _ => Err(EsError::EsError(format!("Unexpected status: {}",
+                                              response.status_code())))
         }
     }
 
     /// Begins a scan with the specified query and options
-    pub fn scan(&'b mut self, scroll: Duration) -> Result<ScanResult, EsError> {
+    pub fn scan<T>(&'b mut self, scroll: &'b Duration) -> Result<ScanResult<T>, EsError>
+        where T: Deserialize {
+
         self.options.push("search_type", "scan");
-        self.options.push("scroll", &scroll);
+        self.options.push("scroll", scroll);
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
-        let (status_code, result) = try!(self.client.post_body_op(&url, &self.body.to_json()));
-        match status_code {
-            StatusCode::Ok => {
-                let result_json = result.expect("No Json payload");
-                let mut scan_result = ScanResult::from(scroll, &result_json);
-                match self.body.aggs {
-                    Some(ref aggs) => {
-                        scan_result.aggs = Some(AggregationsResult::from(aggs, &result_json));
+        let response = try!(self.client.post_body_op(&url, &self.body));
+        match response.status_code() {
+            &StatusCode::Ok => {
+                let interim:ScanResultInterim<T> = try!(response.read_response());
+                let aggs = match &interim.aggs {
+                    &Some(ref raw_aggs) => {
+                        let req_aggs = match &self.body.aggs {
+                            &Some(ref aggs) => aggs,
+                            &None => return Err(EsError::EsError("No aggs despite being in results".to_owned()))
+                        };
+                        Some(try!(AggregationsResult::from(req_aggs,
+                                                           raw_aggs)))
                     },
-                    _              => ()
-                }
-                Ok(scan_result)
+                    &None => None
+                };
+                let mut result = interim.finalize();
+                result.aggs = aggs;
+                Ok(result)
             },
-            StatusCode::NotFound => {
-                Err(EsError::EsServerError(format!("Not found: {:?}", result)))
+            &StatusCode::NotFound => {
+                Err(EsError::EsServerError(format!("Not found: {:?}", response)))
             },
-            _ => Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+            _ => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
         }
     }
 }
 
-#[derive(Debug)]
-pub struct SearchHitsHitsResult {
+#[derive(Debug, Deserialize)]
+pub struct SearchHitsHitsResult<T: Deserialize> {
+    #[serde(rename="_index")]
     pub index:    String,
+    #[serde(rename="_type")]
     pub doc_type: String,
+    #[serde(rename="_id")]
     pub id:       String,
+    #[serde(rename="_score")]
     pub score:    Option<f64>,
-    pub source:   Option<Json>,
-    pub fields:   Option<Json>
+    #[serde(rename="_source")]
+    pub source:   Option<Box<T>>,
+    // TODO - check this isn't deprecated
+    //#[serde(rename="_fields")]
+    // pub fields:   Option<Json>
 }
 
-impl SearchHitsHitsResult {
-    /// Get the source document as a struct, the raw JSON version is available
-    /// directly from the source field
-    pub fn source<T: Decodable>(self) -> Result<T, EsError> {
-        match self.source {
-            Some(source) => decode_json(source),
-            None         => Err(EsError::EsError("No source field".to_owned()))
+#[derive(Debug, Deserialize)]
+pub struct SearchHitsResult<T: Deserialize> {
+    pub total: u64,
+    pub hits:  Vec<SearchHitsHitsResult<T>>
+}
+
+impl<T> SearchHitsResult<T>
+    where T: Deserialize {
+
+    pub fn hits(self) -> Option<Vec<Box<T>>> {
+        let mut r = Vec::with_capacity(self.hits.len());
+        for b in self.hits.into_iter() {
+            match b.source {
+                Some(val) => r.push(val),
+                None      => return None,
+            }
         }
+        Some(r)
+    }
+
+    pub fn hits_ref(&self) -> Option<Vec<&T>> {
+        let mut r = Vec::with_capacity(self.hits.len());
+        for b in self.hits.iter() {
+            match b.source {
+                Some(ref v) => r.push(v.as_ref()),
+                None        => return None,
+            }
+        }
+        Some(r)
     }
 }
 
-impl<'a> From<&'a Json> for SearchHitsHitsResult {
-    fn from(r: &'a Json) -> SearchHitsHitsResult {
-        SearchHitsHitsResult {
-            index:    get_json_string!(r, "_index"),
-            doc_type: get_json_string!(r, "_type"),
-            id:       get_json_string!(r, "_id"),
-            score:    {
-                let s = r.find("_score").expect("No field '_score'");
-                if s.is_f64() {
-                    s.as_f64()
-                } else {
-                    None
-                }
-            },
-            source:   r.find("_source").map(|s| s.clone()),
-            fields:   r.find("fields").map(|s| s.clone())
+#[derive(Debug, Deserialize)]
+pub struct SearchResultInterim<T: Deserialize> {
+    pub took:      u64,
+    pub timed_out: bool,
+
+    #[serde(rename="_shards")]
+    pub shards:    ShardCountResult,
+    pub hits:      SearchHitsResult<T>,
+
+    /// Optional field populated if aggregations are specified
+    #[serde(rename="aggregations")]
+    pub aggs:      Option<Value>,
+
+    /// Optional field populated during scanning and scrolling
+    #[serde(rename="_scroll_id")]
+    pub scroll_id: Option<String>
+}
+
+impl<T> SearchResultInterim<T>
+    where T: Deserialize {
+
+    fn finalize(self) -> SearchResult<T> {
+        SearchResult {
+            took: self.took,
+            timed_out: self.timed_out,
+            shards: self.shards,
+            hits: self.hits,
+            aggs: None,
+            scroll_id: self.scroll_id
         }
     }
 }
 
 #[derive(Debug)]
-pub struct SearchHitsResult {
-    pub total: u64,
-    pub hits:  Vec<SearchHitsHitsResult>
-}
-
-impl SearchHitsResult {
-    pub fn hits<T: Decodable>(self) -> Result<Vec<T>, EsError> {
-        let mut r = Vec::with_capacity(self.hits.len());
-        for hit in self.hits {
-            r.push(try!(hit.source()));
-        }
-        Ok(r)
-    }
-}
-
-impl<'a> From<&'a Json> for SearchHitsResult {
-    fn from(r: &'a Json) -> SearchHitsResult {
-        SearchHitsResult {
-            total: get_json_u64!(r, "total"),
-            hits:  r.find("hits")
-                .expect("No field 'hits'")
-                .as_array()
-                .expect("Field 'hits' is not an array")
-                .iter()
-                .map(|j| SearchHitsHitsResult::from(j))
-                .collect()
-        }
-    }
-}
-
-pub struct SearchResult {
+pub struct SearchResult<T: Deserialize> {
     pub took:      u64,
     pub timed_out: bool,
     pub shards:    ShardCountResult,
-    pub hits:      SearchHitsResult,
-    pub aggs:      Option<AggregationsResult>
+    pub hits:      SearchHitsResult<T>,
+    pub aggs:      Option<AggregationsResult>,
+    pub scroll_id: Option<String>
 }
 
-impl SearchResult {
+impl<T> SearchResult<T>
+    where T: Deserialize {
+
     /// Take a reference to any aggregations in this result
     pub fn aggs_ref<'a>(&'a self) -> Option<&'a AggregationsResult> {
         self.aggs.as_ref()
     }
 }
 
-impl<'a> From<&'a Json> for SearchResult {
-    fn from(r: &'a Json) -> SearchResult {
-        SearchResult {
-            took:      get_json_u64!(r, "took"),
-            timed_out: get_json_bool!(r, "timed_out"),
-            shards:    decode_json(r.find("_shards")
-                                   .expect("No field '_shards'")
-                                   .clone()).unwrap(),
-            hits:      SearchHitsResult::from(r.find("hits")
-                                              .expect("No field 'hits'")),
-            aggs:      None
-        }
-    }
-}
-
-pub struct ScanIterator<'a> {
-    scan_result: ScanResult,
+pub struct ScanIterator<'a, T: Deserialize + Debug> {
+    scan_result: ScanResult<T>,
+    scroll:      Duration,
     client:      &'a mut Client,
-    page:        Vec<SearchHitsHitsResult>
+    page:        Vec<SearchHitsHitsResult<T>>
 }
 
-impl<'a> ScanIterator<'a> {
+impl<'a, T> ScanIterator<'a, T>
+    where T: Deserialize + Debug {
+
     /// Fetch the next page and return the first hit, or None if there are no hits
-    fn next_page(&mut self) -> Option<Result<SearchHitsHitsResult, EsError>> {
-        match self.scan_result.scroll(self.client) {
+    fn next_page(&mut self) -> Option<Result<SearchHitsHitsResult<T>, EsError>> {
+        match self.scan_result.scroll(self.client, &self.scroll) {
             Ok(scroll_page) => {
                 self.page = scroll_page.hits.hits;
                 if self.page.len() > 0 {
@@ -864,7 +846,9 @@ impl<'a> ScanIterator<'a> {
     }
 }
 
-impl<'a> Drop for ScanIterator<'a> {
+impl<'a, T> Drop for ScanIterator<'a, T>
+    where T: Deserialize + Debug {
+
     fn drop(&mut self) {
         match self.scan_result.close(self.client) {
             Ok(_)  => (),
@@ -875,8 +859,10 @@ impl<'a> Drop for ScanIterator<'a> {
     }
 }
 
-impl<'a> Iterator for ScanIterator<'a> {
-    type Item = Result<SearchHitsHitsResult, EsError>;
+impl<'a, T> Iterator for ScanIterator<'a, T>
+    where T: Deserialize + Debug {
+
+    type Item = Result<SearchHitsHitsResult<T>, EsError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.page.len() > 0 {
@@ -901,55 +887,79 @@ impl<'a> Iterator for ScanIterator<'a> {
 ///
 /// See also the [official ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/guide/current/scan-scroll.html)
 /// for proper use of this functionality.
-pub struct ScanResult {
+#[derive(Deserialize)]
+pub struct ScanResultInterim<T: Deserialize> {
+    #[serde(rename="_scroll_id")]
     scroll_id:     String,
-    scroll:        Duration,
-    pub took:      u64,
-    pub timed_out: bool,
-    pub shards:    ShardCountResult,
-    pub hits:      SearchHitsResult,
-    pub aggs:      Option<AggregationsResult>
+    took:      u64,
+    timed_out: bool,
+    #[serde(rename="_shards")]
+    shards:    ShardCountResult,
+    hits:      SearchHitsResult<T>,
+    #[serde(rename="aggregations")]
+    aggs:      Option<Value>
 }
 
-impl ScanResult {
-    fn from<'b>(scroll: Duration, r: &'b Json) -> ScanResult {
+impl<T> ScanResultInterim<T>
+    where T: Deserialize {
+
+    fn finalize(self) -> ScanResult<T> {
         ScanResult {
-            scroll:    scroll,
-            scroll_id: get_json_string!(r, "_scroll_id"),
-            took:      get_json_u64!(r, "took"),
-            timed_out: get_json_bool!(r, "timed_out"),
-            shards:    decode_json(r.find("_shards")
-                                   .unwrap()
-                                   .clone()).unwrap(),
-            hits:      SearchHitsResult::from(r.find("hits")
-                                              .unwrap()),
-            aggs:      None
+            scroll_id: self.scroll_id,
+            took: self.took,
+            timed_out: self.timed_out,
+            shards: self.shards,
+            hits: self.hits,
+            aggs: None
         }
     }
+}
+
+pub struct ScanResult<T: Deserialize> {
+    pub scroll_id: String,
+    pub took: u64,
+    pub timed_out: bool,
+    pub shards: ShardCountResult,
+    pub hits: SearchHitsResult<T>,
+    pub aggs: Option<AggregationsResult>
+}
+
+impl<T> ScanResult<T>
+    where T: Deserialize + Debug {
 
     /// Returns an iterator from which hits can be read
-    pub fn iter(self, client: &mut Client) -> ScanIterator {
+    pub fn iter(self, client: &mut Client, scroll: Duration) -> ScanIterator<T> {
         ScanIterator {
             scan_result: self,
+            scroll:      scroll,
             client:      client,
             page:        vec![],
         }
     }
 
     /// Calls the `/_search/scroll` ES end-point for the next page
-    pub fn scroll(&mut self, client: &mut Client) -> Result<SearchResult, EsError> {
+    pub fn scroll(&mut self,
+                  client: &mut Client,
+                  scroll: &Duration) -> Result<SearchResult<T>, EsError> {
         let url = format!("/_search/scroll?scroll={}&scroll_id={}",
-                          self.scroll.to_string(),
+                          scroll.to_string(),
                           self.scroll_id);
-        let (status_code, result) = try!(client.get_op(&url));
-        match status_code {
-            StatusCode::Ok => {
-                let r = result.expect("No Json payload");
-                self.scroll_id = get_json_string!(r, "_scroll_id");
-                Ok(SearchResult::from(&r))
+        let response = try!(client.get_op(&url));
+        match response.status_code() {
+            &StatusCode::Ok => {
+                let search_result:SearchResultInterim<T> = try!(response.read_response());
+                self.scroll_id = match search_result.scroll_id {
+                    Some(ref id) => id.clone(),
+                    None     => {
+                        return Err(EsError::EsError("Expecting scroll_id".to_owned()))
+                    }
+                };
+                println!("Scrolled: {:?}", search_result);
+                Ok(search_result.finalize())
             },
-            _              => {
-                Err(EsError::EsError(format!("Unexpected status: {}", status_code)))
+            _               => {
+                Err(EsError::EsError(format!("Unexpected status: {}",
+                                             response.status_code())))
             }
         }
     }
@@ -957,13 +967,12 @@ impl ScanResult {
     /// Calls ES to close the server-side part of the scan/scroll operation
     pub fn close(&self, client: &mut Client) -> Result<(), EsError> {
         let url = format!("/_search/scroll?scroll_id={}", self.scroll_id);
-        let (status_code, result) = try!(client.delete_op(&url));
-        match status_code {
-            StatusCode::Ok       => Ok(()), // closed
-            StatusCode::NotFound => Ok(()), // previously closed
-            _                    => Err(EsError::EsError(format!("Unexpected status: {}, {}",
-                                                                 status_code,
-                                                                 result.unwrap())))
+        let response = try!(client.delete_op(&url));
+        match response.status_code() {
+            &StatusCode::Ok       => Ok(()), // closed
+            &StatusCode::NotFound => Ok(()), // previously closed
+            _                     => Err(EsError::EsError(format!("Unexpected status: {}",
+                                                                  response.status_code())))
         }
     }
 }
@@ -973,17 +982,23 @@ mod tests {
     extern crate env_logger;
     extern crate regex;
 
+    use serde_json::Value;
+
     use ::Client;
     use ::tests::TestDocument;
 
     use ::operations::bulk::Action;
     use ::units::{Duration, JsonVal};
 
+    use super::ScanResult;
     use super::SearchHitsHitsResult;
+    use super::SearchResult;
     use super::Sort;
     use super::Source;
 
-    use super::aggregations::{Aggregations, Min, Order, OrderKey, Terms};
+    use super::aggregations::Aggregations;
+    use super::aggregations::bucket::{Order, OrderKey, Terms};
+    use super::aggregations::metrics::Min;
 
     fn make_document(idx: i64) -> TestDocument {
         TestDocument::new()
@@ -992,7 +1007,7 @@ mod tests {
     }
 
     fn setup_scan_data(client: &mut Client, index_name: &str) {
-        let actions:Vec<Action> = (0..1000).map(|idx| {
+        let actions:Vec<Action<TestDocument>> = (0..1000).map(|idx| {
             Action::index(make_document(idx))
         }).collect();
 
@@ -1014,13 +1029,14 @@ mod tests {
 
         let indexes = [index_name];
 
-        let mut scan_result = client.search_query()
+        let scroll = Duration::minutes(1);
+        let mut scan_result:ScanResult<TestDocument> = client.search_query()
             .with_indexes(&indexes)
             .with_size(100)
-            .scan(Duration::minutes(1))
+            .scan(&scroll)
             .unwrap();
 
-        scan_result.scroll(&mut client).unwrap();
+        scan_result.scroll(&mut client, &scroll).unwrap();
 
         scan_result.close(&mut client).unwrap();
     }
@@ -1034,17 +1050,18 @@ mod tests {
 
         let indexes = [index_name];
 
-        let mut scan_result = client.search_query()
+        let scroll = Duration::minutes(1);
+        let mut scan_result:ScanResult<TestDocument> = client.search_query()
             .with_indexes(&indexes)
             .with_size(100)
-            .scan(Duration::minutes(1))
+            .scan(&scroll)
             .unwrap();
 
         assert_eq!(1000, scan_result.hits.total);
         let mut total = 0;
 
         loop {
-            let page = scan_result.scroll(&mut client).unwrap();
+            let page = scan_result.scroll(&mut client, &scroll).unwrap();
             let page_total = page.hits.hits.len();
             total += page_total;
             if page_total == 0 && total == 1000 {
@@ -1065,15 +1082,17 @@ mod tests {
 
         let indexes = [index_name];
 
-        let scan_result = client.search_query()
+        let scroll = Duration::minutes(1);
+        let scan_result:ScanResult<TestDocument> = client.search_query()
             .with_indexes(&indexes)
             .with_size(10)
-            .scan(Duration::minutes(1))
+            .scan(&scroll)
             .unwrap();
 
         assert_eq!(1000, scan_result.hits.total);
 
-        let hits:Vec<SearchHitsHitsResult> = scan_result.iter(&mut client)
+        let hits:Vec<SearchHitsHitsResult<TestDocument>> = scan_result
+            .iter(&mut client, scroll)
             .take(200)
             .map(|hit| hit.unwrap())
             .collect();
@@ -1090,7 +1109,9 @@ mod tests {
         client.index(index_name, "test").with_doc(&make_document(100)).send().unwrap();
         client.refresh().with_indexes(&[index_name]).send().unwrap();
 
-        let mut result = client.search_query()
+        // Use of `Value` is necessary as the JSON returned is an arbitrary format
+        // determined by the source filter
+        let mut result:SearchResult<Value> = client.search_query()
             .with_indexes(&[index_name])
             .with_source(Source::include(&["str_field"]))
             .send()
@@ -1121,11 +1142,12 @@ mod tests {
         client.refresh().with_indexes(&[index_name]).send().unwrap();
 
         let aggs = Aggregations::from(("str",
-                                       (Terms::new("str_field").with_order(Order::asc(OrderKey::Term)),
+                                       (Terms::field("str_field")
+                                        .with_order(Order::asc(OrderKey::Term)),
                                         Aggregations::from(("int",
-                                                            Min::new("int_field"))))));
+                                                            Min::field("int_field"))))));
 
-        let result = client.search_query()
+        let result:SearchResult<TestDocument> = client.search_query()
             .with_indexes(&[index_name])
             .with_aggs(&aggs)
             .send()
@@ -1186,9 +1208,9 @@ mod tests {
 
         client.refresh().with_indexes(&[index_name]).send().unwrap();
 
-        let result = client.search_query()
+        let result:SearchResult<TestDocument> = client.search_query()
             .with_indexes(&[index_name])
-            .with_aggs(&Aggregations::from(("min_int_field", Min::new("int_field"))))
+            .with_aggs(&Aggregations::from(("min_int_field", Min::field("int_field"))))
             .send()
             .unwrap();
 
@@ -1223,7 +1245,7 @@ mod tests {
         client.refresh().with_indexes(&[index_name]).send().unwrap();
 
         {
-            let result = client.search_uri()
+            let result:SearchResult<TestDocument> = client.search_uri()
                 .with_indexes(&[index_name])
                 .with_sort(&Sort::field("str_field"))
                 .send()
@@ -1232,7 +1254,7 @@ mod tests {
             let result_str:Vec<String> = result.hits.hits()
                 .unwrap()
                 .into_iter()
-                .map(|doc:TestDocument| doc.str_field)
+                .map(|doc| doc.str_field)
                 .collect();
 
             let expected_result_str:Vec<String> = vec!["A", "B", "C"].into_iter()
@@ -1242,7 +1264,7 @@ mod tests {
             assert_eq!(expected_result_str, result_str);
         }
         {
-            let result = client.search_query()
+            let result:SearchResult<TestDocument> = client.search_query()
                 .with_indexes(&[index_name])
                 .with_sort(&Sort::field("str_field"))
                 .send()
@@ -1251,7 +1273,7 @@ mod tests {
             let result_str:Vec<String> = result.hits.hits()
                 .unwrap()
                 .into_iter()
-                .map(|doc:TestDocument| doc.str_field)
+                .map(|doc| doc.str_field)
                 .collect();
 
             let expected_result_str:Vec<String> = vec!["A", "B", "C"].into_iter()
@@ -1262,7 +1284,7 @@ mod tests {
                        result_str);
         }
         {
-            let result = client.search_query()
+            let result:SearchResult<TestDocument> = client.search_query()
                 .with_indexes(&[index_name])
                 .with_sort(&Sort::field("int_field"))
                 .send()
@@ -1271,7 +1293,7 @@ mod tests {
             let result_str:Vec<String> = result.hits.hits()
                 .unwrap()
                 .into_iter()
-                .map(|doc:TestDocument| doc.str_field)
+                .map(|doc| doc.str_field)
                 .collect();
 
             let expected_result_str:Vec<String> = vec!["C", "B", "A"].into_iter()

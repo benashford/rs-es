@@ -42,9 +42,10 @@
 
 use std::collections::BTreeMap;
 
-use rustc_serialize::json::{Json, ToJson};
+use serde::{Serialize, Serializer};
 
-use util::StrJoin;
+use ::json::ShouldSkip;
+use ::util::StrJoin;
 
 #[macro_use]
 mod common;
@@ -87,9 +88,10 @@ impl ToString for CombinationMinimumShouldMatch {
     }
 }
 
-impl ToJson for CombinationMinimumShouldMatch {
-    fn to_json(&self) -> Json {
-        Json::String(self.to_string())
+impl Serialize for CombinationMinimumShouldMatch {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        self.to_string().serialize(serializer)
     }
 }
 
@@ -126,24 +128,21 @@ impl ToString for MinimumShouldMatch {
     }
 }
 
-impl ToJson for MinimumShouldMatch {
-    fn to_json(&self) -> Json {
+impl Serialize for MinimumShouldMatch {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
         match self {
-            &MinimumShouldMatch::Integer(val) => val.to_json(),
-            &MinimumShouldMatch::Percentage(_) => {
-                self.to_string().to_json()
-            },
-            &MinimumShouldMatch::Combination(ref comb) => {
-                comb.to_json()
-            },
+            &MinimumShouldMatch::Integer(val) => val.serialize(serializer),
+            &MinimumShouldMatch::Percentage(_) => self.to_string().serialize(serializer),
+            &MinimumShouldMatch::Combination(ref comb) => comb.serialize(serializer),
             &MinimumShouldMatch::MultipleCombination(ref combs) => {
-                Json::String(combs.iter().map(|c| c.to_string()).join(" "))
-            }
+                combs.iter().map(|c| c.to_string()).join(" ").serialize(serializer)
+            },
             &MinimumShouldMatch::LowHigh(low, high) => {
                 let mut d = BTreeMap::new();
-                d.insert("low_freq".to_owned(), low.to_json());
-                d.insert("high_freq".to_owned(), high.to_json());
-                Json::Object(d)
+                d.insert("low_freq", low);
+                d.insert("high_freq", high);
+                d.serialize(serializer)
             }
         }
     }
@@ -160,13 +159,15 @@ pub enum Fuzziness {
 from!(i64, Fuzziness, LevenshteinDistance);
 from!(f64, Fuzziness, Proportionate);
 
-impl ToJson for Fuzziness {
-    fn to_json(&self) -> Json {
-        use self::Fuzziness::{Auto, LevenshteinDistance, Proportionate};
+impl Serialize for Fuzziness {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        use self::Fuzziness::*;
         match self {
-            &Auto                      => "auto".to_json(),
-            &LevenshteinDistance(dist) => dist.to_json(),
-            &Proportionate(prop)       => prop.to_json()
+            &Auto => "auto".serialize(serializer),
+            &LevenshteinDistance(dist) => dist.serialize(serializer),
+            &Proportionate(p) => p.serialize(serializer)
         }
     }
 }
@@ -180,15 +181,19 @@ impl ToJson for Fuzziness {
 pub struct Flags<A>(Vec<A>)
     where A: AsRef<str>;
 
-impl<A> ToJson for Flags<A>
-where A: AsRef<str> {
-    fn to_json(&self) -> Json {
-        Json::String(self.0.iter().join("|"))
+impl<A> Serialize for Flags<A>
+    where A: AsRef<str> {
+
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        self.0.iter().join("|").serialize(serializer)
     }
 }
 
 impl<A> From<Vec<A>> for Flags<A>
-where A: AsRef<str> {
+    where A: AsRef<str> {
+
     fn from(from: Vec<A>) -> Self {
         Flags(from)
     }
@@ -205,15 +210,16 @@ pub enum ScoreMode {
     Min
 }
 
-impl ToJson for ScoreMode {
-    fn to_json(&self) -> Json {
+impl Serialize for ScoreMode {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
         match self {
-            &ScoreMode::Multiply => "multiply".to_json(),
-            &ScoreMode::Sum => "sum".to_json(),
-            &ScoreMode::Avg => "avg".to_json(),
-            &ScoreMode::First => "first".to_json(),
-            &ScoreMode::Max => "max".to_json(),
-            &ScoreMode::Min => "min".to_json()
+            &ScoreMode::Multiply => "multiply".serialize(serializer),
+            &ScoreMode::Sum => "sum".serialize(serializer),
+            &ScoreMode::Avg => "avg".serialize(serializer),
+            &ScoreMode::First => "first".serialize(serializer),
+            &ScoreMode::Max => "max".serialize(serializer),
+            &ScoreMode::Min => "min".serialize(serializer)
         }
     }
 }
@@ -224,59 +230,91 @@ impl ToJson for ScoreMode {
 /// significantly in size
 
 // TODO: Filters and Queries are merged, ensure all filters are included in this enum
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum Query {
+    // TODO - uncomment one-level to re-enable after Serdeification
+    #[serde(rename="match_all")]
     MatchAll(Box<MatchAllQuery>),
 
     // Full-text queries
+    #[serde(rename="match")]
     Match(Box<full_text::MatchQuery>),
+    #[serde(rename="multi_match")]
     MultiMatch(Box<full_text::MultiMatchQuery>),
+    #[serde(rename="common")]
     Common(Box<full_text::CommonQuery>),
+    #[serde(rename="query_string")]
     QueryString(Box<full_text::QueryStringQuery>),
+    #[serde(rename="simple_query_string")]
     SimpleQueryString(Box<full_text::SimpleQueryStringQuery>),
 
-    // Term level queries
+    // // Term level queries
+    #[serde(rename="term")]
     Term(Box<term::TermQuery>),
+    #[serde(rename="terms")]
     Terms(Box<term::TermsQuery>),
+    #[serde(rename="range")]
     Range(Box<term::RangeQuery>),
+    #[serde(rename="exists")]
     Exists(Box<term::ExistsQuery>),
-    // Not implementing the Missing query, as it's deprecated, use `must_not` and `Exists`
-    // instead
+    // // Not implementing the Missing query, as it's deprecated, use `must_not` and `Exists`
+    // // instead
+    #[serde(rename="prefix")]
     Prefix(Box<term::PrefixQuery>),
+    #[serde(rename="wildcard")]
     Wildcard(Box<term::WildcardQuery>),
+    #[serde(rename="regexp")]
     Regexp(Box<term::RegexpQuery>),
+    #[serde(rename="fuzzy")]
     Fuzzy(Box<term::FuzzyQuery>),
+    #[serde(rename="type")]
     Type(Box<term::TypeQuery>),
+    #[serde(rename="ids")]
     Ids(Box<term::IdsQuery>),
 
     // Compound queries
+    #[serde(rename="constant_score")]
     ConstantScore(Box<compound::ConstantScoreQuery>),
+    #[serde(rename="bool")]
     Bool(Box<compound::BoolQuery>),
+    #[serde(rename="dis_max")]
     DisMax(Box<compound::DisMaxQuery>),
+    #[serde(rename="function_score")]
     FunctionScore(Box<compound::FunctionScoreQuery>),
+    #[serde(rename="boosting")]
     Boosting(Box<compound::BoostingQuery>),
+    #[serde(rename="indices")]
     Indices(Box<compound::IndicesQuery>),
-    // Not implementing the And query, as it's deprecated, use `bool` instead.
-    // Not implementing the Not query, as it's deprecated
-    // Not implementing the Or query, as it's deprecated, use `bool` instead.
-    // Not implementing the Filtered query, as it's deprecated.
-    // Not implementing the Limit query, as it's deprecated.
+    // // Not implementing the And query, as it's deprecated, use `bool` instead.
+    // // Not implementing the Not query, as it's deprecated
+    // // Not implementing the Or query, as it's deprecated, use `bool` instead.
+    // // Not implementing the Filtered query, as it's deprecated.
+    // // Not implementing the Limit query, as it's deprecated.
 
     // Joining queries
+    #[serde(rename="nested")]
     Nested(Box<joining::NestedQuery>),
+    #[serde(rename="has_child")]
     HasChild(Box<joining::HasChildQuery>),
+    #[serde(rename="has_parent")]
     HasParent(Box<joining::HasParentQuery>),
 
     // Geo queries
+    #[serde(rename="geo_shape")]
     GeoShape(Box<geo::GeoShapeQuery>),
+    #[serde(rename="geo_bounding_box")]
     GeoBoundingBox(Box<geo::GeoBoundingBoxQuery>),
+    #[serde(rename="geo_distance")]
     GeoDistance(Box<geo::GeoDistanceQuery>),
     // TODO: implement me - pending changes to range query
     //GeoDistanceRange(Box<geo::GeoDistanceRangeQuery>)
+    #[serde(rename="geo_polygon")]
     GeoPolygon(Box<geo::GeoPolygonQuery>),
+    #[serde(rename="geohash_cell")]
     GeohashCell(Box<geo::GeohashCellQuery>),
 
     // Specialized queries
+    #[serde(rename="more_like_this")]
     MoreLikeThis(Box<specialized::MoreLikeThisQuery>),
     // TODO: template queries
     // TODO: Search by script
@@ -298,115 +336,13 @@ impl Default for Query {
     }
 }
 
-/// Convert a Query to Json
-impl ToJson for Query {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        match self {
-            &Query::MatchAll(ref q) => {
-                d.insert("match_all".to_owned(), q.to_json());
-            },
-            &Query::Match(ref q) => {
-                d.insert("match".to_owned(), q.to_json());
-            },
-            &Query::MultiMatch(ref q) => {
-                d.insert("multi_match".to_owned(), q.to_json());
-            },
-            &Query::Common(ref q) => {
-                d.insert("common".to_owned(), q.to_json());
-            },
-            &Query::QueryString(ref q) => {
-                d.insert("query_string".to_owned(), q.to_json());
-            },
-            &Query::SimpleQueryString(ref q) => {
-                d.insert("simple_query_string".to_owned(), q.to_json());
-            },
-            &Query::Term(ref q) => {
-                d.insert("term".to_owned(), q.to_json());
-            },
-            &Query::Terms(ref q) => {
-                d.insert("terms".to_owned(), q.to_json());
-            },
-            &Query::Range(ref q) => {
-                d.insert("range".to_owned(), q.to_json());
-            },
-            &Query::Exists(ref q) => {
-                d.insert("exists".to_owned(), q.to_json());
-            },
-            &Query::Prefix(ref q) => {
-                d.insert("prefix".to_owned(), q.to_json());
-            },
-            &Query::Wildcard(ref q) => {
-                d.insert("wildcard".to_owned(), q.to_json());
-            },
-            &Query::Regexp(ref q) => {
-                d.insert("regexp".to_owned(), q.to_json());
-            },
-            &Query::Fuzzy(ref q) => {
-                d.insert("fuzzy".to_owned(), q.to_json());
-            },
-            &Query::Type(ref q) => {
-                d.insert("type".to_owned(), q.to_json());
-            },
-            &Query::Ids(ref q) => {
-                d.insert("ids".to_owned(), q.to_json());
-            },
-            &Query::ConstantScore(ref q) => {
-                d.insert("constant_score".to_owned(), q.to_json());
-            },
-            &Query::Bool(ref q) => {
-                d.insert("bool".to_owned(), q.to_json());
-            },
-            &Query::DisMax(ref q) => {
-                d.insert("dis_max".to_owned(), q.to_json());
-            },
-            &Query::FunctionScore(ref q) => {
-                d.insert("function_score".to_owned(), q.to_json());
-            },
-            &Query::Boosting(ref q) => {
-                d.insert("boosting".to_owned(), q.to_json());
-            },
-            &Query::Indices(ref q) => {
-                d.insert("indices".to_owned(), q.to_json());
-            },
-            &Query::Nested(ref q) => {
-                d.insert("nested".to_owned(), q.to_json());
-            },
-            &Query::HasChild(ref q) => {
-                d.insert("has_child".to_owned(), q.to_json());
-            },
-            &Query::HasParent(ref q) => {
-                d.insert("has_parent".to_owned(), q.to_json());
-            },
-            &Query::GeoShape(ref q) => {
-                d.insert("geo_shape".to_owned(), q.to_json());
-            },
-            &Query::GeoBoundingBox(ref q) => {
-                d.insert("geo_bounding_box".to_owned(), q.to_json());
-            },
-            &Query::GeoDistance(ref q) => {
-                d.insert("geo_distance".to_owned(), q.to_json());
-            },
-            &Query::GeoPolygon(ref q) => {
-                d.insert("geo_polygon".to_owned(), q.to_json());
-            },
-            &Query::GeohashCell(ref q) => {
-                d.insert("geohash_cell".to_owned(), q.to_json());
-            },
-            &Query::MoreLikeThis(ref q) => {
-                d.insert("more_like_this".to_owned(), q.to_json());
-            },
-        }
-        Json::Object(d)
-    }
-}
-
 // Specific query types go here
 
 /// Match all query
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct MatchAllQuery {
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     boost: Option<f64>,
 }
 
@@ -422,21 +358,9 @@ impl MatchAllQuery {
     build!(MatchAll);
 }
 
-impl ToJson for MatchAllQuery {
-    fn to_json(&self) -> Json {
-        let mut d = BTreeMap::new();
-        let mut inner = BTreeMap::new();
-        optional_add!(self, inner, boost);
-        d.insert("match_all".to_owned(), Json::Object(inner));
-        Json::Object(d)
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    extern crate rustc_serialize;
-
-    use rustc_serialize::json::ToJson;
+    extern crate serde_json;
 
     use super::{Flags, Query};
     use super::full_text::SimpleQueryStringFlags;
@@ -447,8 +371,8 @@ mod tests {
     fn test_simple_query_string_flags() {
         let opts = vec![SimpleQueryStringFlags::And, SimpleQueryStringFlags::Not];
         let flags:Flags<SimpleQueryStringFlags> = opts.into();
-        let json = flags.to_json();
-        assert_eq!("AND|NOT", json.as_string().unwrap());
+        let json = serde_json::to_string(&flags);
+        assert_eq!("\"AND|NOT\"", json.unwrap());
     }
 
     #[test]
@@ -457,19 +381,19 @@ mod tests {
             .with_values(vec!["a", "b", "c"])
             .build();
         assert_eq!("{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
-                   terms_query.to_json().to_string());
+                   serde_json::to_string(&terms_query).unwrap());
 
         let terms_query_2 = Query::build_terms("field_name")
             .with_values(["a", "b", "c"].as_ref())
             .build();
         assert_eq!("{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
-                   terms_query_2.to_json().to_string());
+                   serde_json::to_string(&terms_query_2).unwrap());
 
         let terms_query_3 = Query::build_terms("field_name")
             .with_values(TermsQueryLookup::new(123, "blah.de.blah").with_index("other"))
             .build();
         assert_eq!("{\"terms\":{\"field_name\":{\"id\":123,\"index\":\"other\",\"path\":\"blah.de.blah\"}}}",
-                   terms_query_3.to_json().to_string());
+                   serde_json::to_string(&terms_query_3).unwrap());
     }
 
     #[test]
@@ -480,7 +404,7 @@ mod tests {
                            .add_param("A", 12)
                            .build())
             .build();
-        assert_eq!("{\"function_score\":{\"functions\":[{\"script_score\":{\"inline\":\"this_is_a_script\",\"lang\":\"made_up\",\"params\":{\"A\":12}}}]}}",
-                   function_score_query.to_json().to_string());
+        assert_eq!("{\"function_score\":{\"functions\":[{\"script_score\":{\"lang\":\"made_up\",\"params\":{\"A\":12},\"inline\":\"this_is_a_script\"}}]}}",
+                   serde_json::to_string(&function_score_query).unwrap());
     }
 }

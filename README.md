@@ -74,7 +74,7 @@ Returned is an `IndexOperation` to add additional options.  For example, to set 
 index_op.with_id("ID_VALUE").with_ttl("100d");
 ```
 
-The document to be indexed has to implement the `Encodable` trait from the [`rustc-serialize`](https://github.com/rust-lang/rustc-serialize) library.  This can be achieved by either implementing or deriving that on a custom type, or by manually creating a `Json` object.
+The document to be indexed has to implement the `Serialize` trait from the [`serde`](https://github.com/serde-rs/serde) library.  This can be achieved by either implementing or deriving that on a custom type, or by manually creating a `Value` object.
 
 Calling `send` submits the index operation and returns an `IndexResult`:
 
@@ -120,7 +120,7 @@ let result = client.refresh().with_indexes(&["index_name", "other_index_name"]).
 
 #### `search_uri`
 
-An implementation of the [Search API](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-search.html) using query strings.
+An implementation of the [Search API](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html) using query strings.
 
 Example:
 
@@ -133,7 +133,7 @@ let result = client.search_uri()
 
 #### `search_query`
 
-An implementation of the [Search API](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-search.html) using the [Query DSL](#the-query-dsl).
+An implementation of the [Search API](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html) using the [Query DSL](#the-query-dsl).
 
 ```rust
 use rs_es::query::Query;
@@ -184,57 +184,13 @@ One of the most common return types is that from the search operations, this too
 
 The individual results contain meta-data for each hit (such as the score) as well as the source document (unless the query set the various options which would disable or alter this).
 
-The type of the source document is [`Json`](http://doc.rust-lang.org/rustc-serialize/rustc_serialize/json/enum.Json.html).  It is up to the caller to transform this into the required format.  This flexibility is desirable because an ElasticSearch search may return many different types of document, it also doesn't (by default) enforce any schema, this together means the structure of a returned document may need to be validated before being deserialised.
-
-However, for cases when the caller is confident that the document matches a known structure (and is willing to handle any errors when that is not the case), a convenience function is available on the individual search hit which will decode the `Json` object into any type that implements [`Decodable`](http://doc.rust-lang.org/rustc-serialize/rustc_serialize/trait.Decodable.html).  See the `rustc-serialize` documentation for more details, but the simplest way of defining such a struct may be to derive [`RustcDecodable`](http://doc.rust-lang.org/rustc-serialize/rustc_serialize/json/index.html#using-autoserialization).
-
-Finally, there is a method to decode a full set of hits.
-
-##### Examples
-
-First, with Json source documents:
-
-```rust
-let result = client.search_query().with_query(query).send();
-
-// An iterator over the Json source documents
-for hit in result.hits.hits {
-    println!("Json document: {:?}", hit.source.unwrap());
-}
-```
-
-Second, de-serialising to a struct:
-
-```rust
-// Define the struct
-#[derive(Debug, RustcDecodable)]
-struct DocType {
-    example_field: String,
-    other_field:   Vec<i64>
-}
-
-// In a function later...
-let result = client.search_query().with_query(query).send();
-
-for hit in result.hits.hits {
-    let document:DocType = hit.source().unwrap(); // Warning, will panic if document doesn't match type
-    println!("DocType document: {:?}", document);
-}
-```
-
-Or alternatively:
-
-```rust
-let result = client.search_query().with_query(query).send();
-
-let hits:Vec<DocType> = result.hits.hits().unwrap();
-```
+The type of the source document can be anything that implemented [`Deserialize`](https://serde-rs.github.io/serde/serde/de/trait.Deserialize.html).  ElasticSearch search may return many different types of document, it also doesn't (by default) enforce any schema, this together means the structure of a returned document may need to be validated before being deserialised.  In this case a search result can return a [`Value`](http://serde-rs.github.io/json/serde_json/value/enum.Value.html) from that data can be extracted and/or converted to other structures.
 
 ### The Query DSL
 
-WARNING: In the forthcoming 0.3.0 release of `rs-es` there will be breaking changes here.  This is due to changes in ElasticSearch in the 2.0 series.  Essentially the difference between queries and filters is being removed as they will be context sensitive instead.  As such examples here might need subtle changes to work with 0.3.  E.g. `Filter::build_range("field_name")` will become `Query::build_range("field_name").
+_Please note: starting with ElasticSearch 2.0, the distinction between queries and filters became one of context, rather than being distinct things; as such, starting with `rs-es` 0.3.0, the distinction is also removed_
 
-ElasticSearch offers a [rich DSL for searches](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl.html).  It is JSON based, and therefore very easy to use and composable if using from a dynamic language (e.g. [Ruby](https://github.com/elastic/elasticsearch-ruby/tree/master/elasticsearch-dsl#features-overview)); but Rust, being a staticly-typed language, things are different.  The `rs_es::query` module defines a set of builder objects which can be similarly composed to the same ends.
+ElasticSearch offers a [rich DSL for searches](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html).  It is JSON based, and therefore very easy to use and composable if using from a dynamic language (e.g. [Ruby](https://github.com/elastic/elasticsearch-ruby/tree/master/elasticsearch-dsl#features-overview)); but Rust, being a staticly-typed language, things are different.  The `rs_es::query` module defines a set of builder objects which can be similarly composed to the same ends.
 
 For example:
 
@@ -249,31 +205,7 @@ let query = Query::build_bool()
     .build();
 ```
 
-The resulting `Query` value can be used in the various search/query functions exposed by [the client](#the-client).  It implements [`ToJson`](http://doc.rust-lang.org/rustc-serialize/rustc_serialize/json/index.html), which in the above example would produce JSON like so:
-
-```javascript
-{
-    "filter": {
-        "bool": {
-            "must": [
-                {
-                    "term": {
-                        "field_a": "value"
-                    }
-                },
-                {
-                    "range": {
-                        "field_b": {
-                            "gte": 5,
-                            "lt": 10
-                        }
-                    }
-                }
-            ]
-        }
-    }
-}
-```
+The resulting `Query` value can be used in the various search/query functions exposed by [the client](#the-client).
 
 The implementation makes much use of [conversion traits](http://benashford.github.io/blog/2015/05/24/rust-traits-for-developer-friendly-libraries/) which are used to keep a lid on the verbosity of using such a builder pattern.
 
@@ -313,7 +245,7 @@ let scan_iter = scan.iter(&mut client);
 
 The iterator will include a mutable reference to the client, so the same client cannot be used concurrently.  However the iterator will automatically call `close` when it is dropped, this is so the consumer of such an iterator can use iterator functions like `take` or `take_while` without having to decide when to call `close`.
 
-The type of each value returned from the iterator is `Result<SearchHitsHitsResult, EsError>`.  If an error is returned than it must be assumed the iterator is closed.  The type `SearchHitsHitsResult` is the same as returned in a normal search (the verbose name is intended to mirror the structure of JSON returned by ElasticSearch), as such the function [`source` is available to load the Json payload into an appropriately implemented struct](#results).
+The type of each value returned from the iterator is `Result<SearchHitsHitsResult, EsError>`.  If an error is returned than it must be assumed the iterator is closed.  The type `SearchHitsHitsResult` is the same as returned in a normal search (the verbose name is intended to mirror the structure of JSON returned by ElasticSearch).
 
 ### Aggregations
 
@@ -353,7 +285,7 @@ The above would, when used within a `search_query` operation, generate a JSON fr
 
 The majority, but not all aggregations are currently supported.  See the [documentation of the aggregations package](http://benashford.github.io/rs-es/rs_es/operations/search/aggregations/index.html) for details.
 
-Aggregation results are accessed in a similar way to accessing Json fields in the `rustc-serialize` library, e.g. to get the a reference to the result of the Terms aggregation called `str` (see above):
+For example, to get the a reference to the result of the Terms aggregation called `str` (see above):
 
 ```rust
 let terms_result = result.aggs_ref()
@@ -364,7 +296,7 @@ let terms_result = result.aggs_ref()
     .unwrap()
 ```
 
-EXPERIMENTAL: the structure of results may change as it currently feels quite cumbersome, however given this seems to be an established pattern (see the rustc-serialize project), it may not change that much.
+EXPERIMENTAL: the structure of results may change as it currently feels quite cumbersome.
 
 ## Unimplemented features
 
@@ -388,11 +320,27 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
+0. Remove extraneous println debugging
+0. Test the Global and/or ReverseNested aggregations.
+0. Aggregations use many macros, many could be replaced with functions.
+0. Re-enable the `nightly` build once Travis is fixed.
+0. Serialization of Aggregations potentially inefficient.
+0. Allow static &str for error messages.
+0. Ensure all tests are in the same file as the code being tested.
+0. Tests for aggregations
+0. Tests for geo queries
+0. Not all options for all aggregations are currently implemented, these need to be checked and (re)enabled.
+0. Make sure all sorting options are tested.
+1. Decide whether it's best in structs that contain a "document" to box the document or not?
+2. Re-enable UPDATE BULK option. (may be related to Script refactoring)
+2. Find way of switching off source document when scan-and-scroll for deleting purposes.
 0. Add a CONTRIBUTING.md
 1. Transcribe this TODO list into specific GitHub issues, for easier management.
+2. Handling API calls that don't deal with JSON objects.
 2. Documentation.
 3. Move longer examples from README to the rustdocs instead.
 5. Tests
+6. Concrete (de)serialization for aggregations and aggregation results
 6. Stop panicking on unexpected JSON, etc., to guard against surprises with future versions; return a result instead.
 7. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
 8. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html
@@ -425,6 +373,7 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 36. Consider not using to_string pattern for converting to String (to avoid confusion with built-in to_string that uses formatter).
 37. Avoid calls to `.to_json()` in cases where `Json::Whatever(thing)` would do instead.
 38. Tidy-up/standardise logging.
+39. Deserialize the JSON returned in errors, to allow the client to know details.
 
 ## Licence
 

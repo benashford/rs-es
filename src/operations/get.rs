@@ -16,14 +16,12 @@
 
 //! Implementation of the Get API
 
-use rustc_serialize::Decodable;
-use rustc_serialize::json::Json;
+use serde::Deserialize;
 
-use ::Client;
+use ::{Client, EsResponse};
 use ::error::EsError;
 use ::util::StrJoin;
 use super::common::{Options, OptionVal};
-use super::decode_json;
 
 /// Values for the `preference` query parameter
 pub enum Preference {
@@ -61,7 +59,7 @@ pub struct GetOperation<'a, 'b> {
 impl<'a, 'b> GetOperation<'a, 'b> {
     pub fn new(client:   &'a mut Client,
                index:    &'b str,
-               id:       &'b str) -> GetOperation<'a, 'b> {
+               id:       &'b str) -> Self {
         GetOperation {
             client:   client,
             index:    index,
@@ -94,7 +92,9 @@ impl<'a, 'b> GetOperation<'a, 'b> {
     add_option!(with_version, "version");
     add_option!(with_version_type, "version_type");
 
-    pub fn send(&'b mut self) -> Result<GetResult, EsError> {
+    pub fn send<T>(&'b mut self) -> Result<GetResult<T>, EsError>
+        where T: Deserialize {
+
         let url = format!("/{}/{}/{}{}",
                           self.index,
                           self.doc_type.expect("No doc_type specified"),
@@ -102,46 +102,23 @@ impl<'a, 'b> GetOperation<'a, 'b> {
                           self.options);
         // We're ignoring status_code as all valid codes should return a value,
         // so anything else is an error.
-        let (_, result) = try!(self.client.get_op(&url));
-        Ok(GetResult::from(&result.expect("No Json payload")))
+        let response = try!(self.client.get_op(&url));
+        Ok(try!(response.read_response()))
     }
 }
 
 /// The result of a GET request
-#[derive(Debug)]
-pub struct GetResult {
+#[derive(Debug, Deserialize)]
+pub struct GetResult<T> {
+    #[serde(rename="_index")]
     pub index:    String,
+    #[serde(rename="_type")]
     pub doc_type: String,
+    #[serde(rename="_id")]
     pub id:       String,
+    #[serde(rename="_version")]
     pub version:  Option<u64>,
     pub found:    bool,
-    pub source:   Option<Json>
-}
-
-impl GetResult {
-    /// The result is a JSON document, this function will attempt to decode it
-    /// to a struct.  If the raw JSON is required, it can accessed directly from
-    /// the source field of the `GetResult` struct.
-    pub fn source<T: Decodable>(self) -> Result<T, EsError> {
-        match self.source {
-            Some(doc) => decode_json(doc),
-            None      => Err(EsError::EsError("No source".to_owned()))
-        }
-    }
-}
-
-impl<'a> From<&'a Json> for GetResult {
-    fn from(r: &'a Json) -> GetResult {
-        info!("GetResult FROM: {:?}", r);
-        GetResult {
-            index:    get_json_string!(r, "_index"),
-            doc_type: get_json_string!(r, "_type"),
-            id:       get_json_string!(r, "_id"),
-            version:  r.search("_version").map(|v| {
-                v.as_u64().expect("Field '_search' not an integer")
-            }),
-            found:    get_json_bool!(r, "found"),
-            source:   r.search("_source").map(|source| source.clone())
-        }
-    }
+    #[serde(rename="_source")]
+    pub source:   Option<T>
 }
