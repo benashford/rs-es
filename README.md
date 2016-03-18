@@ -334,11 +334,11 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 1. Decide whether it's best in structs that contain a "document" to box the document or not?
 2. Re-enable UPDATE BULK option. (may be related to Script refactoring)
 2. Find way of switching off source document when scan-and-scroll for deleting purposes.
+0. Add a CONTRIBUTING.md
 1. Transcribe this TODO list into specific GitHub issues, for easier management.
 2. Handling API calls that don't deal with JSON objects.
 2. Documentation.
 3. Move longer examples from README to the rustdocs instead.
-4. rustc-serialize appears to be deprecated, retrofit `rs-es` to Serde: https://github.com/serde-rs/serde
 5. Tests
 6. Concrete (de)serialization for aggregations and aggregation results
 6. Stop panicking on unexpected JSON, etc., to guard against surprises with future versions; return a result instead.
