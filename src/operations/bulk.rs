@@ -237,7 +237,7 @@ impl<'a, 'b, S> BulkOperation<'a, 'b, S>
             self.client.full_url(&url)
         };
         let body = self.format_actions();
-        println!("Sending: {}", body);
+        debug!("Sending: {}", body);
         // Doesn't use the standard macros as it's not standard JSON
         let result = try!(self.client.http_client
                           .post(&full_url)
@@ -276,7 +276,6 @@ impl Deserialize for ActionResult {
                     Some((key, value)) => (key, value),
                     None               => return Err(V::Error::custom("expecting at least one field"))
                 };
-                println!("Found key: {:?}, value: {:?}", key, value);
                 try!(visitor.end());
 
                 let result = ActionResult {

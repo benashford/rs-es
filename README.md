@@ -320,7 +320,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-0. Remove extraneous println debugging
 0. Test the Global and/or ReverseNested aggregations.
 0. Aggregations use many macros, many could be replaced with functions.
 0. Re-enable the `nightly` build once Travis is fixed.

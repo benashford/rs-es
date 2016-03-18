@@ -954,7 +954,7 @@ impl<T> ScanResult<T>
                         return Err(EsError::EsError("Expecting scroll_id".to_owned()))
                     }
                 };
-                println!("Scrolled: {:?}", search_result);
+                debug!("Scrolled: {:?}", search_result);
                 Ok(search_result.finalize())
             },
             _               => {

@@ -197,7 +197,6 @@ impl AggregationsResult {
 
     pub fn from(aggs: &Aggregations,
                 json: &Value) -> Result<AggregationsResult, EsError> {
-        println!("Parsing aggregations {:?}", json);
         let object = match json.as_object() {
             Some(o) => o,
             None    => return Err(EsError::EsError("Aggregations is not an object".to_owned()))
