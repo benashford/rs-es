@@ -320,59 +320,56 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-0. Test the Global and/or ReverseNested aggregations.
 0. Aggregations use many macros, many could be replaced with functions.
-0. Re-enable the `nightly` build once Travis is fixed.
-0. Serialization of Aggregations potentially inefficient.
-0. Allow static &str for error messages.
-0. Ensure all tests are in the same file as the code being tested.
-0. Tests for aggregations
-0. Tests for geo queries
-0. Not all options for all aggregations are currently implemented, these need to be checked and (re)enabled.
-0. Make sure all sorting options are tested.
-1. Decide whether it's best in structs that contain a "document" to box the document or not?
-2. Re-enable UPDATE BULK option. (may be related to Script refactoring)
-2. Find way of switching off source document when scan-and-scroll for deleting purposes.
-0. Add a CONTRIBUTING.md
-1. Transcribe this TODO list into specific GitHub issues, for easier management.
-2. Handling API calls that don't deal with JSON objects.
-2. Documentation.
-3. Move longer examples from README to the rustdocs instead.
-5. Tests
-6. Concrete (de)serialization for aggregations and aggregation results
-6. Stop panicking on unexpected JSON, etc., to guard against surprises with future versions; return a result instead.
-7. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
-8. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html
-9. Add significant-terms aggregation (esp., if made a permanent feature): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
-10. Add IP Range aggregation (complex due to changing response type): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-iprange-aggregation.html
-11. Reduce repetition in aggregations.rs and/or differences with the Query DSL
-12. Reduce repetition around `from` functions when parsing `buckets` attribute.
-13. Check for over-dependency on macros parsing from JSON
-14. Consistency on when builder objects take ownership, vs. borrow a reference to some data.
-15. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
-16. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
-17. Field-data fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fielddata-fields.html
-18. Post filter: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-post-filter.html (after aggregations)
-19. Highlighting: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html and Field Highlighting Order: https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-field-order.html
-20. Rescoring: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-rescore.html
-21. Search templates (possibly)
-22. Implement Update API.
-23. Implement Multi Get API
-24. Implement Term Vectors and Multi termvectors API
-26. Performance (ensure use of persistent HTTP connections, etc.).
-27. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
-28. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
-29. Check type of "timeout" option on Search...
-30. Review consistency in Operation objects (e.g. taking ownership of strings, type of parameters, etc.)
-31. Index boost: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-index-boost.html
-32. Shard preference: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
-33. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
-34. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
-35. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
-36. Consider not using to_string pattern for converting to String (to avoid confusion with built-in to_string that uses formatter).
-37. Avoid calls to `.to_json()` in cases where `Json::Whatever(thing)` would do instead.
-38. Tidy-up/standardise logging.
-39. Deserialize the JSON returned in errors, to allow the client to know details.
+1. Serialization of Aggregations potentially inefficient.
+2. Allow static &str for error messages.
+3. Ensure all tests are in the same file as the code being tested.
+4. Tests for aggregations
+5. Not all options for all aggregations are currently implemented, these need to be checked and (re)enabled.
+6. Make sure all sorting options are tested.
+7. Decide whether it's best in structs that contain a "document" to box the document or not?
+8. Re-enable UPDATE BULK option. (may be related to Script refactoring)
+9. Find way of switching off source document when scan-and-scroll for deleting purposes.
+10. Add a CONTRIBUTING.md
+11. Transcribe this TODO list into specific GitHub issues, for easier management.
+12. Handling API calls that don't deal with JSON objects.
+13. Documentation.
+14. Move longer examples from README to the rustdocs instead.
+15. Tests
+16. Concrete (de)serialization for aggregations and aggregation results
+17. Stop panicking on unexpected JSON, etc., to guard against surprises with future versions; return a result instead.
+18. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
+19. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html
+20. Add significant-terms aggregation (esp., if made a permanent feature): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
+21. Add IP Range aggregation (complex due to changing response type): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-iprange-aggregation.html
+22. Reduce repetition in aggregations.rs and/or differences with the Query DSL
+23. Reduce repetition around `from` functions when parsing `buckets` attribute.
+24. Check for over-dependency on macros parsing from JSON
+25. Consistency on when builder objects take ownership, vs. borrow a reference to some data.
+26. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
+27. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
+28. Field-data fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fielddata-fields.html
+29. Post filter: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-post-filter.html (after aggregations)
+30. Highlighting: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html and Field Highlighting Order: https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-field-order.html
+31. Rescoring: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-rescore.html
+32. Search templates (possibly)
+33. Implement Update API.
+34. Implement Multi Get API
+35. Implement Term Vectors and Multi termvectors API
+36. Performance (ensure use of persistent HTTP connections, etc.).
+37. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
+38. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
+39. Check type of "timeout" option on Search...
+40. Review consistency in Operation objects (e.g. taking ownership of strings, type of parameters, etc.)
+41. Index boost: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-index-boost.html
+42. Shard preference: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
+43. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
+44. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
+45. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
+46. Consider not using to_string pattern for converting to String (to avoid confusion with built-in to_string that uses formatter).
+47. Avoid calls to `.to_json()` in cases where `Json::Whatever(thing)` would do instead.
+48. Tidy-up/standardise logging.
+49. Deserialize the JSON returned in errors, to allow the client to know details.
 
 ## Licence
 
