@@ -738,18 +738,19 @@ impl Client {
 #[derive(Debug, Deserialize)]
 pub struct SearchHitsHitsResult<T: Deserialize> {
     #[serde(rename="_index")]
-    pub index:    String,
+    pub index: String,
     #[serde(rename="_type")]
     pub doc_type: String,
     #[serde(rename="_id")]
-    pub id:       String,
+    pub id: String,
     #[serde(rename="_score")]
-    pub score:    Option<f64>,
+    pub score: Option<f64>,
     #[serde(rename="_source")]
-    pub source:   Option<Box<T>>,
-    // TODO - check this isn't deprecated
-    //#[serde(rename="_fields")]
-    // pub fields:   Option<Json>
+    pub source: Option<Box<T>>,
+    #[serde(rename="_timestamp")]
+    pub timestamp: Option<f64>,
+    #[serde(rename="_routing")]
+    pub routing: Option<String>
 }
 
 #[derive(Debug, Deserialize)]
