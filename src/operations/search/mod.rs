@@ -750,7 +750,8 @@ pub struct SearchHitsHitsResult<T: Deserialize> {
     #[serde(rename="_timestamp")]
     pub timestamp: Option<f64>,
     #[serde(rename="_routing")]
-    pub routing: Option<String>
+    pub routing: Option<String>,
+    pub fields: Option<Value>
 }
 
 #[derive(Debug, Deserialize)]
