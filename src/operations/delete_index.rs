@@ -41,3 +41,32 @@ impl Client {
         }
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+    use ::tests::{clean_db, TestDocument, make_client};
+
+    #[test]
+    fn test_delete_index() {
+        let index_name = "test_delete_index";
+        let mut client = make_client();
+
+        clean_db(&mut client, index_name);
+        {
+            let result = client
+                .index(index_name, "test_type")
+                .with_doc(&TestDocument::new().with_int_field(1))
+                .send();
+            assert!(result.is_ok());
+        }
+        {
+            let result = client.delete_index(index_name);
+            info!("DELETE INDEX RESULT: {:?}", result);
+
+            assert!(result.is_ok());
+
+            let result_wrapped = result.unwrap();
+            assert!(result_wrapped.acknowledged);
+        }
+    }
+}

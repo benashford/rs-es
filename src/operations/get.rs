@@ -133,3 +133,37 @@ pub struct GetResult<T> {
     #[serde(rename="_source")]
     pub source:   Option<T>
 }
+
+#[cfg(test)]
+pub mod tests {
+    use ::tests::{clean_db, TestDocument, make_client};
+
+    #[test]
+    fn test_get() {
+        let index_name = "test_get";
+        let mut client = make_client();
+        clean_db(&mut client, index_name);
+        {
+            let doc = TestDocument::new().with_int_field(3)
+                                         .with_bool_field(false);
+            client
+                .index(index_name, "test_type")
+                .with_id("TEST_GETTING")
+                .with_doc(&doc)
+                .send().unwrap();
+        }
+        {
+            let mut getter = client.get(index_name, "TEST_GETTING");
+            let result_wrapped = getter
+                .with_doc_type("test_type")
+                .send();
+            let result = result_wrapped.unwrap();
+            assert_eq!(result.id, "TEST_GETTING");
+
+            let source:TestDocument = result.source.expect("Source document");
+            assert_eq!(source.str_field, "I am a test");
+            assert_eq!(source.int_field, 3);
+            assert_eq!(source.bool_field, false);
+        }
+    }
+}

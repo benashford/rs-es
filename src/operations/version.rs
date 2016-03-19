@@ -59,3 +59,18 @@ pub struct VersionResult {
     pub version: Version,
     pub tagline: String,
 }
+
+#[cfg(test)]
+pub mod tests {
+    use ::tests::{make_client};
+    use ::tests::regex::Regex;
+
+    #[test]
+    fn it_works() {
+        let mut client = make_client();
+        let result = client.version().send().unwrap();
+
+        let expected_regex = Regex::new(r"^\d\.\d\.\d$").unwrap();
+        assert_eq!(expected_regex.is_match(&result.version.number), true);
+    }
+}

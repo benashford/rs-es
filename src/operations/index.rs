@@ -141,3 +141,48 @@ pub struct IndexResult {
     pub version:  u64,
     pub created:  bool
 }
+
+#[cfg(test)]
+pub mod tests {
+    use ::tests::{clean_db, TestDocument, make_client};
+
+    use ::units::Duration;
+
+    use super::OpType;
+
+    #[test]
+    fn test_indexing() {
+        let index_name = "test_indexing";
+        let mut client = make_client();
+        clean_db(&mut client, index_name);
+        {
+            let result_wrapped = client
+                .index(index_name, "test_type")
+                .with_doc(&TestDocument::new().with_int_field(1))
+                .with_ttl(&Duration::milliseconds(927500))
+                .send();
+            println!("TEST RESULT: {:?}", result_wrapped);
+            let result = result_wrapped.unwrap();
+            assert_eq!(result.created, true);
+            assert_eq!(result.index, index_name);
+            assert_eq!(result.doc_type, "test_type");
+            assert!(result.id.len() > 0);
+            assert_eq!(result.version, 1);
+        }
+        {
+            let result_wrapped = client
+                .index(index_name, "test_type")
+                .with_doc(&TestDocument::new().with_int_field(2))
+                .with_id("TEST_INDEXING_2")
+                .with_op_type(OpType::Create)
+                .send();
+            let result = result_wrapped.unwrap();
+
+            assert_eq!(result.created, true);
+            assert_eq!(result.index, index_name);
+            assert_eq!(result.doc_type, "test_type");
+            assert_eq!(result.id, "TEST_INDEXING_2");
+            assert!(result.version >= 1);
+        }
+    }
+}

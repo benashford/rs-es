@@ -243,7 +243,7 @@ impl<'a, 'b, S> BulkOperation<'a, 'b, S>
                           .post(&full_url)
                           .body(&body)
                           .send());
-        
+
         let response = try!(do_req(result));
 
         match response.status_code() {
@@ -331,4 +331,33 @@ pub struct BulkResult {
     pub errors: bool,
     pub items:  Vec<ActionResult>,
     pub took:   u64
+}
+
+#[cfg(test)]
+pub mod tests {
+    use ::tests::{clean_db, TestDocument, make_client};
+
+    use super::Action;
+
+    #[test]
+    fn test_bulk() {
+        let index_name = "test_bulk";
+        let mut client = make_client();
+
+        clean_db(&mut client, index_name);
+
+        let actions:Vec<Action<TestDocument>> = (1..10).map(|i| {
+            let doc = TestDocument::new().with_str_field("bulk_doc").with_int_field(i);
+            Action::index(doc)
+        }).collect();
+
+        let result = client.bulk(&actions)
+            .with_index(index_name)
+            .with_doc_type("bulk_type")
+            .send()
+            .unwrap();
+
+        assert_eq!(false, result.errors);
+        assert_eq!(9, result.items.len());
+    }
 }

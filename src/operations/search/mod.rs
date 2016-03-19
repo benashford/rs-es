@@ -251,7 +251,7 @@ impl GeoDistance {
 /// Representing options for sort by script
 // TODO - fix structure
 // TODO - there are other 'Script's defined elsewhere, perhaps de-duplicate them
-// if it makes sense. 
+// if it makes sense.
 #[derive(Serialize)]
 pub struct Script {
     script:      String,
@@ -1001,9 +1001,11 @@ mod tests {
     use serde_json::Value;
 
     use ::Client;
-    use ::tests::TestDocument;
+
+    use ::tests::{clean_db, make_client, TestDocument};
 
     use ::operations::bulk::Action;
+    use ::query::Query;
     use ::units::{Duration, JsonVal};
 
     use super::ScanResult;
@@ -1036,9 +1038,96 @@ mod tests {
         client.refresh().with_indexes(&[index_name]).send().unwrap();
     }
 
+    fn setup_search_test_data(client: &mut Client, index_name: &str) {
+        // TODO - this should use the Bulk API
+        let documents = vec![
+            TestDocument::new().with_str_field("Document A123").with_int_field(1),
+            TestDocument::new().with_str_field("Document B456").with_int_field(2),
+            TestDocument::new().with_str_field("Document 1ABC").with_int_field(3)
+                ];
+        for ref doc in documents {
+            client.index(index_name, "test_type")
+                .with_doc(doc)
+                .send()
+                .unwrap();
+        }
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
+    }
+
+    #[test]
+    fn test_search_uri() {
+        let index_name = "test_search_uri";
+        let mut client = make_client();
+
+        clean_db(&mut client, index_name);
+        setup_search_test_data(&mut client, index_name);
+
+        let all_results:SearchResult<TestDocument> = client
+            .search_uri()
+            .with_indexes(&[index_name])
+            .send()
+            .unwrap();
+        assert_eq!(3, all_results.hits.total);
+
+        let doc_a:SearchResult<TestDocument> = client
+            .search_uri()
+            .with_indexes(&[index_name])
+            .with_query("A123")
+            .send()
+            .unwrap();
+        assert_eq!(1, doc_a.hits.total);
+        // TODO - add assertion for document contents
+
+        let doc_1:SearchResult<TestDocument> = client
+            .search_uri()
+            .with_indexes(&[index_name])
+            .with_query("str_field:1ABC")
+            .send()
+            .unwrap();
+        assert_eq!(1, doc_1.hits.total);
+        // TODO - add assertion for document contents
+
+        let limited_fields:SearchResult<Value> = client
+            .search_uri()
+            .with_indexes(&[index_name])
+            .with_query("str_field:B456")
+            .with_fields(&["int_field"])
+            .send()
+            .unwrap();
+        assert_eq!(1, limited_fields.hits.total);
+        // TODO - add assertion for document contents
+    }
+
+    #[test]
+    fn test_search_body() {
+        let index_name = "test_search_body";
+        let mut client = make_client();
+        clean_db(&mut client, index_name);
+        setup_search_test_data(&mut client, index_name);
+
+        let all_results:SearchResult<TestDocument> = client
+            .search_query()
+            .with_indexes(&[index_name])
+            .with_query(&Query::build_match_all().build())
+            .send().unwrap();
+        assert_eq!(3, all_results.hits.total);
+        // TODO - add assertion for document content
+
+        let within_range:SearchResult<TestDocument> = client
+            .search_query()
+            .with_indexes(&[index_name])
+            .with_query(&Query::build_range("int_field")
+                        .with_gte(2)
+                        .with_lte(3)
+                        .build())
+            .send().unwrap();
+        assert_eq!(2, within_range.hits.total);
+        // TODO - add assertion for document content
+    }
+
     #[test]
     fn test_close() {
-        let mut client = ::tests::make_client();
+        let mut client = make_client();
         let index_name = "tests_test_close";
         ::tests::clean_db(&mut client, index_name);
         setup_scan_data(&mut client, index_name);
@@ -1059,7 +1148,7 @@ mod tests {
 
     #[test]
     fn test_scan_and_scroll() {
-        let mut client = ::tests::make_client();
+        let mut client = make_client();
         let index_name = "tests_test_scan_and_scroll";
         ::tests::clean_db(&mut client, index_name);
         setup_scan_data(&mut client, index_name);
@@ -1091,7 +1180,7 @@ mod tests {
 
     #[test]
     fn test_scan_and_iterate() {
-        let mut client = ::tests::make_client();
+        let mut client = make_client();
         let index_name = "tests_test_scan_and_iterate";
         ::tests::clean_db(&mut client, index_name);
         setup_scan_data(&mut client, index_name);
@@ -1118,7 +1207,7 @@ mod tests {
 
     #[test]
     fn test_source_filter() {
-        let mut client = ::tests::make_client();
+        let mut client = make_client();
         let index_name = "test_source_filter";
         ::tests::clean_db(&mut client, index_name);
 
@@ -1142,7 +1231,7 @@ mod tests {
 
     #[test]
     fn test_bucket_aggs() {
-        let mut client = ::tests::make_client();
+        let mut client = make_client();
         let index_name = "test_bucket_aggs";
         ::tests::clean_db(&mut client, index_name);
 
@@ -1211,7 +1300,7 @@ mod tests {
 
     #[test]
     fn test_aggs() {
-        let mut client = ::tests::make_client();
+        let mut client = make_client();
         let index_name = "test_aggs";
         ::tests::clean_db(&mut client, index_name);
 
@@ -1246,7 +1335,7 @@ mod tests {
 
     #[test]
     fn test_sort() {
-        let mut client = ::tests::make_client();
+        let mut client = make_client();
         let index_name = "test_sort";
         ::tests::clean_db(&mut client, index_name);
 

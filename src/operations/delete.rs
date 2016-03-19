@@ -103,3 +103,27 @@ pub struct DeleteResult {
     #[serde(rename="_version")]
     pub version:  u64
 }
+
+#[cfg(test)]
+pub mod tests {
+    use ::tests::{clean_db, TestDocument, make_client};
+
+    #[test]
+    fn test_delete() {
+        let index_name = "test_delete";
+        let mut client = make_client();
+
+        clean_db(&mut client, index_name);
+        let id = {
+            let doc = TestDocument::new().with_int_field(4);
+            let result = client.index(index_name, "test_type")
+                .with_doc(&doc)
+                .send().unwrap();
+            result.id
+        };
+
+        let delete_result = client.delete(index_name, "test_type", &id).send().unwrap();
+        assert_eq!(id, delete_result.id);
+        assert_eq!(true, delete_result.found);
+    }
+}
