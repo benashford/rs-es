@@ -78,6 +78,18 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
     }
 }
 
+impl Client {
+    /// Delete by ID
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-delete.html
+    pub fn delete<'a>(&'a mut self,
+                      index:    &'a str,
+                      doc_type: &'a str,
+                      id:       &'a str) -> DeleteOperation {
+        DeleteOperation::new(self, index, doc_type, id)
+    }
+}
+
 /// Result of a DELETE operation
 #[derive(Debug, Deserialize)]
 pub struct DeleteResult {

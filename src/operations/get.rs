@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ben Ashford
+ * Copyright 2015-2016 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,6 +104,17 @@ impl<'a, 'b> GetOperation<'a, 'b> {
         // so anything else is an error.
         let response = try!(self.client.get_op(&url));
         Ok(try!(response.read_response()))
+    }
+}
+
+impl Client {
+    /// Implementation of the ES GET API
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-get.html
+    pub fn get<'a>(&'a mut self,
+                   index: &'a str,
+                   id:    &'a str) -> GetOperation {
+        GetOperation::new(self, index, id)
     }
 }
 

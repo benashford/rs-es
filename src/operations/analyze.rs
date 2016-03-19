@@ -72,6 +72,16 @@ impl<'a, 'b> AnalyzeOperation<'a, 'b> {
     }
 }
 
+impl Client {
+    /// Analyze
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-analyze.html
+    pub fn analyze<'a>(&'a mut self,
+                       body: &'a str) -> AnalyzeOperation {
+        AnalyzeOperation::new(self, body)
+    }
+}
+
 /// The result of an analyze operation
 #[derive(Debug, Deserialize)]
 pub struct AnalyzeResult {

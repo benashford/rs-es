@@ -719,6 +719,22 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
     }
 }
 
+impl Client {
+    /// Search via the query parameter
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-uri-request.html
+    pub fn search_uri<'a>(&'a mut self) -> SearchURIOperation {
+        SearchURIOperation::new(self)
+    }
+
+    /// Search via the query DSL
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-request-body.html
+    pub fn search_query<'a>(&'a mut self) -> SearchQueryOperation {
+        SearchQueryOperation::new(self)
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct SearchHitsHitsResult<T: Deserialize> {
     #[serde(rename="_index")]

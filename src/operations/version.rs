@@ -36,6 +36,13 @@ impl<'a> VersionOperation<'a> {
     }
 }
 
+impl Client {
+    /// Calls the base ES path, returning the version number
+    pub fn version(&mut self) -> VersionOperation {
+        VersionOperation::new(self)
+    }
+}
+
 #[derive(Deserialize)]
 pub struct Version {
     pub number: String,

@@ -253,6 +253,18 @@ impl<'a, 'b, S> BulkOperation<'a, 'b, S>
     }
 }
 
+impl Client {
+    /// Bulk
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
+    pub fn bulk<'a, 'b, S>(&'a mut self,
+                           actions: &'b [Action<S>]) -> BulkOperation<'a, 'b, S>
+        where S: Serialize {
+
+        BulkOperation::new(self, actions)
+    }
+}
+
 /// The result of specific actions
 pub struct ActionResult {
     pub action: ActionType,

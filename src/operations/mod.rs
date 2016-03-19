@@ -20,10 +20,6 @@
 //! ElasticSearch's set of operations.  This module, and it's child modules are
 //! the implementation of those operations.
 
-use hyper::status::StatusCode;
-
-use ::{Client, EsResponse};
-use ::error::EsError;
 use ::util::StrJoin;
 
 // Specific operations
@@ -32,8 +28,10 @@ pub mod common;
 
 pub mod bulk;
 pub mod delete;
+pub mod delete_index;
 pub mod get;
 pub mod index;
+pub mod refresh;
 pub mod search;
 pub mod analyze;
 pub mod mapping;
@@ -62,39 +60,6 @@ fn format_indexes_and_types(indexes: &[&str], types: &[&str]) -> String {
     }
 }
 
-// TODO: move to refresh.rs
-pub struct RefreshOperation<'a, 'b> {
-    /// The HTTP client
-    client: &'a mut Client,
-
-    /// The indexes being refreshed
-    indexes: &'b [&'b str]
-}
-
-impl<'a, 'b> RefreshOperation<'a, 'b> {
-    pub fn new(client: &'a mut Client) -> RefreshOperation {
-        RefreshOperation {
-            client:  client,
-            indexes: &[]
-        }
-    }
-
-    pub fn with_indexes(&'b mut self, indexes: &'b [&'b str]) -> &'b mut Self {
-        self.indexes = indexes;
-        self
-    }
-
-    pub fn send(&mut self) -> Result<RefreshResult, EsError> {
-        let url = format!("/{}/_refresh",
-                          format_multi(&self.indexes));
-        let response = try!(self.client.post_op(&url));
-        match response.status_code() {
-            &StatusCode::Ok => Ok(try!(response.read_response())),
-            _              => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
-        }
-    }
-}
-
 // Results
 
 /// Shared struct for operations that include counts of success/failed shards.
@@ -106,9 +71,7 @@ pub struct ShardCountResult {
     pub failed:     u64
 }
 
-/// Result of a refresh request
-#[derive(Deserialize)]
-pub struct RefreshResult {
-    #[serde(rename="_shards")]
-    pub shards: ShardCountResult
+#[derive(Debug, Deserialize)]
+pub struct GenericResult {
+    pub acknowledged: bool
 }

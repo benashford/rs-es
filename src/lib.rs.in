@@ -33,14 +33,6 @@ use serde::ser::Serialize;
 use serde::de::Deserialize;
 
 use error::EsError;
-use operations::bulk::{BulkOperation, Action};
-use operations::delete::DeleteOperation;
-use operations::get::GetOperation;
-use operations::index::IndexOperation;
-use operations::search::{SearchURIOperation, SearchQueryOperation};
-use operations::RefreshOperation;
-use operations::analyze::AnalyzeOperation;
-use operations::version::VersionOperation;
 
 pub trait EsResponse {
     fn status_code<'a>(&'a self) -> &'a StatusCode;
@@ -189,105 +181,6 @@ impl Client {
     es_op!(put_op, put);
     es_body_op!(put_body_op, put);
     es_op!(delete_op, delete);
-
-    /// Calls the base ES path, returning the version number
-    pub fn version(&mut self) -> VersionOperation {
-        VersionOperation::new(self)
-    }
-
-    // Indices APIs
-
-    /// Refresh
-    ///
-    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/indices-refresh.html
-    pub fn refresh<'a>(&'a mut self) -> RefreshOperation {
-        RefreshOperation::new(self)
-    }
-
-    // Document APIs
-
-    /// An index operation to index a document in the specified index.
-    ///
-    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-index_.html
-    pub fn index<'a, 'b, E: Serialize>(&'a mut self, index: &'b str, doc_type: &'b str)
-                                       -> IndexOperation<'a, 'b, E> {
-        IndexOperation::new(self, index, doc_type)
-    }
-
-    /// Implementation of the ES GET API
-    ///
-    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-get.html
-    pub fn get<'a>(&'a mut self,
-                   index: &'a str,
-                   id:    &'a str) -> GetOperation {
-        GetOperation::new(self, index, id)
-    }
-
-    /// Delete by ID
-    ///
-    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-delete.html
-    pub fn delete<'a>(&'a mut self,
-                      index:    &'a str,
-                      doc_type: &'a str,
-                      id:       &'a str) -> DeleteOperation {
-        DeleteOperation::new(self, index, doc_type, id)
-    }
-
-    /// Delete given index
-    ///
-    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/2.x/indices-delete-index.html
-    pub fn delete_index<'a>(&'a mut self, index: &'a str) -> Result<GenericResponse, EsError> {
-        let url = format!("/{}/", index);
-        let response = try!(self.delete_op(&url));
-
-        match response.status_code() {
-            &StatusCode::Ok => Ok(try!(response.read_response())),
-            _ => Err(EsError::EsError(format!("Unexpected status: {}",
-                                              response.status_code())))
-        }
-    }
-
-    // Multi-document APIs
-
-    /// Bulk
-    ///
-    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
-    pub fn bulk<'a, 'b, S>(&'a mut self,
-                           actions: &'b [Action<S>]) -> BulkOperation<'a, 'b, S>
-        where S: Serialize {
-
-        BulkOperation::new(self, actions)
-    }
-
-    /// Analyze
-    ///
-    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-analyze.html
-    pub fn analyze<'a>(&'a mut self,
-                       body: &'a str) -> AnalyzeOperation {
-        AnalyzeOperation::new(self, body)
-    }
-
-    // Search APIs
-
-    /// Search via the query parameter
-    ///
-    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-uri-request.html
-    pub fn search_uri<'a>(&'a mut self) -> SearchURIOperation {
-        SearchURIOperation::new(self)
-    }
-
-    /// Search via the query DSL
-    ///
-    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-request-body.html
-    pub fn search_query<'a>(&'a mut self) -> SearchQueryOperation {
-        SearchQueryOperation::new(self)
-    }
-}
-
-// TODO - move somewhere where it makes sense
-#[derive(Debug, Deserialize)]
-pub struct GenericResponse {
-    acknowledged: bool
 }
 
 #[cfg(test)]

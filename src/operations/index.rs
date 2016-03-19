@@ -118,6 +118,16 @@ impl<'a, 'b, E: Serialize + 'b> IndexOperation<'a, 'b, E> {
     }
 }
 
+impl Client {
+    /// An index operation to index a document in the specified index.
+    ///
+    /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-index_.html
+    pub fn index<'a, 'b, E: Serialize>(&'a mut self, index: &'b str, doc_type: &'b str)
+                                       -> IndexOperation<'a, 'b, E> {
+        IndexOperation::new(self, index, doc_type)
+    }
+}
+
 /// The result of an index operation
 #[derive(Debug, Deserialize)]
 pub struct IndexResult {
