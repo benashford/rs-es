@@ -24,7 +24,7 @@ serde_codegen = {version = "^0.7.1", optional = true}
 syntex = "^0.30"
 
 [dependencies]
-hyper = "^0.7"
+hyper = "^0.8"
 log = "^0.3"
 maplit = "^0.1"
 serde = "^0.7"
