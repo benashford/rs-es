@@ -320,26 +320,11 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 
 ### Some, non-exhaustive, specific TODOs
 
-0. Aggregations use many macros, many could be replaced with functions.
-1. Serialization of Aggregations potentially inefficient.
-2. Allow static &str for error messages.
-3. Ensure all tests are in the same file as the code being tested.
-4. Tests for aggregations
-5. Not all options for all aggregations are currently implemented, these need to be checked and (re)enabled.
-6. Make sure all sorting options are tested.
-7. Decide whether it's best in structs that contain a "document" to box the document or not?
-8. Re-enable UPDATE BULK option. (may be related to Script refactoring)
-9. Find way of switching off source document when scan-and-scroll for deleting purposes.
-10. Add a CONTRIBUTING.md
-11. Transcribe this TODO list into specific GitHub issues, for easier management.
-12. Handling API calls that don't deal with JSON objects.
-13. Documentation.
-14. Move longer examples from README to the rustdocs instead.
-15. Tests
-16. Concrete (de)serialization for aggregations and aggregation results
-17. Stop panicking on unexpected JSON, etc., to guard against surprises with future versions; return a result instead.
-18. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
-19. Top-hits aggregation (will share many not-yet implemented features (e.g. highlighting): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-top-hits-aggregation.html
+1. Add a CONTRIBUTING.md
+2. Handling API calls that don't deal with JSON objects.
+3. Documentation.
+4. Potentially: Concrete (de)serialization for aggregations and aggregation results
+5. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
 20. Add significant-terms aggregation (esp., if made a permanent feature): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
 21. Add IP Range aggregation (complex due to changing response type): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-iprange-aggregation.html
 22. Reduce repetition in aggregations.rs and/or differences with the Query DSL
