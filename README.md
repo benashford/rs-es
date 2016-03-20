@@ -325,27 +325,9 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 3. Documentation.
 4. Potentially: Concrete (de)serialization for aggregations and aggregation results
 5. Metric aggregations can have an empty body (check: all or some of them?) when used as a sub-aggregation underneath certain other aggregations.
-20. Add significant-terms aggregation (esp., if made a permanent feature): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
-21. Add IP Range aggregation (complex due to changing response type): https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-iprange-aggregation.html
-22. Reduce repetition in aggregations.rs and/or differences with the Query DSL
-23. Reduce repetition around `from` functions when parsing `buckets` attribute.
-24. Check for over-dependency on macros parsing from JSON
-25. Consistency on when builder objects take ownership, vs. borrow a reference to some data.
-26. Selective fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fields.html
-27. Script fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-script-fields.html
-28. Field-data fields: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-fielddata-fields.html
-29. Post filter: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-post-filter.html (after aggregations)
-30. Highlighting: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html and Field Highlighting Order: https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-field-order.html
-31. Rescoring: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-rescore.html
-32. Search templates (possibly)
-33. Implement Update API.
-34. Implement Multi Get API
-35. Implement Term Vectors and Multi termvectors API
-36. Performance (ensure use of persistent HTTP connections, etc.).
-37. Replace ruby code-gen script, and replace with a Cargo build script (http://doc.crates.io/build-script.html)
-38. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
-39. Check type of "timeout" option on Search...
-40. Review consistency in Operation objects (e.g. taking ownership of strings, type of parameters, etc.)
+6. Performance (ensure use of persistent HTTP connections, etc.).
+7. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
+8. Check type of "timeout" option on Search...
 41. Index boost: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-index-boost.html
 42. Shard preference: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
 43. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
