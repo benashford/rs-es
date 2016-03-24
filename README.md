@@ -300,23 +300,7 @@ EXPERIMENTAL: the structure of results may change as it currently feels quite cu
 
 ## Unimplemented features
 
-The ElasticSearch API is made-up of a large number of smaller APIs, the vast majority of which are not yet implemented.  So far the document and search APIs are being implemented, but still to do: index management, cluster management.
-
-A non-exhaustive (and non-prioritised) list of unimplemented APIs:
-
-* Search Shards API (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-shards.html)
-* Search Templates (https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-template.html)
-* Suggest API
-* Multi-search API
-* Count API
-* Search Exists API
-* Validate API
-* Explain API
-* Percolation
-* More like this API
-* Indices API
-* cat APIs
-* Cluster APIs
+The ElasticSearch API is made-up of a large number of smaller APIs, the vast majority of which are not yet implemented, although the most frequently used ones (searching, indexing, etc.) are.
 
 ### Some, non-exhaustive, specific TODOs
 
@@ -328,15 +312,6 @@ A non-exhaustive (and non-prioritised) list of unimplemented APIs:
 6. Performance (ensure use of persistent HTTP connections, etc.).
 7. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
 8. Check type of "timeout" option on Search...
-41. Index boost: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-index-boost.html
-42. Shard preference: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
-43. Explain: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-preference.html
-44. Add version: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-version.html
-45. Inner-hits: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-inner-hits.html
-46. Consider not using to_string pattern for converting to String (to avoid confusion with built-in to_string that uses formatter).
-47. Avoid calls to `.to_json()` in cases where `Json::Whatever(thing)` would do instead.
-48. Tidy-up/standardise logging.
-49. Deserialize the JSON returned in errors, to allow the client to know details.
 
 ## Licence
 
