@@ -15,8 +15,11 @@ build = "build.rs"
 name = "rs_es"
 
 [features]
-default = ["serde_codegen"]
-nightly = ["serde_macros"]
+default = ["default_without_ssl","ssl"]
+nightly = ["nightly_without_ssl","ssl"]
+default_without_ssl = ["serde_codegen"]
+nightly_without_ssl = ["serde_macros"]
+ssl = ["hyper/ssl"]
 
 [build-dependencies]
 quasi = "^0.8"
@@ -24,7 +27,7 @@ serde_codegen = {version = "^0.7.1", optional = true}
 syntex = "^0.30"
 
 [dependencies]
-hyper = "^0.8"
+hyper = {version = "^0.8", default-features = false}
 log = "^0.3"
 maplit = "^0.1"
 serde = "^0.7"
