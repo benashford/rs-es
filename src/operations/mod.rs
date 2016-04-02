@@ -43,18 +43,18 @@ pub mod version;
 
 /// A repeating convention in the ElasticSearch REST API is parameters that can
 /// take multiple values
-fn format_multi(parts: &[&str]) -> Cow<'static, str> {
-    if parts.is_empty() {
-        Cow::Borrowed("_all")
-    } else {
-        Cow::Owned(parts.iter().join(","))
+fn format_multi<'a>(parts: &[&'a str]) -> Cow<'a, str> {
+    match parts.len() {
+        0 => Cow::Borrowed("_all"),
+        1 => Cow::Borrowed(parts[0]),
+        _ => Cow::Owned(parts.iter().join(","))
     }
 }
 
 /// Multiple operations require indexes and types to be specified, there are
 /// rules for combining the two however.  E.g. all indexes is specified with
 /// `_all`, but all types are specified by omitting type entirely.
-fn format_indexes_and_types(indexes: &[&str], types: &[&str]) -> Cow<'static, str> {
+fn format_indexes_and_types<'a>(indexes: &[&'a str], types: &[&str]) -> Cow<'a, str> {
     if types.is_empty() {
         format_multi(indexes)
     } else {
