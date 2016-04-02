@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ben Ashford
+ * Copyright 2015-2016 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@
 //! The various methods on [`Client`](../struct.Client.html) are entry points to
 //! ElasticSearch's set of operations.  This module, and it's child modules are
 //! the implementation of those operations.
+
+use std::borrow::Cow;
 
 use ::util::StrJoin;
 
@@ -41,22 +43,22 @@ pub mod version;
 
 /// A repeating convention in the ElasticSearch REST API is parameters that can
 /// take multiple values
-fn format_multi(parts: &[&str]) -> String {
+fn format_multi(parts: &[&str]) -> Cow<'static, str> {
     if parts.is_empty() {
-        return "_all".to_owned()
+        Cow::Borrowed("_all")
     } else {
-        parts.iter().join(",")
+        Cow::Owned(parts.iter().join(","))
     }
 }
 
 /// Multiple operations require indexes and types to be specified, there are
 /// rules for combining the two however.  E.g. all indexes is specified with
 /// `_all`, but all types are specified by omitting type entirely.
-fn format_indexes_and_types(indexes: &[&str], types: &[&str]) -> String {
-    if types.len() == 0 {
-        format!("{}", format_multi(indexes))
+fn format_indexes_and_types(indexes: &[&str], types: &[&str]) -> Cow<'static, str> {
+    if types.is_empty() {
+        format_multi(indexes)
     } else {
-        format!("{}/{}", format_multi(indexes), format_multi(types))
+        Cow::Owned(format!("{}/{}", format_multi(indexes), format_multi(types)))
     }
 }
 
