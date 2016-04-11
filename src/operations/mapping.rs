@@ -77,8 +77,6 @@ pub struct MappingResult;
 pub mod tests {
     extern crate env_logger;
 
-    use std::collections::HashMap;
-
     use super::MappingOperation;
 
     #[derive(Debug, Serialize)]
