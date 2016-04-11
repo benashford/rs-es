@@ -186,7 +186,7 @@ impl Client {
 #[cfg(test)]
 pub mod tests {
     extern crate env_logger;
-    extern crate regex;
+    pub extern crate regex;
 
     use std::env;
 
