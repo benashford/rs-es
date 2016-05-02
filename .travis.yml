@@ -13,7 +13,7 @@ addons:
 rust:
   - stable
   - beta
-  - nightly
+#  - nightly  # Re-enable when Quasi (Serde) are fixed for nightly
 
 before_install:
   - curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/zip/elasticsearch/2.0.2/elasticsearch-2.0.2.zip && unzip elasticsearch-2.0.2.zip
