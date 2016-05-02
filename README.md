@@ -4,6 +4,8 @@
 [![](http://meritbadge.herokuapp.com/rs-es)](https://crates.io/crates/rs-es)
 [![Coverage Status](https://coveralls.io/repos/github/benashford/rs-es/badge.svg?branch=master)](https://coveralls.io/github/benashford/rs-es?branch=master)
 
+PLEASE NOTE: The dependency on Quasi (part of Serde) is currently broken for Nightly Rust.  Stable and Beta Rust, are fine.
+
 An experimental ElasticSearch client for Rust via the REST API.
 
 Development is ongoing, and is experimental, as such breaking changes are likely at any time.  Also, large parts of the ElasticSearch API are currently unimplemented.
