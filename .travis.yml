@@ -13,7 +13,7 @@ addons:
 rust:
   - stable
   - beta
-#  - nightly  # Re-enable when Quasi (Serde) are fixed for nightly
+  - nightly
 
 before_install:
   - curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/zip/elasticsearch/2.0.2/elasticsearch-2.0.2.zip && unzip elasticsearch-2.0.2.zip
@@ -21,25 +21,25 @@ before_install:
 
 # As recommended here: http://docs.travis-ci.com/user/database-setup/#ElasticSearch
 before_script:
-  # - |
-  #     pip install 'travis-cargo<0.2' --user &&
-  #     export PATH=$HOME/.local/bin:$PATH
+  - |
+      pip install 'travis-cargo<0.2' --user &&
+      export PATH=$HOME/.local/bin:$PATH
   - sleep 10
 
-#script:
-#    - |
-#        travis-cargo build &&
-#        travis-cargo test &&
-#        travis-cargo --only nightly test -- --features nightly --no-default-features
+script:
+   - |
+       travis-cargo build &&
+       travis-cargo test &&
+       travis-cargo --only nightly test -- --features nightly --no-default-features
 
 after_success:
   # measure code coverage and upload to coveralls.io (the verify
   # argument mitigates kcov crashes due to malformed debuginfo, at the
   # cost of some speed <https://github.com/huonw/travis-cargo/issues/12>)
-  #- travis-cargo --only nightly coveralls --no-sudo --verify -- --features nightly --no-default-features
+  - travis-cargo --only nightly coveralls --no-sudo --verify -- --features nightly --no-default-features
 
 env:
   global:
     # override the default `--features unstable` used for the nightly branch (optional)
-#    - TRAVIS_CARGO_NIGHTLY_FEATURE=""
+    - TRAVIS_CARGO_NIGHTLY_FEATURE=""
     - RUST_BACKTRACE=1
