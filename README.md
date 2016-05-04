@@ -166,7 +166,7 @@ Sorting is supported on all forms of search (by query or by URI), and related op
 ```rust
 use rs_es::query::Query;
 let result = client.search_query()
-                   .with_query(Query::match_all().build())
+                   .with_query(Query::build_match_all().build())
                    .with_sort(&Sort::new(vec![SortField::new("fieldname", Order::Desc)]))
                    .send();
 ```
