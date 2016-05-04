@@ -26,10 +26,10 @@ before_script:
       export PATH=$HOME/.local/bin:$PATH
   - sleep 10
 
-script:
-    - |
-        travis-cargo build &&
-        travis-cargo test #&&
+#script:
+#    - |
+#        travis-cargo build &&
+#        travis-cargo test &&
 #        travis-cargo --only nightly test -- --features nightly --no-default-features
 
 after_success:
