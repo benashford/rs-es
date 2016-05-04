@@ -30,13 +30,13 @@ script:
     - |
         travis-cargo build &&
         travis-cargo test &&
-        travis-cargo --only nightly test -- --features nightly --no-default-features
+#        travis-cargo --only nightly test -- --features nightly --no-default-features
 
 after_success:
   # measure code coverage and upload to coveralls.io (the verify
   # argument mitigates kcov crashes due to malformed debuginfo, at the
   # cost of some speed <https://github.com/huonw/travis-cargo/issues/12>)
-  - travis-cargo --only nightly coveralls --no-sudo --verify -- --features nightly --no-default-features
+  #- travis-cargo --only nightly coveralls --no-sudo --verify -- --features nightly --no-default-features
 
 env:
   global:
