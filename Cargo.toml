@@ -16,9 +16,9 @@ name = "rs_es"
 
 [features]
 default = ["default_without_ssl","ssl"]
-nightly = ["nightly_without_ssl","ssl"]
+
 default_without_ssl = ["serde_codegen"]
-nightly_without_ssl = ["serde_macros"]
+
 ssl = ["hyper/ssl"]
 
 [build-dependencies]
@@ -30,9 +30,8 @@ syntex = "^0.31"
 hyper = {version = "^0.8", default-features = false}
 log = "^0.3"
 maplit = "^0.1"
-serde = "^0.7"
+serde = "=0.7.0"
 serde_json = "^0.7"
-serde_macros = {version = "^0.7", optional = true}
 
 [dev-dependencies]
 env_logger = "^0.3"
