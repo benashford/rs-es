@@ -23,7 +23,7 @@ ssl = ["hyper/ssl"]
 
 [build-dependencies]
 quasi = "^0.10"
-serde_codegen = {version = "=0.7.4", optional = true}
+serde_codegen = {version = "=0.7.5", optional = true}
 syntex = "^0.32"
 
 [dependencies]
