@@ -243,13 +243,15 @@ impl RangeQuery {
 
 /// Exists query
 #[derive(Debug, Serialize)]
-pub struct ExistsQuery(FieldBasedQuery<NoOuter, NoOuter>);
+pub struct ExistsQuery {
+    field: String
+}
 
 impl Query {
     pub fn build_exists<A>(field: A) -> ExistsQuery
         where A: Into<String> {
 
-        ExistsQuery(FieldBasedQuery::new(field.into(), NoOuter, NoOuter))
+        ExistsQuery {field: field.into()}
     }
 }
 
