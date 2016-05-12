@@ -120,7 +120,7 @@ impl Client {
 
 /// The result of a GET request
 #[derive(Debug, Deserialize)]
-pub struct GetResult<T> {
+pub struct GetResult<T: Deserialize> {
     #[serde(rename="_index")]
     pub index:    String,
     #[serde(rename="_type")]
