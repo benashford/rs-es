@@ -4,12 +4,6 @@
 [![](http://meritbadge.herokuapp.com/rs-es)](https://crates.io/crates/rs-es)
 [![Coverage Status](https://coveralls.io/repos/github/benashford/rs-es/badge.svg?branch=master)](https://coveralls.io/github/benashford/rs-es?branch=master)
 
-## Current status
-
-Currently supports the latest Stable and Nightly Rust releases.  Support for Nightly Rust is currently suspended due to the latest release of Serde [generating invalid code](https://github.com/serde-rs/serde/issues/305) and the previous release of Serde being broken by the latest Nightly Rust.
-
-Building `rs-es` will be re-enabled for the latest Nightly Rust as soon as possible.
-
 ## Introduction
 
 An experimental ElasticSearch client for Rust via the REST API.
