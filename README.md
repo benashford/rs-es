@@ -36,6 +36,10 @@ There are two primary goals: 1) to be a full implementation of the ElasticSearch
 
 The second goal is more difficult to achieve than the first as there are some areas which conflict.  A small example of this is the word `type`, this is a word that refers to the type of an ElasticSearch document but it also a reserved word for definining types in Rust.  This means we cannot name a field `type` for instance, so in this library the document type is always referred to as `doc_type` instead.
 
+### Alternatives
+
+For an ElasticSearch client for Rust that takes a different approach, allowing free-form query creation, take a look at [`elasticsearch-rs`](https://github.com/KodrAus/elasticsearch-rs).
+
 ## Usage guide
 
 ### The client
