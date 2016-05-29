@@ -1,6 +1,6 @@
 [package]
 name = "rs-es"
-version = "0.3.5"
+version = "0.4.0"
 authors = ["Ben Ashford"]
 license = "Apache-2.0"
 repository = "https://github.com/benashford/rs-es"
@@ -27,7 +27,7 @@ serde_codegen = {version = "=0.7.5", optional = true}
 syntex = "^0.32"
 
 [dependencies]
-hyper = {version = "^0.8", default-features = false}
+hyper = {version = "^0.9", default-features = false}
 log = "^0.3"
 maplit = "^0.1"
 serde = "^0.7"
