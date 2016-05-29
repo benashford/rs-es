@@ -35,9 +35,6 @@ extern crate serde_json;
 extern crate log;
 extern crate hyper;
 
-#[macro_use]
-extern crate maplit;
-
 #[cfg(feature = "serde_macros")]
 include!("lib.rs.in");
 

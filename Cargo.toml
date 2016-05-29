@@ -29,7 +29,6 @@ syntex = "^0.32"
 [dependencies]
 hyper = {version = "^0.9", default-features = false}
 log = "^0.3"
-maplit = "^0.1"
 serde = "^0.7"
 serde_json = "^0.7"
 serde_macros = {version = "^0.7", optional = true}

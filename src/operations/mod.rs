@@ -36,7 +36,6 @@ pub mod index;
 pub mod refresh;
 pub mod search;
 pub mod analyze;
-pub mod mapping;
 pub mod version;
 
 // Common utility functions
