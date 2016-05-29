@@ -33,6 +33,7 @@ pub mod delete;
 pub mod delete_index;
 pub mod get;
 pub mod index;
+pub mod indices;
 pub mod refresh;
 pub mod search;
 pub mod analyze;
