@@ -22,9 +22,9 @@ nightly_without_ssl = ["serde_macros"]
 ssl = ["hyper/ssl"]
 
 [build-dependencies]
-quasi = "^0.10"
-serde_codegen = {version = "=0.7.5", optional = true}
-syntex = "^0.32"
+quasi = "^0.11"
+serde_codegen = {version = "^0.7.6", optional = true}
+syntex = "^0.33"
 
 [dependencies]
 hyper = {version = "^0.9", default-features = false}
