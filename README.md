@@ -18,7 +18,7 @@ Not every feature and every option is implemented, this README and the documenta
 
 ### Contributing and compatibility
 
-The HEAD of `master` is currently the development branch for 0.3.x.
+The HEAD of `master` is currently the development branch for 0.4.x.  Releases for the stable 0.3.x branch are in the `0.3-releases` branch.
 
 ## Documentation
 
