@@ -21,14 +21,30 @@
 //! [Indices API](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
 //! so subtle (potentially breaking) changes will be made to the API when that happens
 
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 
-use ::Client;
+use serde_json::Value;
+
+use hyper::status::StatusCode;
+
+use ::{Client, EsResponse};
 use ::error::EsError;
+use ::operations::GenericResult;
 
 pub type DocType<'a> = HashMap<&'a str, HashMap<&'a str, &'a str>>;
-pub type DocTypes<'a> = HashMap<&'a str, DocType<'a>>;
-pub type Mapping<'a> = HashMap<&'a str, DocTypes<'a>>;
+pub type Mapping<'a> = HashMap<&'a str, DocType<'a>>;
+
+#[derive(Serialize)]
+pub struct Settings {
+    pub number_of_shards: u32,
+    pub analysis: Analysis
+}
+
+#[derive(Serialize)]
+pub struct Analysis {
+    pub filter:   BTreeMap<String, Value>,
+    pub analyzer: BTreeMap<String, Value>
+}
 
 /// An indexing operation
 pub struct MappingOperation<'a, 'b> {
@@ -38,34 +54,108 @@ pub struct MappingOperation<'a, 'b> {
     /// The index that will be created and eventually mapped
     index:     &'b str,
 
-    /// A map containing the doc types and their type mapping
-    doc_types: &'b DocTypes<'b>
+    /// A map containing the doc types and their mapping
+    mapping: Option<&'b Mapping<'b>>,
+
+    /// A struct reflecting the settings that enable the
+    /// customization of analyzers
+    settings: Option<&'b Settings>
 }
 
 impl<'a, 'b> MappingOperation<'a, 'b> {
     pub fn new(client: &'a mut Client,
-               index: &'b str,
-               doc_types: &'b DocTypes) -> MappingOperation<'a, 'b> {
+               index: &'b str) -> MappingOperation<'a, 'b> {
         MappingOperation {
-            client:    client,
-            index:     index,
-            doc_types: doc_types
+            client:   client,
+            index:    index,
+            mapping:  None,
+            settings: None
         }
     }
 
+    /// Set the actual mapping
+    pub fn with_mapping(&'b mut self, mapping: &'b Mapping) -> &'b mut Self {
+        self.mapping = Some(mapping);
+        self
+    }
+
+    /// Set the settings
+    pub fn with_settings(&'b mut self, settings: &'b Settings) -> &'b mut Self {
+        self.settings = Some(settings);
+        self
+    }
+
+    /// If settings have been provided, the index will be created with them. If the index already
+    /// exists, an `Err(EsError)` will be returned.
+    /// If mapping have been set too, the properties will be applied. The index will be unavailable
+    /// during this process.
+    /// Nothing will be done if either mapping and settings are not present.
     pub fn send(&'b mut self) -> Result<MappingResult, EsError> {
-        let mut mappings: Mapping = HashMap::new();
-        for (type_name, mapping) in self.doc_types.into_iter() {
-            let doc_type = hashmap! { "properties" => mapping.clone() };
-            mappings.insert(type_name, doc_type.to_owned());
+        // Return earlier if there is nothing to do
+        if self.mapping.is_none() && self.settings.is_none() {
+            return Ok(MappingResult);
         }
 
-        let body = hashmap! { "mappings" => mappings };
+        if self.settings.is_some() {
+            let body = hashmap! { "settings" => self.settings.unwrap() };
+            let url = format!("{}", self.index);
+            let _   = try!(self.client.put_body_op(&url, &body));
 
-        let url = format!("{}", self.index);
-        // TODO - actually check the response
-        let _ = try!(self.client.put_body_op(&url, &body));
+            let _ = self.client.wait_for_status("yellow", "5s");
+        }
+
+        if self.mapping.is_some() {
+            let _ = self.client.close_index(self.index);
+
+            for (entity, properties) in self.mapping.unwrap().iter() {
+                let body = hashmap! { "properties" => properties };
+                let url  = format!("{}/_mapping/{}", self.index, entity);
+                let _   = try!(self.client.put_body_op(&url, &body));
+            }
+
+            let _ = self.client.open_index(self.index);
+        }
+
         Ok(MappingResult)
+    }
+}
+
+impl Client {
+    /// Open the index, making it available.
+    pub fn open_index<'a>(&'a mut self, index: &'a str) -> Result<GenericResult, EsError> {
+        let url = format!("{}/_open", index);
+        let response = try!(self.post_op(&url));
+
+        match response.status_code() {
+            &StatusCode::Ok => Ok(try!(response.read_response())),
+            _ => Err(EsError::EsError(format!("Unexpected status: {}",
+                                              response.status_code())))
+        }
+    }
+
+    /// Close the index, making it unavailable and modifiable.
+    pub fn close_index<'a>(&'a mut self, index: &'a str) -> Result<GenericResult, EsError> {
+        let url = format!("{}/_close", index);
+        let response = try!(self.post_op(&url));
+
+        match response.status_code() {
+            &StatusCode::Ok => Ok(try!(response.read_response())),
+            _ => Err(EsError::EsError(format!("Unexpected status: {}",
+                                              response.status_code())))
+        }
+    }
+
+    /// TODO: Return proper health data from
+    /// https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html
+    pub fn wait_for_status<'a>(&'a mut self, status: &'a str, timeout: &'a str) -> Result<(), EsError> {
+        let url = format!("_cluster/health?wait_for_status={}&timeout={}", status, timeout);
+        let response = try!(self.get_op(&url));
+
+        match response.status_code() {
+            &StatusCode::Ok => Ok(()),
+            _ => Err(EsError::EsError(format!("Unexpected status: {}",
+                                              response.status_code())))
+        }
     }
 }
 
@@ -77,7 +167,9 @@ pub struct MappingResult;
 pub mod tests {
     extern crate env_logger;
 
-    use super::MappingOperation;
+    use serde_json::Value;
+
+    use super::*;
 
     #[derive(Debug, Serialize)]
     pub struct Author {
@@ -93,8 +185,8 @@ pub mod tests {
         // failures anyway
         let _ = client.delete_index(index_name);
 
-        let mapping = hashmap! { // DocTypes
-            "post" => hashmap! { // DocType
+        let mapping = hashmap! {
+            "post" => hashmap! {
                 "created_at" => hashmap! {
                     "type" => "date",
                     "format" => "date_time"
@@ -106,18 +198,45 @@ pub mod tests {
                 }
             },
 
-            "author" => hashmap! { // DocType
+            "author" => hashmap! {
                 "name" => hashmap! {
                     "type" => "string",
                 }
             },
         };
 
+        let settings = Settings {
+            number_of_shards: 1,
+
+            analysis: Analysis {
+                filter: btreemap! {
+                    "autocomplete_filter".to_owned() => Value::Object(btreemap! {
+                        "type".to_owned()     => Value::String("edge_ngram".to_owned()),
+                        "min_gram".to_owned() => Value::U64(1),
+                        "max_gram".to_owned() => Value::U64(20)
+                    })
+                },
+                analyzer: btreemap! {
+                    "autocomplete".to_owned()  => Value::Object(btreemap! {
+                        "type".to_owned()      => Value::String("custom".into()),
+                        "tokenizer".to_owned() => Value::String("standard".into()),
+                        "filter".to_owned()    => Value::Array(vec![
+                                                               Value::String("lowercase".into()),
+                                                               Value::String("autocomplete_filter".into())
+                        ])
+                    })
+                }
+            }
+        };
+
         // TODO add appropriate functions to the `Client` struct
-        let result = MappingOperation::new(&mut client, index_name, &mapping).send();
+        let result = MappingOperation::new(&mut client, index_name)
+            .with_mapping(&mapping)
+            .with_settings(&settings)
+            .send();
         assert!(result.is_ok());
 
-        {
+         {
             let result_wrapped = client
                 .index(index_name, "post")
                 .with_doc(&Author { name: "Homu".to_owned() })
