@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2016 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,60 +24,59 @@ use ::{Client, EsResponse};
 use ::error::EsError;
 use ::operations::format_multi;
 
-// /// TODO - this struct
-// #[derive(Serialize)]
-// pub struct TypeProperties;
+#[derive(Serialize)]
+pub struct TypeProperties;
 
-// pub struct PutMappingOperation<'a, 'b> {
-//     client: &'a mut Client,
-//     indexes: &'b [&'b str],
-//     mappings: HashMap<&'b str, TypeProperties>
-// }
+#[derive(Serialize)]
+struct PutMappingBody<'b> {
+    mappings: HashMap<&'b str, TypeProperties>
+}
 
-// #[derive(Serialize)]
-// struct PutMappingBody<'b> {
-//     mappings: &'b HashMap<&'b str, TypeProperties>
-// }
+pub struct PutMappingOperation<'a, 'b> {
+    client: &'a mut Client,
+    indexes: &'b [&'b str],
+    body: PutMappingBody<'b>
+}
 
-// impl<'a, 'b> PutMappingOperation<'a, 'b> {
-//     pub fn new(client: &'a mut Client) -> PutMappingOperation {
-//         PutMappingOperation {
-//             client: client,
-//             indexes: &[],
-//             mappings: HashMap::new()
-//         }
-//     }
+impl<'a, 'b> PutMappingOperation<'a, 'b> {
+    pub fn new(client: &'a mut Client) -> PutMappingOperation {
+        PutMappingOperation {
+            client: client,
+            indexes: &[],
+            body: PutMappingBody {
+                mappings: HashMap::new()
+            }
+        }
+    }
 
-//     pub fn with_indexes(&'b mut self, indexes: &'b [&'b str]) -> &'b mut Self {
-//         self.indexes = indexes;
-//         self
-//     }
+    pub fn with_indexes(&'b mut self, indexes: &'b [&'b str]) -> &'b mut Self {
+        self.indexes = indexes;
+        self
+    }
 
-//     fn body(&'b self) -> PutMappingBody<'b> {
-//         PutMappingBody {
-//             mappings: &self.mappings
-//         }
-//     }
+    pub fn send(&mut self) -> Result<PutMappingResult, EsError> {
+        let url = format_multi(&self.indexes);
+        let response = try!(self.client.put_body_op(&url, &self.body));
+        match response.status_code() {
+            &StatusCode::Ok => Ok(try!(response.read_response())),
+            _ => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
+        }
+    }
+}
 
-//     pub fn send(&mut self) -> Result<PutMappingResult, EsError> {
-//         let url = format_multi(&self.indexes);
-//         let body = self.body();
-//         let response = try!(self.client.put_body_op(&url, &body))
-//         match response.status_code() {
-//             &StatusCode::Ok => Ok(try!(response.read_response())),
-//             _ => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
-//         }
-//     }
-// }
+impl Client {
+    pub fn put_mapping<'a>(&'a mut self) -> PutMappingOperation {
+        PutMappingOperation::new(self)
+    }
+}
 
-// impl Client {
-//     pub fn put_mapping<'a>(&'a mut self) -> PutMappingOperation {
-//         PutMappingOperation::new(self)
-//     }
-// }
+/// TODO - this struct
+#[derive(Deserialize)]
+pub struct PutMappingResult {
 
-// /// TODO - this struct
-// #[derive(Deserialize)]
-// pub struct PutMappingResult {
+}
 
-// }
+#[cfg(test)]
+mod tests {
+    
+}
