@@ -16,4 +16,5 @@
 
 //! Implementation of ElasticSearch's Indices API
 
+pub mod index;
 pub mod mapping;

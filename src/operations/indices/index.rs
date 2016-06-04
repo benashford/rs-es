@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-//! Implementation of ElasticSearch Delete Index operation
+//! Implementation of ElasticSearch Index managemenent operations of the
+//! Indices API
 
 use hyper::status::StatusCode;
 
 use ::{Client, EsResponse};
 use ::error::EsError;
-
-use super::GenericResult;
+use ::operations::GenericResult;
 
 impl Client {
     /// Delete given index

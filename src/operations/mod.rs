@@ -30,7 +30,6 @@ pub mod common;
 
 pub mod bulk;
 pub mod delete;
-pub mod delete_index;
 pub mod get;
 pub mod index;
 pub mod indices;
