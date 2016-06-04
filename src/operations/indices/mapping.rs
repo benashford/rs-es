@@ -22,14 +22,56 @@ use hyper::status::StatusCode;
 
 use ::{Client, EsResponse};
 use ::error::EsError;
-use ::operations::format_multi;
+use ::operations::{format_multi, GenericResult};
 
 #[derive(Serialize)]
-pub struct TypeProperties;
+pub struct Field<'b> {
+    #[serde(rename="type")]
+    field_type: &'b str
+}
+
+impl<'b> From<&'b str> for Field<'b> {
+    fn from(from: &'b str) -> Field<'b> {
+        Field {
+            field_type: from
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct TypeProperties<'b> {
+    properties: HashMap<&'b str, Field<'b>>,
+}
+
+impl<'b> From<HashMap<&'b str, Field<'b>>> for TypeProperties<'b> {
+    fn from(from: HashMap<&'b str, Field<'b>>) -> TypeProperties<'b> {
+        TypeProperties {
+            properties: from
+        }
+    }
+}
+
+impl<'b> From<(&'b str, Field<'b>)> for TypeProperties<'b> {
+    fn from(from: (&'b str, Field<'b>)) -> TypeProperties<'b> {
+        let mut map = HashMap::new();
+        map.insert(from.0, from.1);
+
+        map.into()
+    }
+}
+
+impl<'b> From<(&'b str, &'b str)> for TypeProperties<'b> {
+    fn from(from: (&'b str, &'b str)) -> TypeProperties<'b> {
+        let field:Field<'b> = from.1.into();
+        (from.0, field).into()
+    }
+}
+
+pub type Mappings<'b> = HashMap<&'b str, TypeProperties<'b>>;
 
 #[derive(Serialize)]
 struct PutMappingBody<'b> {
-    mappings: HashMap<&'b str, TypeProperties>
+    mappings: Mappings<'b>
 }
 
 pub struct PutMappingOperation<'a, 'b> {
@@ -54,7 +96,21 @@ impl<'a, 'b> PutMappingOperation<'a, 'b> {
         self
     }
 
-    pub fn send(&mut self) -> Result<PutMappingResult, EsError> {
+    pub fn with_mappings(&'b mut self, mappings: Mappings<'b>) -> &'b mut Self {
+        self.body.mappings = mappings;
+        self
+    }
+
+    pub fn add_mapping<P>(&'b mut self,
+                          doc_type:   &'b str,
+                          properties: P) -> &'b mut Self
+        where P: Into<TypeProperties<'b>> {
+
+        self.body.mappings.insert(doc_type, properties.into());
+        self
+    }
+
+    pub fn send(&mut self) -> Result<GenericResult, EsError> {
         let url = format_multi(&self.indexes);
         let response = try!(self.client.put_body_op(&url, &self.body));
         match response.status_code() {
@@ -70,21 +126,20 @@ impl Client {
     }
 }
 
-/// TODO - this struct
-#[derive(Deserialize)]
-pub struct PutMappingResult {
-
-}
-
 #[cfg(test)]
 mod tests {
-    use ::tests::{make_client};
+    use ::tests::{delete_index, make_client};
 
     #[test]
     fn test_put_mapping() {
         let index_name = "test_put_mappings";
         let mut client = make_client();
+        delete_index(&mut client, index_name);
 
-        // TODO - complete this test
+        let result = client.put_mapping()
+            .with_indexes(&[index_name])
+            .add_mapping("type", ("field_a", "string"))
+            .send();
+        assert!(result.unwrap().acknowledged);
     }
 }
