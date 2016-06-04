@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/benashford/rs-es.svg?branch=master)](https://travis-ci.org/benashford/rs-es)
 [![](http://meritbadge.herokuapp.com/rs-es)](https://crates.io/crates/rs-es)
+[![](https://img.shields.io/crates/d/rs-es.svg)](https://crates.io/crates/rs-es)
+[![](https://img.shields.io/crates/dv/rs-es.svg)](https://crates.io/crates/rs-es)
 [![Coverage Status](https://coveralls.io/repos/github/benashford/rs-es/badge.svg?branch=master)](https://coveralls.io/github/benashford/rs-es?branch=master)
 
 ## Introduction
