@@ -78,5 +78,13 @@ pub struct PutMappingResult {
 
 #[cfg(test)]
 mod tests {
-    
+    use ::tests::{make_client};
+
+    #[test]
+    fn test_put_mapping() {
+        let index_name = "test_put_mappings";
+        let mut client = make_client();
+
+        // TODO - complete this test
+    }
 }

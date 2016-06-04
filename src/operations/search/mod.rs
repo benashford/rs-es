@@ -564,7 +564,7 @@ pub struct SearchQueryOperation<'a, 'b> {
 }
 
 impl <'a, 'b> SearchQueryOperation<'a, 'b> {
-    pub fn new(client: &'a mut Client) -> SearchQueryOperation<'a, 'b> {
+    pub fn new(client: &'a mut Client) -> Self {
         SearchQueryOperation {
             client:    client,
             indexes:   &[],
