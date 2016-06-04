@@ -16,10 +16,6 @@ Please note, due a minor breaking change between Rust 1.5 and 1.6 the 0.1.x rele
 
 Not every feature and every option is implemented, this README and the documentation describe what is available.  For any errors, omissions, etc., issues and pull requests are welcome.
 
-### Contributing and compatibility
-
-The HEAD of `master` is currently the development branch for 0.4.x.  Releases for the stable 0.3.x branch are in the `0.3-releases` branch.
-
 ## Documentation
 
 [Full documentation for `rs-es`](http://benashford.github.io/rs-es/rs_es/index.html).
