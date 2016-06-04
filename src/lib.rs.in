@@ -242,6 +242,25 @@ pub mod tests {
         }
     }
 
+    /// Delete an index
+    pub fn delete_index(mut client: &mut Client,
+                        test_idx:   &str) {
+        let get_index_result = client.get_index().with_indexes(&[test_idx]).send().unwrap();
+        match get_index_result {
+            Some(_) => {
+                let result = client.delete_index(test_idx).unwrap();
+                if !result.acknowledged {
+                    panic!("No acknowledged delete of the index");
+                }
+            },
+            None             => ()
+        }
+    }
+
+    /// Removes all documents for a given index
+    ///
+    /// This will leave mappings, etc. in-place.  Consider `delete_index` as an alternative
+    /// for resetting the state before a test
     pub fn clean_db(mut client: &mut Client,
                     test_idx: &str) {
         let scroll = Duration::minutes(1);

@@ -148,14 +148,14 @@ pub mod tests {
     fn test_get_index() {
         let index_name = "test_get_index";
         let mut client = make_client();
-        let result = client.delete_index(index_name); // deliberately not unwrapping
+        client.delete_index(index_name); // deliberately not unwrapping
         {
             let result = client.get_index().with_indexes(&[index_name]).send();
             assert!(result.is_ok());
             assert!(result.unwrap().is_none());
         }
         {
-            let index_result = client.index(index_name, "test_type")
+            client.index(index_name, "test_type")
                 .with_doc(&TestDocument::new().with_int_field(2))
                 .send()
                 .unwrap();
