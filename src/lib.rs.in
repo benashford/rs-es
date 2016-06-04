@@ -281,7 +281,7 @@ pub mod tests {
             if hits.len() == 0 {
                 break;
             }
-            let actions: Vec<Action<()>> = hits.drain(..)
+            let actions: Vec<Action<()>> = hits.into_iter()
                 .map(|hit| {
                     Action::delete(hit.id)
                         .with_index(test_idx)
