@@ -20,18 +20,85 @@ use std::collections::HashMap;
 
 use hyper::status::StatusCode;
 
+use serde::{Serialize, Serializer};
+
 use ::{Client, EsResponse};
 use ::error::EsError;
 use ::operations::{format_multi, GenericResult};
 
-#[derive(Serialize)]
-pub struct Field<'b> {
-    #[serde(rename="type")]
-    field_type: &'b str
+pub enum FieldType {
+    /// Strings
+    String,
+
+    // Numeric
+    Long,
+    Integer,
+    Short,
+    Byte,
+    Double,
+    Float,
+
+    /// Dates
+    Date,
+
+    /// Boolean
+    Boolean,
+
+    /// Binary
+    Binary,
+
+    /// Object
+    Object,
+
+    /// Nested
+    Nested,
+
+    /// IPv4
+    IP,
+
+    /// Completion
+    Completion,
+
+    /// Token count
+    TokenCount,
+
+    /// Murmur
+    Murmur3
 }
 
-impl<'b> From<&'b str> for Field<'b> {
-    fn from(from: &'b str) -> Field<'b> {
+impl Serialize for FieldType {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+        use self::FieldType::*;
+        match self {
+            &FieldType::String => "string",
+            &Long => "long",
+            &Integer => "integer",
+            &Short => "short",
+            &Byte => "byte",
+            &Double => "double",
+            &Float => "float",
+            &Date => "date",
+            &Boolean => "boolean",
+            &Binary => "binary",
+            &Object => "object",
+            &Nested => "nested",
+            &IP => "ip",
+            &Completion => "completion",
+            &TokenCount => "token_count",
+            &Murmur3 => "murmur3"
+        }.serialize(serializer)
+    }
+}
+
+#[derive(Serialize)]
+pub struct Field {
+    #[serde(rename="type")]
+    field_type: FieldType
+}
+
+impl From<FieldType> for Field {
+    fn from(from: FieldType) -> Field {
         Field {
             field_type: from
         }
@@ -40,19 +107,19 @@ impl<'b> From<&'b str> for Field<'b> {
 
 #[derive(Serialize)]
 pub struct TypeProperties<'b> {
-    properties: HashMap<&'b str, Field<'b>>,
+    properties: HashMap<&'b str, Field>,
 }
 
-impl<'b> From<HashMap<&'b str, Field<'b>>> for TypeProperties<'b> {
-    fn from(from: HashMap<&'b str, Field<'b>>) -> TypeProperties<'b> {
+impl<'b> From<HashMap<&'b str, Field>> for TypeProperties<'b> {
+    fn from(from: HashMap<&'b str, Field>) -> TypeProperties<'b> {
         TypeProperties {
             properties: from
         }
     }
 }
 
-impl<'b> From<(&'b str, Field<'b>)> for TypeProperties<'b> {
-    fn from(from: (&'b str, Field<'b>)) -> TypeProperties<'b> {
+impl<'b> From<(&'b str, Field)> for TypeProperties<'b> {
+    fn from(from: (&'b str, Field)) -> TypeProperties<'b> {
         let mut map = HashMap::new();
         map.insert(from.0, from.1);
 
@@ -60,9 +127,9 @@ impl<'b> From<(&'b str, Field<'b>)> for TypeProperties<'b> {
     }
 }
 
-impl<'b> From<(&'b str, &'b str)> for TypeProperties<'b> {
-    fn from(from: (&'b str, &'b str)) -> TypeProperties<'b> {
-        let field:Field<'b> = from.1.into();
+impl<'b> From<(&'b str, FieldType)> for TypeProperties<'b> {
+    fn from(from: (&'b str, FieldType)) -> TypeProperties<'b> {
+        let field:Field = from.1.into();
         (from.0, field).into()
     }
 }
@@ -130,6 +197,8 @@ impl Client {
 mod tests {
     use ::tests::{delete_index, make_client};
 
+    use super::FieldType;
+
     #[test]
     fn test_put_mapping() {
         let index_name = "test_put_mappings";
@@ -138,7 +207,7 @@ mod tests {
 
         let result = client.put_mapping()
             .with_indexes(&[index_name])
-            .add_mapping("type", ("field_a", "string"))
+            .add_mapping("type", ("field_a", FieldType::String))
             .send();
         assert!(result.unwrap().acknowledged);
     }
