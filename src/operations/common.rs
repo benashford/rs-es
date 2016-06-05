@@ -89,17 +89,6 @@ macro_rules! add_option {
     )
 }
 
-/// Broadly similar to the `add_option` macro for query-string options, but for
-/// specifying fields in the Bulk request
-macro_rules! add_field {
-    ($n:ident, $f:ident, $t:ty) => (
-        pub fn $n<T: Into<$t>>(mut self, val: T) -> Self {
-            self.$f = Some(val.into());
-            self
-        }
-    );
-}
-
 /// The [`version_type` field](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#index-versioning)
 pub enum VersionType {
     Internal,

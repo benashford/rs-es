@@ -42,7 +42,7 @@ impl Query {
 }
 
 impl NestedQuery {
-    add_option!(with_score_mode, score_mode, ScoreMode);
+    add_field!(with_score_mode, score_mode, ScoreMode);
 
     build!(Nested);
 }
@@ -92,15 +92,15 @@ impl Query {
 }
 
 impl HasChildQuery {
-    add_option!(with_score_mode, score_mode, ScoreMode);
-    add_option!(with_min_children, min_children, u64);
-    add_option!(with_max_children, max_children, u64);
+    add_field!(with_score_mode, score_mode, ScoreMode);
+    add_field!(with_min_children, min_children, u64);
+    add_field!(with_max_children, max_children, u64);
 
     build!(HasChild);
 }
 
 impl HasParentQuery {
-    add_option!(with_score_mode, score_mode, ScoreMode);
+    add_field!(with_score_mode, score_mode, ScoreMode);
 
     build!(HasParent);
 }

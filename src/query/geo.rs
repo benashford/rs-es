@@ -134,9 +134,9 @@ impl Query {
 }
 
 impl GeoBoundingBoxQuery {
-    add_inner_option!(with_coerce, coerce, bool);
-    add_inner_option!(with_ignore_malformed, ignore_malformed, bool);
-    add_inner_option!(with_type, filter_type, Type);
+    add_inner_field!(with_coerce, coerce, bool);
+    add_inner_field!(with_ignore_malformed, ignore_malformed, bool);
+    add_inner_field!(with_type, filter_type, Type);
 
     build!(GeoBoundingBox);
 }
@@ -190,10 +190,10 @@ impl Query {
 }
 
 impl GeoDistanceQuery {
-    add_option!(with_distance_type, distance_type, DistanceType);
-    add_option!(with_optimize_bbox, optimize_bbox, OptimizeBbox);
-    add_option!(with_coerce, coerce, bool);
-    add_option!(with_ignore_malformed, ignore_malformed, bool);
+    add_field!(with_distance_type, distance_type, DistanceType);
+    add_field!(with_optimize_bbox, optimize_bbox, OptimizeBbox);
+    add_field!(with_coerce, coerce, bool);
+    add_field!(with_ignore_malformed, ignore_malformed, bool);
 
     build!(GeoDistance);
 }
@@ -246,8 +246,8 @@ impl Query {
 }
 
 impl GeoPolygonQuery {
-    add_inner_option!(with_coerce, coerce, bool);
-    add_inner_option!(with_ignore_malformed, ignore_malformed, bool);
+    add_inner_field!(with_coerce, coerce, bool);
+    add_inner_field!(with_ignore_malformed, ignore_malformed, bool);
 
     build!(GeoPolygon);
 }
@@ -275,8 +275,8 @@ impl Query {
 }
 
 impl GeohashCellQuery {
-    add_outer_option!(with_precision, precision, Precision);
-    add_outer_option!(with_neighbors, neighbors, bool);
+    add_outer_field!(with_precision, precision, Precision);
+    add_outer_field!(with_neighbors, neighbors, bool);
 
     build!(GeohashCell);
 }

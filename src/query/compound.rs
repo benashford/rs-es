@@ -70,7 +70,7 @@ impl Query {
 }
 
 impl ConstantScoreQuery {
-    add_option!(with_boost, boost, f64);
+    add_field!(with_boost, boost, f64);
 
     build!(ConstantScore);
 }
@@ -101,13 +101,13 @@ impl Query {
 }
 
 impl BoolQuery {
-    add_option!(with_must, must, OneOrMany<Query>);
-    add_option!(with_filter, filter, Query);
-    add_option!(with_should, should, OneOrMany<Query>);
-    add_option!(with_must_not, must_not, OneOrMany<Query>);
-    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
-    add_option!(with_boost, boost, f64);
-    add_option!(with_disable_coord, disable_coord, bool);
+    add_field!(with_must, must, OneOrMany<Query>);
+    add_field!(with_filter, filter, Query);
+    add_field!(with_should, should, OneOrMany<Query>);
+    add_field!(with_must_not, must_not, OneOrMany<Query>);
+    add_field!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_field!(with_boost, boost, f64);
+    add_field!(with_disable_coord, disable_coord, bool);
 
     build!(Bool);
 }
@@ -134,8 +134,8 @@ impl Query {
 }
 
 impl DisMaxQuery {
-    add_option!(with_tie_breaker, tie_breaker, f64);
-    add_option!(with_boost, boost, f64);
+    add_field!(with_tie_breaker, tie_breaker, f64);
+    add_field!(with_boost, boost, f64);
 
     build!(DisMax);
 }
@@ -165,12 +165,12 @@ impl Query {
 }
 
 impl FunctionScoreQuery {
-    add_option!(with_query, query, Query);
-    add_option!(with_boost, boost, f64);
-    add_option!(with_max_boost, max_boost, f64);
-    add_option!(with_score_mode, score_mode, ScoreMode);
-    add_option!(with_boost_mode, boost_mode, BoostMode);
-    add_option!(with_min_score, min_score, f64);
+    add_field!(with_query, query, Query);
+    add_field!(with_boost, boost, f64);
+    add_field!(with_max_boost, max_boost, f64);
+    add_field!(with_score_mode, score_mode, ScoreMode);
+    add_field!(with_boost_mode, boost_mode, BoostMode);
+    add_field!(with_min_score, min_score, f64);
 
     pub fn with_functions<A: Into<Vec<Function>>>(mut self, functions: A) -> Self {
         self.functions = functions.into();
@@ -203,9 +203,9 @@ impl Query {
 }
 
 impl BoostingQuery {
-    add_option!(with_positive, positive, Query);
-    add_option!(with_negative, negative, Query);
-    add_option!(with_negative_boost, negative_boost, f64);
+    add_field!(with_positive, positive, Query);
+    add_field!(with_negative, negative, Query);
+    add_field!(with_negative_boost, negative_boost, f64);
 
     build!(Boosting);
 }
@@ -232,7 +232,7 @@ impl Query {
 }
 
 impl IndicesQuery {
-    add_option!(with_no_match_query, no_match_query, NoMatchQuery);
+    add_field!(with_no_match_query, no_match_query, NoMatchQuery);
 
     build!(Indices);
 }

@@ -52,6 +52,16 @@ impl<I, S> StrJoin for I where
     }
 }
 
+/// Useful macro for adding a function to supply a value to an optional field
+macro_rules! add_field {
+    ($n:ident, $f:ident, $t:ty) => (
+        pub fn $n<T: Into<$t>>(mut self, val: T) -> Self {
+            self.$f = Some(val.into());
+            self
+        }
+    );
+}
+
 /// Useful macros for implementing `From` traits
 ///
 /// TODO: this may only be useful for Query DSL, in which case should be moved

@@ -83,7 +83,7 @@ impl Query {
 }
 
 impl TermQuery {
-    add_inner_option!(with_boost, boost, f64);
+    add_inner_field!(with_boost, boost, f64);
 
     build!(Term);
 }
@@ -114,9 +114,9 @@ impl<'a> TermsQueryLookup {
         }
     }
 
-    add_option!(with_index, index, String);
-    add_option!(with_type, doc_type, String);
-    add_option!(with_routing, routing, String);
+    add_field!(with_index, index, String);
+    add_field!(with_type, doc_type, String);
+    add_field!(with_routing, routing, String);
 }
 
 /// TermsQueryIn
@@ -230,13 +230,13 @@ impl Query {
 }
 
 impl RangeQuery {
-    add_inner_option!(with_gte, gte, JsonVal);
-    add_inner_option!(with_gt, gt, JsonVal);
-    add_inner_option!(with_lte, lte, JsonVal);
-    add_inner_option!(with_lt, lt, JsonVal);
-    add_inner_option!(with_boost, boost, f64);
-    add_inner_option!(with_time_zone, time_zone, String);
-    add_inner_option!(with_format, format, String);
+    add_inner_field!(with_gte, gte, JsonVal);
+    add_inner_field!(with_gt, gt, JsonVal);
+    add_inner_field!(with_lte, lte, JsonVal);
+    add_inner_field!(with_lt, lt, JsonVal);
+    add_inner_field!(with_boost, boost, f64);
+    add_inner_field!(with_time_zone, time_zone, String);
+    add_inner_field!(with_format, format, String);
 
     build!(Range);
 }
@@ -286,8 +286,8 @@ impl Query {
 }
 
 impl PrefixQuery {
-    add_inner_option!(with_boost, boost, f64);
-    add_inner_option!(with_rewrite, rewrite, Rewrite);
+    add_inner_field!(with_boost, boost, f64);
+    add_inner_field!(with_rewrite, rewrite, Rewrite);
 
     build!(Prefix);
 }
@@ -319,8 +319,8 @@ impl Query {
 }
 
 impl WildcardQuery {
-    add_inner_option!(with_boost, boost, f64);
-    add_inner_option!(with_rewrite, rewrite, Rewrite);
+    add_inner_field!(with_boost, boost, f64);
+    add_inner_field!(with_rewrite, rewrite, Rewrite);
 
     build!(Wildcard);
 }
@@ -381,9 +381,9 @@ impl Query {
 }
 
 impl RegexpQuery {
-    add_inner_option!(with_boost, boost, f64);
-    add_inner_option!(with_flags, flags, Flags<RegexpQueryFlags>);
-    add_inner_option!(with_max_determined_states, max_determined_states, u64);
+    add_inner_field!(with_boost, boost, f64);
+    add_inner_field!(with_flags, flags, Flags<RegexpQueryFlags>);
+    add_inner_field!(with_max_determined_states, max_determined_states, u64);
 
     build!(Regexp);
 }
@@ -419,10 +419,10 @@ impl Query {
 }
 
 impl FuzzyQuery {
-    add_inner_option!(with_boost, boost, f64);
-    add_inner_option!(with_fuzziness, fuzziness, Fuzziness);
-    add_inner_option!(with_prefix_length, prefix_length, u64);
-    add_inner_option!(with_max_expansions, max_expansions, u64);
+    add_inner_field!(with_boost, boost, f64);
+    add_inner_field!(with_fuzziness, fuzziness, Fuzziness);
+    add_inner_field!(with_prefix_length, prefix_length, u64);
+    add_inner_field!(with_max_expansions, max_expansions, u64);
 
     build!(Fuzzy);
 }
@@ -467,7 +467,7 @@ impl Query {
 }
 
 impl IdsQuery {
-    add_option!(with_type, doc_type, OneOrMany<String>);
+    add_field!(with_type, doc_type, OneOrMany<String>);
 
     build!(Ids);
 }
