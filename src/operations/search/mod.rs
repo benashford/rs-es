@@ -17,6 +17,7 @@
 //! Implementations of both Search-by-URI and Search-by-Query operations
 
 pub mod aggregations;
+pub mod highlight;
 
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
@@ -25,7 +26,7 @@ use hyper::status::StatusCode;
 
 use serde::de::Deserialize;
 use serde::ser::{Serialize, Serializer};
-use serde_json::Value;
+use serde_json::{self, Value};
 
 use ::{Client, EsResponse};
 use ::error::EsError;
@@ -38,6 +39,7 @@ use super::format_indexes_and_types;
 use super::ShardCountResult;
 
 use self::aggregations::AggregationsResult;
+use self::highlight::HighlightResult;
 
 /// Representing a search-by-uri option
 pub struct SearchURIOperation<'a, 'b> {
@@ -418,6 +420,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
     add_option!(with_lenient, "lenient");
     add_option!(with_explain, "explain");
     add_option!(with_source, "_source");
+    add_option!(with_highlight, "highlight");
     add_option!(with_sort, "sort");
     add_option!(with_routing, "routing");
     add_option!(with_track_scores, "track_scores");
@@ -543,7 +546,11 @@ struct SearchQueryOperationBody<'b> {
 
     /// Aggregations
     #[serde(rename="aggregations", skip_serializing_if="ShouldSkip::should_skip")]
-    aggs: Option<&'b aggregations::Aggregations<'b>>
+    aggs: Option<&'b aggregations::Aggregations<'b>>,
+
+    /// Highlight
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    highlight: Option<&'b highlight::Highlight>
 }
 
 pub struct SearchQueryOperation<'a, 'b> {
@@ -645,6 +652,12 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
     /// Specify any aggregations
     pub fn with_aggs(&'b mut self, aggs: &'b aggregations::Aggregations) -> &'b mut Self {
         self.body.aggs = Some(aggs);
+        self
+    }
+
+    /// Specify fields to highlight
+    pub fn with_highlight(&'b mut self, highlight: &'b highlight::Highlight) -> &'b mut Self {
+        self.body.highlight = Some(highlight);
         self
     }
 
@@ -751,7 +764,8 @@ pub struct SearchHitsHitsResult<T: Deserialize> {
     pub timestamp: Option<f64>,
     #[serde(rename="_routing")]
     pub routing: Option<String>,
-    pub fields: Option<Value>
+    pub fields: Option<Value>,
+    pub highlight: Option<HighlightResult>
 }
 
 #[derive(Debug, Deserialize)]
@@ -1020,6 +1034,8 @@ mod tests {
     use super::aggregations::bucket::{Order, OrderKey, Terms};
     use super::aggregations::metrics::Min;
 
+    use super::highlight::{Highlight, Setting, SettingTypes, HighlightResult};
+
     fn make_document(idx: i64) -> TestDocument {
         TestDocument::new()
             .with_str_field(&format!("BulkDoc: {}", idx))
@@ -1229,6 +1245,43 @@ mod tests {
 
         assert_eq!(true, json.find("str_field").is_some());
         assert_eq!(false, json.find("int_field").is_some());
+    }
+
+    #[test]
+    fn test_highlight() {
+        let mut client = make_client();
+        let index_name = "test_highlight";
+        ::tests::clean_db(&mut client, index_name);
+
+        client.bulk(&[Action::index(TestDocument::new().with_str_field("C++ and Java")),
+                      Action::index(TestDocument::new().with_str_field("Rust and Java")),
+                      Action::index(TestDocument::new().with_str_field("Rust is nice"))])
+            .with_index(index_name)
+            .with_doc_type("doc_type")
+            .send()
+            .unwrap();
+
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
+
+        let mut highlight = Highlight::new();
+        highlight.add("str_field".to_owned(), Setting::with_type(SettingTypes::Plain));
+
+        let query = Query::build_match("str_field", "Rust").build();
+
+        let results: SearchResult<TestDocument> = client.search_query()
+            .with_indexes(&[index_name])
+            .with_highlight(&highlight)
+            .with_query(&query)
+            .send()
+            .unwrap();
+
+        let highlights: Vec<HighlightResult> = results.hits.hits
+            .into_iter()
+            .map(|doc| doc.highlight.unwrap())
+            .collect();
+
+        assert_eq!(highlights.len(), 2);
+        assert_eq!(highlights[0].get("str_field"), Some(&vec!["<em>Rust</em> and Java".to_owned()]));
     }
 
     #[test]
