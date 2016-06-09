@@ -160,7 +160,7 @@ impl MatchQuery {
 pub struct MultiMatchQuery {
     fields: Vec<String>,
     query: JsonVal,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if="ShouldSkip::should_skip", rename="type")]
     match_type: Option<MatchQueryType>,
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     tie_breaker: Option<f64>,
