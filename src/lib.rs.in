@@ -277,7 +277,7 @@ pub mod tests {
 
         loop {
             let page = scan.scroll(&mut client, &scroll).unwrap();
-            let mut hits = page.hits.hits;
+            let hits = page.hits.hits;
             if hits.len() == 0 {
                 break;
             }

@@ -64,7 +64,7 @@ impl Function {
 }
 
 impl ScriptScore {
-    add_option!(with_lang, lang, String);
+    add_field!(with_lang, lang, String);
 
     pub fn with_params<A>(mut self, params: A) -> Self
         where A: IntoIterator<Item=(String, JsonVal)> {
@@ -145,9 +145,9 @@ impl Function {
 }
 
 impl FieldValueFactor {
-    add_option!(with_factor, factor, f64);
-    add_option!(with_modifier, modifier, Modifier);
-    add_option!(with_missing, missing, JsonVal);
+    add_field!(with_factor, factor, f64);
+    add_field!(with_modifier, modifier, Modifier);
+    add_field!(with_missing, missing, JsonVal);
 
     pub fn build(self) -> Function {
         Function::FieldValueFactor(self)
@@ -233,9 +233,9 @@ impl Function {
 }
 
 impl Decay {
-    add_option!(with_offset, offset, Scale);
-    add_option!(with_decay, decay, f64);
-    add_option!(with_multi_value_mode, multi_value_mode, MultiValueMode);
+    add_field!(with_offset, offset, Scale);
+    add_field!(with_decay, decay, f64);
+    add_field!(with_multi_value_mode, multi_value_mode, MultiValueMode);
 
     pub fn build_linear(self) -> Function {
         Function::Linear(self)

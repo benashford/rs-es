@@ -66,22 +66,22 @@ impl Query {
 }
 
 impl MoreLikeThisQuery {
-    add_option!(with_fields, fields, Vec<String>);
-    add_option!(with_like_text, like_text, String);
-    add_option!(with_ids, ids, Vec<String>);
-    add_option!(with_docs, docs, Vec<Doc>);
-    add_option!(with_max_query_terms, max_query_terms, u64);
-    add_option!(with_min_term_freq, min_term_freq, u64);
-    add_option!(with_min_doc_freq, min_doc_freq, u64);
-    add_option!(with_max_doc_freq, max_doc_freq, u64);
-    add_option!(with_min_word_length, min_word_length, u64);
-    add_option!(with_max_word_length, max_word_length, u64);
-    add_option!(with_stop_words, stop_words, Vec<String>);
-    add_option!(with_analyzer, analyzer, String);
-    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
-    add_option!(with_boost_terms, boost_terms, f64);
-    add_option!(with_include, include, bool);
-    add_option!(with_boost, boost, f64);
+    add_field!(with_fields, fields, Vec<String>);
+    add_field!(with_like_text, like_text, String);
+    add_field!(with_ids, ids, Vec<String>);
+    add_field!(with_docs, docs, Vec<Doc>);
+    add_field!(with_max_query_terms, max_query_terms, u64);
+    add_field!(with_min_term_freq, min_term_freq, u64);
+    add_field!(with_min_doc_freq, min_doc_freq, u64);
+    add_field!(with_max_doc_freq, max_doc_freq, u64);
+    add_field!(with_min_word_length, min_word_length, u64);
+    add_field!(with_max_word_length, max_word_length, u64);
+    add_field!(with_stop_words, stop_words, Vec<String>);
+    add_field!(with_analyzer, analyzer, String);
+    add_field!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_field!(with_boost_terms, boost_terms, f64);
+    add_field!(with_include, include, bool);
+    add_field!(with_boost, boost, f64);
 
     build!(MoreLikeThis);
 }

@@ -138,19 +138,19 @@ impl Query {
 }
 
 impl MatchQuery {
-    add_inner_option!(with_type, match_type, MatchType);
-    add_inner_option!(with_cutoff_frequency, cutoff_frequency, f64);
-    add_inner_option!(with_lenient, lenient, bool);
-    add_inner_option!(with_analyzer, analyzer, String);
-    add_inner_option!(with_boost, boost, f64);
-    add_inner_option!(with_operator, operator, String);
-    add_inner_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
-    add_inner_option!(with_fuzziness, fuzziness, Fuzziness);
-    add_inner_option!(with_prefix_length, prefix_length, u64);
-    add_inner_option!(with_max_expansions, max_expansions, u64);
-    add_inner_option!(with_rewrite, rewrite, String);
-    add_inner_option!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
-    add_inner_option!(with_slop, slop, i64);
+    add_inner_field!(with_type, match_type, MatchType);
+    add_inner_field!(with_cutoff_frequency, cutoff_frequency, f64);
+    add_inner_field!(with_lenient, lenient, bool);
+    add_inner_field!(with_analyzer, analyzer, String);
+    add_inner_field!(with_boost, boost, f64);
+    add_inner_field!(with_operator, operator, String);
+    add_inner_field!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_inner_field!(with_fuzziness, fuzziness, Fuzziness);
+    add_inner_field!(with_prefix_length, prefix_length, u64);
+    add_inner_field!(with_max_expansions, max_expansions, u64);
+    add_inner_field!(with_rewrite, rewrite, String);
+    add_inner_field!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
+    add_inner_field!(with_slop, slop, i64);
 
     build!(Match);
 }
@@ -160,7 +160,7 @@ impl MatchQuery {
 pub struct MultiMatchQuery {
     fields: Vec<String>,
     query: JsonVal,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if="ShouldSkip::should_skip", rename="type")]
     match_type: Option<MatchQueryType>,
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     tie_breaker: Option<f64>,
@@ -201,19 +201,19 @@ impl Query {
 }
 
 impl MultiMatchQuery {
-    add_option!(with_type, match_type, MatchQueryType);
-    add_option!(with_tie_breaker, tie_breaker, f64);
-    add_option!(with_analyzer, analyzer, String);
-    add_option!(with_boost, boost, f64);
-    add_option!(with_operator, operator, String);
-    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
-    add_option!(with_fuzziness, fuzziness, Fuzziness);
-    add_option!(with_prefix_length, prefix_length, u64);
-    add_option!(with_max_expansions, max_expansions, u64);
-    add_option!(with_rewrite, rewrite, String);
-    add_option!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
-    add_option!(with_cutoff_frequency, cutoff_frequency, f64);
-    add_option!(with_slop, slop, i64);
+    add_field!(with_type, match_type, MatchQueryType);
+    add_field!(with_tie_breaker, tie_breaker, f64);
+    add_field!(with_analyzer, analyzer, String);
+    add_field!(with_boost, boost, f64);
+    add_field!(with_operator, operator, String);
+    add_field!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_field!(with_fuzziness, fuzziness, Fuzziness);
+    add_field!(with_prefix_length, prefix_length, u64);
+    add_field!(with_max_expansions, max_expansions, u64);
+    add_field!(with_rewrite, rewrite, String);
+    add_field!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
+    add_field!(with_cutoff_frequency, cutoff_frequency, f64);
+    add_field!(with_slop, slop, i64);
 
     build!(MultiMatch);
 }
@@ -255,13 +255,13 @@ impl Query {
 }
 
 impl CommonQuery {
-    add_inner_option!(with_cutoff_frequency, cutoff_frequency, f64);
-    add_inner_option!(with_low_freq_operator, low_freq_operator, String);
-    add_inner_option!(with_high_freq_operator, high_freq_operator, String);
-    add_inner_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
-    add_inner_option!(with_boost, boost, f64);
-    add_inner_option!(with_analyzer, analyzer, String);
-    add_inner_option!(with_disable_coord, disable_coord, bool);
+    add_inner_field!(with_cutoff_frequency, cutoff_frequency, f64);
+    add_inner_field!(with_low_freq_operator, low_freq_operator, String);
+    add_inner_field!(with_high_freq_operator, high_freq_operator, String);
+    add_inner_field!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_inner_field!(with_boost, boost, f64);
+    add_inner_field!(with_analyzer, analyzer, String);
+    add_inner_field!(with_disable_coord, disable_coord, bool);
 
     build!(Common);
 }
@@ -322,26 +322,26 @@ impl Query {
 }
 
 impl QueryStringQuery {
-    add_option!(with_default_field, default_field, String);
-    add_option!(with_fields, fields, Vec<String>);
-    add_option!(with_default_operator, default_operator, String);
-    add_option!(with_analyzer, analyzer, String);
-    add_option!(with_allow_leading_wildcard, allow_leading_wildcard, bool);
-    add_option!(with_lowercase_expanded_terms, lowercase_expanded_terms, bool);
-    add_option!(with_enable_position_increments, enable_position_increments, bool);
-    add_option!(with_fuzzy_max_expansions, fuzzy_max_expansions, u64);
-    add_option!(with_fuzziness, fuzziness, Fuzziness);
-    add_option!(with_fuzzy_prefix_length, fuzzy_prefix_length, u64);
-    add_option!(with_phrase_slop, phrase_slop, i64);
-    add_option!(with_boost, boost, f64);
-    add_option!(with_analyze_wildcard, analyze_wildcard, bool);
-    add_option!(with_auto_generate_phrase_queries, auto_generate_phrase_queries, bool);
-    add_option!(with_max_determined_states, max_determined_states, u64);
-    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
-    add_option!(with_lenient, lenient, bool);
-    add_option!(with_locale, locale, String);
-    add_option!(with_time_zone, time_zone, String);
-    add_option!(with_use_dis_max, use_dis_max, bool);
+    add_field!(with_default_field, default_field, String);
+    add_field!(with_fields, fields, Vec<String>);
+    add_field!(with_default_operator, default_operator, String);
+    add_field!(with_analyzer, analyzer, String);
+    add_field!(with_allow_leading_wildcard, allow_leading_wildcard, bool);
+    add_field!(with_lowercase_expanded_terms, lowercase_expanded_terms, bool);
+    add_field!(with_enable_position_increments, enable_position_increments, bool);
+    add_field!(with_fuzzy_max_expansions, fuzzy_max_expansions, u64);
+    add_field!(with_fuzziness, fuzziness, Fuzziness);
+    add_field!(with_fuzzy_prefix_length, fuzzy_prefix_length, u64);
+    add_field!(with_phrase_slop, phrase_slop, i64);
+    add_field!(with_boost, boost, f64);
+    add_field!(with_analyze_wildcard, analyze_wildcard, bool);
+    add_field!(with_auto_generate_phrase_queries, auto_generate_phrase_queries, bool);
+    add_field!(with_max_determined_states, max_determined_states, u64);
+    add_field!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_field!(with_lenient, lenient, bool);
+    add_field!(with_locale, locale, String);
+    add_field!(with_time_zone, time_zone, String);
+    add_field!(with_use_dis_max, use_dis_max, bool);
 
     build!(QueryString);
 }
@@ -418,15 +418,15 @@ impl Query {
 }
 
 impl SimpleQueryStringQuery {
-    add_option!(with_fields, fields, Vec<String>);
-    add_option!(with_default_operator, default_operator, String);
-    add_option!(with_analyzer, analyzer, String);
-    add_option!(with_flags, flags, Flags<SimpleQueryStringFlags>);
-    add_option!(with_lowercase_expanded_terms, lowercase_expanded_terms, bool);
-    add_option!(with_analyze_wildcard, analyze_wildcard, bool);
-    add_option!(with_locale, locale, String);
-    add_option!(with_lenient, lenient, bool);
-    add_option!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_field!(with_fields, fields, Vec<String>);
+    add_field!(with_default_operator, default_operator, String);
+    add_field!(with_analyzer, analyzer, String);
+    add_field!(with_flags, flags, Flags<SimpleQueryStringFlags>);
+    add_field!(with_lowercase_expanded_terms, lowercase_expanded_terms, bool);
+    add_field!(with_analyze_wildcard, analyze_wildcard, bool);
+    add_field!(with_locale, locale, String);
+    add_field!(with_lenient, lenient, bool);
+    add_field!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
 
     build!(SimpleQueryString);
 }

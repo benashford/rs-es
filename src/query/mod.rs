@@ -353,7 +353,7 @@ impl Query {
 }
 
 impl MatchAllQuery {
-    add_option!(with_boost, boost, f64);
+    add_field!(with_boost, boost, f64);
 
     build!(MatchAll);
 }
