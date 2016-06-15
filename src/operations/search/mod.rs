@@ -1281,7 +1281,7 @@ mod tests {
             .collect();
 
         assert_eq!(highlights.len(), 2);
-        assert_eq!(highlights[0].get("str_field"), Some(&vec!["<em>Rust</em> and Java".to_owned()]));
+        assert_eq!(highlights[0].get("str_field"), Some(&vec!["<em>Rust</em> is nice".to_owned()]));
     }
 
     #[test]
