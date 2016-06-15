@@ -1272,6 +1272,7 @@ mod tests {
             .with_indexes(&[index_name])
             .with_highlight(&highlight)
             .with_query(&query)
+            .with_sort(&Sort::field("str_field"))
             .send()
             .unwrap();
 
@@ -1281,7 +1282,7 @@ mod tests {
             .collect();
 
         assert_eq!(highlights.len(), 2);
-        assert_eq!(highlights[0].get("str_field"), Some(&vec!["<em>Rust</em> is nice".to_owned()]));
+        assert_eq!(highlights[1].get("str_field"), Some(&vec!["<em>Rust</em> is nice".to_owned()]));
     }
 
     #[test]
