@@ -32,6 +32,22 @@ macro_rules! serialize_enum {
     )
 }
 
+#[derive(Debug, Clone)]
+pub enum Encoders {
+    Default,
+    HTML
+}
+
+impl ToString for Encoders {
+    fn to_string(&self) -> String {
+        match self {
+            &Encoders::Default => "default",
+            &Encoders::HTML    => "html"
+        }.to_owned()
+    }
+}
+
+serialize_enum!(Encoders);
 
 #[derive(Debug, Clone)]
 pub enum SettingTypes {
@@ -96,7 +112,7 @@ pub struct Setting {
     pub fragment_size: u32,
     pub number_of_fragments: u32,
     pub no_match_size: u32,
-    pub matched_fields: Vec<String>
+    pub matched_fields: Option<Vec<String>>
 }
 
 impl Setting {
@@ -109,7 +125,7 @@ impl Setting {
             fragment_size: 150,
             number_of_fragments: 5,
             no_match_size: 0,
-            matched_fields: vec![]
+            matched_fields: None
         }
     }
 
@@ -148,15 +164,18 @@ impl Setting {
         self
     }
 
-    pub fn with_matched_fields<'a>(&mut self, matched_fields: Vec<String>) -> &mut Setting {
-        self.matched_fields = matched_fields;
+    pub fn with_matched_fields(&mut self, matched_fields: Vec<String>) -> &mut Setting {
+        self.matched_fields = Some(matched_fields);
         self
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Highlight {
-    pub fields: HashMap<String, Setting>
+    pub fields: HashMap<String, Setting>,
+    pub pre_tags: Option<Vec<String>>,
+    pub post_tags: Option<Vec<String>>,
+    pub encoder: Option<Encoders>
 }
 
 impl Highlight {
@@ -167,14 +186,34 @@ impl Highlight {
     /// # Examples
     ///
     /// ```
-    /// use rs_es::operations::search::highlight::{Highlight, Setting, SettingTypes};
+    /// use rs_es::operations::search::highlight::{Highlight, Setting, SettingTypes, Encoders};
     ///
-    /// let mut highlight = Highlight::new();
+    /// let mut highlight = Highlight::new().with_encoder(Encoders::HTML).to_owned();
     /// let setting = Setting::new().with_type(SettingTypes::Plain).to_owned();
     /// highlight.add("first_name".to_owned(), setting);
     /// ```
     pub fn new() -> Highlight {
-        Highlight { fields: HashMap::new() }
+        Highlight {
+            fields: HashMap::new(),
+            pre_tags: None,
+            post_tags: None,
+            encoder: None
+        }
+    }
+
+    pub fn with_encoder(&mut self, encoder: Encoders) -> &mut Highlight {
+        self.encoder = Some(encoder);
+        self
+    }
+
+    pub fn with_pre_tags(&mut self, pre_tags: Vec<String>) -> &mut Highlight {
+        self.pre_tags = Some(pre_tags);
+        self
+    }
+
+    pub fn with_post_tags(&mut self, post_tags: Vec<String>) -> &mut Highlight {
+        self.post_tags = Some(post_tags);
+        self
     }
 
     /// Add a field to highlight to the set
