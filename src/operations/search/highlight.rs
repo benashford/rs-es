@@ -20,34 +20,21 @@ use std::collections::HashMap;
 
 use serde::ser::{Serialize, Serializer};
 
-macro_rules! serialize_enum {
-    ($n:ident) => (
-        impl Serialize for $n {
-            fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
-                where S: Serializer {
-
-                self.to_string().serialize(serializer)
-            }
-        }
-    )
-}
-
 #[derive(Debug, Clone)]
 pub enum Encoders {
     Default,
     HTML
 }
 
-impl ToString for Encoders {
-    fn to_string(&self) -> String {
+impl Serialize for Encoders {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
         match self {
             &Encoders::Default => "default",
             &Encoders::HTML    => "html"
-        }.to_owned()
+        }.serialize(serializer)
     }
 }
-
-serialize_enum!(Encoders);
 
 #[derive(Debug, Clone)]
 pub enum SettingTypes {
@@ -56,32 +43,30 @@ pub enum SettingTypes {
     Postings
 }
 
-impl ToString for SettingTypes {
-    fn to_string(&self) -> String {
+impl Serialize for SettingTypes {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
         match self {
             &SettingTypes::Plain    => "plain",
             &SettingTypes::FVH      => "fvh",
             &SettingTypes::Postings => "postings"
-        }.to_owned()
+        }.serialize(serializer)
     }
 }
-
-serialize_enum!(SettingTypes);
 
 #[derive(Debug, Clone)]
 pub enum IndexOptions {
     Offsets
 }
 
-impl ToString for IndexOptions {
-    fn to_string(&self) -> String {
+impl Serialize for IndexOptions {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
         match self {
             &IndexOptions::Offsets => "offsets"
-        }.to_owned()
+        }.serialize(serializer)
     }
 }
-
-serialize_enum!(IndexOptions);
 
 #[derive(Debug, Clone)]
 pub enum TermVector {
@@ -90,17 +75,16 @@ pub enum TermVector {
     BoundaryMaxScan,
 }
 
-impl ToString for TermVector {
-    fn to_string(&self) -> String {
+impl Serialize for TermVector  {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
         match self {
             &TermVector::WithPositionsOffsets => "with_positions_offsets",
             &TermVector::BoundaryChars        => "boundary_chars",
             &TermVector::BoundaryMaxScan      => "boundary_max_scan"
-        }.to_owned()
+        }.serialize(serializer)
     }
 }
-
-serialize_enum!(TermVector);
 
 #[derive(Debug, Serialize, Clone)]
 pub struct Setting {
@@ -190,7 +174,7 @@ impl Highlight {
     ///
     /// let mut highlight = Highlight::new().with_encoder(Encoders::HTML).to_owned();
     /// let setting = Setting::new().with_type(SettingTypes::Plain).to_owned();
-    /// highlight.add("first_name".to_owned(), setting);
+    /// highlight.add_setting("first_name".to_owned(), setting);
     /// ```
     pub fn new() -> Highlight {
         Highlight {
@@ -217,7 +201,7 @@ impl Highlight {
     }
 
     /// Add a field to highlight to the set
-    pub fn add(&mut self, name: String, setting: Setting) {
+    pub fn add_setting(&mut self, name: String, setting: Setting) {
         self.fields.insert(name, setting);
     }
 }

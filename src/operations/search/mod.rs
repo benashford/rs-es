@@ -1264,7 +1264,7 @@ mod tests {
         client.refresh().with_indexes(&[index_name]).send().unwrap();
 
         let mut highlight = Highlight::new();
-        highlight.add("str_field".to_owned(), Setting::new().with_type(SettingTypes::Plain).to_owned());
+        highlight.add_setting("str_field".to_owned(), Setting::new().with_type(SettingTypes::Plain).to_owned());
 
         let query = Query::build_match("str_field", "Rust").build();
 
