@@ -26,7 +26,7 @@ use hyper::status::StatusCode;
 
 use serde::de::Deserialize;
 use serde::ser::{Serialize, Serializer};
-use serde_json::{self, Value};
+use serde_json::Value;
 
 use ::{Client, EsResponse};
 use ::error::EsError;
@@ -1264,7 +1264,7 @@ mod tests {
         client.refresh().with_indexes(&[index_name]).send().unwrap();
 
         let mut highlight = Highlight::new();
-        highlight.add("str_field".to_owned(), Setting::with_type(SettingTypes::Plain));
+        highlight.add("str_field".to_owned(), Setting::new().with_type(SettingTypes::Plain).to_owned());
 
         let query = Query::build_match("str_field", "Rust").build();
 
