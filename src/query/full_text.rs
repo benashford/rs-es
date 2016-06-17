@@ -24,6 +24,7 @@ use ::json::{NoOuter, ShouldSkip};
 
 use super::{Flags, Fuzziness, MinimumShouldMatch, Query};
 use super::common::FieldBasedQuery;
+use ::operations::search::highlight::Highlight;
 
 /// MatchType - the type of Match query
 #[derive(Debug)]
@@ -121,7 +122,9 @@ pub struct MatchQueryInner {
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     zero_terms_query: Option<ZeroTermsQuery>,
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    slop: Option<i64>
+    slop: Option<i64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    highlight: Option<Highlight>
 }
 
 impl Query {
@@ -151,6 +154,7 @@ impl MatchQuery {
     add_inner_field!(with_rewrite, rewrite, String);
     add_inner_field!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
     add_inner_field!(with_slop, slop, i64);
+    add_inner_field!(with_highlight, highlight, Highlight);
 
     build!(Match);
 }
@@ -185,7 +189,9 @@ pub struct MultiMatchQuery {
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     cutoff_frequency: Option<f64>,
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    slop: Option<i64>
+    slop: Option<i64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    highlight: Option<Highlight>
 }
 
 impl Query {
@@ -214,6 +220,7 @@ impl MultiMatchQuery {
     add_field!(with_zero_terms_query, zero_terms_query, ZeroTermsQuery);
     add_field!(with_cutoff_frequency, cutoff_frequency, f64);
     add_field!(with_slop, slop, i64);
+    add_field!(with_highlight, highlight, Highlight);
 
     build!(MultiMatch);
 }
