@@ -124,6 +124,8 @@ macro_rules! es_body_op {
 
             info!("Doing {} on {}", stringify!($n), url);
             let json_string = try!(serde_json::to_string(body));
+            debug!("Body send: {}", &json_string);
+
             let url = self.full_url(url);
             let result = try!(self.http_client
                               .$cn(&url)
