@@ -20,7 +20,7 @@ use std::collections::HashMap;
 
 use serde::{Serialize, Serializer};
 
-use ::json::ShouldSkip;
+use ::json::{ShouldSkip, FieldBased, NoOuter};
 
 use ::units::{Distance, Duration, JsonVal, Location};
 
@@ -187,10 +187,8 @@ impl Serialize for Modifier {
     }
 }
 
-/// Decay functions
 #[derive(Debug, Default, Serialize)]
-pub struct Decay {
-    field: String,
+pub struct DecayOptions {
     origin: Origin,
     scale: Scale,
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
@@ -201,42 +199,32 @@ pub struct Decay {
     multi_value_mode: Option<MultiValueMode>
 }
 
-macro_rules! build_decay_fn {
-    ($fn_name:ident, $dec_fn:expr) => (
-        pub fn $fn_name<A, B, C>(field: A, origin: B, scale: C) -> Decay
-            where A: Into<String>,
-                  B: Into<Origin>,
-                  C: Into<Scale> {
-            Decay {
-                decay_function: $dec_fn,
-                field: field.into(),
-                origin: origin.into(),
-                scale: scale.into(),
-                ..Default::default()
-            }
-        }
-    )
+impl DecayOptions {
+    add_field!(with_offset, offset, Scale);
+    add_field!(with_decay, decay, f64);
+    add_field!(with_multi_value_mode, multi_value_mode, MultiValueMode);
 }
+
+/// Decay functions
+#[derive(Debug, Serialize)]
+pub struct Decay(FieldBased<String, DecayOptions, NoOuter>);
 
 impl Function {
     pub fn build_decay<A, B, C>(field: A, origin: B, scale: C) -> Decay
         where A: Into<String>,
               B: Into<Origin>,
               C: Into<Scale> {
-        Decay {
-            field: field.into(),
-            origin: origin.into(),
-            scale: scale.into(),
-            ..Default::default()
-        }
+      Decay(FieldBased::new(field.into(),
+                            DecayOptions {
+                                origin: origin.into(),
+                                scale: scale.into(),
+                                ..Default::default()
+                            },
+                            NoOuter))
     }
 }
 
 impl Decay {
-    add_field!(with_offset, offset, Scale);
-    add_field!(with_decay, decay, f64);
-    add_field!(with_multi_value_mode, multi_value_mode, MultiValueMode);
-
     pub fn build_linear(self) -> Function {
         Function::Linear(self)
     }
@@ -343,5 +331,22 @@ impl Serialize for MultiValueMode {
             &Avg => "avg",
             &Sum => "sum"
         }.serialize(serializer)
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use serde_json;
+
+    #[test]
+    fn test_decay_query() {
+        use ::units::*;
+        let gauss_decay_query = super::Function::build_decay("my_field",
+                                   Location::LatLon(42., 24.),
+                                   Distance::new(3., DistanceUnit::Kilometer))
+                           .build_gauss();
+
+        assert_eq!(r#"{"gauss":{"my_field":{"origin":{"lat":42,"lon":24},"scale":"3km"}}}"#,
+                   serde_json::to_string(&gauss_decay_query).unwrap());
     }
 }
