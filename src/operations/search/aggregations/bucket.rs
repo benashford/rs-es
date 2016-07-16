@@ -105,7 +105,7 @@ bucket_agg!(Global);
 // side-effects to own it instead
 #[derive(Debug, Serialize)]
 pub struct Filter<'a> {
-    filters: &'a query::Query
+    filter: &'a query::Query
 }
 
 impl<'a> Filter<'a> {
