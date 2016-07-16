@@ -43,6 +43,7 @@
 use std::collections::BTreeMap;
 
 use serde::{Serialize, Serializer};
+use serde::ser::MapVisitor;
 
 use ::json::ShouldSkip;
 use ::util::StrJoin;
@@ -230,91 +231,59 @@ impl Serialize for ScoreMode {
 /// significantly in size
 
 // TODO: Filters and Queries are merged, ensure all filters are included in this enum
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub enum Query {
-    // TODO - uncomment one-level to re-enable after Serdeification
-    #[serde(rename="match_all")]
     MatchAll(Box<MatchAllQuery>),
 
     // Full-text queries
-    #[serde(rename="match")]
     Match(Box<full_text::MatchQuery>),
-    #[serde(rename="multi_match")]
     MultiMatch(Box<full_text::MultiMatchQuery>),
-    #[serde(rename="common")]
     Common(Box<full_text::CommonQuery>),
-    #[serde(rename="query_string")]
     QueryString(Box<full_text::QueryStringQuery>),
-    #[serde(rename="simple_query_string")]
     SimpleQueryString(Box<full_text::SimpleQueryStringQuery>),
 
-    // // Term level queries
-    #[serde(rename="term")]
+    // Term level queries
     Term(Box<term::TermQuery>),
-    #[serde(rename="terms")]
     Terms(Box<term::TermsQuery>),
-    #[serde(rename="range")]
     Range(Box<term::RangeQuery>),
-    #[serde(rename="exists")]
     Exists(Box<term::ExistsQuery>),
-    // // Not implementing the Missing query, as it's deprecated, use `must_not` and `Exists`
-    // // instead
-    #[serde(rename="prefix")]
+    // Not implementing the Missing query, as it's deprecated, use `must_not` and `Exists`
+    // instead
     Prefix(Box<term::PrefixQuery>),
-    #[serde(rename="wildcard")]
     Wildcard(Box<term::WildcardQuery>),
-    #[serde(rename="regexp")]
     Regexp(Box<term::RegexpQuery>),
-    #[serde(rename="fuzzy")]
     Fuzzy(Box<term::FuzzyQuery>),
-    #[serde(rename="type")]
     Type(Box<term::TypeQuery>),
-    #[serde(rename="ids")]
     Ids(Box<term::IdsQuery>),
 
     // Compound queries
-    #[serde(rename="constant_score")]
     ConstantScore(Box<compound::ConstantScoreQuery>),
-    #[serde(rename="bool")]
     Bool(Box<compound::BoolQuery>),
-    #[serde(rename="dis_max")]
     DisMax(Box<compound::DisMaxQuery>),
-    #[serde(rename="function_score")]
     FunctionScore(Box<compound::FunctionScoreQuery>),
-    #[serde(rename="boosting")]
     Boosting(Box<compound::BoostingQuery>),
-    #[serde(rename="indices")]
     Indices(Box<compound::IndicesQuery>),
-    // // Not implementing the And query, as it's deprecated, use `bool` instead.
-    // // Not implementing the Not query, as it's deprecated
-    // // Not implementing the Or query, as it's deprecated, use `bool` instead.
-    // // Not implementing the Filtered query, as it's deprecated.
-    // // Not implementing the Limit query, as it's deprecated.
+    // Not implementing the And query, as it's deprecated, use `bool` instead.
+    // Not implementing the Not query, as it's deprecated
+    // Not implementing the Or query, as it's deprecated, use `bool` instead.
+    // Not implementing the Filtered query, as it's deprecated.
+    // Not implementing the Limit query, as it's deprecated.
 
     // Joining queries
-    #[serde(rename="nested")]
     Nested(Box<joining::NestedQuery>),
-    #[serde(rename="has_child")]
     HasChild(Box<joining::HasChildQuery>),
-    #[serde(rename="has_parent")]
     HasParent(Box<joining::HasParentQuery>),
 
     // Geo queries
-    #[serde(rename="geo_shape")]
     GeoShape(Box<geo::GeoShapeQuery>),
-    #[serde(rename="geo_bounding_box")]
     GeoBoundingBox(Box<geo::GeoBoundingBoxQuery>),
-    #[serde(rename="geo_distance")]
     GeoDistance(Box<geo::GeoDistanceQuery>),
     // TODO: implement me - pending changes to range query
     //GeoDistanceRange(Box<geo::GeoDistanceRangeQuery>)
-    #[serde(rename="geo_polygon")]
     GeoPolygon(Box<geo::GeoPolygonQuery>),
-    #[serde(rename="geohash_cell")]
     GeohashCell(Box<geo::GeohashCellQuery>),
 
     // Specialized queries
-    #[serde(rename="more_like_this")]
     MoreLikeThis(Box<specialized::MoreLikeThisQuery>),
     // TODO: template queries
     // TODO: Search by script
@@ -333,6 +302,83 @@ pub enum Query {
 impl Default for Query {
     fn default() -> Query {
         Query::MatchAll(Default::default())
+    }
+}
+
+impl Serialize for Query {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer {
+
+        serializer.serialize_struct("Query", QueryMapVisitor {
+            q: self,
+            state: 0
+        })
+    }
+}
+
+struct QueryMapVisitor<'a> {
+    q: &'a Query,
+    state: u8
+}
+
+impl<'a> MapVisitor for QueryMapVisitor<'a> {
+    fn visit<S>(&mut self, serializer: &mut S) -> Result<Option<()>, S::Error>
+        where S: Serializer {
+        use self::Query::*;
+        match self.state {
+            0 => {
+                self.state += 1;
+                Ok(Some(try!(match self.q {
+                    // All
+                    &MatchAll(ref q) => serializer.serialize_map_elt("match_all", q),
+
+                    // Full-text
+                    &Match(ref q) => serializer.serialize_map_elt("match", q),
+                    &MultiMatch(ref q) => serializer.serialize_map_elt("multi_match", q),
+                    &Common(ref q) => serializer.serialize_map_elt("common", q),
+                    &QueryString(ref q) => serializer.serialize_map_elt("query_string", q),
+                    &SimpleQueryString(ref q) => serializer.serialize_map_elt("simple_query_string", q),
+
+                    // Term
+                    &Term(ref q) => serializer.serialize_map_elt("term", q),
+                    &Terms(ref q) => serializer.serialize_map_elt("terms", q),
+                    &Range(ref q) => serializer.serialize_map_elt("range", q),
+                    &Exists(ref q) => serializer.serialize_map_elt("exists", q),
+                    &Prefix(ref q) => serializer.serialize_map_elt("prefix", q),
+                    &Wildcard(ref q) => serializer.serialize_map_elt("wildcard", q),
+                    &Regexp(ref q) => serializer.serialize_map_elt("regexp", q),
+                    &Fuzzy(ref q) => serializer.serialize_map_elt("fuzzy", q),
+                    &Type(ref q) => serializer.serialize_map_elt("type", q),
+                    &Ids(ref q) => serializer.serialize_map_elt("ids", q),
+
+                    // Compound
+                    &ConstantScore(ref q) => serializer.serialize_map_elt("compound_score", q),
+                    &Bool(ref q) => serializer.serialize_map_elt("bool", q),
+                    &DisMax(ref q) => serializer.serialize_map_elt("dis_max", q),
+                    &FunctionScore(ref q) => serializer.serialize_map_elt("function_score", q),
+                    &Boosting(ref q) => serializer.serialize_map_elt("boosting", q),
+                    &Indices(ref q) => serializer.serialize_map_elt("indices", q),
+
+                    // Joining
+                    &Nested(ref q) => serializer.serialize_map_elt("nested", q),
+                    &HasChild(ref q) => serializer.serialize_map_elt("has_child", q),
+                    &HasParent(ref q) => serializer.serialize_map_elt("has_parent", q),
+
+                    // Geo
+                    &GeoShape(ref q) => serializer.serialize_map_elt("geo_shape", q),
+                    &GeoBoundingBox(ref q) => serializer.serialize_map_elt("geo_bounding_box", q),
+                    &GeoDistance(ref q) => serializer.serialize_map_elt("geo_distance", q),
+                    &GeoPolygon(ref q) => serializer.serialize_map_elt("geo_polygon", q),
+                    &GeohashCell(ref q) => serializer.serialize_map_elt("geohash_cell", q),
+
+                    // Specialized
+                    &MoreLikeThis(ref q) => serializer.serialize_map_elt("more_like_this", q)
+                })))
+            },
+            _ => {
+                Ok(None)
+            }
+        }
     }
 }
 
