@@ -104,11 +104,15 @@ bucket_agg!(Global);
 // TODO - Query is now an enum with a `Box` it might be simpler, with little
 // side-effects to own it instead
 #[derive(Debug, Serialize)]
-pub struct Filter<'a>(&'a query::Query);
+pub struct Filter<'a> {
+    filter: &'a query::Query
+}
 
 impl<'a> Filter<'a> {
     pub fn new(filter: &'a query::Query) -> Filter<'a> {
-        Filter(filter)
+        Filter {
+            filter: filter
+        }
     }
 }
 
