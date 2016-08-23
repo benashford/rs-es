@@ -27,7 +27,7 @@ use super::common::FieldBasedQuery;
 use ::operations::search::highlight::Highlight;
 
 /// MatchType - the type of Match query
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MatchType {
     Boolean,
     Phrase,
@@ -66,7 +66,7 @@ impl Serialize for ZeroTermsQuery {
 }
 
 /// MatchQueryType - the type of the multi Match Query
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MatchQueryType {
     BestFields,
     MostFields,
@@ -97,7 +97,7 @@ pub struct MatchQuery(FieldBasedQuery<MatchQueryInner, NoOuter>);
 #[derive(Debug, Default, Serialize)]
 pub struct MatchQueryInner {
     query: JsonVal,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if="ShouldSkip::should_skip", rename="type")]
     match_type: Option<MatchType>,
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     cutoff_frequency: Option<f64>,
