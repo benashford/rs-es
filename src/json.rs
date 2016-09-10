@@ -17,7 +17,6 @@
 //! Helper for common requirements when producing/parsing JSON
 
 use serde::{Serialize, Serializer};
-use serde::ser::{MapVisitor, SeqVisitor};
 
 /// To tell Serde to skip various fields
 pub trait ShouldSkip {
@@ -71,39 +70,13 @@ impl<F, I, O> Serialize for FieldBased<F, I, O>
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
         where S: Serializer {
 
-        serializer.serialize_struct("FieldBasedQuery", FieldBasedMapVisitor {
-            fbq: self,
-            state: 0
-        })
-    }
-}
+        let mut state = try!(serializer.serialize_map(None));
+        try!(serializer.serialize_map_key(&self.field, &self.inner));
 
-struct FieldBasedMapVisitor<'a, F: 'a, I: 'a, O: 'a> {
-    fbq: &'a FieldBased<F, I, O>,
-    state: u8
-}
+        let mut merge_serializer = MergeSerializer::new(serializer, state);
+        try!(self.outer.serialize(&mut merge_serializer));
 
-impl<'a, F, I, O> MapVisitor for FieldBasedMapVisitor<'a, F, I, O>
-    where F: Serialize,
-          I: Serialize,
-          O: Serialize {
-    fn visit<S>(&mut self, serializer: &mut S) -> Result<Option<()>, S::Error>
-        where S: Serializer {
-
-        match self.state {
-            0 => {
-                self.state += 1;
-                Ok(Some(try!(serializer.serialize_map_elt(&self.fbq.field, &self.fbq.inner))))
-            },
-            1 => {
-                self.state += 1;
-                let mut merge_ser = MergeSerializer::new(serializer);
-                Ok(Some(try!(self.fbq.outer.serialize(&mut merge_ser))))
-            },
-            _ => {
-                Ok(None)
-            }
-        }
+        serializer.serialize_map_end(merge_serializer.end())
     }
 }
 
@@ -152,29 +125,10 @@ impl<'a, S> Serializer for MergeSerializer<'a, S>
         value.serialize(self)
     }
 
-    fn serialize_seq<V>(&mut self, visitor: V) -> Result<(), Self::Error>
-        where V: SeqVisitor {
-
-        self.underlying.serialize_seq(visitor)
-    }
-
     fn serialize_seq_elt<V>(&mut self, value: V) -> Result<(), Self::Error>
         where V: Serialize {
 
         self.underlying.serialize_seq_elt(value)
-    }
-
-    fn serialize_map<V>(&mut self, mut visitor: V) -> Result<(), Self::Error>
-        where V: MapVisitor {
-
-        while let Some(()) = try!(visitor.visit(self.underlying)) { }
-        Ok(())
-    }
-
-    fn serialize_map_elt<K, V>(&mut self, key: K, value: V) -> Result<(), Self::Error>
-        where K: Serialize,
-              V: Serialize {
-        self.underlying.serialize_map_elt(key, value)
     }
 }
 

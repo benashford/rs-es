@@ -47,50 +47,34 @@ pub enum Aggregation<'a> {
 impl<'a> Serialize for Aggregation<'a> {
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
         where S: Serializer {
-
-        serializer.serialize_struct("Aggregation", AggregationVisitor {
-            agg: self,
-            state: 0
-        })
-    }
-}
-
-struct AggregationVisitor<'a> {
-    agg: &'a Aggregation<'a>,
-    state: u8
-}
-
-impl<'a> ser::MapVisitor for AggregationVisitor<'a> {
-    fn visit<S>(&mut self, serializer: &mut S) -> Result<Option<()>, S::Error>
-        where S: Serializer {
         use self::Aggregation::*;
-
-        self.state += 1;
-        match self.state {
-            1 => match self.agg {
-                &Metrics(ref metric_agg) => {
-                    let agg_name = metric_agg.details();
-                    Ok(Some(try!(serializer.serialize_map_elt(agg_name, metric_agg))))
-                },
-                &Bucket(ref bucket_agg, _) => {
-                    let agg_name = bucket_agg.details();
-                    Ok(Some(try!(serializer.serialize_map_elt(agg_name, bucket_agg))))
-                }
+        let mut state = try!(serializer.serialize_map(Some(match self {
+            &Metrics(_)              => 1,
+            &Bucket(_, ref opt_aggs) => match opt_aggs {
+                &Some(_) => 2,
+                &None    => 1
+            }
+        })));
+        match self {
+            &Metrics(ref metric_agg) => {
+                let agg_name = metric_agg.details();
+                try!(serializer.serialize_map_key(&mut state, agg_name));
+                try!(serializer.serailize_map_value(&mut state, metric_agg));
             },
-            2 => match self.agg {
-                &Metrics(_) => Ok(Some(())),
-                &Bucket(_, ref opt_aggs) => {
-                    match opt_aggs {
-                        &Some(ref other_aggs) => {
-                            Ok(Some(try!(serializer.serialize_map_elt("aggregations",
-                                                                      other_aggs))))
-                        },
-                        &None => Ok(Some(()))
+            &Bucket(ref bucket_agg, ref opt_aggs) => {
+                let agg_name = bucket_agg.details();
+                try!(serializer.serialize_map_key(&mut state, agg_name));
+                try!(serializer.serialize_map_value(&mut state, bucket_agg));
+                match opt_aggs {
+                    &Some(ref other_aggs) => {
+                        try!(serializer.serialize_map_key(&mut state, "aggregations"));
+                        try!(serializer.serialize_map_value(&mut state, other_aggs));
                     }
+                    &None => ()
                 }
-            },
-            _ => Ok(None)
+            }
         }
+        serializer.serialize_map_end(state)
     }
 }
 
