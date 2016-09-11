@@ -21,7 +21,7 @@ use std::collections::HashMap;
 use serde::ser;
 use serde::ser::{Serialize, Serializer};
 
-use ::json::MergeSerializer;
+use ::json::{MergeSerialize, serialize_map_optional_kv};
 use ::units::JsonVal;
 
 macro_rules! agg {
@@ -73,7 +73,9 @@ pub struct Script<'a> {
 
 /// Base of all Metrics aggregations
 #[derive(Debug, Default)]
-pub struct Agg<'a, E> {
+pub struct Agg<'a, E>
+    where E: MergeSerialize {
+
     pub field: Option<&'a str>,
     pub script: Script<'a>,
     pub missing: Option<JsonVal>,
@@ -89,40 +91,23 @@ macro_rules! add_extra_option {
     }
 }
 
-fn visit_field<S, T>(serializer: &mut S,
-                     state: &mut S::MapState,
-                     field_name: &str,
-                     field: &Option<T>) -> Result<(), S::Error>
-    where S: Serializer,
-          T: Serialize {
-
-    match field {
-        Some(ref value) => {
-            try!(serializer.serialize_map_key(state, field_name));
-            try!(serializer.serialize_map_value(state, value));
-            Ok(())
-        },
-        None => Ok(())
-    }
-}
-
 impl<'a, E> Serialize for Agg<'a, E>
-    where E: Serialize {
+    where E: MergeSerialize {
 
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
         where S: Serializer {
 
         let mut state = try!(serializer.serialize_map(None));
-        try!(visit_field(serializer, &mut state, "field", self.field));
-        try!(visit_field(serializer, &mut state, "inline", self.script.inline));
-        try!(visit_field(serializer, &mut state, "file", self.script.file));
-        try!(visit_field(serializer, &mut state, "id", self.script.id));
-        try!(visit_field(serializer, &mut state, "params", self.script.params.as_ref()));
-        try!(visit_field(serializer, &mut state, "missing", self.missing.as_ref()));
 
-        let mut merge_serializer = MergeSerializer::new(serializer, state);
-        try!(self.extra.serialize(&mut merge_serializer));
-        serializer.serialize_map_end(merge_serializer.end())
+        try!(serialize_map_optional_kv(serializer, &mut state, "field", &self.field));
+        try!(serialize_map_optional_kv(serializer, &mut state, "inline", &self.script.inline));
+        try!(serialize_map_optional_kv(serializer, &mut state, "file", &self.script.file));
+        try!(serialize_map_optional_kv(serializer, &mut state, "id", &self.script.id));
+        try!(serialize_map_optional_kv(serializer, &mut state, "params", &self.script.params));
+        try!(serialize_map_optional_kv(serializer, &mut state, "missing", &self.missing));
+        try!(self.extra.merge_serialize(serializer, &mut state));
+
+        serializer.serialize_map_end(state)
     }
 }
 

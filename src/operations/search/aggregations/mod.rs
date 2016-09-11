@@ -29,6 +29,7 @@ use serde::ser::{Serialize, Serializer};
 use serde_json::Value;
 
 use ::error::EsError;
+use ::json::serialize_map_kv;
 
 use self::bucket::BucketAggregationResult;
 use self::metrics::MetricsAggregationResult;
@@ -58,17 +59,14 @@ impl<'a> Serialize for Aggregation<'a> {
         match self {
             &Metrics(ref metric_agg) => {
                 let agg_name = metric_agg.details();
-                try!(serializer.serialize_map_key(&mut state, agg_name));
-                try!(serializer.serailize_map_value(&mut state, metric_agg));
+                try!(serialize_map_kv(serializer, &mut state, agg_name, metric_agg));
             },
             &Bucket(ref bucket_agg, ref opt_aggs) => {
                 let agg_name = bucket_agg.details();
-                try!(serializer.serialize_map_key(&mut state, agg_name));
-                try!(serializer.serialize_map_value(&mut state, bucket_agg));
+                try!(serialize_map_kv(serializer, &mut state, agg_name, bucket_agg));
                 match opt_aggs {
                     &Some(ref other_aggs) => {
-                        try!(serializer.serialize_map_key(&mut state, "aggregations"));
-                        try!(serializer.serialize_map_value(&mut state, other_aggs));
+                        try!(serialize_map_kv(serializer, &mut state, "aggregations", other_aggs));
                     }
                     &None => ()
                 }

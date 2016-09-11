@@ -30,14 +30,44 @@ impl<T> ShouldSkip for Option<T> {
     }
 }
 
+/// Useful serialization functions
+pub fn serialize_map_kv<S, K, V>(serializer: &mut S,
+                                 state: &mut S::MapState,
+                                 key: K,
+                                 value: V) -> Result<(), S::Error>
+    where S: Serializer,
+          K: Serialize,
+          V: Serialize {
+    try!(serializer.serialize_map_key(state, key));
+    serializer.serialize_map_value(state, value)
+}
+
+pub fn serialize_map_optional_kv<S, K, V>(serializer: &mut S,
+                                          state: &mut S::MapState,
+                                          key: K,
+                                          value: &Option<V>) -> Result<(), S::Error>
+    where S: Serializer,
+          K: Serialize,
+          V: Serialize {
+    match value {
+        &Some(ref x) => {
+            try!(serialize_map_kv(serializer, state, key, x));
+        }
+        &None => ()
+    }
+    Ok(())
+}
+
 /// No outer options
 ///
 /// Literally serializes to nothing
 #[derive(Debug, Default)]
 pub struct NoOuter;
 
-impl Serialize for NoOuter {
-    fn serialize<S>(&self, _: &mut S) -> Result<(), S::Error>
+impl MergeSerialize for NoOuter {
+    fn merge_serialize<S>(&self,
+                          _: &mut S,
+                          _: &mut S::MapState) -> Result<(), S::Error>
         where S: Serializer {
 
         // No-op
@@ -66,70 +96,25 @@ impl<F, I, O> FieldBased<F, I, O> {
 impl<F, I, O> Serialize for FieldBased<F, I, O>
     where F: Serialize,
           I: Serialize,
-          O: Serialize {
+          O: MergeSerialize {
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
         where S: Serializer {
 
         let mut state = try!(serializer.serialize_map(None));
-        try!(serializer.serialize_map_key(&self.field, &self.inner));
 
-        let mut merge_serializer = MergeSerializer::new(serializer, state);
-        try!(self.outer.serialize(&mut merge_serializer));
+        try!(serialize_map_kv(serializer, &mut state, &self.field, &self.inner));
+        try!(self.outer.merge_serialize(serializer, &mut state));
 
-        serializer.serialize_map_end(merge_serializer.end())
+        serializer.serialize_map_end(state)
     }
 }
 
-pub struct MergeSerializer<'a, S: Serializer + 'a> {
-    underlying: &'a mut S
-}
-
-impl<'a, S> MergeSerializer<'a, S>
-    where S: Serializer {
-
-    pub fn new(u: &'a mut S) -> Self {
-        MergeSerializer {underlying: u}
-    }
-}
-
-macro_rules! delegate_serialize {
-    ($n:ident, $t:ty) => (
-        fn $n(&mut self, value: $t) -> Result<(), Self::Error> {
-            self.underlying.$n(value)
-        }
-    )
-}
-
-impl<'a, S> Serializer for MergeSerializer<'a, S>
-    where S: Serializer {
-
-    type Error = S::Error;
-
-    delegate_serialize!(serialize_bool, bool);
-    delegate_serialize!(serialize_i64, i64);
-    delegate_serialize!(serialize_u64, u64);
-    delegate_serialize!(serialize_f64, f64);
-    delegate_serialize!(serialize_str, &str);
-
-    fn serialize_unit(&mut self) -> Result<(), Self::Error> {
-        self.underlying.serialize_unit()
-    }
-
-    fn serialize_none(&mut self) -> Result<(), Self::Error> {
-        self.underlying.serialize_none()
-    }
-
-    fn serialize_some<V>(&mut self, value: V) -> Result<(), Self::Error>
-        where V: Serialize {
-
-        value.serialize(self)
-    }
-
-    fn serialize_seq_elt<V>(&mut self, value: V) -> Result<(), Self::Error>
-        where V: Serialize {
-
-        self.underlying.serialize_seq_elt(value)
-    }
+/// MergeSerialize, implemented by structs that want to add to an existing struct
+pub trait MergeSerialize {
+    fn merge_serialize<S>(&self,
+                          serializer: &mut S,
+                          state: &mut S::MapState) -> Result<(), S::Error>
+        where S: Serializer;
 }
 
 /// Macro to allow access to the inner object, assumes FieldBased is wrapped in a newtype
@@ -155,12 +140,25 @@ macro_rules! add_outer_field {
 pub mod tests {
     use serde_json;
 
-    use super::{FieldBased, NoOuter};
+    use serde::Serializer;
+
+    use super::{FieldBased, MergeSerialize, NoOuter, serialize_map_kv};
 
     #[derive(Serialize)]
     struct TestOptions {
         opt_a: i64,
         opt_b: f64
+    }
+
+    impl MergeSerialize for TestOptions {
+        fn merge_serialize<S>(&self,
+                              serializer: &mut S,
+                              state: &mut S::MapState) -> Result<(), S::Error>
+            where S: Serializer {
+
+            try!(serialize_map_kv(serializer, state, "opt_a", self.opt_a));
+            serialize_map_kv(serializer, state, "opt_b", self.opt_b)
+        }
     }
 
     #[derive(Serialize)]

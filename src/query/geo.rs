@@ -18,7 +18,7 @@
 
 use serde::{Serialize, Serializer};
 
-use ::json::{NoOuter, ShouldSkip};
+use ::json::{MergeSerialize, NoOuter, ShouldSkip};
 use ::units::{Distance, DistanceType, GeoBox, Location};
 
 use super::Query;
@@ -256,12 +256,34 @@ impl GeoPolygonQuery {
 #[derive(Debug, Serialize)]
 pub struct GeohashCellQuery(FieldBasedQuery<Location, GeohashCellQueryOuter>);
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default)]
 pub struct GeohashCellQueryOuter {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     precision: Option<Precision>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     neighbors: Option<bool>,
+}
+
+impl MergeSerialize for GeohashCellQueryOuter {
+    fn merge_serialize<S>(&self,
+                          serializer: &mut S,
+                          state: &mut S::MapState) -> Result<(), S::Error>
+        where S: Serializer {
+
+        match self.precision {
+            Some(ref p) => {
+                try!(serializer.serialize_map_key(state, "precision"));
+                try!(serializer.serialize_map_value(state, p));
+            },
+            None => ()
+        };
+        match self.neighbors {
+            Some(b) => {
+                try!(serializer.serialize_map_key(state, "neighbors"));
+                try!(serializer.serialize_map_value(state, b));
+            },
+            None => ()
+        }
+        Ok(())
+    }
 }
 
 impl Query {
