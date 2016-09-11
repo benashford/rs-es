@@ -14,8 +14,6 @@ Development is ongoing, and is experimental, as such breaking changes are likely
 
 Not every feature and every option is implemented, this README and the documentation describe what is available.  For any errors, omissions, etc., issues and pull requests are welcome.
 
-At present the 0.4.x series of releases uses Serde 0.7.x which doesn't build with the latest Rust nightlies, however it is stable on Beta and Release Rust channels.
-
 ## Documentation
 
 [Full documentation for `rs-es`](http://benashford.github.io/rs-es/rs_es/index.html).

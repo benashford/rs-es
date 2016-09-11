@@ -43,9 +43,8 @@
 use std::collections::BTreeMap;
 
 use serde::{Serialize, Serializer};
-use serde::ser::MapVisitor;
 
-use ::json::ShouldSkip;
+use ::json::{serialize_map_kv, ShouldSkip};
 use ::util::StrJoin;
 
 #[macro_use]
@@ -308,77 +307,68 @@ impl Default for Query {
 impl Serialize for Query {
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
         where S: Serializer {
-
-        serializer.serialize_struct("Query", QueryMapVisitor {
-            q: self,
-            state: 0
-        })
-    }
-}
-
-struct QueryMapVisitor<'a> {
-    q: &'a Query,
-    state: u8
-}
-
-impl<'a> MapVisitor for QueryMapVisitor<'a> {
-    fn visit<S>(&mut self, serializer: &mut S) -> Result<Option<()>, S::Error>
-        where S: Serializer {
         use self::Query::*;
-        match self.state {
-            0 => {
-                self.state += 1;
-                Ok(Some(try!(match self.q {
-                    // All
-                    &MatchAll(ref q) => serializer.serialize_map_elt("match_all", q),
 
-                    // Full-text
-                    &Match(ref q) => serializer.serialize_map_elt("match", q),
-                    &MultiMatch(ref q) => serializer.serialize_map_elt("multi_match", q),
-                    &Common(ref q) => serializer.serialize_map_elt("common", q),
-                    &QueryString(ref q) => serializer.serialize_map_elt("query_string", q),
-                    &SimpleQueryString(ref q) => serializer.serialize_map_elt("simple_query_string", q),
+        let mut state = try!(serializer.serialize_map(Some(1)));
+        try!(match self {
+            // All
+            &MatchAll(ref q) => serialize_map_kv(serializer, &mut state, "match_all", q),
 
-                    // Term
-                    &Term(ref q) => serializer.serialize_map_elt("term", q),
-                    &Terms(ref q) => serializer.serialize_map_elt("terms", q),
-                    &Range(ref q) => serializer.serialize_map_elt("range", q),
-                    &Exists(ref q) => serializer.serialize_map_elt("exists", q),
-                    &Prefix(ref q) => serializer.serialize_map_elt("prefix", q),
-                    &Wildcard(ref q) => serializer.serialize_map_elt("wildcard", q),
-                    &Regexp(ref q) => serializer.serialize_map_elt("regexp", q),
-                    &Fuzzy(ref q) => serializer.serialize_map_elt("fuzzy", q),
-                    &Type(ref q) => serializer.serialize_map_elt("type", q),
-                    &Ids(ref q) => serializer.serialize_map_elt("ids", q),
+            // Full-text
+            &Match(ref q) => serialize_map_kv(serializer, &mut state, "match", q),
+            &MultiMatch(ref q) => serialize_map_kv(serializer, &mut state, "multi_match", q),
+            &Common(ref q) => serialize_map_kv(serializer, &mut state, "common", q),
+            &QueryString(ref q) => serialize_map_kv(serializer, &mut state, "query_string", q),
+            &SimpleQueryString(ref q) => serialize_map_kv(serializer,
+                                                          &mut state,
+                                                          "simple_query_string",
+                                                          q),
 
-                    // Compound
-                    &ConstantScore(ref q) => serializer.serialize_map_elt("compound_score", q),
-                    &Bool(ref q) => serializer.serialize_map_elt("bool", q),
-                    &DisMax(ref q) => serializer.serialize_map_elt("dis_max", q),
-                    &FunctionScore(ref q) => serializer.serialize_map_elt("function_score", q),
-                    &Boosting(ref q) => serializer.serialize_map_elt("boosting", q),
-                    &Indices(ref q) => serializer.serialize_map_elt("indices", q),
+            // Term
+            &Term(ref q) => serialize_map_kv(serializer, &mut state, "term", q),
+            &Terms(ref q) => serialize_map_kv(serializer, &mut state, "terms", q),
+            &Range(ref q) => serialize_map_kv(serializer, &mut state, "range", q),
+            &Exists(ref q) => serialize_map_kv(serializer, &mut state, "exists", q),
+            &Prefix(ref q) => serialize_map_kv(serializer, &mut state, "prefix", q),
+            &Wildcard(ref q) => serialize_map_kv(serializer, &mut state, "wildcard", q),
+            &Regexp(ref q) => serialize_map_kv(serializer, &mut state, "regexp", q),
+            &Fuzzy(ref q) => serialize_map_kv(serializer, &mut state, "fuzzy", q),
+            &Type(ref q) => serialize_map_kv(serializer, &mut state, "type", q),
+            &Ids(ref q) => serialize_map_kv(serializer, &mut state, "ids", q),
 
-                    // Joining
-                    &Nested(ref q) => serializer.serialize_map_elt("nested", q),
-                    &HasChild(ref q) => serializer.serialize_map_elt("has_child", q),
-                    &HasParent(ref q) => serializer.serialize_map_elt("has_parent", q),
+            // Compound
+            &ConstantScore(ref q) => serialize_map_kv(serializer,
+                                                      &mut state,
+                                                      "constant_score",
+                                                      q),
+            &Bool(ref q) => serialize_map_kv(serializer, &mut state, "bool", q),
+            &DisMax(ref q) => serialize_map_kv(serializer, &mut state, "dis_max", q),
+            &FunctionScore(ref q) => serialize_map_kv(serializer,
+                                                      &mut state,
+                                                      "function_score",
+                                                      q),
+            &Boosting(ref q) => serialize_map_kv(serializer, &mut state, "boosting", q),
+            &Indices(ref q) => serialize_map_kv(serializer, &mut state, "indices", q),
 
-                    // Geo
-                    &GeoShape(ref q) => serializer.serialize_map_elt("geo_shape", q),
-                    &GeoBoundingBox(ref q) => serializer.serialize_map_elt("geo_bounding_box", q),
-                    &GeoDistance(ref q) => serializer.serialize_map_elt("geo_distance", q),
-                    &GeoPolygon(ref q) => serializer.serialize_map_elt("geo_polygon", q),
-                    &GeohashCell(ref q) => serializer.serialize_map_elt("geohash_cell", q),
+            // Joining
+            &Nested(ref q) => serialize_map_kv(serializer, &mut state, "nested", q),
+            &HasChild(ref q) => serialize_map_kv(serializer, &mut state, "has_child", q),
+            &HasParent(ref q) => serialize_map_kv(serializer, &mut state, "has_parent", q),
 
-                    // Specialized
-                    &MoreLikeThis(ref q) => serializer.serialize_map_elt("more_like_this", q)
-                })))
-            },
-            _ => {
-                Ok(None)
-            }
-        }
+            // Geo
+            &GeoShape(ref q) => serialize_map_kv(serializer, &mut state, "geo_shape", q),
+            &GeoBoundingBox(ref q) => serialize_map_kv(serializer,
+                                                       &mut state,
+                                                       "geo_bounding_box",
+                                                       q),
+            &GeoDistance(ref q) => serialize_map_kv(serializer, &mut state, "geo_distance", q),
+            &GeoPolygon(ref q) => serialize_map_kv(serializer, &mut state, "geo_polygon", q),
+            &GeohashCell(ref q) => serialize_map_kv(serializer, &mut state, "geohash_cell", q),
+
+            // Specialized
+            &MoreLikeThis(ref q) => serialize_map_kv(serializer, &mut state, "more_like_this", q)
+        });
+        serializer.serialize_map_end(state)
     }
 }
 

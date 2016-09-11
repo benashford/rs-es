@@ -23,7 +23,7 @@ use serde::ser::{Serialize, Serializer};
 use serde_json::Value;
 
 use ::error::EsError;
-use ::json::ShouldSkip;
+use ::json::{MergeSerialize, serialize_map_kv, serialize_map_optional_kv, ShouldSkip};
 use ::query;
 use ::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
 
@@ -283,23 +283,15 @@ impl<'a> Order<'a> {
 #[derive(Debug)]
 pub struct Terms<'a>(Agg<'a, TermsInner<'a>>);
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default)]
 pub struct TermsInner<'a> {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     size: Option<u64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     shard_size: Option<u64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     order: Option<OneOrMany<Order<'a>>>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     min_doc_count: Option<u64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     shard_min_doc_count: Option<u64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     include: Option<OneOrMany<&'a str>>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     exclude: Option<OneOrMany<&'a str>>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     execution_hint: Option<ExecutionHint>
 }
 
@@ -312,6 +304,27 @@ impl<'a> Terms<'a> {
     add_extra_option!(with_include, include, OneOrMany<&'a str>);
     add_extra_option!(with_exclude, exclude, OneOrMany<&'a str>);
     add_extra_option!(with_execution_hint, execution_hint, ExecutionHint);
+}
+
+impl<'a> MergeSerialize for TermsInner<'a> {
+    fn merge_serialize<S>(&self,
+                          serializer: &mut S,
+                          state: &mut S::MapState) -> Result<(), S::Error>
+        where S: Serializer {
+
+        try!(serialize_map_optional_kv(serializer, state, "size", &self.size));
+        try!(serialize_map_optional_kv(serializer, state, "shard_size", &self.shard_size));
+        try!(serialize_map_optional_kv(serializer, state, "order", &self.order));
+        try!(serialize_map_optional_kv(serializer, state, "min_doc_count", &self.min_doc_count));
+        try!(serialize_map_optional_kv(serializer,
+                                       state,
+                                       "shard_min_doc_count",
+                                       &self.shard_min_doc_count));
+        try!(serialize_map_optional_kv(serializer, state, "include", &self.include));
+        try!(serialize_map_optional_kv(serializer, state, "exclude", &self.exclude));
+        try!(serialize_map_optional_kv(serializer, state, "execution_hint", &self.execution_hint));
+        Ok(())
+    }
 }
 
 fos_bucket_agg!(Terms);
@@ -367,6 +380,17 @@ impl<'a> Range<'a> {
     }
 }
 
+impl<'a> MergeSerialize for RangeInner<'a> {
+    fn merge_serialize<S>(&self,
+                          serializer: &mut S,
+                          state: &mut S::MapState) -> Result<(), S::Error>
+        where S: Serializer {
+
+        try!(serialize_map_kv(serializer, state, "keyed", self.keyed));
+        serialize_map_kv(serializer, state, "ranges", &self.ranges)
+    }
+}
+
 impl<'a> Default for RangeInner<'a> {
     fn default() -> Self {
         RangeInner {
@@ -400,7 +424,7 @@ impl<'a> DateRangeInst<'a> {
 #[derive(Debug)]
 pub struct DateRange<'a>(Agg<'a, DateRangeInner<'a>>);
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default)]
 pub struct DateRangeInner<'a> {
     format: Option<&'a str>,
     ranges: Vec<DateRangeInst<'a>>
@@ -412,6 +436,17 @@ impl<'a> DateRange<'a> {
     pub fn with_ranges<A: Into<Vec<DateRangeInst<'a>>>>(mut self, ranges: A) -> Self {
         self.0.extra.ranges = ranges.into();
         self
+    }
+}
+
+impl<'a> MergeSerialize for DateRangeInner<'a> {
+    fn merge_serialize<S>(&self,
+                          serializer: &mut S,
+                          state: &mut S::MapState) -> Result<(), S::Error>
+        where S: Serializer {
+
+        try!(serialize_map_optional_kv(serializer, state, "format", &self.format));
+        serialize_map_kv(serializer, state, "ranges", &self.ranges)
     }
 }
 
@@ -1124,9 +1159,9 @@ impl DateRangeBucketResult {
     fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
         Ok(DateRangeBucketResult {
             from:           optional_json!(from, "from", as_f64),
-            from_as_string: optional_json!(from, "from_as_string", as_string).map(|s| s.to_owned()),
+            from_as_string: optional_json!(from, "from_as_string", as_str).map(|s| s.to_owned()),
             to:             optional_json!(from, "to", as_f64),
-            to_as_string:   optional_json!(from, "to_as_string", as_string).map(|s| s.to_owned()),
+            to_as_string:   optional_json!(from, "to_as_string", as_str).map(|s| s.to_owned()),
             doc_count:      from_json!(from, "doc_count", as_u64),
             aggs:           extract_aggs!(from, aggs)
         })
@@ -1160,7 +1195,7 @@ pub struct HistogramBucketResult {
 impl HistogramBucketResult {
     fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
         Ok(HistogramBucketResult {
-            key: from_json!(from, "key", as_string).to_owned(),
+            key: from_json!(from, "key", as_str).to_owned(),
             doc_count: from_json!(from, "doc_count", as_u64),
             aggs: extract_aggs!(from, aggs)
         })
@@ -1196,7 +1231,7 @@ pub struct DateHistogramBucketResult {
 impl DateHistogramBucketResult {
     fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
         Ok(DateHistogramBucketResult {
-            key_as_string: from_json!(from, "key_as_string", as_string).to_owned(),
+            key_as_string: from_json!(from, "key_as_string", as_str).to_owned(),
             key: from_json!(from, "key", as_u64),
             doc_count: from_json!(from, "doc_count", as_u64),
             aggs: extract_aggs!(from, aggs)
@@ -1234,7 +1269,7 @@ pub struct GeoDistanceBucketResult {
 impl GeoDistanceBucketResult {
     fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
         Ok(GeoDistanceBucketResult {
-            key: from_json!(from, "key", as_string).to_owned(),
+            key: from_json!(from, "key", as_str).to_owned(),
             from: optional_json!(from, "from", as_f64),
             to: optional_json!(from, "to", as_f64),
             doc_count: from_json!(from, "doc_count", as_u64),
@@ -1270,7 +1305,7 @@ pub struct GeohashGridBucketResult {
 impl GeohashGridBucketResult {
     fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
         Ok(GeohashGridBucketResult {
-            key: from_json!(from, "key", as_string).to_owned(),
+            key: from_json!(from, "key", as_str).to_owned(),
             doc_count: from_json!(from, "doc_count", as_u64),
             aggs: extract_aggs!(from, aggs)
         })
