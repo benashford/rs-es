@@ -24,7 +24,6 @@ pub mod bucket;
 
 use std::collections::{BTreeMap, HashMap};
 
-use serde::ser;
 use serde::ser::{Serialize, Serializer};
 use serde_json::Value;
 

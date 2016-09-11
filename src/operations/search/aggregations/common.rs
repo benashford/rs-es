@@ -18,7 +18,6 @@
 
 use std::collections::HashMap;
 
-use serde::ser;
 use serde::ser::{Serialize, Serializer};
 
 use ::json::{MergeSerialize, serialize_map_optional_kv};

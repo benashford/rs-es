@@ -90,9 +90,7 @@ metrics_agg!(Percentiles);
 
 #[derive(Debug, Default)]
 pub struct PercentilesExtra {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     percents:    Option<Vec<f64>>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     compression: Option<u64>
 }
 

@@ -346,7 +346,7 @@ pub mod tests {
                                    Distance::new(3., DistanceUnit::Kilometer))
                            .build_gauss();
 
-        assert_eq!(r#"{"gauss":{"my_field":{"origin":{"lat":42,"lon":24},"scale":"3km"}}}"#,
+        assert_eq!(r#"{"gauss":{"my_field":{"origin":{"lat":42.0,"lon":24.0},"scale":"3km"}}}"#,
                    serde_json::to_string(&gauss_decay_query).unwrap());
     }
 }

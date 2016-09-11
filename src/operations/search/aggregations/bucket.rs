@@ -285,21 +285,13 @@ pub struct Terms<'a>(Agg<'a, TermsInner<'a>>);
 
 #[derive(Debug, Default)]
 pub struct TermsInner<'a> {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     size: Option<u64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     shard_size: Option<u64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     order: Option<OneOrMany<Order<'a>>>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     min_doc_count: Option<u64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     shard_min_doc_count: Option<u64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     include: Option<OneOrMany<&'a str>>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     exclude: Option<OneOrMany<&'a str>>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     execution_hint: Option<ExecutionHint>
 }
 
