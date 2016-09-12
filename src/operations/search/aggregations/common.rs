@@ -18,10 +18,9 @@
 
 use std::collections::HashMap;
 
-use serde::ser;
 use serde::ser::{Serialize, Serializer};
 
-use ::json::MergeSerializer;
+use ::json::{MergeSerialize, serialize_map_optional_kv};
 use ::units::JsonVal;
 
 macro_rules! agg {
@@ -73,7 +72,9 @@ pub struct Script<'a> {
 
 /// Base of all Metrics aggregations
 #[derive(Debug, Default)]
-pub struct Agg<'a, E> {
+pub struct Agg<'a, E>
+    where E: MergeSerialize {
+
     pub field: Option<&'a str>,
     pub script: Script<'a>,
     pub missing: Option<JsonVal>,
@@ -90,57 +91,22 @@ macro_rules! add_extra_option {
 }
 
 impl<'a, E> Serialize for Agg<'a, E>
-    where E: Serialize {
+    where E: MergeSerialize {
 
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
         where S: Serializer {
 
-        serializer.serialize_struct("Agg", AggVisitor {
-            ma: self,
-            state: 0
-        })
-    }
-}
+        let mut state = try!(serializer.serialize_map(None));
 
-struct AggVisitor<'a, E: 'a> {
-    ma: &'a Agg<'a, E>,
-    state: u8
-}
+        try!(serialize_map_optional_kv(serializer, &mut state, "field", &self.field));
+        try!(serialize_map_optional_kv(serializer, &mut state, "inline", &self.script.inline));
+        try!(serialize_map_optional_kv(serializer, &mut state, "file", &self.script.file));
+        try!(serialize_map_optional_kv(serializer, &mut state, "id", &self.script.id));
+        try!(serialize_map_optional_kv(serializer, &mut state, "params", &self.script.params));
+        try!(serialize_map_optional_kv(serializer, &mut state, "missing", &self.missing));
+        try!(self.extra.merge_serialize(serializer, &mut state));
 
-fn visit_field<S, T>(field: Option<T>,
-                     field_name: &str,
-                     serializer: &mut S) -> Result<Option<()>, S::Error>
-    where S: Serializer,
-          T: Serialize {
-
-    match field {
-        Some(value) => {
-            Ok(Some(try!(serializer.serialize_map_elt(field_name, value))))
-        },
-        None => Ok(Some(()))
-    }
-}
-
-impl<'a, E> ser::MapVisitor for AggVisitor<'a, E>
-    where E: Serialize {
-
-    fn visit<S>(&mut self, serializer: &mut S) -> Result<Option<()>, S::Error>
-        where S: Serializer {
-
-        self.state += 1;
-        match self.state {
-            1 => visit_field(self.ma.field, "field", serializer),
-            2 => visit_field(self.ma.script.inline, "inline", serializer),
-            3 => visit_field(self.ma.script.file, "file", serializer),
-            4 => visit_field(self.ma.script.id, "id", serializer),
-            5 => visit_field(self.ma.script.params.as_ref(), "params", serializer),
-            6 => visit_field(self.ma.missing.as_ref(), "missing", serializer),
-            7 => {
-                let mut merge_serializer = MergeSerializer::new(serializer);
-                Ok(Some(try!(self.ma.extra.serialize(&mut merge_serializer))))
-            },
-            _ => Ok(None)
-        }
+        serializer.serialize_map_end(state)
     }
 }
 

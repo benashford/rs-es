@@ -22,7 +22,7 @@ use serde::ser::{Serialize, Serializer};
 use serde_json::{from_value, Value};
 
 use ::error::EsError;
-use ::json::{NoOuter, ShouldSkip};
+use ::json::{MergeSerialize, NoOuter, serialize_map_kv, serialize_map_optional_kv, ShouldSkip};
 use ::units::{GeoBox, JsonVal};
 
 use super::{Aggregation, AggregationResult};
@@ -88,11 +88,9 @@ metrics_agg!(ValueCount);
 pub struct Percentiles<'a>(Agg<'a, PercentilesExtra>);
 metrics_agg!(Percentiles);
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default)]
 pub struct PercentilesExtra {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     percents:    Option<Vec<f64>>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     compression: Option<u64>
 }
 
@@ -101,12 +99,23 @@ impl<'a> Percentiles<'a> {
     add_extra_option!(with_compression, compression, u64);
 }
 
+impl MergeSerialize for PercentilesExtra {
+    fn merge_serialize<S>(&self,
+                          serializer: &mut S,
+                          state: &mut S::MapState) -> Result<(), S::Error>
+        where S: Serializer {
+
+        try!(serialize_map_optional_kv(serializer, state, "percents", &self.percents));
+        serialize_map_optional_kv(serializer, state, "compression", &self.compression)
+    }
+}
+
 /// Percentile Ranks aggregation
 #[derive(Debug)]
 pub struct PercentileRanks<'a>(Agg<'a, PercentileRanksExtra>);
 metrics_agg!(PercentileRanks);
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default)]
 pub struct PercentileRanksExtra {
     values: Vec<f64>
 }
@@ -120,22 +129,44 @@ impl<'a> PercentileRanks<'a> {
     }
 }
 
+impl MergeSerialize for PercentileRanksExtra {
+    fn merge_serialize<S>(&self,
+                          serializer: &mut S,
+                          state: &mut S::MapState) -> Result<(), S::Error>
+        where S: Serializer {
+
+        serialize_map_kv(serializer, state, "values", &self.values)
+    }
+}
+
 /// Cardinality aggregation
 #[derive(Debug)]
 pub struct Cardinality<'a>(Agg<'a, CardinalityExtra>);
 metrics_agg!(Cardinality);
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default)]
 pub struct CardinalityExtra {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     precision_threshold: Option<u64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     rehash:              Option<bool>
 }
 
 impl<'a> Cardinality<'a> {
     add_extra_option!(with_precision_threshold, precision_threshold, u64);
     add_extra_option!(with_rehash, rehash, bool);
+}
+
+impl MergeSerialize for CardinalityExtra {
+    fn merge_serialize<S>(&self,
+                          serializer: &mut S,
+                          state: &mut S::MapState) -> Result<(), S::Error>
+        where S: Serializer {
+
+        try!(serialize_map_optional_kv(serializer,
+                                       state,
+                                       "precision_threshold",
+                                       &self.precision_threshold));
+        serialize_map_optional_kv(serializer, state, "rehash", &self.rehash)
+    }
 }
 
 /// Geo Bounds aggregation
