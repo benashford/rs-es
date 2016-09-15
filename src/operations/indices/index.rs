@@ -18,6 +18,7 @@
 //! Indices API
 
 use std::collections::HashMap;
+use std::marker::PhantomData;
 
 use hyper::status::StatusCode;
 
@@ -26,6 +27,48 @@ use serde_json::Value;
 use ::{Client, EsResponse};
 use ::error::EsError;
 use ::operations::{format_multi, GenericResult};
+
+#[derive(Default, Serialize)]
+struct CreateIndexBody<'b> {
+    // TODO - remove
+    tmp: PhantomData<&'b str>
+}
+
+pub struct CreateIndexOperation<'a, 'b> {
+    client: &'a mut Client,
+    index: &'a str,
+    body: CreateIndexBody<'b>
+}
+
+impl<'a, 'b> CreateIndexOperation<'a, 'b> {
+    pub fn new(client: &'a mut Client, index: &'a str) -> Self {
+        CreateIndexOperation {
+            client: client,
+            index:  index,
+            body: Default::default()
+        }
+    }
+
+    // TODO: replace with specific result
+    pub fn send(&mut self) -> Result<GenericResult, EsError> {
+        let url = format!("/{}/", self.index);
+        let response = try!(self.client.put_body_op(&url, &self.body));
+        match response.status_code() {
+            &StatusCode::Ok => Ok(try!(response.read_response())),
+            _ => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
+        }
+    }
+}
+
+impl Client {
+    /// Create a specified index.
+    ///
+    /// https://www.elastic.co/guide/en/elasticsearch/reference/2.0/indices-create-index.html
+    pub fn create_index<'a, 'b>(&'a mut self,
+                                index: &'a str) -> CreateIndexOperation<'a, 'b> {
+        CreateIndexOperation::new(self, index)
+    }
+}
 
 impl Client {
     /// Delete given index
@@ -119,6 +162,24 @@ pub type GetIndexResult = HashMap<String, IndexResult>;
 #[cfg(test)]
 pub mod tests {
     use ::tests::{clean_db, TestDocument, make_client};
+
+    #[test]
+    fn test_create_index() {
+        let index_name = "test_create_index";
+        let mut client = make_client();
+
+        clean_db(&mut client, index_name);
+        {
+            let result = client.create_index(index_name).send();
+            assert!(result.is_ok());
+        }
+        {
+            let result = client.get_index().with_indexes(&[index_name]).send();
+            let res = result.unwrap().unwrap();
+            println!("Get index result: {:?}", res);
+            assert!(false);
+        }
+    }
 
     #[test]
     fn test_delete_index() {
