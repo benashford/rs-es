@@ -332,6 +332,7 @@ impl<'a, 'b> PutMappingOperation<'a, 'b> {
     }
 
     pub fn send(&mut self) -> Result<GenericResult, EsError> {
+        // TODO - test URL format should be /index_names/_mapping
         let url = format_multi(&self.indexes);
         let response = try!(self.client.put_body_op(&url, &self.body));
         match response.status_code() {
