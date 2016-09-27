@@ -242,6 +242,7 @@ impl<'a, 'b, S> BulkOperation<'a, 'b, S>
         let result = try!(self.client.http_client
                           .post(&full_url)
                           .body(&body)
+                          .headers(self.client.headers.clone())
                           .send());
 
         let response = try!(do_req(result));
