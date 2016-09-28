@@ -31,6 +31,7 @@ maplit = "^0.1"
 serde = "^0.8.9"
 serde_json = "^0.8.1"
 serde_macros = {version = "^0.8.9", optional = true}
+url = "^1.2"
 
 [dev-dependencies]
 env_logger = "^0.3"

@@ -34,6 +34,8 @@ use serde::de::Deserialize;
 
 use error::EsError;
 
+use url::Url;
+
 pub trait EsResponse {
     fn status_code<'a>(&'a self) -> &'a StatusCode;
     fn read_response<R>(mut self) -> Result<R, EsError> where R: Deserialize;
@@ -89,12 +91,12 @@ pub fn do_req(resp: client::response::Response) -> Result<client::response::Resp
 /// ```
 /// use rs_es::Client;
 ///
-/// let mut client = Client::new("localhost", 9200);
+/// let mut client = Client::new("http://localhost");
 /// ```
 ///
 /// See the specific operations and their builder objects for details.
 pub struct Client {
-    base_url:    String,
+    base_url:    Url,
     http_client: hyper::Client,
     headers:     Headers
 }
@@ -140,31 +142,43 @@ macro_rules! es_body_op {
 
 impl Client {
     /// Create a new client
-    pub fn new(host: &str, port: u32) -> Client {
-        Client {
-            base_url:    format!("http://{}:{}", host, port),
-            http_client: hyper::Client::new(),
-            headers:     Self::auth_from_host(host)
+    pub fn new(host: &str) -> Client {
+        let mut url = Url::parse(host).unwrap();
+
+        if url.port().is_none() {
+            url.set_port(Some(9200)).unwrap();
         }
+
+        Client {
+            http_client: hyper::Client::new(),
+            headers:     Self::basic_auth(&url),
+            base_url:    url,
+        }
+    }
+
+    /// When a new client is created, the port is fetched by the URL,
+    /// and if it's not present, the 9200 will be picked.
+    /// This function replaces the selected port with the given one.
+    pub fn set_port(&mut self, port: u16) -> Result<(), ()> {
+        self.base_url.set_port(Some(port))
     }
 
     /// Add headers for the basic authentication to every request
     /// when given host's format is `USER:PASS@HOST`.
-    fn auth_from_host(host: &str) -> Headers {
+    fn basic_auth(url: &Url) -> Headers {
         let mut headers = Headers::new();
 
-        let tokens = host.split('@').collect::<Vec<&str>>();
-        if tokens.len() == 2 {
-            let auth = tokens[0].split(':').collect::<Vec<&str>>();
+        let username = url.username();
 
+        if !username.is_empty() {
             headers.set(
-               Authorization(
-                   Basic {
-                       username: auth[0].to_owned(),
-                       password: Some(auth[1].to_owned())
-                   }
-               )
-            );
+                Authorization(
+                    Basic {
+                        username: username.to_owned(),
+                        password: url.password().map(|p| p.to_owned())
+                    }
+                )
+            )
         }
 
         headers
@@ -173,7 +187,7 @@ impl Client {
     /// Take a nearly complete ElasticSearch URL, and stick the host/port part
     /// on the front.
     pub fn full_url(&self, suffix: &str) -> String {
-        format!("{}/{}", self.base_url, suffix)
+        format!("{}/{}", self.base_url.as_str(), suffix)
     }
 
     es_op!(get_op, get);
@@ -207,9 +221,9 @@ pub mod tests {
     pub fn make_client() -> Client {
         let hostname = match env::var("ES_HOST") {
             Ok(val) => val,
-            Err(_)  => "localhost".to_owned()
+            Err(_)  => "http://localhost:9200".to_owned()
         };
-        Client::new(&hostname, 9200)
+        Client::new(&hostname)
     }
 
     #[derive(Debug, Serialize, Deserialize)]
