@@ -22,15 +22,15 @@ nightly_without_ssl = ["serde_macros"]
 ssl = ["hyper/ssl"]
 
 [build-dependencies]
-serde_codegen = {version = "=0.8.8", optional = true}
+serde_codegen = {version = "^0.8.9", optional = true}
 
 [dependencies]
 hyper = {version = "^0.9", default-features = false}
 log = "^0.3"
 maplit = "^0.1"
-serde = "^0.8.8"
-serde_json = "=0.8.1"
-serde_macros = {version = "=0.8.8", optional = true}
+serde = "^0.8.9"
+serde_json = "^0.8.1"
+serde_macros = {version = "^0.8.9", optional = true}
 
 [dev-dependencies]
 env_logger = "^0.3"
