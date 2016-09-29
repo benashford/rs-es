@@ -78,7 +78,7 @@ pub fn do_req(resp: client::response::Response) -> Result<client::response::Resp
 /// at once.  This will be enforced by the borrow-checker as most methods are
 /// defined on `&mut self`.
 ///
-/// To create a `Client`, the hostname and port need to be specified.
+/// To create a `Client`, the URL needs to be specified.
 ///
 /// Each ElasticSearch API operation is defined as a method on `Client`.  Any
 /// compulsory parameters must be given as arguments to this method.  It returns
@@ -91,7 +91,7 @@ pub fn do_req(resp: client::response::Response) -> Result<client::response::Resp
 /// ```
 /// use rs_es::Client;
 ///
-/// let mut client = Client::new("http://localhost");
+/// let mut client = Client::new("http://localhost:9200");
 /// ```
 ///
 /// See the specific operations and their builder objects for details.
@@ -142,25 +142,14 @@ macro_rules! es_body_op {
 
 impl Client {
     /// Create a new client
-    pub fn new(host: &str) -> Client {
-        let mut url = Url::parse(host).unwrap();
+    pub fn new(url_s: &str) -> Result<Client, url::ParseError> {
+        let url = try!(Url::parse(url_s));
 
-        if url.port().is_none() {
-            url.set_port(Some(9200)).unwrap();
-        }
-
-        Client {
+        Ok(Client {
             http_client: hyper::Client::new(),
-            headers:     Self::basic_auth(&url),
-            base_url:    url,
-        }
-    }
-
-    /// When a new client is created, the port is fetched by the URL,
-    /// and if it's not present, the 9200 will be picked.
-    /// This function replaces the selected port with the given one.
-    pub fn set_port(&mut self, port: u16) -> Result<(), ()> {
-        self.base_url.set_port(Some(port))
+            headers:  Self::basic_auth(&url),
+            base_url: url
+        })
     }
 
     /// Add headers for the basic authentication to every request
@@ -184,10 +173,10 @@ impl Client {
         headers
     }
 
-    /// Take a nearly complete ElasticSearch URL, and stick the host/port part
-    /// on the front.
+    /// Take a nearly complete ElasticSearch URL, and stick
+    /// the URL on the front.
     pub fn full_url(&self, suffix: &str) -> String {
-        format!("{}/{}", self.base_url.as_str(), suffix)
+        self.base_url.join(suffix).unwrap().into_string()
     }
 
     es_op!(get_op, get);
@@ -223,7 +212,7 @@ pub mod tests {
             Ok(val) => val,
             Err(_)  => "http://localhost:9200".to_owned()
         };
-        Client::new(&hostname)
+        Client::new(&hostname).unwrap()
     }
 
     #[derive(Debug, Serialize, Deserialize)]
