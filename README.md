@@ -43,10 +43,8 @@ The `Client` wraps a single HTTP connection to a specified ElasticSearch host/po
 (At present there is no connection pooling, each client has one connection; if you need multiple connections you will need multiple clients.  This may change in the future).
 
 ```rust
-let mut client = Client::new("http://localhost");
+let mut client = Client::new("http://localhost:9200");
 ```
-
-You can select a different port (9200 is the default one) by adding it at the end of the URL (i.e. `http://localhost:9200`) or setting it with `client.set_port(9200)`.
 
 ### Operations
 
