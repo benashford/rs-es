@@ -38,6 +38,8 @@ extern crate hyper;
 #[macro_use]
 extern crate maplit;
 
+extern crate url;
+
 #[cfg(feature = "serde_macros")]
 include!("lib.rs.in");
 
