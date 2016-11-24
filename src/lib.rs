@@ -25,8 +25,11 @@
 //! Warning: at the time of writing the majority of such APIs are currently
 //! unimplemented.
 
-#![cfg_attr(feature = "serde_macros", feature(custom_derive, plugin))]
-#![cfg_attr(feature = "serde_macros", plugin(serde_macros))]
+#![cfg_attr(feature = "serde_derive", feature(proc_macro))]
+
+#[cfg(feature = "serde_derive")]
+#[macro_use]
+extern crate serde_derive;
 
 extern crate serde;
 extern crate serde_json;
@@ -40,8 +43,8 @@ extern crate maplit;
 
 extern crate url;
 
-#[cfg(feature = "serde_macros")]
+#[cfg(feature = "serde_derive")]
 include!("lib.rs.in");
 
-#[cfg(not(feature = "serde_macros"))]
+#[cfg(not(feature = "serde_derive"))]
 include!(concat!(env!("OUT_DIR"), "/lib.rs"));

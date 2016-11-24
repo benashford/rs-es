@@ -1,6 +1,6 @@
 [package]
 name = "rs-es"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Ben Ashford"]
 license = "Apache-2.0"
 repository = "https://github.com/benashford/rs-es"
@@ -18,19 +18,19 @@ name = "rs_es"
 default = ["default_without_ssl","ssl"]
 nightly = ["nightly_without_ssl","ssl"]
 default_without_ssl = ["serde_codegen"]
-nightly_without_ssl = ["serde_macros"]
+nightly_without_ssl = ["serde_derive"]
 ssl = ["hyper/ssl"]
 
 [build-dependencies]
-serde_codegen = {version = "^0.8.9", optional = true}
+serde_codegen = {version = "^0.8.19", optional = true}
 
 [dependencies]
 hyper = {version = "^0.9", default-features = false}
 log = "^0.3"
 maplit = "^0.1"
-serde = "^0.8.9"
+serde = "^0.8.19"
 serde_json = "^0.8.1"
-serde_macros = {version = "^0.8.9", optional = true}
+serde_derive = {version = "^0.8.19", optional = true}
 url = "^1.2"
 
 [dev-dependencies]
