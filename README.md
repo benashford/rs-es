@@ -313,7 +313,7 @@ The ElasticSearch API is made-up of a large number of smaller APIs, the vast maj
 7. All URI options are just String (or things that implement ToString), sometimes the values will be arrays that should be coerced into various formats.
 8. Check type of "timeout" option on Search...
 
-## Licence
+## License
 
 ```
    Copyright 2015-2016 Ben Ashford
