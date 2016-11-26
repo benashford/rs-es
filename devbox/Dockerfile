@@ -1,7 +1,7 @@
 FROM devbox-rust-nightly
 
 RUN rustup update && \
-    echo "export ES_HOST=es" > /home/ben/.profiles/es.sh
+    echo "export ES_HOST=http://es:9200" > /home/ben/.profiles/es.sh
 
 USER root
 

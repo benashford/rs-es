@@ -421,6 +421,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
     add_option!(with_explain, "explain");
     add_option!(with_source, "_source");
     add_option!(with_highlight, "highlight");
+    add_option!(with_version, "version");
     add_option!(with_sort, "sort");
     add_option!(with_routing, "routing");
     add_option!(with_track_scores, "track_scores");
@@ -550,7 +551,11 @@ struct SearchQueryOperationBody<'b> {
 
     /// Highlight
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    highlight: Option<&'b highlight::Highlight>
+    highlight: Option<&'b highlight::Highlight>,
+    
+    /// Version
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    version: Option<bool>
 }
 
 pub struct SearchQueryOperation<'a, 'b> {
@@ -608,6 +613,11 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
 
     pub fn with_size(&'b mut self, size: u64) -> &'b mut Self {
         self.body.size = Some(size);
+        self
+    }
+
+    pub fn with_version(&'b mut self, version: bool) -> &'b mut Self {
+        self.body.version = Some(version);
         self
     }
 
@@ -758,6 +768,8 @@ pub struct SearchHitsHitsResult<T: Deserialize> {
     pub id: String,
     #[serde(rename="_score")]
     pub score: Option<f64>,
+    #[serde(rename="_version")]
+    pub version: Option<u64>,
     #[serde(rename="_source")]
     pub source: Option<Box<T>>,
     #[serde(rename="_timestamp")]
@@ -1195,6 +1207,76 @@ mod tests {
 
         scan_result.close(&mut client).unwrap();
     }
+
+    #[test]
+    fn test_with_version() {
+        let mut client = make_client();
+        let index_name = "test_version";
+        ::tests::clean_db(&mut client, index_name);
+        setup_search_test_data(&mut client, index_name);
+
+        let indexes = [index_name];
+
+        // Version: true
+        {
+            let results: SearchResult<TestDocument> = client.search_query()
+                .with_indexes(&indexes)
+                .with_version(true)
+                .send()
+                .unwrap();
+
+            assert_eq!(3, results.hits.total);
+            
+            let result_versions:Vec<u64> = results.hits.hits
+                .into_iter()
+                .map(|doc| doc.version.unwrap())
+                .collect();
+            
+            // Update a document when the update API is implemented to verify that the version comes back correctly
+            let expected_result_versions:Vec<u64> = vec![1, 1, 1].into_iter()
+                .map(|x| x.to_owned())
+                .collect();
+
+            assert_eq!(expected_result_versions, result_versions);
+        }
+        
+        // Version: false
+        {
+            let results: SearchResult<TestDocument> = client.search_query()
+                .with_indexes(&indexes)
+                .with_version(false)
+                .send()
+                .unwrap();
+                
+            let result_versions:Vec<Option<u64>> = results.hits.hits
+                .into_iter()
+                .map(|doc| doc.version)
+                .collect();
+            
+            for maybe_version in &result_versions {
+                assert!(maybe_version.is_none())
+            }
+        }
+
+        // Version: not set
+        {
+            let results: SearchResult<TestDocument> = client.search_query()
+                .with_indexes(&indexes)
+                .send()
+                .unwrap();
+                
+            let result_versions:Vec<Option<u64>> = results.hits.hits
+                .into_iter()
+                .map(|doc| doc.version)
+                .collect();
+            
+            for maybe_version in &result_versions {
+                assert!(maybe_version.is_none())
+            }
+        }
+    }
+
+    
 
     #[test]
     fn test_scan_and_iterate() {
