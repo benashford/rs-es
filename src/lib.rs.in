@@ -38,7 +38,7 @@ use url::Url;
 
 pub trait EsResponse {
     fn status_code<'a>(&'a self) -> &'a StatusCode;
-    fn read_response<R>(mut self) -> Result<R, EsError> where R: Deserialize;
+    fn read_response<R>(self) -> Result<R, EsError> where R: Deserialize;
 }
 
 impl EsResponse for client::response::Response {
