@@ -22,7 +22,7 @@ nightly_without_ssl = ["serde_derive"]
 ssl = ["hyper/ssl"]
 
 [build-dependencies]
-serde_codegen = {version = "^0.8.19", optional = true}
+serde_codegen = {version = "0.8", optional = true}
 
 [dependencies]
 hyper = {version = "^0.9", default-features = false}
@@ -30,7 +30,7 @@ log = "^0.3"
 maplit = "^0.1"
 serde = "^0.8.19"
 serde_json = "^0.8.1"
-serde_derive = {version = "^0.8.19", optional = true}
+serde_derive = {version = "0.8", optional = true}
 url = "^1.2"
 
 [dev-dependencies]
