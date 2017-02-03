@@ -35,6 +35,9 @@ extern crate serde_json;
 extern crate log;
 extern crate hyper;
 
+#[cfg(feature = "ssl")]
+extern crate hyper_openssl;
+
 #[macro_use]
 extern crate maplit;
 
@@ -172,10 +175,22 @@ impl Client {
         let url = try!(Url::parse(url_s));
 
         Ok(Client {
-            http_client: hyper::Client::new(),
-            headers:  Self::basic_auth(&url),
+            http_client: Self::http_client(),
+            headers: Self::basic_auth(&url),
             base_url: url
         })
+    }
+
+    #[cfg(feature = "ssl")]
+    fn http_client() -> hyper::Client {
+        let ssl = hyper_openssl::OpensslClient::new().unwrap();
+        let connector = hyper::net::HttpsConnector::new(ssl);
+        hyper::Client::with_connector(connector)
+    }
+
+    #[cfg(not(feature = "ssl"))]
+    fn http_client() -> hyper::Client {
+        hyper::Client::new()
     }
 
     /// Add headers for the basic authentication to every request
