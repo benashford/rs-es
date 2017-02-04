@@ -37,6 +37,9 @@ extern crate hyper;
 
 extern crate url;
 
+#[cfg(feature = "ssl")]
+extern crate hyper_openssl;
+
 #[macro_use]
 pub mod util;
 
@@ -163,13 +166,25 @@ macro_rules! es_body_op {
     }
 }
 
+#[cfg(feature = "ssl")]
+fn http_client() -> hyper::Client {
+    let ssl = hyper_openssl::OpensslClient::new().unwrap();
+    let connector = hyper::net::HttpsConnector::new(ssl);
+    hyper::Client::with_connector(connector)
+}
+
+#[cfg(not(feature = "ssl"))]
+fn http_client() -> hyper::Client {
+    hyper::Client::new()
+}
+
 impl Client {
     /// Create a new client
     pub fn new(url_s: &str) -> Result<Client, url::ParseError> {
         let url = try!(Url::parse(url_s));
 
         Ok(Client {
-            http_client: hyper::Client::new(),
+            http_client: http_client(),
             headers:  Self::basic_auth(&url),
             base_url: url
         })

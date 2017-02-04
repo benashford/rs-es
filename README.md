@@ -5,10 +5,11 @@
 [![](https://img.shields.io/crates/d/rs-es.svg)](https://crates.io/crates/rs-es)
 [![](https://img.shields.io/crates/dv/rs-es.svg)](https://crates.io/crates/rs-es)
 [![Coverage Status](https://coveralls.io/repos/github/benashford/rs-es/badge.svg?branch=master)](https://coveralls.io/github/benashford/rs-es?branch=master)
+[![](https://docs.rs/mio/badge.svg)](https://docs.rs/rs-es/)
 
 ## Introduction
 
-An experimental ElasticSearch client for Rust via the REST API.  Targetting ElasticSearch 2.0 and higher.
+An ElasticSearch client for Rust via the REST API.  Targetting ElasticSearch 2.0 and higher.
 
 Development is ongoing, and is experimental, as such breaking changes are likely at any time.  Also, large parts of the ElasticSearch API are currently unimplemented.
 
@@ -187,8 +188,6 @@ The individual results contain meta-data for each hit (such as the score) as wel
 The type of the source document can be anything that implemented [`Deserialize`](https://serde-rs.github.io/serde/serde/de/trait.Deserialize.html).  ElasticSearch search may return many different types of document, it also doesn't (by default) enforce any schema, this together means the structure of a returned document may need to be validated before being deserialised.  In this case a search result can return a [`Value`](http://serde-rs.github.io/json/serde_json/value/enum.Value.html) from that data can be extracted and/or converted to other structures.
 
 ### The Query DSL
-
-_Please note: starting with ElasticSearch 2.0, the distinction between queries and filters became one of context, rather than being distinct things; as such, starting with `rs-es` 0.3.0, the distinction is also removed_
 
 ElasticSearch offers a [rich DSL for searches](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html).  It is JSON based, and therefore very easy to use and composable if using from a dynamic language (e.g. [Ruby](https://github.com/elastic/elasticsearch-ruby/tree/master/elasticsearch-dsl#features-overview)); but Rust, being a staticly-typed language, things are different.  The `rs_es::query` module defines a set of builder objects which can be similarly composed to the same ends.
 
