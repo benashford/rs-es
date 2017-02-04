@@ -14,10 +14,12 @@ exclude = ["devbox/**/*", "docker-dev.yml"]
 name = "rs_es"
 
 [features]
-ssl = ["hyper/ssl"]
+default = ["ssl"]
+ssl = ["hyper-openssl"]
 
 [dependencies]
-hyper = {version = "^0.9", default-features = false}
+hyper = "^0.10"
+hyper-openssl = { version = "^0.2", optional = true }
 log = "^0.3"
 maplit = "^0.1"
 serde = "^0.8.19"
