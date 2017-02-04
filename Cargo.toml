@@ -28,5 +28,5 @@ serde_derive = "^0.8.19"
 url = "^1.2"
 
 [dev-dependencies]
-env_logger = "^0.3"
-regex = "^0.1"
+env_logger = "^0.4"
+regex = "^0.2"
