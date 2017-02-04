@@ -9,20 +9,13 @@ description = "Client for the ElasticSearch REST API"
 readme = "README.md"
 keywords = ["elasticsearch", "elastic"]
 exclude = ["devbox/**/*", "docker-dev.yml"]
-build = "build.rs"
 
 [lib]
 name = "rs_es"
 
 [features]
-default = ["default_without_ssl","ssl"]
-nightly = ["nightly_without_ssl","ssl"]
-default_without_ssl = ["serde_codegen"]
-nightly_without_ssl = ["serde_derive"]
+default = ["ssl"]
 ssl = ["hyper/ssl"]
-
-[build-dependencies]
-serde_codegen = {version = "^0.8.19", optional = true}
 
 [dependencies]
 hyper = {version = "^0.9", default-features = false}
@@ -30,7 +23,7 @@ log = "^0.3"
 maplit = "^0.1"
 serde = "^0.8.19"
 serde_json = "^0.8.1"
-serde_derive = {version = "^0.8.19", optional = true}
+serde_derive = "^0.8.19"
 url = "^1.2"
 
 [dev-dependencies]
