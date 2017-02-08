@@ -19,11 +19,11 @@
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-use serde::ser::{Serialize, Serializer};
+use serde::ser::{Serialize, Serializer, SerializeMap};
 use serde_json::Value;
 
 use ::error::EsError;
-use ::json::{MergeSerialize, serialize_map_kv, serialize_map_optional_kv, ShouldSkip};
+use ::json::{MergeSerialize, serialize_map_optional_kv, ShouldSkip};
 use ::query;
 use ::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
 
@@ -45,7 +45,7 @@ pub enum ExecutionHint {
 }
 
 impl Serialize for ExecutionHint {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::ExecutionHint::*;
         match self {
@@ -258,7 +258,7 @@ impl<'a> AsRef<str> for OrderKey<'a> {
 pub struct Order<'a>(OrderKey<'a>, super::super::Order);
 
 impl<'a> Serialize for Order<'a> {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         let mut d = HashMap::new();
@@ -308,21 +308,19 @@ impl<'a> Terms<'a> {
 
 impl<'a> MergeSerialize for TermsInner<'a> {
     fn merge_serialize<S>(&self,
-                          serializer: &mut S,
-                          state: &mut S::MapState) -> Result<(), S::Error>
-        where S: Serializer {
+                          serializer: &mut S) -> Result<(), S::Error>
+        where S: SerializeMap {
 
-        try!(serialize_map_optional_kv(serializer, state, "size", &self.size));
-        try!(serialize_map_optional_kv(serializer, state, "shard_size", &self.shard_size));
-        try!(serialize_map_optional_kv(serializer, state, "order", &self.order));
-        try!(serialize_map_optional_kv(serializer, state, "min_doc_count", &self.min_doc_count));
+        try!(serialize_map_optional_kv(serializer, "size", &self.size));
+        try!(serialize_map_optional_kv(serializer, "shard_size", &self.shard_size));
+        try!(serialize_map_optional_kv(serializer, "order", &self.order));
+        try!(serialize_map_optional_kv(serializer, "min_doc_count", &self.min_doc_count));
         try!(serialize_map_optional_kv(serializer,
-                                       state,
                                        "shard_min_doc_count",
                                        &self.shard_min_doc_count));
-        try!(serialize_map_optional_kv(serializer, state, "include", &self.include));
-        try!(serialize_map_optional_kv(serializer, state, "exclude", &self.exclude));
-        try!(serialize_map_optional_kv(serializer, state, "execution_hint", &self.execution_hint));
+        try!(serialize_map_optional_kv(serializer, "include", &self.include));
+        try!(serialize_map_optional_kv(serializer, "exclude", &self.exclude));
+        try!(serialize_map_optional_kv(serializer, "execution_hint", &self.execution_hint));
         Ok(())
     }
 }
@@ -382,12 +380,10 @@ impl<'a> Range<'a> {
 
 impl<'a> MergeSerialize for RangeInner<'a> {
     fn merge_serialize<S>(&self,
-                          serializer: &mut S,
-                          state: &mut S::MapState) -> Result<(), S::Error>
-        where S: Serializer {
-
-        try!(serialize_map_kv(serializer, state, "keyed", self.keyed));
-        serialize_map_kv(serializer, state, "ranges", &self.ranges)
+                          serializer: &mut S) -> Result<(), S::Error>
+        where S: SerializeMap {
+        serializer.serialize_entry("keyed", &self.keyed)?;
+        serializer.serialize_entry("ranges", &self.ranges)
     }
 }
 
@@ -441,12 +437,11 @@ impl<'a> DateRange<'a> {
 
 impl<'a> MergeSerialize for DateRangeInner<'a> {
     fn merge_serialize<S>(&self,
-                          serializer: &mut S,
-                          state: &mut S::MapState) -> Result<(), S::Error>
-        where S: Serializer {
+                          serializer: &mut S) -> Result<(), S::Error>
+        where S: SerializeMap {
 
-        try!(serialize_map_optional_kv(serializer, state, "format", &self.format));
-        serialize_map_kv(serializer, state, "ranges", &self.ranges)
+        try!(serialize_map_optional_kv(serializer, "format", &self.format));
+        serializer.serialize_entry("ranges", &self.ranges)
     }
 }
 
@@ -511,7 +506,7 @@ pub enum TimeZone<'a> {
 }
 
 impl<'a> Serialize for TimeZone<'a> {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::TimeZone::*;
         match self {
@@ -552,7 +547,7 @@ impl Default for Interval {
 }
 
 impl Serialize for Interval {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::Interval::*;
         match *self {
@@ -717,7 +712,7 @@ impl<'a> BucketAggregation<'a> {
 }
 
 impl<'a> Serialize for BucketAggregation<'a> {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::BucketAggregation::*;
         match self {
@@ -862,7 +857,7 @@ macro_rules! return_no_field {
 
 macro_rules! optional_json {
     ($j:ident, $f:expr, $a:ident) => {
-        match $j.find($f) {
+        match $j.get($f) {
             Some(val) => {
                 match val.$a() {
                     Some(field_val) => Some(field_val),
@@ -876,7 +871,7 @@ macro_rules! optional_json {
 
 macro_rules! from_json {
     ($j:ident, $f:expr, $a:ident) => {
-        match $j.find($f) {
+        match $j.get($f) {
             Some(val) => {
                 match val.$a() {
                     Some(field_val) => field_val,
@@ -1088,7 +1083,7 @@ impl TermsBucketResult {
         info!("Creating TermsBucketResult from: {:?} with {:?}", json, aggs);
 
         Ok(TermsBucketResult {
-            key: try!(JsonVal::from(match json.find("key") {
+            key: try!(JsonVal::from(match json.get("key") {
                 Some(key) => key,
                 None => return_error!("No 'key'".to_owned())
             })),
@@ -1113,8 +1108,8 @@ pub struct RangeBucketResult {
 impl RangeBucketResult {
     fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
         Ok(RangeBucketResult {
-            from:      from.find("from").and_then(|from| Some(from.into())),
-            to:        from.find("to").and_then(|to| Some(to.into())),
+            from:      from.get("from").and_then(|from| Some(from.into())),
+            to:        from.get("to").and_then(|to| Some(to.into())),
             doc_count: from_json!(from, "doc_count", as_u64),
             aggs:      extract_aggs!(from, aggs)
         })

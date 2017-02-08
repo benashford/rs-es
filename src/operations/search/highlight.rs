@@ -27,7 +27,7 @@ pub enum Encoders {
 }
 
 impl Serialize for Encoders {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         match self {
             &Encoders::Default => "default",
@@ -44,7 +44,7 @@ pub enum SettingTypes {
 }
 
 impl Serialize for SettingTypes {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         match self {
             &SettingTypes::Plain    => "plain",
@@ -60,7 +60,7 @@ pub enum IndexOptions {
 }
 
 impl Serialize for IndexOptions {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         match self {
             &IndexOptions::Offsets => "offsets"
@@ -76,7 +76,7 @@ pub enum TermVector {
 }
 
 impl Serialize for TermVector  {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         match self {
             &TermVector::WithPositionsOffsets => "with_positions_offsets",

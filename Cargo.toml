@@ -22,9 +22,9 @@ hyper = "^0.10"
 hyper-openssl = { version = "^0.2", optional = true }
 log = "^0.3"
 maplit = "^0.1"
-serde = "^0.8.19"
-serde_json = "^0.8.1"
-serde_derive = "^0.8.19"
+serde = "^0.9"
+serde_json = "^0.9"
+serde_derive = "^0.9"
 url = "^1.2"
 
 [dev-dependencies]

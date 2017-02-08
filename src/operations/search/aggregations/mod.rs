@@ -22,13 +22,12 @@ mod common;
 pub mod metrics;
 pub mod bucket;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
-use serde::ser::{Serialize, Serializer};
-use serde_json::Value;
+use serde::ser::{Serialize, Serializer, SerializeMap};
+use serde_json::{Value, Map};
 
 use ::error::EsError;
-use ::json::serialize_map_kv;
 
 use self::bucket::BucketAggregationResult;
 use self::metrics::MetricsAggregationResult;
@@ -45,10 +44,10 @@ pub enum Aggregation<'a> {
 }
 
 impl<'a> Serialize for Aggregation<'a> {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::Aggregation::*;
-        let mut state = try!(serializer.serialize_map(Some(match self {
+        let mut map = try!(serializer.serialize_map(Some(match self {
             &Metrics(_)              => 1,
             &Bucket(_, ref opt_aggs) => match opt_aggs {
                 &Some(_) => 2,
@@ -58,20 +57,20 @@ impl<'a> Serialize for Aggregation<'a> {
         match self {
             &Metrics(ref metric_agg) => {
                 let agg_name = metric_agg.details();
-                try!(serialize_map_kv(serializer, &mut state, agg_name, metric_agg));
+                try!(map.serialize_entry(agg_name, metric_agg));
             },
             &Bucket(ref bucket_agg, ref opt_aggs) => {
                 let agg_name = bucket_agg.details();
-                try!(serialize_map_kv(serializer, &mut state, agg_name, bucket_agg));
+                try!(map.serialize_entry(agg_name, bucket_agg));
                 match opt_aggs {
                     &Some(ref other_aggs) => {
-                        try!(serialize_map_kv(serializer, &mut state, "aggregations", other_aggs));
+                        try!(map.serialize_entry("aggregations", other_aggs));
                     }
                     &None => ()
                 }
             }
         }
-        serializer.serialize_map_end(state)
+        map.end()
     }
 }
 
@@ -140,7 +139,7 @@ pub struct AggregationsResult(HashMap<String, AggregationResult>);
 
 /// Loads a Json object of aggregation results into an `AggregationsResult`.
 fn object_to_result(aggs: &Aggregations,
-                    object: &BTreeMap<String, Value>) -> Result<AggregationsResult, EsError> {
+                    object: &Map<String, Value>) -> Result<AggregationsResult, EsError> {
     use self::Aggregation::*;
 
     let mut ar_map = HashMap::new();

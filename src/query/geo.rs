@@ -16,7 +16,7 @@
 
 //! Geo queries
 
-use serde::{Serialize, Serializer};
+use serde::ser::{Serialize, Serializer, SerializeMap};
 
 use ::json::{MergeSerialize, NoOuter, ShouldSkip};
 use ::units::{Distance, DistanceType, GeoBox, Location};
@@ -149,7 +149,7 @@ pub enum Type {
 }
 
 impl Serialize for Type {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::Type::*;
         match self {
@@ -207,7 +207,7 @@ pub enum OptimizeBbox {
 }
 
 impl Serialize for OptimizeBbox {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::OptimizeBbox::*;
         match self {
@@ -264,21 +264,18 @@ pub struct GeohashCellQueryOuter {
 
 impl MergeSerialize for GeohashCellQueryOuter {
     fn merge_serialize<S>(&self,
-                          serializer: &mut S,
-                          state: &mut S::MapState) -> Result<(), S::Error>
-        where S: Serializer {
+                          serializer: &mut S) -> Result<(), S::Error>
+        where S: SerializeMap {
 
         match self.precision {
             Some(ref p) => {
-                try!(serializer.serialize_map_key(state, "precision"));
-                try!(serializer.serialize_map_value(state, p));
+                serializer.serialize_entry("precision", p)?;
             },
             None => ()
         };
         match self.neighbors {
             Some(b) => {
-                try!(serializer.serialize_map_key(state, "neighbors"));
-                try!(serializer.serialize_map_value(state, b));
+                serializer.serialize_entry("neighbors", &b)?;
             },
             None => ()
         }
@@ -319,7 +316,7 @@ from!(u64, Precision, Geohash);
 from!(Distance, Precision, Distance);
 
 impl Serialize for Precision {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::Precision::*;
         match self {

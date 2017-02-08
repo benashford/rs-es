@@ -170,7 +170,7 @@ pub enum Modifier {
 }
 
 impl Serialize for Modifier {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         match self {
             &Modifier::None => "none".serialize(serializer),
@@ -263,7 +263,7 @@ from!(Location, Origin, Location);
 from!(String, Origin, Date);
 
 impl Serialize for Origin {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -299,7 +299,7 @@ from!(Distance, Scale, Distance);
 from!(Duration, Scale, Duration);
 
 impl Serialize for Scale {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -322,7 +322,7 @@ pub enum MultiValueMode {
 }
 
 impl Serialize for MultiValueMode {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::MultiValueMode::*;
         match self {

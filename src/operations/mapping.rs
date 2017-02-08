@@ -21,9 +21,9 @@
 //! [Indices API](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
 //! so subtle (potentially breaking) changes will be made to the API when that happens
 
-use std::collections::{HashMap, BTreeMap};
+use std::collections::HashMap;
 
-use serde_json::Value;
+use serde_json::{Value, Map};
 
 use hyper::status::StatusCode;
 
@@ -42,8 +42,8 @@ pub struct Settings {
 
 #[derive(Serialize)]
 pub struct Analysis {
-    pub filter:   BTreeMap<String, Value>,
-    pub analyzer: BTreeMap<String, Value>
+    pub filter:   Map<String, Value>,
+    pub analyzer: Map<String, Value>
 }
 
 /// An indexing operation
@@ -167,8 +167,6 @@ pub struct MappingResult;
 pub mod tests {
     extern crate env_logger;
 
-    use serde_json::Value;
-
     use super::*;
 
     #[derive(Debug, Serialize)]
@@ -209,23 +207,20 @@ pub mod tests {
             number_of_shards: 1,
 
             analysis: Analysis {
-                filter: btreemap! {
-                    "autocomplete_filter".to_owned() => Value::Object(btreemap! {
-                        "type".to_owned()     => Value::String("edge_ngram".to_owned()),
-                        "min_gram".to_owned() => Value::U64(1),
-                        "max_gram".to_owned() => Value::U64(20)
-                    })
-                },
-                analyzer: btreemap! {
-                    "autocomplete".to_owned()  => Value::Object(btreemap! {
-                        "type".to_owned()      => Value::String("custom".into()),
-                        "tokenizer".to_owned() => Value::String("standard".into()),
-                        "filter".to_owned()    => Value::Array(vec![
-                                                               Value::String("lowercase".into()),
-                                                               Value::String("autocomplete_filter".into())
-                        ])
-                    })
-                }
+                filter: json! ({
+                    "autocomplete_filter": {
+                        "type": "edge_ngram",
+                        "min_gram": 1,
+                        "max_gram": 2,
+                    }
+                }).as_object().expect("by construction 'autocomplete_filter' should be a map").clone(),
+                analyzer: json! ({
+                    "autocomplete": {
+                        "type": "custom",
+                        "tokenizer": "standard",
+                        "filter": [ "lowercase", "autocomplete_filter"]
+                    }
+                }).as_object().expect("by construction 'autocomplete' should be a map").clone()
             }
         };
 
