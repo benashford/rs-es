@@ -146,6 +146,31 @@ let result = client.search_query()
 
 A search query also supports [scan and scroll](#scan-and-scroll), [sorting](#sorting), and [aggregations](#aggregations).
 
+#### `count_uri`
+
+An implementation of the [Count API](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-count.html) using query strings.
+
+Example:
+
+```rust
+let result = client.count_uri()
+                   .with_indexes(&["index_name"])
+                   .with_query("field:value")
+                   .send();
+```
+
+#### `count_query`
+
+An implementation of the [Count API](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-count.html) using the [Query DSL](#the-query-dsl).
+
+```rust
+use rs_es::query::Query;
+let result = client.count_query()
+                   .with_indexes(&["index_name"])
+                   .with_query(Query::build_match("field", "value").build())
+                   .send();
+```
+
 #### `bulk`
 
 An implementation of the [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html).  This is the preferred way of indexing (or deleting, when Delete-by-Query is removed) many documents.

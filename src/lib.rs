@@ -288,8 +288,26 @@ pub mod tests {
         }
     }
 
-    pub fn clean_db(mut client: &mut Client,
-                    test_idx: &str) {
+    pub fn setup_test_data(client: &mut Client, index_name: &str) {
+        // TODO - this should use the Bulk API
+        let documents = vec![
+            TestDocument::new().with_str_field("Document A123").with_int_field(1),
+            TestDocument::new().with_str_field("Document B456").with_int_field(2),
+            TestDocument::new().with_str_field("Document 1ABC").with_int_field(3)
+                ];
+        for ref doc in documents {
+            client.index(index_name, "test_type")
+                .with_doc(doc)
+                .send()
+                .unwrap();
+        }
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
+    }
+
+    pub fn clean_db(mut client: &mut Client, test_idx: &str) {
+        // let's do some logging
+        let _ = env_logger::init();
+
         let scroll = Duration::minutes(1);
         let mut scan:ScanResult<Value> = match client.search_query()
             .with_indexes(&[test_idx])
