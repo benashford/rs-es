@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2017 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -311,16 +311,16 @@ impl<'a> MergeSerialize for TermsInner<'a> {
                           serializer: &mut S) -> Result<(), S::Error>
         where S: SerializeMap {
 
-        try!(serialize_map_optional_kv(serializer, "size", &self.size));
-        try!(serialize_map_optional_kv(serializer, "shard_size", &self.shard_size));
-        try!(serialize_map_optional_kv(serializer, "order", &self.order));
-        try!(serialize_map_optional_kv(serializer, "min_doc_count", &self.min_doc_count));
-        try!(serialize_map_optional_kv(serializer,
-                                       "shard_min_doc_count",
-                                       &self.shard_min_doc_count));
-        try!(serialize_map_optional_kv(serializer, "include", &self.include));
-        try!(serialize_map_optional_kv(serializer, "exclude", &self.exclude));
-        try!(serialize_map_optional_kv(serializer, "execution_hint", &self.execution_hint));
+        serialize_map_optional_kv(serializer, "size", &self.size)?;
+        serialize_map_optional_kv(serializer, "shard_size", &self.shard_size)?;
+        serialize_map_optional_kv(serializer, "order", &self.order)?;
+        serialize_map_optional_kv(serializer, "min_doc_count", &self.min_doc_count)?;
+        serialize_map_optional_kv(serializer,
+            "shard_min_doc_count",
+            &self.shard_min_doc_count)?;
+        serialize_map_optional_kv(serializer, "include", &self.include)?;
+        serialize_map_optional_kv(serializer, "exclude", &self.exclude)?;
+        serialize_map_optional_kv(serializer, "execution_hint", &self.execution_hint)?;
         Ok(())
     }
 }
@@ -440,7 +440,7 @@ impl<'a> MergeSerialize for DateRangeInner<'a> {
                           serializer: &mut S) -> Result<(), S::Error>
         where S: SerializeMap {
 
-        try!(serialize_map_optional_kv(serializer, "format", &self.format));
+        serialize_map_optional_kv(serializer, "format", &self.format)?;
         serializer.serialize_entry("ranges", &self.ranges)
     }
 }
@@ -760,50 +760,50 @@ impl BucketAggregationResult {
         use self::BucketAggregation::*;
         Ok(match ba {
             &Global(_) => {
-                BucketAggregationResult::Global(try!(GlobalResult::from(json, aggs)))
+                BucketAggregationResult::Global(GlobalResult::from(json, aggs)?)
             },
             &BucketAggregation::Filter(_) => {
-                BucketAggregationResult::Filter(try!(FilterResult::from(json, aggs)))
+                BucketAggregationResult::Filter(FilterResult::from(json, aggs)?)
             },
             &BucketAggregation::Filters(_) => {
-                BucketAggregationResult::Filters(try!(FiltersResult::from(json, aggs)))
+                BucketAggregationResult::Filters(FiltersResult::from(json, aggs)?)
             },
             &BucketAggregation::Missing(_) => {
-                BucketAggregationResult::Missing(try!(MissingResult::from(json, aggs)))
+                BucketAggregationResult::Missing(MissingResult::from(json, aggs)?)
             },
             &BucketAggregation::Nested(_) => {
-                BucketAggregationResult::Nested(try!(NestedResult::from(json, aggs)))
+                BucketAggregationResult::Nested(NestedResult::from(json, aggs)?)
             },
             &BucketAggregation::ReverseNested(_) => {
-                BucketAggregationResult::ReverseNested(try!(ReverseNestedResult::from(json,
-                                                                                      aggs)))
+                BucketAggregationResult::ReverseNested(ReverseNestedResult::from(json,
+                                                                                 aggs)?)
             },
             &BucketAggregation::Children(_) => {
-                BucketAggregationResult::Children(try!(ChildrenResult::from(json, aggs)))
+                BucketAggregationResult::Children(ChildrenResult::from(json, aggs)?)
             },
             &BucketAggregation::Terms(_) => {
-                BucketAggregationResult::Terms(try!(TermsResult::from(json, aggs)))
+                BucketAggregationResult::Terms(TermsResult::from(json, aggs)?)
             },
             &BucketAggregation::Range(_) => {
-                BucketAggregationResult::Range(try!(RangeResult::from(json, aggs)))
+                BucketAggregationResult::Range(RangeResult::from(json, aggs)?)
             },
             &BucketAggregation::DateRange(_) => {
-                BucketAggregationResult::DateRange(try!(DateRangeResult::from(json, aggs)))
+                BucketAggregationResult::DateRange(DateRangeResult::from(json, aggs)?)
             },
             &BucketAggregation::Histogram(_) => {
-                BucketAggregationResult::Histogram(try!(HistogramResult::from(json, aggs)))
+                BucketAggregationResult::Histogram(HistogramResult::from(json, aggs)?)
             },
             &BucketAggregation::DateHistogram(_) => {
-                BucketAggregationResult::DateHistogram(try!(DateHistogramResult::from(json,
-                                                                                      aggs)))
+                BucketAggregationResult::DateHistogram(DateHistogramResult::from(json,
+                    aggs)?)
             },
             &BucketAggregation::GeoDistance(_) => {
-                BucketAggregationResult::GeoDistance(try!(GeoDistanceResult::from(json,
-                                                                                  aggs)))
+                BucketAggregationResult::GeoDistance(GeoDistanceResult::from(json,
+                    aggs)?)
             },
             &BucketAggregation::GeohashGrid(_) => {
-                BucketAggregationResult::GeohashGrid(try!(GeohashGridResult::from(json,
-                                                                                  aggs)))
+                BucketAggregationResult::GeohashGrid(GeohashGridResult::from(json,
+                    aggs)?)
             }
         })
     }
@@ -891,7 +891,7 @@ macro_rules! extract_aggs {
                     Some(field_val) => field_val,
                     None => return_error!("Not an object".to_owned())
                 };
-                Some(try!(object_to_result(aggs, obj)))
+                Some(object_to_result(aggs, obj)?)
             },
             &None => None
         }
@@ -978,7 +978,7 @@ impl FiltersResult {
                 let raw_buckets = from_json!(from, "buckets", as_object);
                 let mut buckets = HashMap::with_capacity(raw_buckets.len());
                 for (k, v) in raw_buckets.iter() {
-                    buckets.insert(k.clone(), try!(FiltersBucketResult::from(v, aggs)));
+                    buckets.insert(k.clone(), FiltersBucketResult::from(v, aggs)?);
                 }
                 buckets
             }
@@ -1083,10 +1083,10 @@ impl TermsBucketResult {
         info!("Creating TermsBucketResult from: {:?} with {:?}", json, aggs);
 
         Ok(TermsBucketResult {
-            key: try!(JsonVal::from(match json.get("key") {
+            key: JsonVal::from(match json.get("key") {
                 Some(key) => key,
                 None => return_error!("No 'key'".to_owned())
-            })),
+            })?,
             doc_count: from_json!(json, "doc_count", as_u64),
             aggs: extract_aggs!(json, aggs)
         })
@@ -1129,7 +1129,7 @@ impl RangeResult {
         let mut buckets = HashMap::with_capacity(bucket_obj.len());
 
         for (k, v) in bucket_obj.into_iter() {
-            buckets.insert(k.clone(), try!(RangeBucketResult::from(v, aggs)));
+            buckets.insert(k.clone(), RangeBucketResult::from(v, aggs)?);
         }
 
         Ok(RangeResult {
