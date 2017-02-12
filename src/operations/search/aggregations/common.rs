@@ -18,7 +18,7 @@
 
 use std::collections::HashMap;
 
-use serde::ser::{Serialize, Serializer};
+use serde::ser::{Serialize, Serializer, SerializeMap};
 
 use ::json::{MergeSerialize, serialize_map_optional_kv};
 use ::units::JsonVal;
@@ -52,7 +52,7 @@ macro_rules! agg {
         }
 
         impl<'a> Serialize for $b<'a> {
-            fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
                 where S: Serializer {
 
                 self.0.serialize(serializer)
@@ -93,20 +93,20 @@ macro_rules! add_extra_option {
 impl<'a, E> Serialize for Agg<'a, E>
     where E: MergeSerialize {
 
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
-        let mut state = try!(serializer.serialize_map(None));
+        let mut map = try!(serializer.serialize_map(None));
 
-        try!(serialize_map_optional_kv(serializer, &mut state, "field", &self.field));
-        try!(serialize_map_optional_kv(serializer, &mut state, "inline", &self.script.inline));
-        try!(serialize_map_optional_kv(serializer, &mut state, "file", &self.script.file));
-        try!(serialize_map_optional_kv(serializer, &mut state, "id", &self.script.id));
-        try!(serialize_map_optional_kv(serializer, &mut state, "params", &self.script.params));
-        try!(serialize_map_optional_kv(serializer, &mut state, "missing", &self.missing));
-        try!(self.extra.merge_serialize(serializer, &mut state));
+        try!(serialize_map_optional_kv(&mut map, "field", &self.field));
+        try!(serialize_map_optional_kv(&mut map, "inline", &self.script.inline));
+        try!(serialize_map_optional_kv(&mut map, "file", &self.script.file));
+        try!(serialize_map_optional_kv(&mut map, "id", &self.script.id));
+        try!(serialize_map_optional_kv(&mut map, "params", &self.script.params));
+        try!(serialize_map_optional_kv(&mut map, "missing", &self.missing));
+        try!(self.extra.merge_serialize(&mut map));
 
-        serializer.serialize_map_end(state)
+        map.end()
     }
 }
 

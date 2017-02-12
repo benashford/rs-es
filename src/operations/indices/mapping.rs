@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Ben Ashford
+ * Copyright 2016-2017 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ impl Default for FieldType {
 }
 
 impl Serialize for FieldType {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::FieldType::*;
         match self {
@@ -114,7 +114,7 @@ impl From<bool> for Dynamic {
 }
 
 impl Serialize for Dynamic {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         match self {
             &Dynamic::True => true.serialize(serializer),
@@ -131,7 +131,7 @@ pub enum Index {
 }
 
 impl Serialize for Index {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::Index::*;
         match self {

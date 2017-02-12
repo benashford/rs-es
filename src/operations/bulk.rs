@@ -30,6 +30,7 @@ use ::units::Duration;
 
 use super::ShardCountResult;
 use super::common::{Options, OptionVal, VersionType};
+use std::fmt;
 
 pub enum ActionType {
     Index,
@@ -40,7 +41,7 @@ pub enum ActionType {
 }
 
 impl Serialize for ActionType {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         self.to_string().serialize(serializer)
@@ -273,7 +274,7 @@ pub struct ActionResult {
 }
 
 impl Deserialize for ActionResult {
-    fn deserialize<D>(deserializer: &mut D) -> Result<ActionResult, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<ActionResult, D::Error>
         where D: Deserializer {
 
         struct ActionResultVisitor;
@@ -281,7 +282,11 @@ impl Deserialize for ActionResult {
         impl Visitor for ActionResultVisitor {
             type Value = ActionResult;
 
-            fn visit_map<V>(&mut self, mut visitor: V) -> Result<ActionResult, V::Error>
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("an ActionResult")
+            }
+
+            fn visit_map<V>(self, mut visitor: V) -> Result<ActionResult, V::Error>
                 where V: MapVisitor {
 
                 let visited:Option<(String, ActionResultInner)> = try!(visitor.visit());
@@ -289,7 +294,6 @@ impl Deserialize for ActionResult {
                     Some((key, value)) => (key, value),
                     None               => return Err(V::Error::custom("expecting at least one field"))
                 };
-                try!(visitor.end());
 
                 let result = ActionResult {
                     action: match key.as_ref() {

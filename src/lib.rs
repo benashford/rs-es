@@ -29,6 +29,8 @@
 extern crate serde_derive;
 
 extern crate serde;
+
+#[macro_use]
 extern crate serde_json;
 
 #[macro_use]
@@ -63,19 +65,19 @@ use error::EsError;
 use url::Url;
 
 pub trait EsResponse {
-    fn status_code<'a>(&'a self) -> &'a StatusCode;
+    fn status_code(&self) -> &StatusCode;
     fn read_response<R>(self) -> Result<R, EsError> where R: Deserialize;
 }
 
 impl EsResponse for client::response::Response {
-    fn status_code<'a>(&'a self) -> &'a StatusCode {
+    fn status_code(&self) -> &StatusCode {
         &self.status
     }
 
     fn read_response<R>(self) -> Result<R, EsError>
         where R: Deserialize {
 
-        Ok(try!(serde_json::from_reader(self)))
+        Ok(serde_json::from_reader(self)?)
     }
 }
 
@@ -133,10 +135,10 @@ macro_rules! es_op {
         fn $n(&mut self, url: &str) -> Result<client::response::Response, EsError> {
             info!("Doing {} on {}", stringify!($n), url);
             let url = self.full_url(url);
-            let result = try!(self.http_client
-                              .$cn(&url)
-                              .headers(self.headers.clone())
-                              .send());
+            let result = self.http_client
+                .$cn(&url)
+                .headers(self.headers.clone())
+                .send()?;
             do_req(result)
         }
     }
@@ -151,15 +153,15 @@ macro_rules! es_body_op {
             where E: Serialize {
 
             info!("Doing {} on {}", stringify!($n), url);
-            let json_string = try!(serde_json::to_string(body));
+            let json_string = serde_json::to_string(body)?;
             debug!("Body send: {}", &json_string);
 
             let url = self.full_url(url);
-            let result = try!(self.http_client
-                              .$cn(&url)
-                              .headers(self.headers.clone())
-                              .body(&json_string)
-                              .send());
+            let result = self.http_client
+                .$cn(&url)
+                .headers(self.headers.clone())
+                .body(&json_string)
+                .send()?;
 
             do_req(result)
         }
@@ -181,7 +183,7 @@ fn http_client() -> hyper::Client {
 impl Client {
     /// Create a new client
     pub fn new(url_s: &str) -> Result<Client, url::ParseError> {
-        let url = try!(Url::parse(url_s));
+        let url = Url::parse(url_s)?;
 
         Ok(Client {
             http_client: http_client(),
@@ -285,6 +287,22 @@ pub mod tests {
         }
     }
 
+    pub fn setup_test_data(client: &mut Client, index_name: &str) {
+        // TODO - this should use the Bulk API
+        let documents = vec![
+            TestDocument::new().with_str_field("Document A123").with_int_field(1),
+            TestDocument::new().with_str_field("Document B456").with_int_field(2),
+            TestDocument::new().with_str_field("Document 1ABC").with_int_field(3)
+                ];
+        for ref doc in documents {
+            client.index(index_name, "test_type")
+                .with_doc(doc)
+                .send()
+                .unwrap();
+        }
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
+    }
+
     /// Delete an index
     pub fn delete_index(mut client: &mut Client,
                         test_idx:   &str) {
@@ -306,6 +324,9 @@ pub mod tests {
     /// for resetting the state before a test
     pub fn clean_db(mut client: &mut Client,
                     test_idx: &str) {
+        // let's do some logging
+        let _ = env_logger::init();
+
         let scroll = Duration::minutes(1);
         let mut scan:ScanResult<Value> = match client.search_query()
             .with_indexes(&[test_idx])

@@ -18,6 +18,7 @@
 
 pub mod aggregations;
 pub mod highlight;
+pub mod count;
 
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
@@ -85,7 +86,7 @@ impl ToString for Order {
 }
 
 impl Serialize for Order {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         self.to_string().serialize(serializer)
@@ -101,7 +102,7 @@ pub enum Mode {
 }
 
 impl Serialize for Mode {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -121,7 +122,7 @@ pub enum Missing {
 }
 
 impl Serialize for Missing {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -299,7 +300,7 @@ pub enum SortBy {
 }
 
 impl Serialize for SortBy {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -325,7 +326,7 @@ pub struct Sort {
 }
 
 impl Serialize for Sort {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         self.fields.serialize(serializer)
@@ -465,7 +466,7 @@ pub enum Source<'a> {
 }
 
 impl<'a> Serialize for Source<'a> {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -552,7 +553,7 @@ struct SearchQueryOperationBody<'b> {
     /// Highlight
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     highlight: Option<&'b highlight::Highlight>,
-    
+
     /// Version
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     version: Option<bool>
@@ -1030,7 +1031,7 @@ mod tests {
 
     use ::Client;
 
-    use ::tests::{clean_db, make_client, TestDocument};
+    use ::tests::{clean_db, make_client, setup_test_data, TestDocument};
 
     use ::operations::bulk::Action;
     use ::query::Query;
@@ -1068,29 +1069,13 @@ mod tests {
         client.refresh().with_indexes(&[index_name]).send().unwrap();
     }
 
-    fn setup_search_test_data(client: &mut Client, index_name: &str) {
-        // TODO - this should use the Bulk API
-        let documents = vec![
-            TestDocument::new().with_str_field("Document A123").with_int_field(1),
-            TestDocument::new().with_str_field("Document B456").with_int_field(2),
-            TestDocument::new().with_str_field("Document 1ABC").with_int_field(3)
-                ];
-        for ref doc in documents {
-            client.index(index_name, "test_type")
-                .with_doc(doc)
-                .send()
-                .unwrap();
-        }
-        client.refresh().with_indexes(&[index_name]).send().unwrap();
-    }
-
     #[test]
     fn test_search_uri() {
         let index_name = "test_search_uri";
         let mut client = make_client();
 
         clean_db(&mut client, index_name);
-        setup_search_test_data(&mut client, index_name);
+        setup_test_data(&mut client, index_name);
 
         let all_results:SearchResult<TestDocument> = client
             .search_uri()
@@ -1133,7 +1118,7 @@ mod tests {
         let index_name = "test_search_body";
         let mut client = make_client();
         clean_db(&mut client, index_name);
-        setup_search_test_data(&mut client, index_name);
+        setup_test_data(&mut client, index_name);
 
         let all_results:SearchResult<TestDocument> = client
             .search_query()
@@ -1213,7 +1198,7 @@ mod tests {
         let mut client = make_client();
         let index_name = "test_version";
         ::tests::clean_db(&mut client, index_name);
-        setup_search_test_data(&mut client, index_name);
+        setup_test_data(&mut client, index_name);
 
         let indexes = [index_name];
 
@@ -1226,12 +1211,12 @@ mod tests {
                 .unwrap();
 
             assert_eq!(3, results.hits.total);
-            
+
             let result_versions:Vec<u64> = results.hits.hits
                 .into_iter()
                 .map(|doc| doc.version.unwrap())
                 .collect();
-            
+
             // Update a document when the update API is implemented to verify that the version comes back correctly
             let expected_result_versions:Vec<u64> = vec![1, 1, 1].into_iter()
                 .map(|x| x.to_owned())
@@ -1239,7 +1224,7 @@ mod tests {
 
             assert_eq!(expected_result_versions, result_versions);
         }
-        
+
         // Version: false
         {
             let results: SearchResult<TestDocument> = client.search_query()
@@ -1247,12 +1232,12 @@ mod tests {
                 .with_version(false)
                 .send()
                 .unwrap();
-                
+
             let result_versions:Vec<Option<u64>> = results.hits.hits
                 .into_iter()
                 .map(|doc| doc.version)
                 .collect();
-            
+
             for maybe_version in &result_versions {
                 assert!(maybe_version.is_none())
             }
@@ -1264,19 +1249,19 @@ mod tests {
                 .with_indexes(&indexes)
                 .send()
                 .unwrap();
-                
+
             let result_versions:Vec<Option<u64>> = results.hits.hits
                 .into_iter()
                 .map(|doc| doc.version)
                 .collect();
-            
+
             for maybe_version in &result_versions {
                 assert!(maybe_version.is_none())
             }
         }
     }
 
-    
+
 
     #[test]
     fn test_scan_and_iterate() {
@@ -1325,8 +1310,8 @@ mod tests {
         assert_eq!(1, result.hits.hits.len());
         let json = result.hits.hits.remove(0).source.unwrap();
 
-        assert_eq!(true, json.find("str_field").is_some());
-        assert_eq!(false, json.find("int_field").is_some());
+        assert_eq!(true, json.get("str_field").is_some());
+        assert_eq!(false, json.get("int_field").is_some());
     }
 
     #[test]
@@ -1427,11 +1412,11 @@ mod tests {
             .value;
 
         match min_a {
-            &JsonVal::F64(i) => assert_eq!(1.0, i),
+            &JsonVal::Number(ref i) => assert_eq!(Some(1.0), i.as_f64()),
             _                => panic!("Not an integer")
         }
         match min_b {
-            &JsonVal::F64(i) => assert_eq!(2.0, i),
+            &JsonVal::Number(ref i) => assert_eq!(Some(2.0), i.as_f64()),
             _                => panic!("Not an integer")
         }
     }
@@ -1466,7 +1451,7 @@ mod tests {
             .value;
 
         match min {
-            &JsonVal::F64(i) => assert_eq!(1.0, i),
+            &JsonVal::Number(ref i) => assert_eq!(Some(1.0), i.as_f64()),
             _                => panic!("Not an integer")
         }
     }

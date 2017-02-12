@@ -25,10 +25,11 @@ use std::collections::{BTreeMap, HashMap};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de;
-use serde_json::Value;
+use serde_json::{Value, Number};
 
 use ::error::EsError;
 use ::operations::common::OptionVal;
+use std::fmt;
 
 /// The units by which duration is measured.
 ///
@@ -141,7 +142,7 @@ impl Default for Location {
 }
 
 impl Deserialize for Location {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: Deserializer {
 
         // TODO - maybe use a specific struct?
@@ -157,7 +158,7 @@ from_exp!((f64, f64), Location, from, Location::LatLon(from.0, from.1));
 from!(String, Location, GeoHash);
 
 impl Serialize for Location {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -189,7 +190,7 @@ impl Default for GeoBox {
 }
 
 impl Deserialize for GeoBox {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: Deserializer {
 
         // TODO - maybe use a specific struct?
@@ -213,7 +214,7 @@ from_exp!((f64, f64, f64, f64),
           GeoBox::Vertices(from.0, from.1, from.2, from.3));
 
 impl Serialize for GeoBox {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::GeoBox::*;
         match self {
@@ -251,7 +252,7 @@ impl<T: Default> Default for OneOrMany<T> {
 
 impl<T> Serialize for OneOrMany<T>
     where T: Serialize {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         match self {
             &OneOrMany::One(ref t) => t.serialize(serializer),
@@ -281,7 +282,7 @@ pub enum DistanceType {
 }
 
 impl Serialize for DistanceType {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -329,7 +330,7 @@ impl ToString for DistanceUnit {
 }
 
 impl Serialize for DistanceUnit {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         self.to_string().serialize(serializer)
@@ -353,7 +354,7 @@ impl Distance {
 }
 
 impl Serialize for Distance {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         format!("{}{}", self.amt, self.unit.to_string()).serialize(serializer)
@@ -394,9 +395,7 @@ json_potential!(bool);
 #[derive(Debug)]
 pub enum JsonVal {
     String(String),
-    I64(i64),
-    U64(u64),
-    F64(f64),
+    Number(Number),
     Boolean(bool)
 }
 
@@ -406,9 +405,7 @@ impl JsonVal {
         Ok(match from {
             &String(ref string) => JsonVal::String(string.clone()),
             &Bool(b) => JsonVal::Boolean(b),
-            &I64(i) => JsonVal::I64(i),
-            &U64(u) => JsonVal::U64(u),
-            &F64(f) => JsonVal::F64(f),
+            &Number(ref i) => JsonVal::Number(i.clone()),
             _ => return Err(EsError::EsError(format!("Not a JsonVal: {:?}",
                                                      from)))
         })
@@ -422,20 +419,18 @@ impl Default for JsonVal {
 }
 
 impl Serialize for JsonVal {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         match self {
             &JsonVal::String(ref s) => s.serialize(serializer),
-            &JsonVal::I64(i) => i.serialize(serializer),
-            &JsonVal::U64(u) => u.serialize(serializer),
-            &JsonVal::F64(f) => f.serialize(serializer),
+            &JsonVal::Number(ref i) => i.serialize(serializer),
             &JsonVal::Boolean(b) => b.serialize(serializer)
         }
     }
 }
 
 impl Deserialize for JsonVal {
-    fn deserialize<D>(deserializer: &mut D) -> Result<JsonVal, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<JsonVal, D::Error>
         where D: Deserializer {
 
         deserializer.deserialize(JsonValVisitor)
@@ -447,27 +442,31 @@ struct JsonValVisitor;
 impl de::Visitor for JsonValVisitor {
     type Value = JsonVal;
 
-    fn visit_string<E>(&mut self, s: String) -> Result<JsonVal, E>
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a json value")
+    }
+
+    fn visit_string<E>(self, s: String) -> Result<JsonVal, E>
         where E: de::Error {
         Ok(JsonVal::String(s))
     }
 
-    fn visit_i64<E>(&mut self, i: i64) -> Result<JsonVal, E>
+    fn visit_i64<E>(self, i: i64) -> Result<JsonVal, E>
         where E: de::Error {
-        Ok(JsonVal::I64(i))
+        Ok(JsonVal::Number(i.into()))
     }
 
-    fn visit_u64<E>(&mut self, u: u64) -> Result<JsonVal, E>
+    fn visit_u64<E>(self, u: u64) -> Result<JsonVal, E>
         where E: de::Error {
-        Ok(JsonVal::U64(u))
+        Ok(JsonVal::Number(u.into()))
     }
 
-    fn visit_f64<E>(&mut self, f: f64) -> Result<JsonVal, E>
+    fn visit_f64<E>(self, f: f64) -> Result<JsonVal, E>
         where E: de::Error {
-        Ok(JsonVal::F64(f))
+        Ok(JsonVal::Number(Number::from_f64(f).ok_or_else(|| de::Error::custom("not a float"))?))
     }
 
-    fn visit_bool<E>(&mut self, b: bool) -> Result<JsonVal, E>
+    fn visit_bool<E>(self, b: bool) -> Result<JsonVal, E>
         where E: de::Error {
         Ok(JsonVal::Boolean(b))
     }
@@ -494,12 +493,12 @@ impl<'a> From<&'a str> for JsonVal {
     }
 }
 
-from_exp!(f32, JsonVal, from, JsonVal::F64(from as f64));
-from!(f64, JsonVal, F64);
-from_exp!(i32, JsonVal, from, JsonVal::I64(from as i64));
-from!(i64, JsonVal, I64);
-from_exp!(u32, JsonVal, from, JsonVal::U64(from as u64));
-from!(u64, JsonVal, U64);
+from_exp!(f32, JsonVal, from, JsonVal::Number(Number::from_f64(from as f64).unwrap()));
+from_exp!(f64, JsonVal, from, JsonVal::Number(Number::from_f64(from).unwrap()));
+from_exp!(i32, JsonVal, from, JsonVal::Number(from.into()));
+from_exp!(i64, JsonVal, from, JsonVal::Number(from.into()));
+from_exp!(u32, JsonVal, from, JsonVal::Number(from.into()));
+from_exp!(u64, JsonVal, from, JsonVal::Number(from.into()));
 from!(bool, JsonVal, Boolean);
 
 impl<'a> From<&'a Value> for JsonVal {
@@ -507,9 +506,7 @@ impl<'a> From<&'a Value> for JsonVal {
         use serde_json::Value::*;
         match from {
             &String(ref s) => JsonVal::String(s.clone()),
-            &F64(f) => JsonVal::F64(f),
-            &I64(f) => JsonVal::I64(f),
-            &U64(f) => JsonVal::U64(f),
+            &Number(ref f) => JsonVal::Number(f.clone()),
             &Bool(b) => JsonVal::Boolean(b),
             _ => panic!("Not a String, F64, I64, U64 or Boolean")
         }
