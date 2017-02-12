@@ -36,7 +36,7 @@ pub enum BoostMode {
 }
 
 impl Serialize for BoostMode {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -248,7 +248,7 @@ pub enum NoMatchQuery {
 from_exp!(Query, NoMatchQuery, from, NoMatchQuery::Query(from));
 
 impl Serialize for NoMatchQuery {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::NoMatchQuery::*;
         match self {

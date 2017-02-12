@@ -18,11 +18,11 @@
 
 use std::collections::HashMap;
 
-use serde::ser::{Serialize, Serializer};
+use serde::ser::{Serialize, Serializer, SerializeMap};
 use serde_json::{from_value, Value};
 
 use ::error::EsError;
-use ::json::{MergeSerialize, NoOuter, serialize_map_kv, serialize_map_optional_kv, ShouldSkip};
+use ::json::{MergeSerialize, NoOuter, serialize_map_optional_kv, ShouldSkip};
 use ::units::{GeoBox, JsonVal};
 
 use super::{Aggregation, AggregationResult};
@@ -101,12 +101,11 @@ impl<'a> Percentiles<'a> {
 
 impl MergeSerialize for PercentilesExtra {
     fn merge_serialize<S>(&self,
-                          serializer: &mut S,
-                          state: &mut S::MapState) -> Result<(), S::Error>
-        where S: Serializer {
+                          serializer: &mut S) -> Result<(), S::Error>
+        where S: SerializeMap {
 
-        try!(serialize_map_optional_kv(serializer, state, "percents", &self.percents));
-        serialize_map_optional_kv(serializer, state, "compression", &self.compression)
+        try!(serialize_map_optional_kv(serializer, "percents", &self.percents));
+        serialize_map_optional_kv(serializer, "compression", &self.compression)
     }
 }
 
@@ -131,11 +130,9 @@ impl<'a> PercentileRanks<'a> {
 
 impl MergeSerialize for PercentileRanksExtra {
     fn merge_serialize<S>(&self,
-                          serializer: &mut S,
-                          state: &mut S::MapState) -> Result<(), S::Error>
-        where S: Serializer {
-
-        serialize_map_kv(serializer, state, "values", &self.values)
+                          serializer: &mut S) -> Result<(), S::Error>
+        where S: SerializeMap {
+        serializer.serialize_entry("values", &self.values)
     }
 }
 
@@ -157,15 +154,13 @@ impl<'a> Cardinality<'a> {
 
 impl MergeSerialize for CardinalityExtra {
     fn merge_serialize<S>(&self,
-                          serializer: &mut S,
-                          state: &mut S::MapState) -> Result<(), S::Error>
-        where S: Serializer {
+                          serializer: &mut S) -> Result<(), S::Error>
+        where S: SerializeMap {
 
         try!(serialize_map_optional_kv(serializer,
-                                       state,
                                        "precision_threshold",
                                        &self.precision_threshold));
-        serialize_map_optional_kv(serializer, state, "rehash", &self.rehash)
+        serialize_map_optional_kv(serializer, "rehash", &self.rehash)
     }
 }
 
@@ -284,7 +279,7 @@ impl<'a> MetricsAggregation<'a> {
 }
 
 impl<'a> Serialize for MetricsAggregation<'a> {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::MetricsAggregation::*;
         match self {

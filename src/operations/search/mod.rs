@@ -86,7 +86,7 @@ impl ToString for Order {
 }
 
 impl Serialize for Order {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         self.to_string().serialize(serializer)
@@ -102,7 +102,7 @@ pub enum Mode {
 }
 
 impl Serialize for Mode {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -122,7 +122,7 @@ pub enum Missing {
 }
 
 impl Serialize for Missing {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -300,7 +300,7 @@ pub enum SortBy {
 }
 
 impl Serialize for SortBy {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -326,7 +326,7 @@ pub struct Sort {
 }
 
 impl Serialize for Sort {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         self.fields.serialize(serializer)
@@ -466,7 +466,7 @@ pub enum Source<'a> {
 }
 
 impl<'a> Serialize for Source<'a> {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -1310,8 +1310,8 @@ mod tests {
         assert_eq!(1, result.hits.hits.len());
         let json = result.hits.hits.remove(0).source.unwrap();
 
-        assert_eq!(true, json.find("str_field").is_some());
-        assert_eq!(false, json.find("int_field").is_some());
+        assert_eq!(true, json.get("str_field").is_some());
+        assert_eq!(false, json.get("int_field").is_some());
     }
 
     #[test]
@@ -1412,11 +1412,11 @@ mod tests {
             .value;
 
         match min_a {
-            &JsonVal::F64(i) => assert_eq!(1.0, i),
+            &JsonVal::Number(ref i) => assert_eq!(Some(1.0), i.as_f64()),
             _                => panic!("Not an integer")
         }
         match min_b {
-            &JsonVal::F64(i) => assert_eq!(2.0, i),
+            &JsonVal::Number(ref i) => assert_eq!(Some(2.0), i.as_f64()),
             _                => panic!("Not an integer")
         }
     }
@@ -1451,7 +1451,7 @@ mod tests {
             .value;
 
         match min {
-            &JsonVal::F64(i) => assert_eq!(1.0, i),
+            &JsonVal::Number(ref i) => assert_eq!(Some(1.0), i.as_f64()),
             _                => panic!("Not an integer")
         }
     }

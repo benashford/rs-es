@@ -42,9 +42,9 @@
 
 use std::collections::BTreeMap;
 
-use serde::{Serialize, Serializer};
+use serde::ser::{Serialize, Serializer, SerializeMap};
 
-use ::json::{serialize_map_kv, ShouldSkip};
+use ::json::ShouldSkip;
 use ::util::StrJoin;
 
 #[macro_use]
@@ -89,7 +89,7 @@ impl ToString for CombinationMinimumShouldMatch {
 }
 
 impl Serialize for CombinationMinimumShouldMatch {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         self.to_string().serialize(serializer)
     }
@@ -129,7 +129,7 @@ impl ToString for MinimumShouldMatch {
 }
 
 impl Serialize for MinimumShouldMatch {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         match self {
             &MinimumShouldMatch::Integer(val) => val.serialize(serializer),
@@ -160,7 +160,7 @@ from!(i64, Fuzziness, LevenshteinDistance);
 from!(f64, Fuzziness, Proportionate);
 
 impl Serialize for Fuzziness {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         use self::Fuzziness::*;
@@ -184,7 +184,7 @@ pub struct Flags<A>(Vec<A>)
 impl<A> Serialize for Flags<A>
     where A: AsRef<str> {
 
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         self.0.iter().join("|").serialize(serializer)
@@ -211,7 +211,7 @@ pub enum ScoreMode {
 }
 
 impl Serialize for ScoreMode {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         match self {
             &ScoreMode::Multiply => "multiply".serialize(serializer),
@@ -305,70 +305,58 @@ impl Default for Query {
 }
 
 impl Serialize for Query {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::Query::*;
 
-        let mut state = try!(serializer.serialize_map(Some(1)));
+        let mut map_ser = try!(serializer.serialize_map(Some(1)));
         try!(match self {
             // All
-            &MatchAll(ref q) => serialize_map_kv(serializer, &mut state, "match_all", q),
+            &MatchAll(ref q) => map_ser.serialize_entry("match_all", q),
 
             // Full-text
-            &Match(ref q) => serialize_map_kv(serializer, &mut state, "match", q),
-            &MultiMatch(ref q) => serialize_map_kv(serializer, &mut state, "multi_match", q),
-            &Common(ref q) => serialize_map_kv(serializer, &mut state, "common", q),
-            &QueryString(ref q) => serialize_map_kv(serializer, &mut state, "query_string", q),
-            &SimpleQueryString(ref q) => serialize_map_kv(serializer,
-                                                          &mut state,
-                                                          "simple_query_string",
-                                                          q),
+            &Match(ref q) => map_ser.serialize_entry("match", q),
+            &MultiMatch(ref q) => map_ser.serialize_entry("multi_match", q),
+            &Common(ref q) => map_ser.serialize_entry("common", q),
+            &QueryString(ref q) => map_ser.serialize_entry("query_string", q),
+            &SimpleQueryString(ref q) => map_ser.serialize_entry("simple_query_string", q),
 
             // Term
-            &Term(ref q) => serialize_map_kv(serializer, &mut state, "term", q),
-            &Terms(ref q) => serialize_map_kv(serializer, &mut state, "terms", q),
-            &Range(ref q) => serialize_map_kv(serializer, &mut state, "range", q),
-            &Exists(ref q) => serialize_map_kv(serializer, &mut state, "exists", q),
-            &Prefix(ref q) => serialize_map_kv(serializer, &mut state, "prefix", q),
-            &Wildcard(ref q) => serialize_map_kv(serializer, &mut state, "wildcard", q),
-            &Regexp(ref q) => serialize_map_kv(serializer, &mut state, "regexp", q),
-            &Fuzzy(ref q) => serialize_map_kv(serializer, &mut state, "fuzzy", q),
-            &Type(ref q) => serialize_map_kv(serializer, &mut state, "type", q),
-            &Ids(ref q) => serialize_map_kv(serializer, &mut state, "ids", q),
+            &Term(ref q) => map_ser.serialize_entry("term", q),
+            &Terms(ref q) => map_ser.serialize_entry("terms", q),
+            &Range(ref q) => map_ser.serialize_entry("range", q),
+            &Exists(ref q) => map_ser.serialize_entry("exists", q),
+            &Prefix(ref q) => map_ser.serialize_entry("prefix", q),
+            &Wildcard(ref q) => map_ser.serialize_entry("wildcard", q),
+            &Regexp(ref q) => map_ser.serialize_entry("regexp", q),
+            &Fuzzy(ref q) => map_ser.serialize_entry("fuzzy", q),
+            &Type(ref q) => map_ser.serialize_entry("type", q),
+            &Ids(ref q) => map_ser.serialize_entry("ids", q),
 
             // Compound
-            &ConstantScore(ref q) => serialize_map_kv(serializer,
-                                                      &mut state,
-                                                      "constant_score",
-                                                      q),
-            &Bool(ref q) => serialize_map_kv(serializer, &mut state, "bool", q),
-            &DisMax(ref q) => serialize_map_kv(serializer, &mut state, "dis_max", q),
-            &FunctionScore(ref q) => serialize_map_kv(serializer,
-                                                      &mut state,
-                                                      "function_score",
-                                                      q),
-            &Boosting(ref q) => serialize_map_kv(serializer, &mut state, "boosting", q),
-            &Indices(ref q) => serialize_map_kv(serializer, &mut state, "indices", q),
+            &ConstantScore(ref q) => map_ser.serialize_entry("constant_score", q),
+            &Bool(ref q) => map_ser.serialize_entry("bool", q),
+            &DisMax(ref q) => map_ser.serialize_entry("dis_max", q),
+            &FunctionScore(ref q) => map_ser.serialize_entry("function_score", q),
+            &Boosting(ref q) => map_ser.serialize_entry("boosting", q),
+            &Indices(ref q) => map_ser.serialize_entry("indices", q),
 
             // Joining
-            &Nested(ref q) => serialize_map_kv(serializer, &mut state, "nested", q),
-            &HasChild(ref q) => serialize_map_kv(serializer, &mut state, "has_child", q),
-            &HasParent(ref q) => serialize_map_kv(serializer, &mut state, "has_parent", q),
+            &Nested(ref q) => map_ser.serialize_entry("nested", q),
+            &HasChild(ref q) => map_ser.serialize_entry("has_child", q),
+            &HasParent(ref q) => map_ser.serialize_entry("has_parent", q),
 
             // Geo
-            &GeoShape(ref q) => serialize_map_kv(serializer, &mut state, "geo_shape", q),
-            &GeoBoundingBox(ref q) => serialize_map_kv(serializer,
-                                                       &mut state,
-                                                       "geo_bounding_box",
-                                                       q),
-            &GeoDistance(ref q) => serialize_map_kv(serializer, &mut state, "geo_distance", q),
-            &GeoPolygon(ref q) => serialize_map_kv(serializer, &mut state, "geo_polygon", q),
-            &GeohashCell(ref q) => serialize_map_kv(serializer, &mut state, "geohash_cell", q),
+            &GeoShape(ref q) => map_ser.serialize_entry("geo_shape", q),
+            &GeoBoundingBox(ref q) => map_ser.serialize_entry("geo_bounding_box", q),
+            &GeoDistance(ref q) => map_ser.serialize_entry("geo_distance", q),
+            &GeoPolygon(ref q) => map_ser.serialize_entry("geo_polygon", q),
+            &GeohashCell(ref q) => map_ser.serialize_entry("geohash_cell", q),
 
             // Specialized
-            &MoreLikeThis(ref q) => serialize_map_kv(serializer, &mut state, "more_like_this", q)
+            &MoreLikeThis(ref q) => map_ser.serialize_entry("more_like_this", q)
         });
-        serializer.serialize_map_end(state)
+        map_ser.end()
     }
 }
 

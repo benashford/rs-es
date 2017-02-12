@@ -37,7 +37,7 @@ pub enum Rewrite {
 }
 
 impl Serialize for Rewrite {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::Rewrite::*;
         match self {
@@ -131,7 +131,7 @@ pub enum TermsQueryIn {
 
 // TODO - if this looks useful it can be extracted into a macro
 impl Serialize for TermsQueryIn {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         match self {
             &TermsQueryIn::Values(ref q) => q.serialize(serializer),

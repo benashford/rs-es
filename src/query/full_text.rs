@@ -35,7 +35,7 @@ pub enum MatchType {
 }
 
 impl Serialize for MatchType {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::MatchType::*;
         match self {
@@ -55,7 +55,7 @@ pub enum ZeroTermsQuery {
 }
 
 impl Serialize for ZeroTermsQuery {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
         match self {
@@ -76,7 +76,7 @@ pub enum MatchQueryType {
 }
 
 impl Serialize for MatchQueryType {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::MatchQueryType::*;
         match self {
