@@ -36,7 +36,7 @@ impl From<OpType> for OptionVal {
 }
 
 /// An indexing operation
-pub struct IndexOperation<'a, 'b, E: Serialize + 'b> {
+pub struct IndexOperation<'a, 'b, 'c, E: Serialize + 'c> {
     /// The HTTP client that this operation will use
     client:   &'a mut Client,
 
@@ -53,11 +53,11 @@ pub struct IndexOperation<'a, 'b, E: Serialize + 'b> {
     options:  Options<'b>,
 
     /// The document to be indexed
-    document: Option<&'b E>
+    document: Option<&'c E>
 }
 
-impl<'a, 'b, E: Serialize + 'b> IndexOperation<'a, 'b, E> {
-    pub fn new(client: &'a mut Client, index: &'b str, doc_type: &'b str) -> IndexOperation<'a, 'b, E> {
+impl<'a, 'b, 'c, E: Serialize + 'c> IndexOperation<'a, 'b, 'c, E> {
+    pub fn new(client: &'a mut Client, index: &'b str, doc_type: &'b str) -> IndexOperation<'a, 'b, 'c, E> {
         IndexOperation {
             client:   client,
             index:    index,
@@ -68,7 +68,7 @@ impl<'a, 'b, E: Serialize + 'b> IndexOperation<'a, 'b, E> {
         }
     }
 
-    pub fn with_doc(&'b mut self, doc: &'b E) -> &'b mut Self {
+    pub fn with_doc(&mut self, doc: &'c E) -> &mut Self {
         self.document = Some(doc);
         self
     }
@@ -122,8 +122,8 @@ impl Client {
     /// An index operation to index a document in the specified index.
     ///
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-index_.html
-    pub fn index<'a, 'b, E: Serialize>(&'a mut self, index: &'b str, doc_type: &'b str)
-                                       -> IndexOperation<'a, 'b, E> {
+    pub fn index<'a, 'b, 'c, E: Serialize>(&'a mut self, index: &'b str, doc_type: &'b str)
+                                           -> IndexOperation<'a, 'b, 'c, E> {
         IndexOperation::new(self, index, doc_type)
     }
 }
@@ -140,6 +140,31 @@ pub struct IndexResult {
     #[serde(rename="_version")]
     pub version:  u64,
     pub created:  bool
+}
+
+#[cfg(test)]
+pub mod throw_away_test {
+    use ::Client;
+    use super::IndexOperation;
+    use serde::Serialize;
+
+    use tests::{make_client};
+
+    const INDEX_NAME: &'static str = "my_index";
+
+    struct Wrapper(Client);
+
+    impl Wrapper {
+        fn get_index_operation<'a, 'b, 'c, T: Serialize>(&'a mut self, doc: &'c T) -> &'a mut IndexOperation<'a, 'b, 'c, T> {
+            let client = &mut self.0;
+            client.index(INDEX_NAME, "type").with_doc(doc)
+        }
+    }
+
+    #[test]
+    fn test_wrapper() {
+        let wrapper = Wrapper(make_client());
+    }
 }
 
 #[cfg(test)]
