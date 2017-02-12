@@ -87,7 +87,7 @@ impl<F, I, O> Serialize for FieldBased<F, I, O>
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
-        let mut map = try!(serializer.serialize_map(None));
+        let mut map = serializer.serialize_map(None)?;
 
         map.serialize_entry(&self.field, &self.inner)?;
         self.outer.merge_serialize(&mut map)?;

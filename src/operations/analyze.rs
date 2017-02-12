@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2017 Ben Ashford
  * Copyright 2015 Astro
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,17 +40,17 @@ impl<'a, 'b> AnalyzeOperation<'a, 'b> {
         }
     }
 
-    pub fn with_index(&'b mut self, index: &'b str) -> &'b mut Self {
+    pub fn with_index(&mut self, index: &'b str) -> &mut Self {
         self.index = Some(index);
         self
     }
 
-    pub fn with_analyzer(&'b mut self, analyzer: &'b str) -> &'b mut Self {
+    pub fn with_analyzer(&mut self, analyzer: &'b str) -> &mut Self {
         self.analyzer = Some(analyzer);
         self
     }
 
-    pub fn send(&'b mut self) -> Result<AnalyzeResult, EsError> {
+    pub fn send(&mut self) -> Result<AnalyzeResult, EsError> {
         let mut url = match self.index {
             None => "/_analyze".to_owned(),
             Some(index) => format!("{}/_analyze", index)
@@ -63,12 +63,12 @@ impl<'a, 'b> AnalyzeOperation<'a, 'b> {
         }
         let client = &self.client;
         let full_url = client.full_url(&url);
-        let req = try!(client.http_client
-                       .post(&full_url)
-                       .body(self.body)
-                       .send());
-        let response = try!(do_req(req));
-        Ok(try!(response.read_response()))
+        let req = client.http_client
+            .post(&full_url)
+            .body(self.body)
+            .send()?;
+        let response = do_req(req)?;
+        Ok(response.read_response()?)
     }
 }
 
