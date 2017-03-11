@@ -109,14 +109,14 @@ impl<S> Action<S>
 
     /// Add the serialized version of this action to the bulk `String`.
     fn add(&self, actstr: &mut String) -> Result<(), EsError> {
-        let command_str = try!(serde_json::to_string(&self.0));
+        let command_str = serde_json::to_string(&self.0)?;
 
         actstr.push_str(&command_str);
         actstr.push_str("\n");
 
         match self.1 {
             Some(ref source) => {
-                let payload_str = try!(serde_json::to_string(source));
+                let payload_str = serde_json::to_string(source)?;
                 actstr.push_str(&payload_str);
                 actstr.push_str("\n");
             },
@@ -240,16 +240,16 @@ impl<'a, 'b, S> BulkOperation<'a, 'b, S>
         let body = self.format_actions();
         debug!("Sending: {}", body);
         // Doesn't use the standard macros as it's not standard JSON
-        let result = try!(self.client.http_client
-                          .post(&full_url)
-                          .body(&body)
-                          .headers(self.client.headers.clone())
-                          .send());
+        let result = self.client.http_client
+                       .post(&full_url)
+                       .body(&body)
+                       .headers(self.client.headers.clone())
+                       .send()?;
 
-        let response = try!(do_req(result));
+        let response = do_req(result)?;
 
         match response.status_code() {
-            &StatusCode::Ok => Ok(try!(response.read_response())),
+            &StatusCode::Ok => Ok(response.read_response()?),
             _              => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
         }
     }
@@ -289,7 +289,7 @@ impl Deserialize for ActionResult {
             fn visit_map<V>(self, mut visitor: V) -> Result<ActionResult, V::Error>
                 where V: MapVisitor {
 
-                let visited:Option<(String, ActionResultInner)> = try!(visitor.visit());
+                let visited:Option<(String, ActionResultInner)> = visitor.visit()?;
                 let (key, value) = match visited {
                     Some((key, value)) => (key, value),
                     None               => return Err(V::Error::custom("expecting at least one field"))

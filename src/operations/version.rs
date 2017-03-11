@@ -31,8 +31,8 @@ impl<'a> VersionOperation<'a> {
     }
 
     pub fn send(&mut self) -> Result<VersionResult, EsError> {
-        let response = try!(self.client.get_op("/"));
-        Ok(try!(response.read_response()))
+        let response = self.client.get_op("/")?;
+        Ok(response.read_response()?)
     }
 }
 

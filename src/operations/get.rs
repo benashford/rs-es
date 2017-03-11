@@ -102,8 +102,8 @@ impl<'a, 'b> GetOperation<'a, 'b> {
                           self.options);
         // We're ignoring status_code as all valid codes should return a value,
         // so anything else is an error.
-        let response = try!(self.client.get_op(&url));
-        Ok(try!(response.read_response()))
+        let response = self.client.get_op(&url)?;
+        Ok(response.read_response()?)
     }
 }
 

@@ -47,24 +47,24 @@ impl<'a> Serialize for Aggregation<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
         use self::Aggregation::*;
-        let mut map = try!(serializer.serialize_map(Some(match self {
+        let mut map = (serializer.serialize_map(Some(match self {
             &Metrics(_)              => 1,
             &Bucket(_, ref opt_aggs) => match opt_aggs {
                 &Some(_) => 2,
                 &None    => 1
             }
-        })));
+        })))?;
         match self {
             &Metrics(ref metric_agg) => {
                 let agg_name = metric_agg.details();
-                try!(map.serialize_entry(agg_name, metric_agg));
+                map.serialize_entry(agg_name, metric_agg)?;
             },
             &Bucket(ref bucket_agg, ref opt_aggs) => {
                 let agg_name = bucket_agg.details();
-                try!(map.serialize_entry(agg_name, bucket_agg));
+                map.serialize_entry(agg_name, bucket_agg)?;
                 match opt_aggs {
                     &Some(ref other_aggs) => {
-                        try!(map.serialize_entry("aggregations", other_aggs));
+                        map.serialize_entry("aggregations", other_aggs)?;
                     }
                     &None => ()
                 }
@@ -151,12 +151,12 @@ fn object_to_result(aggs: &Aggregations,
         };
         ar_map.insert(owned_key, match val {
             &Metrics(ref ma) => {
-                AggregationResult::Metrics(try!(MetricsAggregationResult::from(ma, json)))
+                AggregationResult::Metrics(MetricsAggregationResult::from(ma, json)?)
             },
             &Aggregation::Bucket(ref ba, ref aggs) => {
-                AggregationResult::Bucket(try!(BucketAggregationResult::from(ba,
-                                                                             json,
-                                                                             aggs)))
+                AggregationResult::Bucket(BucketAggregationResult::from(ba,
+                                                                        json,
+                                                                        aggs)?)
             }
         });
     }

@@ -69,10 +69,10 @@ impl<'a> Options<'a> {
 impl<'a> fmt::Display for Options<'a> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         if !self.is_empty() {
-            try!(formatter.write_str("?"));
-            try!(formatter.write_str(&self.0.iter().map(|&(ref k, ref v)| {
+            formatter.write_str("?")?;
+            formatter.write_str(&self.0.iter().map(|&(ref k, ref v)| {
                 format!("{}={}", k, v.0)
-            }).join("&")));
+            }).join("&"))?;
         }
         Ok(())
     }

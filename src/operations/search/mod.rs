@@ -444,10 +444,10 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
         info!("Searching with: {}", url);
-        let response = try!(self.client.get_op(&url));
+        let response = self.client.get_op(&url)?;
         match response.status_code() {
             &StatusCode::Ok => {
-                let interim:SearchResultInterim<T> = try!(response.read_response());
+                let interim:SearchResultInterim<T> = response.read_response()?;
                 Ok(interim.finalize())
             },
             _ => Err(EsError::EsError(format!("Unexpected status: {}",
@@ -683,18 +683,17 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
-        let response = try!(self.client.post_body_op(&url, &self.body));
+        let response = self.client.post_body_op(&url, &self.body)?;
         match response.status_code() {
             &StatusCode::Ok => {
-                let interim:SearchResultInterim<T> = try!(response.read_response());
+                let interim:SearchResultInterim<T> = response.read_response()?;
                 let aggs = match &interim.aggs {
                     &Some(ref raw_aggs) => {
                         let req_aggs = match &self.body.aggs {
                             &Some(ref aggs) => aggs,
                             &None => return Err(EsError::EsError("No aggs despite being in results".to_owned()))
                         };
-                        Some(try!(AggregationsResult::from(req_aggs,
-                                                           raw_aggs)))
+                        Some(AggregationsResult::from(req_aggs, raw_aggs)?)
                     },
                     &None => None
                 };
@@ -716,18 +715,17 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
-        let response = try!(self.client.post_body_op(&url, &self.body));
+        let response = self.client.post_body_op(&url, &self.body)?;
         match response.status_code() {
             &StatusCode::Ok => {
-                let interim:ScanResultInterim<T> = try!(response.read_response());
+                let interim:ScanResultInterim<T> = response.read_response()?;
                 let aggs = match &interim.aggs {
                     &Some(ref raw_aggs) => {
                         let req_aggs = match &self.body.aggs {
                             &Some(ref aggs) => aggs,
                             &None => return Err(EsError::EsError("No aggs despite being in results".to_owned()))
                         };
-                        Some(try!(AggregationsResult::from(req_aggs,
-                                                           raw_aggs)))
+                        Some(AggregationsResult::from(req_aggs, raw_aggs)?)
                     },
                     &None => None
                 };
@@ -989,10 +987,10 @@ impl<T> ScanResult<T>
         let url = format!("/_search/scroll?scroll={}&scroll_id={}",
                           scroll.to_string(),
                           self.scroll_id);
-        let response = try!(client.get_op(&url));
+        let response = client.get_op(&url)?;
         match response.status_code() {
             &StatusCode::Ok => {
-                let search_result:SearchResultInterim<T> = try!(response.read_response());
+                let search_result:SearchResultInterim<T> = response.read_response()?;
                 self.scroll_id = match search_result.scroll_id {
                     Some(ref id) => id.clone(),
                     None     => {
@@ -1012,7 +1010,7 @@ impl<T> ScanResult<T>
     /// Calls ES to close the server-side part of the scan/scroll operation
     pub fn close(&self, client: &mut Client) -> Result<(), EsError> {
         let url = format!("/_search/scroll?scroll_id={}", self.scroll_id);
-        let response = try!(client.delete_op(&url));
+        let response = client.delete_op(&url)?;
         match response.status_code() {
             &StatusCode::Ok       => Ok(()), // closed
             &StatusCode::NotFound => Ok(()), // previously closed

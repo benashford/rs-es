@@ -104,7 +104,7 @@ impl MergeSerialize for PercentilesExtra {
                           serializer: &mut S) -> Result<(), S::Error>
         where S: SerializeMap {
 
-        try!(serialize_map_optional_kv(serializer, "percents", &self.percents));
+        serialize_map_optional_kv(serializer, "percents", &self.percents)?;
         serialize_map_optional_kv(serializer, "compression", &self.compression)
     }
 }
@@ -157,9 +157,9 @@ impl MergeSerialize for CardinalityExtra {
                           serializer: &mut S) -> Result<(), S::Error>
         where S: SerializeMap {
 
-        try!(serialize_map_optional_kv(serializer,
-                                       "precision_threshold",
-                                       &self.precision_threshold));
+        serialize_map_optional_kv(serializer,
+                                  "precision_threshold",
+                                  &self.precision_threshold)?;
         serialize_map_optional_kv(serializer, "rehash", &self.rehash)
     }
 }
@@ -324,40 +324,40 @@ impl MetricsAggregationResult {
         let json = json.clone();
         Ok(match ma {
             &Min(_) => {
-                MetricsAggregationResult::Min(try!(from_value(json)))
+                MetricsAggregationResult::Min(from_value(json)?)
             },
             &Max(_) => {
-                MetricsAggregationResult::Max(try!(from_value(json)))
+                MetricsAggregationResult::Max(from_value(json)?)
             },
             &Sum(_) => {
-                MetricsAggregationResult::Sum(try!(from_value(json)))
+                MetricsAggregationResult::Sum(from_value(json)?)
             },
             &Avg(_) => {
-                MetricsAggregationResult::Avg(try!(from_value(json)))
+                MetricsAggregationResult::Avg(from_value(json)?)
             },
             &Stats(_) => {
-                MetricsAggregationResult::Stats(try!(from_value(json)))
+                MetricsAggregationResult::Stats(from_value(json)?)
             },
             &ExtendedStats(_) => {
-                MetricsAggregationResult::ExtendedStats(try!(from_value(json)))
+                MetricsAggregationResult::ExtendedStats(from_value(json)?)
             },
             &ValueCount(_) => {
-                MetricsAggregationResult::ValueCount(try!(from_value(json)))
+                MetricsAggregationResult::ValueCount(from_value(json)?)
             }
             &Percentiles(_) => {
-                MetricsAggregationResult::Percentiles(try!(from_value(json)))
+                MetricsAggregationResult::Percentiles(from_value(json)?)
             },
             &PercentileRanks(_) => {
-                MetricsAggregationResult::PercentileRanks(try!(from_value(json)))
+                MetricsAggregationResult::PercentileRanks(from_value(json)?)
             },
             &Cardinality(_) => {
-                MetricsAggregationResult::Cardinality(try!(from_value(json)))
+                MetricsAggregationResult::Cardinality(from_value(json)?)
             },
             &GeoBounds(_) => {
-                MetricsAggregationResult::GeoBounds(try!(from_value(json)))
+                MetricsAggregationResult::GeoBounds(from_value(json)?)
             },
             &ScriptedMetric(_) => {
-                MetricsAggregationResult::ScriptedMetric(try!(from_value(json)))
+                MetricsAggregationResult::ScriptedMetric(from_value(json)?)
             }
         })
     }

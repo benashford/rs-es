@@ -47,9 +47,9 @@ impl<'a, 'b> RefreshOperation<'a, 'b> {
     pub fn send(&mut self) -> Result<RefreshResult, EsError> {
         let url = format!("/{}/_refresh",
                           format_multi(&self.indexes));
-        let response = try!(self.client.post_op(&url));
+        let response = self.client.post_op(&url)?;
         match response.status_code() {
-            &StatusCode::Ok => Ok(try!(response.read_response())),
+            &StatusCode::Ok => Ok(response.read_response()?),
             _              => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
         }
     }

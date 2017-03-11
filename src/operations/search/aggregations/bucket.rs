@@ -904,7 +904,7 @@ macro_rules! from_bucket_vector {
             let raw_buckets = from_json!($j, "buckets", as_array);
             let mut buckets = Vec::with_capacity(raw_buckets.len());
             for $b in raw_buckets.iter() {
-                buckets.push(try!($m))
+                buckets.push($m?)
             }
             buckets
         }

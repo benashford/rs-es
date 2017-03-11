@@ -96,15 +96,15 @@ impl<'a, E> Serialize for Agg<'a, E>
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
 
-        let mut map = try!(serializer.serialize_map(None));
+        let mut map = serializer.serialize_map(None)?;
 
-        try!(serialize_map_optional_kv(&mut map, "field", &self.field));
-        try!(serialize_map_optional_kv(&mut map, "inline", &self.script.inline));
-        try!(serialize_map_optional_kv(&mut map, "file", &self.script.file));
-        try!(serialize_map_optional_kv(&mut map, "id", &self.script.id));
-        try!(serialize_map_optional_kv(&mut map, "params", &self.script.params));
-        try!(serialize_map_optional_kv(&mut map, "missing", &self.missing));
-        try!(self.extra.merge_serialize(&mut map));
+        serialize_map_optional_kv(&mut map, "field", &self.field)?;
+        serialize_map_optional_kv(&mut map, "inline", &self.script.inline)?;
+        serialize_map_optional_kv(&mut map, "file", &self.script.file)?;
+        serialize_map_optional_kv(&mut map, "id", &self.script.id)?;
+        serialize_map_optional_kv(&mut map, "params", &self.script.params)?;
+        serialize_map_optional_kv(&mut map, "missing", &self.missing)?;
+        self.extra.merge_serialize(&mut map)?;
 
         map.end()
     }
