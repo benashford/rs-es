@@ -91,7 +91,7 @@ impl<'a, 'b, E: Serialize + 'b> IndexOperation<'a, 'b, E> {
     pub fn send(&'b mut self) -> Result<IndexResult, EsError> {
         // Ignoring status_code as everything should return an IndexResult or
         // already be an error
-        let response = try!(match self.id {
+        let response = (match self.id {
             Some(ref id) => {
                 let url = format!("/{}/{}/{}{}",
                                   self.index,
@@ -113,8 +113,8 @@ impl<'a, 'b, E: Serialize + 'b> IndexOperation<'a, 'b, E> {
                     None          => self.client.post_op(&url)
                 }
             }
-        });
-        Ok(try!(response.read_response()))
+        })?;
+        Ok(response.read_response()?)
     }
 }
 

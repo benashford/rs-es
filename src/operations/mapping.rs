@@ -99,7 +99,7 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
         if self.settings.is_some() {
             let body = hashmap! { "settings" => self.settings.unwrap() };
             let url = format!("{}", self.index);
-            let _   = try!(self.client.put_body_op(&url, &body));
+            let _   = self.client.put_body_op(&url, &body)?;
 
             let _ = self.client.wait_for_status("yellow", "5s");
         }
@@ -110,7 +110,7 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
             for (entity, properties) in self.mapping.unwrap().iter() {
                 let body = hashmap! { "properties" => properties };
                 let url  = format!("{}/_mapping/{}", self.index, entity);
-                let _   = try!(self.client.put_body_op(&url, &body));
+                let _   = self.client.put_body_op(&url, &body)?;
             }
 
             let _ = self.client.open_index(self.index);
@@ -124,10 +124,10 @@ impl Client {
     /// Open the index, making it available.
     pub fn open_index<'a>(&'a mut self, index: &'a str) -> Result<GenericResult, EsError> {
         let url = format!("{}/_open", index);
-        let response = try!(self.post_op(&url));
+        let response = self.post_op(&url)?;
 
         match response.status_code() {
-            &StatusCode::Ok => Ok(try!(response.read_response())),
+            &StatusCode::Ok => Ok(response.read_response()?),
             _ => Err(EsError::EsError(format!("Unexpected status: {}",
                                               response.status_code())))
         }
@@ -136,10 +136,10 @@ impl Client {
     /// Close the index, making it unavailable and modifiable.
     pub fn close_index<'a>(&'a mut self, index: &'a str) -> Result<GenericResult, EsError> {
         let url = format!("{}/_close", index);
-        let response = try!(self.post_op(&url));
+        let response = self.post_op(&url)?;
 
         match response.status_code() {
-            &StatusCode::Ok => Ok(try!(response.read_response())),
+            &StatusCode::Ok => Ok(response.read_response()?),
             _ => Err(EsError::EsError(format!("Unexpected status: {}",
                                               response.status_code())))
         }
@@ -149,7 +149,7 @@ impl Client {
     /// https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html
     pub fn wait_for_status<'a>(&'a mut self, status: &'a str, timeout: &'a str) -> Result<(), EsError> {
         let url = format!("_cluster/health?wait_for_status={}&timeout={}", status, timeout);
-        let response = try!(self.get_op(&url));
+        let response = self.get_op(&url)?;
 
         match response.status_code() {
             &StatusCode::Ok => Ok(()),

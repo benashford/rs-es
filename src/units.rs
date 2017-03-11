@@ -146,7 +146,7 @@ impl Deserialize for Location {
         where D: Deserializer {
 
         // TODO - maybe use a specific struct?
-        let mut raw_location = try!(HashMap::<String, f64>::deserialize(deserializer));
+        let mut raw_location = HashMap::<String, f64>::deserialize(deserializer)?;
         Ok(Location::LatLon(
             raw_location.remove("lat").unwrap(),
             raw_location.remove("lon").unwrap()
@@ -194,7 +194,7 @@ impl Deserialize for GeoBox {
         where D: Deserializer {
 
         // TODO - maybe use a specific struct?
-        let mut raw_geo_box = try!(HashMap::<String, Location>::deserialize(deserializer));
+        let mut raw_geo_box = HashMap::<String, Location>::deserialize(deserializer)?;
         Ok(GeoBox::Corners(
             raw_geo_box.remove("top_left").unwrap(),
             raw_geo_box.remove("bottom_right").unwrap()

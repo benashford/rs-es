@@ -70,9 +70,9 @@ impl<'a, 'b> CountURIOperation<'a, 'b> {
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
         info!("Counting with: {}", url);
-        let response = try!(self.client.get_op(&url));
+        let response = self.client.get_op(&url)?;
         match response.status_code() {
-            &StatusCode::Ok => Ok(try!(response.read_response())),
+            &StatusCode::Ok => Ok(response.read_response()?),
             _ => Err(EsError::EsError(format!("Unexpected status: {}",
                                               response.status_code())))
         }
@@ -141,9 +141,9 @@ impl <'a, 'b> CountQueryOperation<'a, 'b> {
         let url = format!("/{}/_count{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
                           self.options);
-        let response = try!(self.client.post_body_op(&url, &self.body));
+        let response = self.client.post_body_op(&url, &self.body)?;
         match response.status_code() {
-            &StatusCode::Ok => Ok(try!(response.read_response())),
+            &StatusCode::Ok => Ok(response.read_response()?),
             _ => Err(EsError::EsError(format!("Unexpected status: {}",
                                               response.status_code())))
         }

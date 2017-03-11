@@ -67,10 +67,10 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
                           self.doc_type,
                           self.id,
                           self.options);
-        let response = try!(self.client.delete_op(&url));
+        let response = self.client.delete_op(&url)?;
         match response.status_code() {
             &StatusCode::Ok =>
-                Ok(try!(response.read_response())),
+                Ok(response.read_response()?),
             _ =>
                 Err(EsError::EsError(format!("Unexpected status: {}",
                                              response.status_code())))

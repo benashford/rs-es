@@ -309,8 +309,8 @@ impl Serialize for Query {
         where S: Serializer {
         use self::Query::*;
 
-        let mut map_ser = try!(serializer.serialize_map(Some(1)));
-        try!(match self {
+        let mut map_ser = serializer.serialize_map(Some(1))?;
+        (match self {
             // All
             &MatchAll(ref q) => map_ser.serialize_entry("match_all", q),
 
@@ -355,7 +355,7 @@ impl Serialize for Query {
 
             // Specialized
             &MoreLikeThis(ref q) => map_ser.serialize_entry("more_like_this", q)
-        });
+        })?;
         map_ser.end()
     }
 }

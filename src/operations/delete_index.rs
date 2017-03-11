@@ -32,10 +32,10 @@ impl Client {
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/2.x/indices-delete-index.html
     pub fn delete_index<'a>(&'a mut self, index: &'a str) -> Result<GenericResult, EsError> {
         let url = format!("/{}/", index);
-        let response = try!(self.delete_op(&url));
+        let response = self.delete_op(&url)?;
 
         match response.status_code() {
-            &StatusCode::Ok => Ok(try!(response.read_response())),
+            &StatusCode::Ok => Ok(response.read_response()?),
             _ => Err(EsError::EsError(format!("Unexpected status: {}",
                                               response.status_code())))
         }
