@@ -162,15 +162,38 @@ impl Serialize for Type {
 /// Geo Distance query
 ///
 /// TODO: Specific full unit test for querying with a generated query from here
-#[derive(Debug, Default, Serialize)]
-pub struct GeoDistanceQuery {
-    field: String,
-    location: Location,
+#[derive(Debug, Serialize)]
+pub struct GeoDistanceQuery(FieldBasedQuery<Location, GeoDistanceQueryOuter>);
+
+#[derive(Debug, Default)]
+struct GeoDistanceQueryOuter {
     distance: Distance,
     distance_type: Option<DistanceType>,
     optimize_bbox: Option<OptimizeBbox>,
     coerce: Option<bool>,
     ignore_malformed: Option<bool>
+}
+
+impl MergeSerialize for GeoDistanceQueryOuter {
+    fn merge_serialize<S>(&self,
+                          serializer: &mut S) -> Result<(), S::Error>
+        where S: SerializeMap {
+
+        serializer.serialize_entry("distance", &self.distance)?;
+        if let Some(ref t) = self.distance_type {
+            serializer.serialize_entry("distance_type", t)?;
+        }
+        if let Some(ref b) = self.optimize_bbox {
+            serializer.serialize_entry("optimize_bbox", b)?;
+        }
+        if let Some(ref b) = self.coerce {
+            serializer.serialize_entry("coerce", b)?;
+        }
+        if let Some(ref b) = self.ignore_malformed {
+            serializer.serialize_entry("ignore_malformed", b)?;
+        }
+        Ok(())
+    }
 }
 
 impl Query {
@@ -180,20 +203,19 @@ impl Query {
         where A: Into<String>,
               B: Into<Location>,
               C: Into<Distance> {
-        GeoDistanceQuery {
-            field: field.into(),
-            location: location.into(),
+        let outer = GeoDistanceQueryOuter {
             distance: distance.into(),
             ..Default::default()
-        }
+        };
+        GeoDistanceQuery(FieldBasedQuery::new(field.into(), location.into(), outer))
     }
 }
 
 impl GeoDistanceQuery {
-    add_field!(with_distance_type, distance_type, DistanceType);
-    add_field!(with_optimize_bbox, optimize_bbox, OptimizeBbox);
-    add_field!(with_coerce, coerce, bool);
-    add_field!(with_ignore_malformed, ignore_malformed, bool);
+    add_outer_field!(with_distance_type, distance_type, DistanceType);
+    add_outer_field!(with_optimize_bbox, optimize_bbox, OptimizeBbox);
+    add_outer_field!(with_coerce, coerce, bool);
+    add_outer_field!(with_ignore_malformed, ignore_malformed, bool);
 
     build!(GeoDistance);
 }
