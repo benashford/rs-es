@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Ben Ashford
+ * Copyright 2016-2017 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 use serde::ser::{Serialize, Serializer, SerializeMap};
 
-use ::json::{MergeSerialize, NoOuter, ShouldSkip};
+use ::json::{MergeSerialize, NoOuter, serialize_map_optional_kv, ShouldSkip};
 use ::units::{Distance, DistanceType, GeoBox, Location};
 
 use super::Query;
@@ -180,18 +180,10 @@ impl MergeSerialize for GeoDistanceQueryOuter {
         where S: SerializeMap {
 
         serializer.serialize_entry("distance", &self.distance)?;
-        if let Some(ref t) = self.distance_type {
-            serializer.serialize_entry("distance_type", t)?;
-        }
-        if let Some(ref b) = self.optimize_bbox {
-            serializer.serialize_entry("optimize_bbox", b)?;
-        }
-        if let Some(ref b) = self.coerce {
-            serializer.serialize_entry("coerce", b)?;
-        }
-        if let Some(ref b) = self.ignore_malformed {
-            serializer.serialize_entry("ignore_malformed", b)?;
-        }
+        serialize_map_optional_kv(serializer, "distance_type", &self.distance_type)?;
+        serialize_map_optional_kv(serializer, "optimize_bbox", &self.optimize_bbox)?;
+        serialize_map_optional_kv(serializer, "coerce", &self.coerce)?;
+        serialize_map_optional_kv(serializer, "ignore_malformed", &self.ignore_malformed)?;
         Ok(())
     }
 }

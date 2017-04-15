@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Ben Ashford
+ * Copyright 2016-2017 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,11 +37,8 @@ pub fn serialize_map_optional_kv<S, K, V>(map_ser: &mut S,
     where S: SerializeMap,
           K: Serialize,
           V: Serialize {
-    match value {
-        &Some(ref x) => {
-            map_ser.serialize_entry(&key, &x)?;
-        }
-        &None => ()
+    if let &Some(ref x) = value {
+        map_ser.serialize_entry(&key, x)?;
     }
     Ok(())
 }
