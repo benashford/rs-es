@@ -281,18 +281,8 @@ impl MergeSerialize for GeohashCellQueryOuter {
                           serializer: &mut S) -> Result<(), S::Error>
         where S: SerializeMap {
 
-        match self.precision {
-            Some(ref p) => {
-                serializer.serialize_entry("precision", p)?;
-            },
-            None => ()
-        };
-        match self.neighbors {
-            Some(b) => {
-                serializer.serialize_entry("neighbors", &b)?;
-            },
-            None => ()
-        }
+        serialize_map_optional_kv(serializer, "precision", &self.precision)?;
+        serialize_map_optional_kv(serializer, "neighbors", &self.neighbors)?;
         Ok(())
     }
 }
