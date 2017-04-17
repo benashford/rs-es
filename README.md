@@ -6,6 +6,7 @@
 [![](https://img.shields.io/crates/dv/rs-es.svg)](https://crates.io/crates/rs-es)
 [![Coverage Status](https://coveralls.io/repos/github/benashford/rs-es/badge.svg?branch=master)](https://coveralls.io/github/benashford/rs-es?branch=master)
 [![](https://docs.rs/mio/badge.svg)](https://docs.rs/rs-es/)
+[![Dependency Status](https://dependencyci.com/github/benashford/rs-es/badge)](https://dependencyci.com/github/benashford/rs-es)
 
 ## Introduction
 
