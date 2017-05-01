@@ -61,7 +61,7 @@ use hyper::status::StatusCode;
 use hyper::header::{Headers, Authorization, Basic};
 
 use serde::ser::Serialize;
-use serde::de::{Deserialize, DeserializeOwned};
+use serde::de::DeserializeOwned;
 
 use error::EsError;
 

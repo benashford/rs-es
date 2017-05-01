@@ -16,7 +16,7 @@
 
 //! Implementation of the Get API
 
-use serde::de::{Deserialize, DeserializeOwned};
+use serde::de::DeserializeOwned;
 
 use ::{Client, EsResponse};
 use ::error::EsError;
@@ -120,8 +120,7 @@ impl Client {
 
 /// The result of a GET request
 #[derive(Debug, Deserialize)]
-#[serde(bound(deserialize = ""))]
-pub struct GetResult<T: DeserializeOwned> {
+pub struct GetResult<T> {
     #[serde(rename="_index")]
     pub index:    String,
     #[serde(rename="_type")]

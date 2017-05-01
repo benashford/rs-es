@@ -25,7 +25,7 @@ use std::fmt::Debug;
 
 use hyper::status::StatusCode;
 
-use serde::de::{Deserialize, DeserializeOwned};
+use serde::de::DeserializeOwned;
 use serde::ser::{Serialize, Serializer};
 use serde_json::Value;
 
@@ -758,8 +758,7 @@ impl Client {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(bound(deserialize = ""))]
-pub struct SearchHitsHitsResult<T: DeserializeOwned> {
+pub struct SearchHitsHitsResult<T> {
     #[serde(rename="_index")]
     pub index: String,
     #[serde(rename="_type")]
@@ -781,8 +780,7 @@ pub struct SearchHitsHitsResult<T: DeserializeOwned> {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(bound(deserialize = ""))]
-pub struct SearchHitsResult<T: DeserializeOwned> {
+pub struct SearchHitsResult<T> {
     pub total: u64,
     pub hits:  Vec<SearchHitsHitsResult<T>>
 }
@@ -814,8 +812,7 @@ impl<T> SearchHitsResult<T>
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(bound(deserialize = ""))]
-pub struct SearchResultInterim<T: DeserializeOwned> {
+pub struct SearchResultInterim<T> {
     pub took:      u64,
     pub timed_out: bool,
 
@@ -848,7 +845,7 @@ impl<T> SearchResultInterim<T>
 }
 
 #[derive(Debug)]
-pub struct SearchResult<T: DeserializeOwned> {
+pub struct SearchResult<T> {
     pub took:      u64,
     pub timed_out: bool,
     pub shards:    ShardCountResult,
@@ -934,8 +931,7 @@ impl<'a, T> Iterator for ScanIterator<'a, T>
 /// See also the [official ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/guide/current/scan-scroll.html)
 /// for proper use of this functionality.
 #[derive(Deserialize)]
-#[serde(bound(deserialize = ""))]
-pub struct ScanResultInterim<T: DeserializeOwned> {
+pub struct ScanResultInterim<T> {
     #[serde(rename="_scroll_id")]
     scroll_id:     String,
     took:      u64,
@@ -962,7 +958,7 @@ impl<T> ScanResultInterim<T>
     }
 }
 
-pub struct ScanResult<T: DeserializeOwned> {
+pub struct ScanResult<T> {
     pub scroll_id: String,
     pub took: u64,
     pub timed_out: bool,
