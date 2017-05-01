@@ -289,7 +289,7 @@ impl<'de> Deserialize<'de> for ActionResult {
             fn visit_map<V>(self, mut visitor: V) -> Result<ActionResult, V::Error>
                 where V: MapAccess<'vde> {
 
-                let visited:Option<(String, ActionResultInner)> = visitor.next_value()?;
+                let visited:Option<(String, ActionResultInner)> = visitor.next_entry()?;
                 let (key, value) = match visited {
                     Some((key, value)) => (key, value),
                     None               => return Err(V::Error::custom("expecting at least one field"))
