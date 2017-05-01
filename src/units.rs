@@ -141,9 +141,9 @@ impl Default for Location {
     }
 }
 
-impl Deserialize for Location {
+impl<'de> Deserialize<'de> for Location {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer {
+        where D: Deserializer<'de> {
 
         // TODO - maybe use a specific struct?
         let mut raw_location = HashMap::<String, f64>::deserialize(deserializer)?;
@@ -189,9 +189,9 @@ impl Default for GeoBox {
     }
 }
 
-impl Deserialize for GeoBox {
+impl<'de> Deserialize<'de> for GeoBox {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer {
+        where D: Deserializer<'de> {
 
         // TODO - maybe use a specific struct?
         let mut raw_geo_box = HashMap::<String, Location>::deserialize(deserializer)?;
@@ -429,17 +429,17 @@ impl Serialize for JsonVal {
     }
 }
 
-impl Deserialize for JsonVal {
+impl<'de> Deserialize<'de> for JsonVal {
     fn deserialize<D>(deserializer: D) -> Result<JsonVal, D::Error>
-        where D: Deserializer {
+        where D: Deserializer<'de> {
 
-        deserializer.deserialize(JsonValVisitor)
+        deserializer.deserialize_any(JsonValVisitor)
     }
 }
 
 struct JsonValVisitor;
 
-impl de::Visitor for JsonValVisitor {
+impl<'de> de::Visitor<'de> for JsonValVisitor {
     type Value = JsonVal;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

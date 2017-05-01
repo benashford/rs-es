@@ -25,7 +25,7 @@ use std::fmt::Debug;
 
 use hyper::status::StatusCode;
 
-use serde::de::Deserialize;
+use serde::de::{Deserialize, DeserializeOwned};
 use serde::ser::{Serialize, Serializer};
 use serde_json::Value;
 
@@ -438,7 +438,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
     }
 
     pub fn send<T>(&'b mut self) -> Result<SearchResult<T>, EsError>
-        where T: Deserialize {
+        where T: DeserializeOwned {
 
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
@@ -678,7 +678,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
 
     /// Performs the search with the specified query and options
     pub fn send<T>(&'b mut self) -> Result<SearchResult<T>, EsError>
-        where T: Deserialize {
+        where T: DeserializeOwned {
 
         let url = format!("/{}/_search{}",
                           format_indexes_and_types(&self.indexes, &self.doc_types),
@@ -708,7 +708,7 @@ impl <'a, 'b> SearchQueryOperation<'a, 'b> {
 
     /// Begins a scan with the specified query and options
     pub fn scan<T>(&'b mut self, scroll: &'b Duration) -> Result<ScanResult<T>, EsError>
-        where T: Deserialize {
+        where T: DeserializeOwned {
 
         self.options.push("search_type", "scan");
         self.options.push("scroll", scroll);
@@ -758,7 +758,8 @@ impl Client {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SearchHitsHitsResult<T: Deserialize> {
+#[serde(bound(deserialize = ""))]
+pub struct SearchHitsHitsResult<T: DeserializeOwned> {
     #[serde(rename="_index")]
     pub index: String,
     #[serde(rename="_type")]
@@ -780,13 +781,14 @@ pub struct SearchHitsHitsResult<T: Deserialize> {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SearchHitsResult<T: Deserialize> {
+#[serde(bound(deserialize = ""))]
+pub struct SearchHitsResult<T: DeserializeOwned> {
     pub total: u64,
     pub hits:  Vec<SearchHitsHitsResult<T>>
 }
 
 impl<T> SearchHitsResult<T>
-    where T: Deserialize {
+    where T: DeserializeOwned {
 
     pub fn hits(self) -> Option<Vec<Box<T>>> {
         let mut r = Vec::with_capacity(self.hits.len());
@@ -812,7 +814,8 @@ impl<T> SearchHitsResult<T>
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SearchResultInterim<T: Deserialize> {
+#[serde(bound(deserialize = ""))]
+pub struct SearchResultInterim<T: DeserializeOwned> {
     pub took:      u64,
     pub timed_out: bool,
 
@@ -830,7 +833,7 @@ pub struct SearchResultInterim<T: Deserialize> {
 }
 
 impl<T> SearchResultInterim<T>
-    where T: Deserialize {
+    where T: DeserializeOwned {
 
     fn finalize(self) -> SearchResult<T> {
         SearchResult {
@@ -845,7 +848,7 @@ impl<T> SearchResultInterim<T>
 }
 
 #[derive(Debug)]
-pub struct SearchResult<T: Deserialize> {
+pub struct SearchResult<T: DeserializeOwned> {
     pub took:      u64,
     pub timed_out: bool,
     pub shards:    ShardCountResult,
@@ -855,7 +858,7 @@ pub struct SearchResult<T: Deserialize> {
 }
 
 impl<T> SearchResult<T>
-    where T: Deserialize {
+    where T: DeserializeOwned {
 
     /// Take a reference to any aggregations in this result
     pub fn aggs_ref<'a>(&'a self) -> Option<&'a AggregationsResult> {
@@ -863,7 +866,7 @@ impl<T> SearchResult<T>
     }
 }
 
-pub struct ScanIterator<'a, T: Deserialize + Debug> {
+pub struct ScanIterator<'a, T: DeserializeOwned + Debug> {
     scan_result: ScanResult<T>,
     scroll:      Duration,
     client:      &'a mut Client,
@@ -871,7 +874,7 @@ pub struct ScanIterator<'a, T: Deserialize + Debug> {
 }
 
 impl<'a, T> ScanIterator<'a, T>
-    where T: Deserialize + Debug {
+    where T: DeserializeOwned + Debug {
 
     /// Fetch the next page and return the first hit, or None if there are no hits
     fn next_page(&mut self) -> Option<Result<SearchHitsHitsResult<T>, EsError>> {
@@ -890,7 +893,7 @@ impl<'a, T> ScanIterator<'a, T>
 }
 
 impl<'a, T> Drop for ScanIterator<'a, T>
-    where T: Deserialize + Debug {
+    where T: DeserializeOwned + Debug {
 
     fn drop(&mut self) {
         match self.scan_result.close(self.client) {
@@ -903,7 +906,7 @@ impl<'a, T> Drop for ScanIterator<'a, T>
 }
 
 impl<'a, T> Iterator for ScanIterator<'a, T>
-    where T: Deserialize + Debug {
+    where T: DeserializeOwned + Debug {
 
     type Item = Result<SearchHitsHitsResult<T>, EsError>;
 
@@ -931,7 +934,8 @@ impl<'a, T> Iterator for ScanIterator<'a, T>
 /// See also the [official ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/guide/current/scan-scroll.html)
 /// for proper use of this functionality.
 #[derive(Deserialize)]
-pub struct ScanResultInterim<T: Deserialize> {
+#[serde(bound(deserialize = ""))]
+pub struct ScanResultInterim<T: DeserializeOwned> {
     #[serde(rename="_scroll_id")]
     scroll_id:     String,
     took:      u64,
@@ -944,7 +948,7 @@ pub struct ScanResultInterim<T: Deserialize> {
 }
 
 impl<T> ScanResultInterim<T>
-    where T: Deserialize {
+    where T: DeserializeOwned {
 
     fn finalize(self) -> ScanResult<T> {
         ScanResult {
@@ -958,7 +962,7 @@ impl<T> ScanResultInterim<T>
     }
 }
 
-pub struct ScanResult<T: Deserialize> {
+pub struct ScanResult<T: DeserializeOwned> {
     pub scroll_id: String,
     pub took: u64,
     pub timed_out: bool,
@@ -968,7 +972,7 @@ pub struct ScanResult<T: Deserialize> {
 }
 
 impl<T> ScanResult<T>
-    where T: Deserialize + Debug {
+    where T: DeserializeOwned + Debug {
 
     /// Returns an iterator from which hits can be read
     pub fn iter(self, client: &mut Client, scroll: Duration) -> ScanIterator<T> {
