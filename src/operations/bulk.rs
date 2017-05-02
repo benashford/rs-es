@@ -19,7 +19,7 @@
 use hyper::status::StatusCode;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde::de::{Error, MapVisitor, Visitor};
+use serde::de::{Error, MapAccess, Visitor};
 use serde_json;
 
 use ::{Client, EsResponse};
@@ -273,13 +273,13 @@ pub struct ActionResult {
     pub inner: ActionResultInner
 }
 
-impl Deserialize for ActionResult {
+impl<'de> Deserialize<'de> for ActionResult {
     fn deserialize<D>(deserializer: D) -> Result<ActionResult, D::Error>
-        where D: Deserializer {
+        where D: Deserializer<'de> {
 
         struct ActionResultVisitor;
 
-        impl Visitor for ActionResultVisitor {
+        impl<'vde> Visitor<'vde> for ActionResultVisitor {
             type Value = ActionResult;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -287,9 +287,9 @@ impl Deserialize for ActionResult {
             }
 
             fn visit_map<V>(self, mut visitor: V) -> Result<ActionResult, V::Error>
-                where V: MapVisitor {
+                where V: MapAccess<'vde> {
 
-                let visited:Option<(String, ActionResultInner)> = visitor.visit()?;
+                let visited:Option<(String, ActionResultInner)> = visitor.next_entry()?;
                 let (key, value) = match visited {
                     Some((key, value)) => (key, value),
                     None               => return Err(V::Error::custom("expecting at least one field"))
@@ -312,7 +312,7 @@ impl Deserialize for ActionResult {
             }
         }
 
-        deserializer.deserialize(ActionResultVisitor)
+        deserializer.deserialize_any(ActionResultVisitor)
     }
 }
 

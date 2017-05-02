@@ -61,7 +61,7 @@ use hyper::status::StatusCode;
 use hyper::header::{Headers, Authorization, Basic};
 
 use serde::ser::Serialize;
-use serde::de::Deserialize;
+use serde::de::DeserializeOwned;
 
 use error::EsError;
 
@@ -69,7 +69,7 @@ use url::Url;
 
 pub trait EsResponse {
     fn status_code(&self) -> &StatusCode;
-    fn read_response<R>(self) -> Result<R, EsError> where R: Deserialize;
+    fn read_response<R>(self) -> Result<R, EsError> where R: DeserializeOwned;
 }
 
 impl EsResponse for client::response::Response {
@@ -78,7 +78,7 @@ impl EsResponse for client::response::Response {
     }
 
     fn read_response<R>(self) -> Result<R, EsError>
-        where R: Deserialize {
+        where R: DeserializeOwned {
 
         Ok(serde_json::from_reader(self)?)
     }

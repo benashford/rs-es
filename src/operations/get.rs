@@ -16,7 +16,7 @@
 
 //! Implementation of the Get API
 
-use serde::Deserialize;
+use serde::de::DeserializeOwned;
 
 use ::{Client, EsResponse};
 use ::error::EsError;
@@ -93,7 +93,7 @@ impl<'a, 'b> GetOperation<'a, 'b> {
     add_option!(with_version_type, "version_type");
 
     pub fn send<T>(&'b mut self) -> Result<GetResult<T>, EsError>
-        where T: Deserialize {
+        where T: DeserializeOwned {
 
         let url = format!("/{}/{}/{}{}",
                           self.index,
@@ -120,7 +120,7 @@ impl Client {
 
 /// The result of a GET request
 #[derive(Debug, Deserialize)]
-pub struct GetResult<T: Deserialize> {
+pub struct GetResult<T> {
     #[serde(rename="_index")]
     pub index:    String,
     #[serde(rename="_type")]
