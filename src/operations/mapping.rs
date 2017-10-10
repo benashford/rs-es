@@ -23,11 +23,13 @@
 
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::borrow::Cow;
 
 use reqwest::StatusCode;
 
+use serde_json::{Value, Map};
+
 use serde::Serialize;
-use serde_json::{Map, Value};
 
 use crate::{error::EsError, operations::GenericResult, Client, EsResponse};
 
@@ -56,7 +58,7 @@ pub struct MappingOperation<'a, 'b> {
     index: &'b str,
 
     /// A map containing the doc types and their mapping
-    mapping: Option<&'b Mapping<'b>>,
+    mappings: Option<Cow<'b, Value>>,
 
     /// A struct reflecting the settings that enable the
     /// customization of analyzers
@@ -68,14 +70,32 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
         MappingOperation {
             client,
             index,
-            mapping: None,
+            mappings: None,
             settings: None,
         }
     }
 
-    /// Set the actual mapping
+    #[deprecated(note = "use mappings instead")]
     pub fn with_mapping(&'b mut self, mapping: &'b Mapping) -> &'b mut Self {
-        self.mapping = Some(mapping);
+        let mut mappings: HashMap<&str, Mapping> = HashMap::new();
+
+        for (entity, properties) in mapping.into_iter() {
+            let properties = hashmap("properties", properties.to_owned());
+            mappings.insert(entity.to_owned(), properties.to_owned());
+        }
+
+        self.mappings = Some(
+            Cow::Owned(
+                serde_json::to_value(mappings)
+                    .expect("Failed to convert Mapping to JSON")
+            )
+        );
+        self
+    }
+
+    /// Set the actual mapping
+    pub fn with_mappings(&'b mut self, mappings: &'b Value) -> &'b mut Self {
+        self.mappings = Some(Cow::Borrowed(mappings));
         self
     }
 
@@ -87,33 +107,26 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
 
     /// If settings have been provided, the index will be created with them. If the index already
     /// exists, an `Err(EsError)` will be returned.
-    /// If mapping have been set too, the properties will be applied. The index will be unavailable
+    /// If mappings have been set too, the properties will be applied. The index will be unavailable
     /// during this process.
-    /// Nothing will be done if either mapping and settings are not present.
+    /// Nothing will be done if either mappings and settings are not present.
     pub fn send(&'b mut self) -> Result<MappingResult, EsError> {
         // Return earlier if there is nothing to do
-        if self.mapping.is_none() && self.settings.is_none() {
+        if self.mappings.is_none() && self.settings.is_none() {
             return Ok(MappingResult);
         }
 
         let url = self.index.to_owned();
 
-        if self.mapping.is_none() {
+        if self.mappings.is_none() {
             let body = hashmap("settings", self.settings.unwrap());
             let _   = self.client.put_body_op(&url, &body)?;
 
             let _ = self.client.wait_for_status("yellow", "5s");
         }
 
-        if let Some(mapping) = self.mapping {
+        if let Some(ref mappings) = self.mappings {
             let _ = self.client.close_index(self.index);
-
-            let mut mappings: HashMap<&str, Mapping> = HashMap::new();
-
-            for (entity, properties) in mapping.into_iter() {
-                let properties = hashmap("properties", properties.to_owned());
-                mappings.insert(entity.to_owned(), properties.to_owned());
-            }
 
             let body = match self.settings {
                 Some(settings) => serde_json::json!({
@@ -201,24 +214,34 @@ pub mod tests {
 
     #[test]
     fn test_mapping() {
-        let index_name = "tests_test_mapping";
+        let index_name = "tests_test_mappings";
         let mut client = crate::tests::make_client();
 
         // TODO - this fails in many cases (specifically on TravisCI), but we ignore the
         // failures anyway
         let _ = client.delete_index(index_name);
 
-        let mapping = hashmap2(
-            "post",
-            hashmap2(
-                "created_at",
-                hashmap2("type", "date", "format", "date_time"),
-                "title",
-                hashmap2("type", "string", "index", "not_analyzed"),
-            ),
-            "author",
-            hashmap("name", hashmap("type", "string")),
-        );
+        let mappings = serde_json::json! ({
+            "post": {
+                "properties": {
+                    "created_at": {
+                        "type": "date",
+                        "format": "date_time"
+                    },
+                    "title": {
+                        "type": "string",
+                        "index": "not_analyzed"
+                    }
+                }
+            },
+            "author": {
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            }
+        });
 
         let settings = Settings {
             number_of_shards: 1,
@@ -249,10 +272,10 @@ pub mod tests {
 
         // TODO add appropriate functions to the `Client` struct
         let result = MappingOperation::new(&mut client, index_name)
-            .with_mapping(&mapping)
+            .with_mappings(&mappings)
             .with_settings(&settings)
             .send();
-        assert!(result.is_ok());
+        let _ = result.unwrap();
 
         {
             let result_wrapped = client
