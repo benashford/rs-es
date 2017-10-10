@@ -27,7 +27,7 @@ use hyper::status::StatusCode;
 
 use serde::de::DeserializeOwned;
 use serde::ser::{Serialize, Serializer};
-use serde_json::Value;
+use serde_json::{from_value, Value};
 
 use ::{Client, EsResponse};
 use ::error::EsError;
@@ -776,8 +776,25 @@ pub struct SearchHitsHitsResult<T> {
     #[serde(rename="_routing")]
     pub routing: Option<String>,
     pub fields: Option<Value>,
-    pub highlight: Option<HighlightResult>
+    pub highlight: Option<HighlightResult>,
+    pub inner_hits: Option<HashMap<String, Value>>
 }
+
+impl<T> SearchHitsHitsResult<T>
+    where T: DeserializeOwned {
+
+    pub fn inner_hit<S>(&self, key: &str) -> Option<SearchHitsResult<S>> where S: DeserializeOwned {
+        if let Some(hits) = self.inner_hits.to_owned() {
+            if let Some(hit) = hits.get(key) {
+                return from_value(
+                    hit.get("hits").unwrap().to_owned()
+                ).ok();
+            }
+        }
+        None
+    }
+}
+
 
 #[derive(Debug, Deserialize)]
 pub struct SearchHitsResult<T> {
