@@ -96,22 +96,36 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
             return Ok(MappingResult);
         }
 
-        if self.settings.is_some() {
+        let url = self.index.to_owned();
+
+        if self.mapping.is_none() {
             let body = hashmap("settings", self.settings.unwrap());
-            let url = self.index.to_owned();
-            let _ = self.client.put_body_op(&url, &body)?;
+            let _   = self.client.put_body_op(&url, &body)?;
 
             let _ = self.client.wait_for_status("yellow", "5s");
         }
 
-        if self.mapping.is_some() {
+        if let Some(mapping) = self.mapping {
             let _ = self.client.close_index(self.index);
 
-            for (entity, properties) in self.mapping.unwrap().iter() {
-                let body = hashmap("properties", properties);
-                let url = format!("{}/_mapping/{}", self.index, entity);
-                let _ = self.client.put_body_op(&url, &body)?;
+            let mut mappings: HashMap<&str, Mapping> = HashMap::new();
+
+            for (entity, properties) in mapping.into_iter() {
+                let properties = hashmap("properties", properties.to_owned());
+                mappings.insert(entity.to_owned(), properties.to_owned());
             }
+
+            let body = match self.settings {
+                Some(settings) => serde_json::json!({
+                    "mappings": mappings,
+                    "settings": settings
+                }),
+                None => serde_json::json!({
+                    "mappings": mappings,
+                })
+            };
+
+            let _ = self.client.put_body_op(&url, &body)?;
 
             let _ = self.client.open_index(self.index);
         }
