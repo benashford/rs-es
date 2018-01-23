@@ -21,8 +21,6 @@
 //! [Indices API](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
 //! so subtle (potentially breaking) changes will be made to the API when that happens
 
-use std::collections::HashMap;
-
 use serde_json::{Value, Map};
 
 use hyper::status::StatusCode;
@@ -30,9 +28,6 @@ use hyper::status::StatusCode;
 use ::{Client, EsResponse};
 use ::error::EsError;
 use ::operations::GenericResult;
-
-pub type DocType<'a> = HashMap<&'a str, HashMap<&'a str, &'a str>>;
-pub type Mapping<'a> = HashMap<&'a str, DocType<'a>>;
 
 #[derive(Serialize)]
 pub struct Settings {
@@ -55,7 +50,7 @@ pub struct MappingOperation<'a, 'b> {
     index:     &'b str,
 
     /// A map containing the doc types and their mapping
-    mapping: Option<&'b Mapping<'b>>,
+    mappings: Option<&'b Value>,
 
     /// A struct reflecting the settings that enable the
     /// customization of analyzers
@@ -68,14 +63,14 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
         MappingOperation {
             client:   client,
             index:    index,
-            mapping:  None,
+            mappings: None,
             settings: None
         }
     }
 
     /// Set the actual mapping
-    pub fn with_mapping(&'b mut self, mapping: &'b Mapping) -> &'b mut Self {
-        self.mapping = Some(mapping);
+    pub fn with_mappings(&'b mut self, mappings: &'b Value) -> &'b mut Self {
+        self.mappings = Some(mappings);
         self
     }
 
@@ -87,31 +82,38 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
 
     /// If settings have been provided, the index will be created with them. If the index already
     /// exists, an `Err(EsError)` will be returned.
-    /// If mapping have been set too, the properties will be applied. The index will be unavailable
+    /// If mappings have been set too, the properties will be applied. The index will be unavailable
     /// during this process.
-    /// Nothing will be done if either mapping and settings are not present.
+    /// Nothing will be done if either mappings and settings are not present.
     pub fn send(&'b mut self) -> Result<MappingResult, EsError> {
         // Return earlier if there is nothing to do
-        if self.mapping.is_none() && self.settings.is_none() {
+        if self.mappings.is_none() && self.settings.is_none() {
             return Ok(MappingResult);
         }
 
-        if self.settings.is_some() {
+        let url = format!("{}", self.index);
+
+        if self.mappings.is_none() {
             let body = hashmap! { "settings" => self.settings.unwrap() };
-            let url = format!("{}", self.index);
             let _   = self.client.put_body_op(&url, &body)?;
 
             let _ = self.client.wait_for_status("yellow", "5s");
         }
 
-        if self.mapping.is_some() {
+        if let Some(mappings) = self.mappings {
             let _ = self.client.close_index(self.index);
 
-            for (entity, properties) in self.mapping.unwrap().iter() {
-                let body = hashmap! { "properties" => properties };
-                let url  = format!("{}/_mapping/{}", self.index, entity);
-                let _   = self.client.put_body_op(&url, &body)?;
-            }
+            let body = match self.settings {
+                Some(settings) => json!({
+                    "mappings": mappings,
+                    "settings": settings
+                }),
+                None => json!({
+                    "mappings": mappings,
+                })
+            };
+
+            let _ = self.client.put_body_op(&url, &body)?;
 
             let _ = self.client.open_index(self.index);
         }
@@ -175,33 +177,35 @@ pub mod tests {
     }
 
     #[test]
-    fn test_mapping() {
-        let index_name = "tests_test_mapping";
+    fn test_mappings() {
+        let index_name = "tests_test_mappings";
         let mut client = ::tests::make_client();
 
         // TODO - this fails in many cases (specifically on TravisCI), but we ignore the
         // failures anyway
         let _ = client.delete_index(index_name);
 
-        let mapping = hashmap! {
-            "post" => hashmap! {
-                "created_at" => hashmap! {
-                    "type" => "date",
-                    "format" => "date_time"
-                },
-
-                "title" => hashmap! {
-                    "type" => "string",
-                    "index" => "not_analyzed"
+        let mappings = json! ({
+            "post": {
+                "properties": {
+                    "created_at": {
+                        "type": "date",
+                        "format": "date_time"
+                    },
+                    "title": {
+                        "type": "string",
+                        "index": "not_analyzed"
+                    }
                 }
             },
-
-            "author" => hashmap! {
-                "name" => hashmap! {
-                    "type" => "string",
+            "author": {
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    }
                 }
-            },
-        };
+            }
+        });
 
         let settings = Settings {
             number_of_shards: 1,
@@ -226,10 +230,10 @@ pub mod tests {
 
         // TODO add appropriate functions to the `Client` struct
         let result = MappingOperation::new(&mut client, index_name)
-            .with_mapping(&mapping)
+            .with_mappings(&mappings)
             .with_settings(&settings)
             .send();
-        assert!(result.is_ok());
+        let _ = result.unwrap();
 
          {
             let result_wrapped = client

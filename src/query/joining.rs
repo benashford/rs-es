@@ -17,6 +17,7 @@
 //! Joining queries
 
 use ::json::ShouldSkip;
+use ::serde_json::Value;
 
 use super::{ScoreMode, Query};
 
@@ -50,6 +51,7 @@ impl NestedQuery {
 /// Has Child query
 #[derive(Debug, Default, Serialize)]
 pub struct HasChildQuery {
+    #[serde(rename="type")]
     doc_type: String,
     query: Query,
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
@@ -57,7 +59,9 @@ pub struct HasChildQuery {
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     min_children: Option<u64>,
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    max_children: Option<u64>
+    max_children: Option<u64>,
+    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    inner_hits: Option<Value>
 }
 
 /// Has Parent query
@@ -95,6 +99,7 @@ impl HasChildQuery {
     add_field!(with_score_mode, score_mode, ScoreMode);
     add_field!(with_min_children, min_children, u64);
     add_field!(with_max_children, max_children, u64);
+    add_field!(with_inner_hits, inner_hits, Value);
 
     build!(HasChild);
 }
