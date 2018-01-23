@@ -783,15 +783,13 @@ pub struct SearchHitsHitsResult<T> {
 impl<T> SearchHitsHitsResult<T>
     where T: DeserializeOwned {
 
-    pub fn inner_hit<S>(&self, key: &str) -> Option<SearchHitsResult<S>> where S: DeserializeOwned {
+    pub fn inner_hit<S>(&self, key: &str) -> Result<Option<SearchHitsResult<S>>, EsError> where S: DeserializeOwned {
         if let Some(hits) = self.inner_hits.to_owned() {
-            if let Some(hit) = hits.get(key) {
-                return from_value(
-                    hit.get("hits").unwrap().to_owned()
-                ).ok();
+            if let Some(hits) = hits.get(key).and_then(|hit| hit.get("hits")) {
+                return from_value(hits.to_owned()).map_err(EsError::from);
             }
         }
-        None
+        Ok(None)
     }
 }
 
