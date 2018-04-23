@@ -52,6 +52,7 @@ pub struct SearchURIOperation<'a, 'b> {
 }
 
 /// Options for the various search_type parameters
+#[derive(Debug)]
 pub enum SearchType {
     DFSQueryThenFetch,
     DFSQueryAndFetch,
@@ -95,6 +96,7 @@ impl Serialize for Order {
 }
 
 /// The (Sort mode option)[https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_sort_mode_option].
+#[derive(Debug)]
 pub enum Mode {
     Min,
     Max,
@@ -116,6 +118,7 @@ impl Serialize for Mode {
 }
 
 /// Options for handling (missing values)[https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_missing_values]
+#[derive(Debug)]
 pub enum Missing {
     First,
     Last,
@@ -294,6 +297,7 @@ impl Script {
     }
 }
 
+#[derive(Debug)]
 pub enum SortBy {
     Field(SortField),
     Distance(GeoDistance),
@@ -459,6 +463,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
 }
 
 /// Options for source filtering
+#[derive(Debug)]
 pub enum Source<'a> {
     /// Disable source documents
     Off,

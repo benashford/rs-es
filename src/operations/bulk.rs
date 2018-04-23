@@ -32,6 +32,7 @@ use super::ShardCountResult;
 use super::common::{Options, OptionVal, VersionType};
 use std::fmt;
 
+#[derive(Debug)]
 pub enum ActionType {
     Index,
     Create,
