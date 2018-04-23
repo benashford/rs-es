@@ -19,6 +19,7 @@
 use ::{Client, EsResponse};
 use ::error::EsError;
 
+#[derive(Debug)]
 pub struct VersionOperation<'a> {
     client: &'a mut Client
 }

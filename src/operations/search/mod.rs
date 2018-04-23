@@ -43,6 +43,7 @@ use self::aggregations::AggregationsResult;
 use self::highlight::HighlightResult;
 
 /// Representing a search-by-uri option
+#[derive(Debug)]
 pub struct SearchURIOperation<'a, 'b> {
     client: &'a mut Client,
     indexes: &'b [&'b str],
@@ -321,6 +322,7 @@ impl ToString for SortBy {
 }
 
 /// A full sort clause
+#[derive(Debug)]
 pub struct Sort {
     fields: Vec<SortBy>
 }
@@ -559,6 +561,7 @@ struct SearchQueryOperationBody<'b> {
     version: Option<bool>
 }
 
+#[derive(Debug)]
 pub struct SearchQueryOperation<'a, 'b> {
     /// The HTTP client
     client: &'a mut Client,
@@ -863,6 +866,7 @@ impl<T> SearchResult<T>
     }
 }
 
+#[derive(Debug)]
 pub struct ScanIterator<'a, T: DeserializeOwned + Debug> {
     scan_result: ScanResult<T>,
     scroll:      Duration,
@@ -958,6 +962,7 @@ impl<T> ScanResultInterim<T>
     }
 }
 
+#[derive(Debug)]
 pub struct ScanResult<T> {
     pub scroll_id: String,
     pub took: u64,

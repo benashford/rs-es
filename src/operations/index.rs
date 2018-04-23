@@ -36,6 +36,7 @@ impl From<OpType> for OptionVal {
 }
 
 /// An indexing operation
+#[derive(Debug)]
 pub struct IndexOperation<'a, 'b, E: Serialize + 'b> {
     /// The HTTP client that this operation will use
     client:   &'a mut Client,

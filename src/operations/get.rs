@@ -39,6 +39,7 @@ impl From<Preference> for OptionVal {
 }
 
 /// An ES GET operation, to get a document by ID
+#[derive(Debug)]
 pub struct GetOperation<'a, 'b> {
     /// The HTTP connection
     client:   &'a mut Client,

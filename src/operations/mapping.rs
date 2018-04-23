@@ -47,6 +47,7 @@ pub struct Analysis {
 }
 
 /// An indexing operation
+#[derive(Debug)]
 pub struct MappingOperation<'a, 'b> {
     /// The HTTP client that this operation will use
     client:    &'a mut Client,

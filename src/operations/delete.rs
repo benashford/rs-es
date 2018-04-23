@@ -22,6 +22,7 @@ use ::{Client, EsResponse};
 use ::error::EsError;
 use super::common::{Options, OptionVal};
 
+#[derive(Debug)]
 pub struct DeleteOperation<'a, 'b> {
     /// The HTTP client
     client:   &'a mut Client,

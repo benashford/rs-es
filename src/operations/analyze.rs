@@ -21,6 +21,7 @@ use ::do_req;
 use ::{Client, EsResponse};
 use ::error::EsError;
 
+#[derive(Debug)]
 pub struct AnalyzeOperation<'a, 'b> {
     /// The HTTP client that this operation will use
     client:   &'a mut Client,

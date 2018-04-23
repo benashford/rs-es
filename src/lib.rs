@@ -126,6 +126,7 @@ pub fn do_req(resp: client::response::Response) -> Result<client::response::Resp
 /// ```
 ///
 /// See the specific operations and their builder objects for details.
+#[derive(Debug)]
 pub struct Client {
     base_url:    Url,
     http_client: hyper::Client,

@@ -161,6 +161,7 @@ impl<S> Action<S> {
     add_inner_field!(with_retry_on_conflict, retry_on_conflict, u64);
 }
 
+#[derive(Debug)]
 pub struct BulkOperation<'a, 'b, S: 'b> {
     client:   &'a mut Client,
     index:    Option<&'b str>,
@@ -268,6 +269,7 @@ impl Client {
 }
 
 /// The result of specific actions
+#[derive(Debug)]
 pub struct ActionResult {
     pub action: ActionType,
     pub inner: ActionResultInner
