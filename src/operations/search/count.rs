@@ -80,7 +80,7 @@ impl<'a, 'b> CountURIOperation<'a, 'b> {
     }
 }
 
-#[derive(Default, Serialize)]
+#[derive(Debug, Default, Serialize)]
 struct CountQueryOperationBody<'b> {
     /// The query
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]

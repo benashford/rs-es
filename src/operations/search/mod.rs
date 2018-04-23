@@ -506,7 +506,7 @@ impl<'a> Source<'a> {
     }
 }
 
-#[derive(Default, Serialize)]
+#[derive(Debug, Default, Serialize)]
 struct SearchQueryOperationBody<'b> {
     /// The query
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
