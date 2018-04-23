@@ -44,7 +44,7 @@ impl Client {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Version {
     pub number: String,
     pub build_hash: String,
@@ -53,7 +53,7 @@ pub struct Version {
     pub lucene_version: String
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct VersionResult {
     pub name: String,
     pub cluster_name: String,

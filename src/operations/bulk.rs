@@ -59,7 +59,7 @@ impl ToString for ActionType {
     }
 }
 
-#[derive(Default, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct ActionOptions {
     #[serde(rename="_index", skip_serializing_if="ShouldSkip::should_skip")]
     index:             Option<String>,
@@ -83,7 +83,7 @@ pub struct ActionOptions {
     retry_on_conflict: Option<u64>,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Action<X>(FieldBased<ActionType, ActionOptions, NoOuter>, Option<X>);
 
 impl<S> Action<S>
@@ -333,7 +333,7 @@ pub struct ActionResultInner {
 }
 
 /// The result of a bulk operation
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct BulkResult {
     pub errors: bool,
     pub items:  Vec<ActionResult>,

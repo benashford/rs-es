@@ -144,10 +144,10 @@ impl<S: Into<String>> From<S> for Missing {
 
 /// Representing sort options for a specific field, can be combined with others
 /// to produce the full sort clause
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct SortField(FieldBased<String, SortFieldInner, NoOuter>);
 
-#[derive(Default, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct SortFieldInner {
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     order:         Option<Order>,
@@ -204,7 +204,7 @@ impl ToString for SortField {
 
 /// Representing sort options for sort by geodistance
 // TODO - fix structure to represent reality
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct GeoDistance {
     field:         String,
     location:      OneOrMany<Location>,
@@ -256,7 +256,7 @@ impl GeoDistance {
 // TODO - fix structure
 // TODO - there are other 'Script's defined elsewhere, perhaps de-duplicate them
 // if it makes sense.
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Script {
     script:      String,
     #[serde(rename="type")]
@@ -934,7 +934,7 @@ impl<'a, T> Iterator for ScanIterator<'a, T>
 ///
 /// See also the [official ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/guide/current/scan-scroll.html)
 /// for proper use of this functionality.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ScanResultInterim<T> {
     #[serde(rename="_scroll_id")]
     scroll_id:     String,
