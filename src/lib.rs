@@ -58,7 +58,7 @@ pub mod units;
 
 use hyper::client;
 use hyper::status::StatusCode;
-use hyper::header::{Headers, Authorization, Basic};
+use hyper::header::{Headers, Authorization, Basic, ContentType};
 
 use serde::ser::Serialize;
 use serde::de::DeserializeOwned;
@@ -213,6 +213,8 @@ impl Client {
                 )
             )
         }
+
+	headers.set(ContentType::json());
 
         headers
     }
