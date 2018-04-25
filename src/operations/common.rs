@@ -24,6 +24,7 @@ use util::StrJoin;
 
 /// A newtype for the value of a URI option, this is to allow conversion traits
 /// to be implemented for it
+#[derive(Debug)]
 pub struct OptionVal(pub String);
 
 /// Conversion from `&str` to `OptionVal`
@@ -42,6 +43,7 @@ from_exp!(u64, OptionVal, from, OptionVal(from.to_string()));
 from_exp!(bool, OptionVal, from, OptionVal(from.to_string()));
 
 /// Every ES operation has a set of options
+#[derive(Debug)]
 pub struct Options<'a>(pub Vec<(&'a str, OptionVal)>);
 
 impl<'a> Options<'a> {
@@ -90,6 +92,7 @@ macro_rules! add_option {
 }
 
 /// The [`version_type` field](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#index-versioning)
+#[derive(Debug)]
 pub enum VersionType {
     Internal,
     External,
@@ -121,6 +124,7 @@ impl ToString for VersionType {
 from_exp!(VersionType, OptionVal, from, OptionVal(from.to_string()));
 
 /// The consistency query parameter
+#[derive(Debug)]
 pub enum Consistency {
     One,
     Quorum,
@@ -138,6 +142,7 @@ impl From<Consistency> for OptionVal {
 }
 
 /// Values for `default_operator` query parameters
+#[derive(Debug)]
 pub enum DefaultOperator {
     And,
     Or

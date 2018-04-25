@@ -43,6 +43,7 @@ use self::aggregations::AggregationsResult;
 use self::highlight::HighlightResult;
 
 /// Representing a search-by-uri option
+#[derive(Debug)]
 pub struct SearchURIOperation<'a, 'b> {
     client: &'a mut Client,
     indexes: &'b [&'b str],
@@ -51,6 +52,7 @@ pub struct SearchURIOperation<'a, 'b> {
 }
 
 /// Options for the various search_type parameters
+#[derive(Debug)]
 pub enum SearchType {
     DFSQueryThenFetch,
     DFSQueryAndFetch,
@@ -94,6 +96,7 @@ impl Serialize for Order {
 }
 
 /// The (Sort mode option)[https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_sort_mode_option].
+#[derive(Debug)]
 pub enum Mode {
     Min,
     Max,
@@ -115,6 +118,7 @@ impl Serialize for Mode {
 }
 
 /// Options for handling (missing values)[https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_missing_values]
+#[derive(Debug)]
 pub enum Missing {
     First,
     Last,
@@ -143,10 +147,10 @@ impl<S: Into<String>> From<S> for Missing {
 
 /// Representing sort options for a specific field, can be combined with others
 /// to produce the full sort clause
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct SortField(FieldBased<String, SortFieldInner, NoOuter>);
 
-#[derive(Default, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct SortFieldInner {
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     order:         Option<Order>,
@@ -203,7 +207,7 @@ impl ToString for SortField {
 
 /// Representing sort options for sort by geodistance
 // TODO - fix structure to represent reality
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct GeoDistance {
     field:         String,
     location:      OneOrMany<Location>,
@@ -255,7 +259,7 @@ impl GeoDistance {
 // TODO - fix structure
 // TODO - there are other 'Script's defined elsewhere, perhaps de-duplicate them
 // if it makes sense.
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Script {
     script:      String,
     #[serde(rename="type")]
@@ -293,6 +297,7 @@ impl Script {
     }
 }
 
+#[derive(Debug)]
 pub enum SortBy {
     Field(SortField),
     Distance(GeoDistance),
@@ -321,6 +326,7 @@ impl ToString for SortBy {
 }
 
 /// A full sort clause
+#[derive(Debug)]
 pub struct Sort {
     fields: Vec<SortBy>
 }
@@ -457,6 +463,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
 }
 
 /// Options for source filtering
+#[derive(Debug)]
 pub enum Source<'a> {
     /// Disable source documents
     Off,
@@ -504,7 +511,7 @@ impl<'a> Source<'a> {
     }
 }
 
-#[derive(Default, Serialize)]
+#[derive(Debug, Default, Serialize)]
 struct SearchQueryOperationBody<'b> {
     /// The query
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
@@ -559,6 +566,7 @@ struct SearchQueryOperationBody<'b> {
     version: Option<bool>
 }
 
+#[derive(Debug)]
 pub struct SearchQueryOperation<'a, 'b> {
     /// The HTTP client
     client: &'a mut Client,
@@ -863,6 +871,7 @@ impl<T> SearchResult<T>
     }
 }
 
+#[derive(Debug)]
 pub struct ScanIterator<'a, T: DeserializeOwned + Debug> {
     scan_result: ScanResult<T>,
     scroll:      Duration,
@@ -930,7 +939,7 @@ impl<'a, T> Iterator for ScanIterator<'a, T>
 ///
 /// See also the [official ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/guide/current/scan-scroll.html)
 /// for proper use of this functionality.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ScanResultInterim<T> {
     #[serde(rename="_scroll_id")]
     scroll_id:     String,
@@ -958,6 +967,7 @@ impl<T> ScanResultInterim<T>
     }
 }
 
+#[derive(Debug)]
 pub struct ScanResult<T> {
     pub scroll_id: String,
     pub took: u64,

@@ -26,6 +26,7 @@ use ::operations::common::{Options, OptionVal};
 use ::operations::{format_indexes_and_types, ShardCountResult};
 
 /// Representing a count operation
+#[derive(Debug)]
 pub struct CountURIOperation<'a, 'b> {
     client: &'a mut Client,
     indexes: &'b [&'b str],
@@ -79,13 +80,14 @@ impl<'a, 'b> CountURIOperation<'a, 'b> {
     }
 }
 
-#[derive(Default, Serialize)]
+#[derive(Debug, Default, Serialize)]
 struct CountQueryOperationBody<'b> {
     /// The query
     #[serde(skip_serializing_if="ShouldSkip::should_skip")]
     query: Option<&'b Query>,
 }
 
+#[derive(Debug)]
 pub struct CountQueryOperation<'a, 'b> {
     /// The HTTP client
     client: &'a mut Client,

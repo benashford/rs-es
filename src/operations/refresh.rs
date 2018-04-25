@@ -23,6 +23,7 @@ use ::error::EsError;
 
 use super::{format_multi, ShardCountResult};
 
+#[derive(Debug)]
 pub struct RefreshOperation<'a, 'b> {
     /// The HTTP client
     client: &'a mut Client,

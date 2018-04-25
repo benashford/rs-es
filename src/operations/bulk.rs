@@ -32,6 +32,7 @@ use super::ShardCountResult;
 use super::common::{Options, OptionVal, VersionType};
 use std::fmt;
 
+#[derive(Debug)]
 pub enum ActionType {
     Index,
     Create,
@@ -59,7 +60,7 @@ impl ToString for ActionType {
     }
 }
 
-#[derive(Default, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct ActionOptions {
     #[serde(rename="_index", skip_serializing_if="ShouldSkip::should_skip")]
     index:             Option<String>,
@@ -83,7 +84,7 @@ pub struct ActionOptions {
     retry_on_conflict: Option<u64>,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Action<X>(FieldBased<ActionType, ActionOptions, NoOuter>, Option<X>);
 
 impl<S> Action<S>
@@ -161,6 +162,7 @@ impl<S> Action<S> {
     add_inner_field!(with_retry_on_conflict, retry_on_conflict, u64);
 }
 
+#[derive(Debug)]
 pub struct BulkOperation<'a, 'b, S: 'b> {
     client:   &'a mut Client,
     index:    Option<&'b str>,
@@ -268,6 +270,7 @@ impl Client {
 }
 
 /// The result of specific actions
+#[derive(Debug)]
 pub struct ActionResult {
     pub action: ActionType,
     pub inner: ActionResultInner
@@ -331,7 +334,7 @@ pub struct ActionResultInner {
 }
 
 /// The result of a bulk operation
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct BulkResult {
     pub errors: bool,
     pub items:  Vec<ActionResult>,
