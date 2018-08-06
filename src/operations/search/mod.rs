@@ -879,6 +879,13 @@ pub struct ScanIterator<'a, T: DeserializeOwned + Debug> {
     page:        Vec<SearchHitsHitsResult<T>>
 }
 
+#[derive(Debug, Serialize)]
+struct ScanBody {
+    scroll: Option<String>,
+    scroll_id: Option<String>,
+}
+
+
 impl<'a, T> ScanIterator<'a, T>
     where T: DeserializeOwned + Debug {
 
@@ -994,10 +1001,13 @@ impl<T> ScanResult<T>
     pub fn scroll(&mut self,
                   client: &mut Client,
                   scroll: &Duration) -> Result<SearchResult<T>, EsError> {
-        let url = format!("/_search/scroll?scroll={}&scroll_id={}",
-                          scroll.to_string(),
-                          self.scroll_id);
-        let response = client.get_op(&url)?;
+        let url = format!("/_search/scroll");
+        let body = ScanBody {
+            scroll: Some(scroll.to_string()),
+            scroll_id: Some(self.scroll_id.to_owned())
+        };
+
+        let response = client.post_body_op(&url, &body)?;
         match response.status_code() {
             &StatusCode::Ok => {
                 let search_result:SearchResultInterim<T> = response.read_response()?;
