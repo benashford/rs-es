@@ -66,6 +66,7 @@ use serde::ser::Serialize;
 use error::EsError;
 
 use url::Url;
+use std::time;
 
 pub trait EsResponse {
     fn status_code(&self) -> &StatusCode;
@@ -214,6 +215,16 @@ impl Client {
         headers.set(ContentType::json());
 
         headers
+    }
+
+    /// Set the read timeout of the http client
+    pub fn set_read_timeout(&mut self, timeout: Option<time::Duration>) {
+        self.http_client.set_read_timeout(timeout);
+    }
+
+    /// Set the write timeout of the http client
+    pub fn set_write_timeout(&mut self, timeout: Option<time::Duration>) {
+        self.http_client.set_write_timeout(timeout);
     }
 
     /// Take a nearly complete ElasticSearch URL, and stick
