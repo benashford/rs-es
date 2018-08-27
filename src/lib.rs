@@ -348,13 +348,13 @@ pub mod tests {
             if hits.len() == 0 {
                 break;
             }
-            let actions: Vec<Action<()>> = hits.into_iter()
+            let actions: Vec<Action<()>> = hits
+                .into_iter()
                 .map(|hit| {
                     Action::delete(hit.id)
                         .with_index(test_idx)
                         .with_doc_type(hit.doc_type)
-                })
-                .collect();
+                }).collect();
             client.bulk(&actions).send().unwrap();
         }
 
