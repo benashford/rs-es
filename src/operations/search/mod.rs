@@ -447,6 +447,9 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
     add_option!(with_from, "from");
     add_option!(with_size, "size");
     add_option!(with_search_type, "search_type");
+    add_option!(with_ignore_unavailable, "ignore_unavailable");
+    add_option!(with_allow_no_indices, "allow_no_indices");
+    add_option!(with_expand_wildcards, "expand_wildcards");
 
     pub fn with_fields(&'b mut self, fields: &[&str]) -> &'b mut Self {
         self.options.push("fields", fields.iter().join(","));
@@ -710,6 +713,9 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
     add_option!(with_routing, "routing");
     add_option!(with_search_type, "search_type");
     add_option!(with_query_cache, "query_cache");
+    add_option!(with_ignore_unavailable, "ignore_unavailable");
+    add_option!(with_allow_no_indices, "allow_no_indices");
+    add_option!(with_expand_wildcards, "expand_wildcards");
 
     /// Performs the search with the specified query and options
     pub fn send<T>(&'b mut self) -> Result<SearchResult<T>, EsError>
