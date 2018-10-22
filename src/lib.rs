@@ -30,7 +30,7 @@ extern crate serde_derive;
 
 extern crate serde;
 
-#[macro_use]
+#[cfg_attr(test, macro_use)]
 extern crate serde_json;
 
 #[macro_use]
