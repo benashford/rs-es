@@ -624,47 +624,47 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
         }
     }
 
-    pub fn with_indexes(&'b mut self, indexes: &'b [&'b str]) -> &'b mut Self {
+    pub fn with_indexes(&mut self, indexes: &'b [&'b str]) -> &mut Self {
         self.indexes = indexes;
         self
     }
 
-    pub fn with_types(&'b mut self, doc_types: &'b [&'b str]) -> &'b mut Self {
+    pub fn with_types(&mut self, doc_types: &'b [&'b str]) -> &mut Self {
         self.doc_types = doc_types;
         self
     }
 
-    pub fn with_query(&'b mut self, query: &'b Query) -> &'b mut Self {
+    pub fn with_query(&mut self, query: &'b Query) -> &mut Self {
         self.body.query = Some(query);
         self
     }
 
-    pub fn with_timeout(&'b mut self, timeout: &'b str) -> &'b mut Self {
+    pub fn with_timeout(&mut self, timeout: &'b str) -> &mut Self {
         self.body.timeout = Some(timeout);
         self
     }
 
-    pub fn with_from(&'b mut self, from: u64) -> &'b mut Self {
+    pub fn with_from(&mut self, from: u64) -> &mut Self {
         self.body.from = Some(from);
         self
     }
 
-    pub fn with_size(&'b mut self, size: u64) -> &'b mut Self {
+    pub fn with_size(&mut self, size: u64) -> &mut Self {
         self.body.size = Some(size);
         self
     }
 
-    pub fn with_version(&'b mut self, version: bool) -> &'b mut Self {
+    pub fn with_version(&mut self, version: bool) -> &mut Self {
         self.body.version = Some(version);
         self
     }
 
-    pub fn with_terminate_after(&'b mut self, terminate_after: u64) -> &'b mut Self {
+    pub fn with_terminate_after(&mut self, terminate_after: u64) -> &mut Self {
         self.body.terminate_after = Some(terminate_after);
         self
     }
 
-    pub fn with_stats<S>(&'b mut self, stats: &[S]) -> &'b mut Self
+    pub fn with_stats<S>(&mut self, stats: &[S]) -> &mut Self
     where
         S: ToString,
     {
@@ -672,17 +672,17 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
         self
     }
 
-    pub fn with_min_score(&'b mut self, min_score: f64) -> &'b mut Self {
+    pub fn with_min_score(&mut self, min_score: f64) -> &mut Self {
         self.body.min_score = Some(min_score);
         self
     }
 
-    pub fn with_sort(&'b mut self, sort: &'b Sort) -> &'b mut Self {
+    pub fn with_sort(&mut self, sort: &'b Sort) -> &mut Self {
         self.body.sort = Some(sort);
         self
     }
 
-    pub fn with_track_scores(&'b mut self, track_scores: bool) -> &'b mut Self {
+    pub fn with_track_scores(&mut self, track_scores: bool) -> &mut Self {
         self.body.track_scores = Some(track_scores);
         self
     }
@@ -693,19 +693,19 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
     /// To include fields: `with_source(Source::include(&["field_name"]))`,
     /// To exclude fields: `with_source(Source::exclude(&["field_name"]))`,
     /// To include and exclude: `with_source(Source::filter(&["include"], &["exclude"]))`
-    pub fn with_source(&'b mut self, source: Source<'b>) -> &'b mut Self {
+    pub fn with_source(&mut self, source: Source<'b>) -> &mut Self {
         self.body.source = Some(source);
         self
     }
 
     /// Specify any aggregations
-    pub fn with_aggs(&'b mut self, aggs: &'b aggregations::Aggregations) -> &'b mut Self {
+    pub fn with_aggs(&mut self, aggs: &'b aggregations::Aggregations) -> &mut Self {
         self.body.aggs = Some(aggs);
         self
     }
 
     /// Specify fields to highlight
-    pub fn with_highlight(&'b mut self, highlight: &'b highlight::Highlight) -> &'b mut Self {
+    pub fn with_highlight(&mut self, highlight: &'b highlight::Highlight) -> &mut Self {
         self.body.highlight = Some(highlight);
         self
     }
