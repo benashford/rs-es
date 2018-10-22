@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,8 @@ use serde::ser::Serialize;
 
 use error::EsError;
 
-use url::Url;
 use std::time;
+use url::Url;
 
 pub trait EsResponse {
     fn status_code(&self) -> &StatusCode;
@@ -345,7 +345,7 @@ pub mod tests {
         loop {
             let page = scan.scroll(&mut client, &scroll).unwrap();
             let hits = page.hits.hits;
-            if hits.len() == 0 {
+            if hits.is_empty() {
                 break;
             }
             let actions: Vec<Action<()>> = hits
@@ -354,7 +354,8 @@ pub mod tests {
                     Action::delete(hit.id)
                         .with_index(test_idx)
                         .with_doc_type(hit.doc_type)
-                }).collect();
+                })
+                .collect();
             client.bulk(&actions).send().unwrap();
         }
 

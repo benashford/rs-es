@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Ben Ashford
+ * Copyright 2016-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@
 
 use std::collections::HashMap;
 
-use serde::ser::{Serialize, Serializer, SerializeMap};
+use serde::ser::{Serialize, SerializeMap, Serializer};
 
-use ::json::{MergeSerialize, serialize_map_optional_kv};
-use ::units::JsonVal;
+use json::{serialize_map_optional_kv, MergeSerialize};
+use units::JsonVal;
 
 macro_rules! agg {
     ($b:ident) => {
@@ -53,12 +53,13 @@ macro_rules! agg {
 
         impl<'a> Serialize for $b<'a> {
             fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                where S: Serializer {
-
+            where
+                S: Serializer,
+            {
                 self.0.serialize(serializer)
             }
         }
-    }
+    };
 }
 
 /// Scripts used in aggregations
@@ -67,18 +68,19 @@ pub struct Script<'a> {
     pub inline: Option<&'a str>,
     pub file: Option<&'a str>,
     pub id: Option<&'a str>,
-    pub params: Option<HashMap<&'a str, JsonVal>>
+    pub params: Option<HashMap<&'a str, JsonVal>>,
 }
 
 /// Base of all Metrics aggregations
 #[derive(Debug, Default)]
 pub struct Agg<'a, E>
-    where E: MergeSerialize {
-
+where
+    E: MergeSerialize,
+{
     pub field: Option<&'a str>,
     pub script: Script<'a>,
     pub missing: Option<JsonVal>,
-    pub extra: E
+    pub extra: E,
 }
 
 macro_rules! add_extra_option {
@@ -91,11 +93,13 @@ macro_rules! add_extra_option {
 }
 
 impl<'a, E> Serialize for Agg<'a, E>
-    where E: MergeSerialize {
-
+where
+    E: MergeSerialize,
+{
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
-
+    where
+        S: Serializer,
+    {
         let mut map = serializer.serialize_map(None)?;
 
         serialize_map_optional_kv(&mut map, "field", &self.field)?;
@@ -116,7 +120,7 @@ impl<'a, E> Serialize for Agg<'a, E>
 /// aggregation for that particular type
 macro_rules! agg_as {
     ($n:ident,$st:ident,$tp:ident,$t:ident,$rt:ty) => {
-        pub fn $n<'a>(&'a self) -> Result<&'a $rt, EsError> {
+        pub fn $n(&self) -> Result<&$rt, EsError> {
             match self {
                 &AggregationResult::$st(ref res) => {
                     match res {

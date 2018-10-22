@@ -19,15 +19,15 @@
 #[macro_use]
 mod common;
 
-pub mod metrics;
 pub mod bucket;
+pub mod metrics;
 
 use std::collections::HashMap;
 
-use serde::ser::{Serialize, Serializer, SerializeMap};
-use serde_json::{Value, Map};
+use serde::ser::{Serialize, SerializeMap, Serializer};
+use serde_json::{Map, Value};
 
-use ::error::EsError;
+use error::EsError;
 
 use self::bucket::BucketAggregationResult;
 use self::metrics::MetricsAggregationResult;
@@ -40,25 +40,27 @@ pub enum Aggregation<'a> {
 
     /// A bucket aggregation, groups data into buckets and optionally applies
     /// sub-aggregations
-    Bucket(bucket::BucketAggregation<'a>, Option<Aggregations<'a>>)
+    Bucket(bucket::BucketAggregation<'a>, Option<Aggregations<'a>>),
 }
 
 impl<'a> Serialize for Aggregation<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         use self::Aggregation::*;
         let mut map = (serializer.serialize_map(Some(match self {
-            &Metrics(_)              => 1,
+            &Metrics(_) => 1,
             &Bucket(_, ref opt_aggs) => match opt_aggs {
                 &Some(_) => 2,
-                &None    => 1
-            }
+                &None => 1,
+            },
         })))?;
         match self {
             &Metrics(ref metric_agg) => {
                 let agg_name = metric_agg.details();
                 map.serialize_entry(agg_name, metric_agg)?;
-            },
+            }
             &Bucket(ref bucket_agg, ref opt_aggs) => {
                 let agg_name = bucket_agg.details();
                 map.serialize_entry(agg_name, bucket_agg)?;
@@ -66,7 +68,7 @@ impl<'a> Serialize for Aggregation<'a> {
                     &Some(ref other_aggs) => {
                         map.serialize_entry("aggregations", other_aggs)?;
                     }
-                    &None => ()
+                    &None => (),
                 }
             }
         }
@@ -78,7 +80,7 @@ impl<'a> Serialize for Aggregation<'a> {
 ///
 /// There are many ways of creating aggregations, either standalone or via a
 /// conversion trait
-#[derive(Debug, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct Aggregations<'a>(HashMap<&'a str, Aggregation<'a>>);
 
 impl<'a> Aggregations<'a> {
@@ -114,7 +116,7 @@ impl<'b> From<Vec<(&'b str, Aggregation<'b>)>> for Aggregations<'b> {
     }
 }
 
-impl <'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
+impl<'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
     fn from(from: (&'a str, A)) -> Aggregations<'a> {
         let mut aggs = Aggregations::new();
         aggs.add(from.0, from.1.into());
@@ -131,15 +133,17 @@ pub enum AggregationResult {
     Metrics(MetricsAggregationResult),
 
     /// Result of a bucket aggregation
-    Bucket(BucketAggregationResult)
+    Bucket(BucketAggregationResult),
 }
 
 #[derive(Debug)]
 pub struct AggregationsResult(HashMap<String, AggregationResult>);
 
 /// Loads a Json object of aggregation results into an `AggregationsResult`.
-fn object_to_result(aggs: &Aggregations,
-                    object: &Map<String, Value>) -> Result<AggregationsResult, EsError> {
+fn object_to_result(
+    aggs: &Aggregations,
+    object: &Map<String, Value>,
+) -> Result<AggregationsResult, EsError> {
     use self::Aggregation::*;
 
     let mut ar_map = HashMap::new();
@@ -147,18 +151,19 @@ fn object_to_result(aggs: &Aggregations,
         let owned_key = key.to_owned();
         let json = match object.get(&owned_key) {
             Some(json) => json,
-            None => return Err(EsError::EsError(format!("No key: {}", &owned_key)))
+            None => return Err(EsError::EsError(format!("No key: {}", &owned_key))),
         };
-        ar_map.insert(owned_key, match val {
-            &Metrics(ref ma) => {
-                AggregationResult::Metrics(MetricsAggregationResult::from(ma, json)?)
+        ar_map.insert(
+            owned_key,
+            match val {
+                &Metrics(ref ma) => {
+                    AggregationResult::Metrics(MetricsAggregationResult::from(ma, json)?)
+                }
+                &Aggregation::Bucket(ref ba, ref aggs) => {
+                    AggregationResult::Bucket(BucketAggregationResult::from(ba, json, aggs)?)
+                }
             },
-            &Aggregation::Bucket(ref ba, ref aggs) => {
-                AggregationResult::Bucket(BucketAggregationResult::from(ba,
-                                                                        json,
-                                                                        aggs)?)
-            }
-        });
+        );
     }
 
     info!("Processed aggs - From: {:?}. To: {:?}", object, ar_map);
@@ -170,16 +175,14 @@ impl AggregationsResult {
     pub fn get<'a>(&'a self, key: &str) -> Result<&'a AggregationResult, EsError> {
         match self.0.get(key) {
             Some(ref agg_res) => Ok(agg_res),
-            None              => Err(EsError::EsError(format!("No agg for key: {}",
-                                                              key)))
+            None => Err(EsError::EsError(format!("No agg for key: {}", key))),
         }
     }
 
-    pub fn from(aggs: &Aggregations,
-                json: &Value) -> Result<AggregationsResult, EsError> {
+    pub fn from(aggs: &Aggregations, json: &Value) -> Result<AggregationsResult, EsError> {
         let object = match json.as_object() {
             Some(o) => o,
-            None    => return Err(EsError::EsError("Aggregations is not an object".to_owned()))
+            None => return Err(EsError::EsError("Aggregations is not an object".to_owned())),
         };
         object_to_result(aggs, object)
     }

@@ -43,7 +43,7 @@ from_exp!(u64, OptionVal, from, OptionVal(from.to_string()));
 from_exp!(bool, OptionVal, from, OptionVal(from.to_string()));
 
 /// Every ES operation has a set of options
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct Options<'a>(pub Vec<(&'a str, OptionVal)>);
 
 impl<'a> Options<'a> {
@@ -72,9 +72,13 @@ impl<'a> fmt::Display for Options<'a> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         if !self.is_empty() {
             formatter.write_str("?")?;
-            formatter.write_str(&self.0.iter().map(|&(ref k, ref v)| {
-                format!("{}={}", k, v.0)
-            }).join("&"))?;
+            formatter.write_str(
+                &self
+                    .0
+                    .iter()
+                    .map(|&(ref k, ref v)| format!("{}={}", k, v.0))
+                    .join("&"),
+            )?;
         }
         Ok(())
     }
@@ -98,13 +102,14 @@ pub enum VersionType {
     External,
     ExternalGt,
     ExternalGte,
-    Force
+    Force,
 }
 
 impl Serialize for VersionType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
-
+    where
+        S: Serializer,
+    {
         self.to_string().serialize(serializer)
     }
 }
@@ -116,8 +121,9 @@ impl ToString for VersionType {
             VersionType::External => "external",
             VersionType::ExternalGt => "external_gt",
             VersionType::ExternalGte => "external_gte",
-            VersionType::Force => "force"
-        }.to_owned()
+            VersionType::Force => "force",
+        }
+        .to_owned()
     }
 }
 
@@ -128,16 +134,19 @@ from_exp!(VersionType, OptionVal, from, OptionVal(from.to_string()));
 pub enum Consistency {
     One,
     Quorum,
-    All
+    All,
 }
 
 impl From<Consistency> for OptionVal {
     fn from(from: Consistency) -> OptionVal {
-        OptionVal(match from {
-            Consistency::One => "one",
-            Consistency::Quorum => "quorum",
-            Consistency::All => "all"
-        }.to_owned())
+        OptionVal(
+            match from {
+                Consistency::One => "one",
+                Consistency::Quorum => "quorum",
+                Consistency::All => "all",
+            }
+            .to_owned(),
+        )
     }
 }
 
@@ -145,14 +154,17 @@ impl From<Consistency> for OptionVal {
 #[derive(Debug)]
 pub enum DefaultOperator {
     And,
-    Or
+    Or,
 }
 
 impl From<DefaultOperator> for OptionVal {
     fn from(from: DefaultOperator) -> OptionVal {
-        OptionVal(match from {
-            DefaultOperator::And => "and",
-            DefaultOperator::Or => "or"
-        }.to_owned())
+        OptionVal(
+            match from {
+                DefaultOperator::And => "and",
+                DefaultOperator::Or => "or",
+            }
+            .to_owned(),
+        )
     }
 }

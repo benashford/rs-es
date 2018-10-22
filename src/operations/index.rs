@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,19 @@
 
 use serde::ser::Serialize;
 
-use ::{Client, EsResponse};
-use ::error::EsError;
-use super::common::{Options, OptionVal};
+use super::common::{OptionVal, Options};
+use error::EsError;
+use {Client, EsResponse};
 
 /// Values for the op_type option
 pub enum OpType {
-    Create
+    Create,
 }
 
 impl From<OpType> for OptionVal {
     fn from(from: OpType) -> OptionVal {
         match from {
-            OpType::Create => OptionVal("create".to_owned())
+            OpType::Create => OptionVal("create".to_owned()),
         }
     }
 }
@@ -39,33 +39,37 @@ impl From<OpType> for OptionVal {
 #[derive(Debug)]
 pub struct IndexOperation<'a, 'b, E: Serialize + 'b> {
     /// The HTTP client that this operation will use
-    client:   &'a mut Client,
+    client: &'a mut Client,
 
     /// The index into which the document will be added
-    index:    &'b str,
+    index: &'b str,
 
     /// The type of the document
     doc_type: &'b str,
 
     /// Optional the ID of the document.
-    id:       Option<&'b str>,
+    id: Option<&'b str>,
 
     /// The optional options
-    options:  Options<'b>,
+    options: Options<'b>,
 
     /// The document to be indexed
-    document: Option<&'b E>
+    document: Option<&'b E>,
 }
 
 impl<'a, 'b, E: Serialize + 'b> IndexOperation<'a, 'b, E> {
-    pub fn new(client: &'a mut Client, index: &'b str, doc_type: &'b str) -> IndexOperation<'a, 'b, E> {
+    pub fn new(
+        client: &'a mut Client,
+        index: &'b str,
+        doc_type: &'b str,
+    ) -> IndexOperation<'a, 'b, E> {
         IndexOperation {
-            client:   client,
-            index:    index,
+            client: client,
+            index: index,
             doc_type: doc_type,
-            id:       None,
-            options:  Options::new(),
-            document: None
+            id: None,
+            options: Options::new(),
+            document: None,
         }
     }
 
@@ -94,24 +98,17 @@ impl<'a, 'b, E: Serialize + 'b> IndexOperation<'a, 'b, E> {
         // already be an error
         let response = (match self.id {
             Some(ref id) => {
-                let url = format!("/{}/{}/{}{}",
-                                  self.index,
-                                  self.doc_type,
-                                  id,
-                                  self.options);
+                let url = format!("/{}/{}/{}{}", self.index, self.doc_type, id, self.options);
                 match self.document {
                     Some(ref doc) => self.client.put_body_op(&url, doc),
-                    None          => self.client.put_op(&url)
+                    None => self.client.put_op(&url),
                 }
-            },
-            None    => {
-                let url = format!("/{}/{}{}",
-                                  self.index,
-                                  self.doc_type,
-                                  self.options);
+            }
+            None => {
+                let url = format!("/{}/{}{}", self.index, self.doc_type, self.options);
                 match self.document {
                     Some(ref doc) => self.client.post_body_op(&url, doc),
-                    None          => self.client.post_op(&url)
+                    None => self.client.post_op(&url),
                 }
             }
         })?;
@@ -123,8 +120,11 @@ impl Client {
     /// An index operation to index a document in the specified index.
     ///
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-index_.html
-    pub fn index<'a, 'b, E: Serialize>(&'a mut self, index: &'b str, doc_type: &'b str)
-                                       -> IndexOperation<'a, 'b, E> {
+    pub fn index<'a, 'b, E: Serialize>(
+        &'a mut self,
+        index: &'b str,
+        doc_type: &'b str,
+    ) -> IndexOperation<'a, 'b, E> {
         IndexOperation::new(self, index, doc_type)
     }
 }
@@ -132,22 +132,22 @@ impl Client {
 /// The result of an index operation
 #[derive(Debug, Deserialize)]
 pub struct IndexResult {
-    #[serde(rename="_index")]
-    pub index:    String,
-    #[serde(rename="_type")]
+    #[serde(rename = "_index")]
+    pub index: String,
+    #[serde(rename = "_type")]
     pub doc_type: String,
-    #[serde(rename="_id")]
-    pub id:       String,
-    #[serde(rename="_version")]
-    pub version:  u64,
-    pub created:  bool
+    #[serde(rename = "_id")]
+    pub id: String,
+    #[serde(rename = "_version")]
+    pub version: u64,
+    pub created: bool,
 }
 
 #[cfg(test)]
 pub mod tests {
-    use ::tests::{clean_db, TestDocument, make_client};
+    use tests::{clean_db, make_client, TestDocument};
 
-    use ::units::Duration;
+    use units::Duration;
 
     use super::OpType;
 
@@ -160,14 +160,14 @@ pub mod tests {
             let result_wrapped = client
                 .index(index_name, "test_type")
                 .with_doc(&TestDocument::new().with_int_field(1))
-                .with_ttl(&Duration::milliseconds(927500))
+                .with_ttl(&Duration::milliseconds(927_500))
                 .send();
             println!("TEST RESULT: {:?}", result_wrapped);
             let result = result_wrapped.unwrap();
             assert_eq!(result.created, true);
             assert_eq!(result.index, index_name);
             assert_eq!(result.doc_type, "test_type");
-            assert!(result.id.len() > 0);
+            assert!(!result.id.is_empty());
             assert_eq!(result.version, 1);
         }
         {

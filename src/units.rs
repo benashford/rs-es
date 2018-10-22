@@ -23,12 +23,12 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de;
-use serde_json::{Value, Number};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::{Number, Value};
 
-use ::error::EsError;
-use ::operations::common::OptionVal;
+use error::EsError;
+use operations::common::OptionVal;
 use std::fmt;
 
 /// The units by which duration is measured.
@@ -43,20 +43,21 @@ pub enum DurationUnit {
     Hour,
     Minute,
     Second,
-    Millisecond
+    Millisecond,
 }
 
 impl ToString for DurationUnit {
     fn to_string(&self) -> String {
         match *self {
-            DurationUnit::Month  => "M",
-            DurationUnit::Week   => "w",
-            DurationUnit::Day    => "d",
-            DurationUnit::Hour   => "h",
+            DurationUnit::Month => "M",
+            DurationUnit::Week => "w",
+            DurationUnit::Day => "d",
+            DurationUnit::Hour => "h",
             DurationUnit::Minute => "m",
             DurationUnit::Second => "s",
-            DurationUnit::Millisecond => "ms"
-        }.to_owned()
+            DurationUnit::Millisecond => "ms",
+        }
+        .to_owned()
     }
 }
 
@@ -74,14 +75,14 @@ impl ToString for DurationUnit {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Duration {
     amt: i64,
-    unit: DurationUnit
+    unit: DurationUnit,
 }
 
 impl Duration {
     pub fn new(amt: i64, unit: DurationUnit) -> Duration {
         Duration {
             amt: amt,
-            unit: unit
+            unit: unit,
         }
     }
 
@@ -132,7 +133,7 @@ from_exp!(Duration, OptionVal, from, OptionVal(from.to_string()));
 #[derive(Debug)]
 pub enum Location {
     LatLon(f64, f64),
-    GeoHash(String)
+    GeoHash(String),
 }
 
 impl Default for Location {
@@ -143,13 +144,14 @@ impl Default for Location {
 
 impl<'de> Deserialize<'de> for Location {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de> {
-
+    where
+        D: Deserializer<'de>,
+    {
         // TODO - maybe use a specific struct?
         let mut raw_location = HashMap::<String, f64>::deserialize(deserializer)?;
         Ok(Location::LatLon(
             raw_location.remove("lat").unwrap(),
-            raw_location.remove("lon").unwrap()
+            raw_location.remove("lon").unwrap(),
         ))
     }
 }
@@ -159,18 +161,17 @@ from!(String, Location, GeoHash);
 
 impl Serialize for Location {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
-
+    where
+        S: Serializer,
+    {
         match self {
             &Location::LatLon(lat, lon) => {
                 let mut d = BTreeMap::new();
                 d.insert("lat", lat);
                 d.insert("lon", lon);
                 d.serialize(serializer)
-            },
-            &Location::GeoHash(ref geo_hash) => {
-                geo_hash.serialize(serializer)
             }
+            &Location::GeoHash(ref geo_hash) => geo_hash.serialize(serializer),
         }
     }
 }
@@ -180,7 +181,7 @@ impl Serialize for Location {
 #[derive(Debug)]
 pub enum GeoBox {
     Corners(Location, Location),
-    Vertices(f64, f64, f64, f64)
+    Vertices(f64, f64, f64, f64),
 }
 
 impl Default for GeoBox {
@@ -191,31 +192,45 @@ impl Default for GeoBox {
 
 impl<'de> Deserialize<'de> for GeoBox {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de> {
-
+    where
+        D: Deserializer<'de>,
+    {
         // TODO - maybe use a specific struct?
         let mut raw_geo_box = HashMap::<String, Location>::deserialize(deserializer)?;
         Ok(GeoBox::Corners(
             raw_geo_box.remove("top_left").unwrap(),
-            raw_geo_box.remove("bottom_right").unwrap()
+            raw_geo_box.remove("bottom_right").unwrap(),
         ))
     }
 }
 
-from_exp!((Location, Location), GeoBox, from, GeoBox::Corners(from.0, from.1));
-from_exp!(((f64, f64), (f64, f64)),
-          GeoBox,
-          from,
-          GeoBox::Corners(Location::LatLon({from.0}.0, {from.0}.1),
-                          Location::LatLon({from.1}.0, {from.1}.1)));
-from_exp!((f64, f64, f64, f64),
-          GeoBox,
-          from,
-          GeoBox::Vertices(from.0, from.1, from.2, from.3));
+from_exp!(
+    (Location, Location),
+    GeoBox,
+    from,
+    GeoBox::Corners(from.0, from.1)
+);
+from_exp!(
+    ((f64, f64), (f64, f64)),
+    GeoBox,
+    from,
+    GeoBox::Corners(
+        Location::LatLon({ from.0 }.0, { from.0 }.1),
+        Location::LatLon({ from.1 }.0, { from.1 }.1)
+    )
+);
+from_exp!(
+    (f64, f64, f64, f64),
+    GeoBox,
+    from,
+    GeoBox::Vertices(from.0, from.1, from.2, from.3)
+);
 
 impl Serialize for GeoBox {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         use self::GeoBox::*;
         match self {
             &Corners(ref top_left, ref bottom_right) => {
@@ -223,7 +238,7 @@ impl Serialize for GeoBox {
                 d.insert("top_left", top_left);
                 d.insert("bottom_right", bottom_right);
                 d.serialize(serializer)
-            },
+            }
             &Vertices(top, left, bottom, right) => {
                 let mut d = BTreeMap::new();
                 d.insert("top", top);
@@ -241,7 +256,7 @@ impl Serialize for GeoBox {
 #[derive(Debug)]
 pub enum OneOrMany<T> {
     One(T),
-    Many(Vec<T>)
+    Many(Vec<T>),
 }
 
 impl<T: Default> Default for OneOrMany<T> {
@@ -251,12 +266,16 @@ impl<T: Default> Default for OneOrMany<T> {
 }
 
 impl<T> Serialize for OneOrMany<T>
-    where T: Serialize {
+where
+    T: Serialize,
+{
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         match self {
             &OneOrMany::One(ref t) => t.serialize(serializer),
-            &OneOrMany::Many(ref t) => t.serialize(serializer)
+            &OneOrMany::Many(ref t) => t.serialize(serializer),
         }
     }
 }
@@ -278,18 +297,20 @@ impl<T> From<Vec<T>> for OneOrMany<T> {
 pub enum DistanceType {
     SloppyArc,
     Arc,
-    Plane
+    Plane,
 }
 
 impl Serialize for DistanceType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
-
+    where
+        S: Serializer,
+    {
         match self {
             &DistanceType::SloppyArc => "sloppy_arc",
-            &DistanceType::Arc       => "arc",
-            &DistanceType::Plane     => "plane"
-        }.serialize(serializer)
+            &DistanceType::Arc => "arc",
+            &DistanceType::Plane => "plane",
+        }
+        .serialize(serializer)
     }
 }
 
@@ -304,7 +325,7 @@ pub enum DistanceUnit {
     Meter,
     Centimeter,
     Millimeter,
-    NauticalMile
+    NauticalMile,
 }
 
 impl Default for DistanceUnit {
@@ -324,15 +345,17 @@ impl ToString for DistanceUnit {
             DistanceUnit::Meter => "m",
             DistanceUnit::Centimeter => "cm",
             DistanceUnit::Millimeter => "mm",
-            DistanceUnit::NauticalMile => "NM"
-        }.to_owned()
+            DistanceUnit::NauticalMile => "NM",
+        }
+        .to_owned()
     }
 }
 
 impl Serialize for DistanceUnit {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
-
+    where
+        S: Serializer,
+    {
         self.to_string().serialize(serializer)
     }
 }
@@ -340,23 +363,24 @@ impl Serialize for DistanceUnit {
 /// Distance, both an amount and a unit
 #[derive(Debug, Default)]
 pub struct Distance {
-     amt: f64,
-     unit: DistanceUnit
+    amt: f64,
+    unit: DistanceUnit,
 }
 
 impl Distance {
     pub fn new(amt: f64, unit: DistanceUnit) -> Distance {
         Distance {
-            amt:  amt,
-            unit: unit
+            amt: amt,
+            unit: unit,
         }
     }
 }
 
 impl Serialize for Distance {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
-
+    where
+        S: Serializer,
+    {
         format!("{}{}", self.amt, self.unit.to_string()).serialize(serializer)
     }
 }
@@ -367,13 +391,13 @@ pub trait JsonPotential {
 }
 
 macro_rules! json_potential {
-    ($t:ty) => (
+    ($t:ty) => {
         impl JsonPotential for $t {
             fn to_json_val(&self) -> JsonVal {
                 (*self).into()
             }
         }
-    )
+    };
 }
 
 impl<'a> JsonPotential for &'a str {
@@ -396,7 +420,7 @@ json_potential!(bool);
 pub enum JsonVal {
     String(String),
     Number(Number),
-    Boolean(bool)
+    Boolean(bool),
 }
 
 impl JsonVal {
@@ -406,8 +430,7 @@ impl JsonVal {
             &String(ref string) => JsonVal::String(string.clone()),
             &Bool(b) => JsonVal::Boolean(b),
             &Number(ref i) => JsonVal::Number(i.clone()),
-            _ => return Err(EsError::EsError(format!("Not a JsonVal: {:?}",
-                                                     from)))
+            _ => return Err(EsError::EsError(format!("Not a JsonVal: {:?}", from))),
         })
     }
 }
@@ -420,19 +443,22 @@ impl Default for JsonVal {
 
 impl Serialize for JsonVal {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         match self {
             &JsonVal::String(ref s) => s.serialize(serializer),
             &JsonVal::Number(ref i) => i.serialize(serializer),
-            &JsonVal::Boolean(b) => b.serialize(serializer)
+            &JsonVal::Boolean(b) => b.serialize(serializer),
         }
     }
 }
 
 impl<'de> Deserialize<'de> for JsonVal {
     fn deserialize<D>(deserializer: D) -> Result<JsonVal, D::Error>
-        where D: Deserializer<'de> {
-
+    where
+        D: Deserializer<'de>,
+    {
         deserializer.deserialize_any(JsonValVisitor)
     }
 }
@@ -447,27 +473,46 @@ impl<'de> de::Visitor<'de> for JsonValVisitor {
     }
 
     fn visit_string<E>(self, s: String) -> Result<JsonVal, E>
-        where E: de::Error {
+    where
+        E: de::Error,
+    {
         Ok(JsonVal::String(s))
     }
 
+    fn visit_str<E>(self, s: &str) -> Result<JsonVal, E>
+    where
+        E: de::Error,
+    {
+        Ok(JsonVal::String(s.to_owned()))
+    }
+
     fn visit_i64<E>(self, i: i64) -> Result<JsonVal, E>
-        where E: de::Error {
+    where
+        E: de::Error,
+    {
         Ok(JsonVal::Number(i.into()))
     }
 
     fn visit_u64<E>(self, u: u64) -> Result<JsonVal, E>
-        where E: de::Error {
+    where
+        E: de::Error,
+    {
         Ok(JsonVal::Number(u.into()))
     }
 
     fn visit_f64<E>(self, f: f64) -> Result<JsonVal, E>
-        where E: de::Error {
-        Ok(JsonVal::Number(Number::from_f64(f).ok_or_else(|| de::Error::custom("not a float"))?))
+    where
+        E: de::Error,
+    {
+        Ok(JsonVal::Number(
+            Number::from_f64(f).ok_or_else(|| de::Error::custom("not a float"))?,
+        ))
     }
 
     fn visit_bool<E>(self, b: bool) -> Result<JsonVal, E>
-        where E: de::Error {
+    where
+        E: de::Error,
+    {
         Ok(JsonVal::Boolean(b))
     }
 }
@@ -493,8 +538,18 @@ impl<'a> From<&'a str> for JsonVal {
     }
 }
 
-from_exp!(f32, JsonVal, from, JsonVal::Number(Number::from_f64(from as f64).unwrap()));
-from_exp!(f64, JsonVal, from, JsonVal::Number(Number::from_f64(from).unwrap()));
+from_exp!(
+    f32,
+    JsonVal,
+    from,
+    JsonVal::Number(Number::from_f64(from as f64).unwrap())
+);
+from_exp!(
+    f64,
+    JsonVal,
+    from,
+    JsonVal::Number(Number::from_f64(from).unwrap())
+);
 from_exp!(i32, JsonVal, from, JsonVal::Number(from.into()));
 from_exp!(i64, JsonVal, from, JsonVal::Number(from.into()));
 from_exp!(u32, JsonVal, from, JsonVal::Number(from.into()));
@@ -508,7 +563,7 @@ impl<'a> From<&'a Value> for JsonVal {
             &String(ref s) => JsonVal::String(s.clone()),
             &Number(ref f) => JsonVal::Number(f.clone()),
             &Bool(b) => JsonVal::Boolean(b),
-            _ => panic!("Not a String, F64, I64, U64 or Boolean")
+            _ => panic!("Not a String, F64, I64, U64 or Boolean"),
         }
     }
 }

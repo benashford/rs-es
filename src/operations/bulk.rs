@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,18 @@
 
 use hyper::status::StatusCode;
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{Error, MapAccess, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json;
 
-use ::{Client, EsResponse};
-use ::do_req;
-use ::error::EsError;
-use ::json::{FieldBased, NoOuter, ShouldSkip};
-use ::units::Duration;
+use do_req;
+use error::EsError;
+use json::{FieldBased, NoOuter, ShouldSkip};
+use units::Duration;
+use {Client, EsResponse};
 
+use super::common::{OptionVal, Options, VersionType};
 use super::ShardCountResult;
-use super::common::{Options, OptionVal, VersionType};
 use std::fmt;
 
 #[derive(Debug)]
@@ -38,13 +38,14 @@ pub enum ActionType {
     Create,
     Delete,
     /// WARNING - currently un-implemented
-    Update
+    Update,
 }
 
 impl Serialize for ActionType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
-
+    where
+        S: Serializer,
+    {
         self.to_string().serialize(serializer)
     }
 }
@@ -55,32 +56,63 @@ impl ToString for ActionType {
             ActionType::Index => "index",
             ActionType::Create => "create",
             ActionType::Delete => "delete",
-            ActionType::Update => "update"
-        }.to_owned()
+            ActionType::Update => "update",
+        }
+        .to_owned()
     }
 }
 
 #[derive(Debug, Default, Serialize)]
 pub struct ActionOptions {
-    #[serde(rename="_index", skip_serializing_if="ShouldSkip::should_skip")]
-    index:             Option<String>,
-    #[serde(rename="_type", skip_serializing_if="ShouldSkip::should_skip")]
-    doc_type:          Option<String>,
-    #[serde(rename="_id", skip_serializing_if="ShouldSkip::should_skip")]
-    id:                Option<String>,
-    #[serde(rename="_version", skip_serializing_if="ShouldSkip::should_skip")]
-    version:           Option<u64>,
-    #[serde(rename="_version_type", skip_serializing_if="ShouldSkip::should_skip")]
-    version_type:      Option<VersionType>,
-    #[serde(rename="_routing", skip_serializing_if="ShouldSkip::should_skip")]
-    routing:           Option<String>,
-    #[serde(rename="_parent", skip_serializing_if="ShouldSkip::should_skip")]
-    parent:            Option<String>,
-    #[serde(rename="_timestamp", skip_serializing_if="ShouldSkip::should_skip")]
-    timestamp:         Option<String>,
-    #[serde(rename="_ttl", skip_serializing_if="ShouldSkip::should_skip")]
-    ttl:               Option<Duration>,
-    #[serde(rename="_retry_on_conflict", skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(
+        rename = "_index",
+        skip_serializing_if = "ShouldSkip::should_skip"
+    )]
+    index: Option<String>,
+    #[serde(
+        rename = "_type",
+        skip_serializing_if = "ShouldSkip::should_skip"
+    )]
+    doc_type: Option<String>,
+    #[serde(
+        rename = "_id",
+        skip_serializing_if = "ShouldSkip::should_skip"
+    )]
+    id: Option<String>,
+    #[serde(
+        rename = "_version",
+        skip_serializing_if = "ShouldSkip::should_skip"
+    )]
+    version: Option<u64>,
+    #[serde(
+        rename = "_version_type",
+        skip_serializing_if = "ShouldSkip::should_skip"
+    )]
+    version_type: Option<VersionType>,
+    #[serde(
+        rename = "_routing",
+        skip_serializing_if = "ShouldSkip::should_skip"
+    )]
+    routing: Option<String>,
+    #[serde(
+        rename = "_parent",
+        skip_serializing_if = "ShouldSkip::should_skip"
+    )]
+    parent: Option<String>,
+    #[serde(
+        rename = "_timestamp",
+        skip_serializing_if = "ShouldSkip::should_skip"
+    )]
+    timestamp: Option<String>,
+    #[serde(
+        rename = "_ttl",
+        skip_serializing_if = "ShouldSkip::should_skip"
+    )]
+    ttl: Option<Duration>,
+    #[serde(
+        rename = "_retry_on_conflict",
+        skip_serializing_if = "ShouldSkip::should_skip"
+    )]
     retry_on_conflict: Option<u64>,
 }
 
@@ -88,24 +120,26 @@ pub struct ActionOptions {
 pub struct Action<X>(FieldBased<ActionType, ActionOptions, NoOuter>, Option<X>);
 
 impl<S> Action<S>
-    where S: Serialize {
+where
+    S: Serialize,
+{
     /// An index action.
     ///
     /// Takes the document to be indexed, other parameters can be set as
     /// optional on the `Action` struct returned.
     pub fn index(document: S) -> Self {
-        Action(FieldBased::new(ActionType::Index,
-                               Default::default(),
-                               NoOuter),
-               Some(document))
+        Action(
+            FieldBased::new(ActionType::Index, Default::default(), NoOuter),
+            Some(document),
+        )
     }
 
     /// Create action
     pub fn create(document: S) -> Self {
-        Action(FieldBased::new(ActionType::Create,
-                               Default::default(),
-                               NoOuter),
-               Some(document))
+        Action(
+            FieldBased::new(ActionType::Create, Default::default(), NoOuter),
+            Some(document),
+        )
     }
 
     /// Add the serialized version of this action to the bulk `String`.
@@ -115,13 +149,10 @@ impl<S> Action<S>
         actstr.push_str(&command_str);
         actstr.push_str("\n");
 
-        match self.1 {
-            Some(ref source) => {
-                let payload_str = serde_json::to_string(source)?;
-                actstr.push_str(&payload_str);
-                actstr.push_str("\n");
-            },
-            None             => ()
+        if let Some(ref source) = self.1 {
+            let payload_str = serde_json::to_string(source)?;
+            actstr.push_str(&payload_str);
+            actstr.push_str("\n");
         }
         Ok(())
     }
@@ -139,13 +170,17 @@ impl<S> Action<S> {
     /// let delete_with_index:Action<()> = Action::delete("doc_id").with_index("index_name");
     /// ```
     pub fn delete<A: Into<String>>(id: A) -> Self {
-        Action(FieldBased::new(ActionType::Delete,
-                               ActionOptions {
-                                   id: Some(id.into()),
-                                   ..Default::default()
-                               },
-                               NoOuter),
-               None)
+        Action(
+            FieldBased::new(
+                ActionType::Delete,
+                ActionOptions {
+                    id: Some(id.into()),
+                    ..Default::default()
+                },
+                NoOuter,
+            ),
+            None,
+        )
     }
 
     // TODO - implement update
@@ -164,23 +199,24 @@ impl<S> Action<S> {
 
 #[derive(Debug)]
 pub struct BulkOperation<'a, 'b, S: 'b> {
-    client:   &'a mut Client,
-    index:    Option<&'b str>,
+    client: &'a mut Client,
+    index: Option<&'b str>,
     doc_type: Option<&'b str>,
-    actions:  &'b [Action<S>],
-    options:  Options<'b>
+    actions: &'b [Action<S>],
+    options: Options<'b>,
 }
 
 impl<'a, 'b, S> BulkOperation<'a, 'b, S>
-    where S: Serialize {
-
+where
+    S: Serialize,
+{
     pub fn new(client: &'a mut Client, actions: &'b [Action<S>]) -> Self {
         BulkOperation {
-            client:   client,
-            index:    None,
+            client: client,
+            index: None,
             doc_type: None,
-            actions:  actions,
-            options:  Options::new()
+            actions: actions,
+            options: Options::new(),
         }
     }
 
@@ -200,19 +236,13 @@ impl<'a, 'b, S> BulkOperation<'a, 'b, S>
     fn format_url(&self) -> String {
         let mut url = String::new();
         url.push_str("/");
-        match self.index {
-            Some(index) => {
-                url.push_str(index);
-                url.push_str("/");
-            },
-            None        => ()
+        if let Some(index) = self.index {
+            url.push_str(index);
+            url.push_str("/");
         }
-        match self.doc_type {
-            Some(doc_type) => {
-                url.push_str(doc_type);
-                url.push_str("/");
-            },
-            None           => ()
+        if let Some(doc_type) = self.doc_type {
+            url.push_str(doc_type);
+            url.push_str("/");
         }
         url.push_str("_bulk");
         url.push_str(&self.options.to_string());
@@ -242,17 +272,22 @@ impl<'a, 'b, S> BulkOperation<'a, 'b, S>
         let body = self.format_actions();
         debug!("Sending: {}", body);
         // Doesn't use the standard macros as it's not standard JSON
-        let result = self.client.http_client
-                       .post(&full_url)
-                       .body(&body)
-                       .headers(self.client.headers.clone())
-                       .send()?;
+        let result = self
+            .client
+            .http_client
+            .post(&full_url)
+            .body(&body)
+            .headers(self.client.headers.clone())
+            .send()?;
 
         let response = do_req(result)?;
 
         match response.status_code() {
             &StatusCode::Ok => Ok(response.read_response()?),
-            _              => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
+            _ => Err(EsError::EsError(format!(
+                "Unexpected status: {}",
+                response.status_code()
+            ))),
         }
     }
 }
@@ -261,10 +296,10 @@ impl Client {
     /// Bulk
     ///
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
-    pub fn bulk<'a, 'b, S>(&'a mut self,
-                           actions: &'b [Action<S>]) -> BulkOperation<'a, 'b, S>
-        where S: Serialize {
-
+    pub fn bulk<'a, 'b, S>(&'a mut self, actions: &'b [Action<S>]) -> BulkOperation<'a, 'b, S>
+    where
+        S: Serialize,
+    {
         BulkOperation::new(self, actions)
     }
 }
@@ -273,13 +308,14 @@ impl Client {
 #[derive(Debug)]
 pub struct ActionResult {
     pub action: ActionType,
-    pub inner: ActionResultInner
+    pub inner: ActionResultInner,
 }
 
 impl<'de> Deserialize<'de> for ActionResult {
     fn deserialize<D>(deserializer: D) -> Result<ActionResult, D::Error>
-        where D: Deserializer<'de> {
-
+    where
+        D: Deserializer<'de>,
+    {
         struct ActionResultVisitor;
 
         impl<'vde> Visitor<'vde> for ActionResultVisitor {
@@ -290,12 +326,13 @@ impl<'de> Deserialize<'de> for ActionResult {
             }
 
             fn visit_map<V>(self, mut visitor: V) -> Result<ActionResult, V::Error>
-                where V: MapAccess<'vde> {
-
-                let visited:Option<(String, ActionResultInner)> = visitor.next_entry()?;
+            where
+                V: MapAccess<'vde>,
+            {
+                let visited: Option<(String, ActionResultInner)> = visitor.next_entry()?;
                 let (key, value) = match visited {
                     Some((key, value)) => (key, value),
-                    None               => return Err(V::Error::custom("expecting at least one field"))
+                    None => return Err(V::Error::custom("expecting at least one field")),
                 };
 
                 let result = ActionResult {
@@ -304,11 +341,9 @@ impl<'de> Deserialize<'de> for ActionResult {
                         "create" => ActionType::Create,
                         "delete" => ActionType::Delete,
                         "update" => ActionType::Update,
-                        _ => {
-                            return Err(V::Error::custom(format!("Unrecognised key: {}", key)))
-                        }
+                        _ => return Err(V::Error::custom(format!("Unrecognised key: {}", key))),
                     },
-                    inner:  value
+                    inner: value,
                 };
 
                 Ok(result)
@@ -321,29 +356,29 @@ impl<'de> Deserialize<'de> for ActionResult {
 
 #[derive(Debug, Deserialize)]
 pub struct ActionResultInner {
-    #[serde(rename="_index")]
-    pub index:    String,
-    #[serde(rename="_type")]
+    #[serde(rename = "_index")]
+    pub index: String,
+    #[serde(rename = "_type")]
     pub doc_type: String,
-    #[serde(rename="_version")]
-    pub version:  u64,
-    pub status:   u64,
-    #[serde(rename="_shards")]
-    pub shards:   ShardCountResult,
-    pub found:    Option<bool>
+    #[serde(rename = "_version")]
+    pub version: u64,
+    pub status: u64,
+    #[serde(rename = "_shards")]
+    pub shards: ShardCountResult,
+    pub found: Option<bool>,
 }
 
 /// The result of a bulk operation
 #[derive(Debug, Deserialize)]
 pub struct BulkResult {
     pub errors: bool,
-    pub items:  Vec<ActionResult>,
-    pub took:   u64
+    pub items: Vec<ActionResult>,
+    pub took: u64,
 }
 
 #[cfg(test)]
 pub mod tests {
-    use ::tests::{clean_db, TestDocument, make_client};
+    use tests::{clean_db, make_client, TestDocument};
 
     use super::Action;
 
@@ -354,12 +389,17 @@ pub mod tests {
 
         clean_db(&mut client, index_name);
 
-        let actions:Vec<Action<TestDocument>> = (1..10).map(|i| {
-            let doc = TestDocument::new().with_str_field("bulk_doc").with_int_field(i);
-            Action::index(doc)
-        }).collect();
+        let actions: Vec<Action<TestDocument>> = (1..10)
+            .map(|i| {
+                let doc = TestDocument::new()
+                    .with_str_field("bulk_doc")
+                    .with_int_field(i);
+                Action::index(doc)
+            })
+            .collect();
 
-        let result = client.bulk(&actions)
+        let result = client
+            .bulk(&actions)
             .with_index(index_name)
             .with_doc_type("bulk_type")
             .send()

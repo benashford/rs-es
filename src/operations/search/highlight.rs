@@ -23,16 +23,19 @@ use serde::ser::{Serialize, Serializer};
 #[derive(Debug, Clone)]
 pub enum Encoders {
     Default,
-    HTML
+    HTML,
 }
 
 impl Serialize for Encoders {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         match self {
             &Encoders::Default => "default",
-            &Encoders::HTML    => "html"
-        }.serialize(serializer)
+            &Encoders::HTML => "html",
+        }
+        .serialize(serializer)
     }
 }
 
@@ -40,31 +43,37 @@ impl Serialize for Encoders {
 pub enum SettingTypes {
     Plain,
     FVH,
-    Postings
+    Postings,
 }
 
 impl Serialize for SettingTypes {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         match self {
-            &SettingTypes::Plain    => "plain",
-            &SettingTypes::FVH      => "fvh",
-            &SettingTypes::Postings => "postings"
-        }.serialize(serializer)
+            &SettingTypes::Plain => "plain",
+            &SettingTypes::FVH => "fvh",
+            &SettingTypes::Postings => "postings",
+        }
+        .serialize(serializer)
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum IndexOptions {
-    Offsets
+    Offsets,
 }
 
 impl Serialize for IndexOptions {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         match self {
-            &IndexOptions::Offsets => "offsets"
-        }.serialize(serializer)
+            &IndexOptions::Offsets => "offsets",
+        }
+        .serialize(serializer)
     }
 }
 
@@ -75,20 +84,23 @@ pub enum TermVector {
     BoundaryMaxScan,
 }
 
-impl Serialize for TermVector  {
+impl Serialize for TermVector {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         match self {
             &TermVector::WithPositionsOffsets => "with_positions_offsets",
-            &TermVector::BoundaryChars        => "boundary_chars",
-            &TermVector::BoundaryMaxScan      => "boundary_max_scan"
-        }.serialize(serializer)
+            &TermVector::BoundaryChars => "boundary_chars",
+            &TermVector::BoundaryMaxScan => "boundary_max_scan",
+        }
+        .serialize(serializer)
     }
 }
 
 #[derive(Debug, Serialize, Clone)]
 pub struct Setting {
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     pub setting_type: Option<SettingTypes>,
     pub index_options: Option<IndexOptions>,
     pub term_vector: Option<TermVector>,
@@ -96,7 +108,7 @@ pub struct Setting {
     pub fragment_size: u32,
     pub number_of_fragments: u32,
     pub no_match_size: u32,
-    pub matched_fields: Option<Vec<String>>
+    pub matched_fields: Option<Vec<String>>,
 }
 
 impl Setting {
@@ -109,7 +121,7 @@ impl Setting {
             fragment_size: 150,
             number_of_fragments: 5,
             no_match_size: 0,
-            matched_fields: None
+            matched_fields: None,
         }
     }
 
@@ -154,12 +166,12 @@ impl Setting {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Default, Serialize, Clone)]
 pub struct Highlight {
     pub fields: HashMap<String, Setting>,
     pub pre_tags: Option<Vec<String>>,
     pub post_tags: Option<Vec<String>>,
-    pub encoder: Option<Encoders>
+    pub encoder: Option<Encoders>,
 }
 
 impl Highlight {
@@ -181,7 +193,7 @@ impl Highlight {
             fields: HashMap::new(),
             pre_tags: None,
             post_tags: None,
-            encoder: None
+            encoder: None,
         }
     }
 

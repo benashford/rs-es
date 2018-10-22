@@ -67,7 +67,8 @@ impl ToString for SearchType {
             &SearchType::DFSQueryAndFetch => "dfs_query_and_fetch",
             &SearchType::QueryThenFetch => "query_then_fetch",
             &SearchType::QueryAndFetch => "query_and_fetch",
-        }.to_owned()
+        }
+        .to_owned()
     }
 }
 
@@ -83,7 +84,8 @@ impl ToString for Order {
         match self {
             &Order::Asc => "asc",
             &Order::Desc => "desc",
-        }.to_owned()
+        }
+        .to_owned()
     }
 }
 
@@ -115,7 +117,8 @@ impl Serialize for Mode {
             &Mode::Max => "max",
             &Mode::Sum => "sum",
             &Mode::Avg => "avg",
-        }.serialize(serializer)
+        }
+        .serialize(serializer)
     }
 }
 
@@ -197,14 +200,11 @@ impl ToString for SortField {
     fn to_string(&self) -> String {
         let mut s = String::new();
         s.push_str(&self.0.field);
-        match self.0.inner.order {
-            Some(ref order) => {
-                s.push_str(":");
-                // TODO - find less clumsy way of implementing the following
-                // line
-                s.push_str(&order.to_string());
-            }
-            None => (),
+        if let Some(ref order) = self.0.inner.order {
+            s.push_str(":");
+            // TODO - find less clumsy way of implementing the following
+            // line
+            s.push_str(&order.to_string());
         }
         s
     }
@@ -805,14 +805,14 @@ impl Client {
     /// Search via the query parameter
     ///
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-uri-request.html
-    pub fn search_uri<'a>(&'a mut self) -> SearchURIOperation {
+    pub fn search_uri(&mut self) -> SearchURIOperation {
         SearchURIOperation::new(self)
     }
 
     /// Search via the query DSL
     ///
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-request-body.html
-    pub fn search_query<'a>(&'a mut self) -> SearchQueryOperation {
+    pub fn search_query(&mut self) -> SearchQueryOperation {
         SearchQueryOperation::new(self)
     }
 }
@@ -921,7 +921,7 @@ where
     T: DeserializeOwned,
 {
     /// Take a reference to any aggregations in this result
-    pub fn aggs_ref<'a>(&'a self) -> Option<&'a AggregationsResult> {
+    pub fn aggs_ref(&self) -> Option<&AggregationsResult> {
         self.aggs.as_ref()
     }
 }
@@ -1220,7 +1220,8 @@ mod tests {
                     .with_gte(2)
                     .with_lte(3)
                     .build(),
-            ).send()
+            )
+            .send()
             .unwrap();
         assert_eq!(2, within_range.hits.total);
         // TODO - add assertion for document content
@@ -1422,7 +1423,8 @@ mod tests {
                 Action::index(TestDocument::new().with_str_field("C++ and Java")),
                 Action::index(TestDocument::new().with_str_field("Rust and Java")),
                 Action::index(TestDocument::new().with_str_field("Rust is nice")),
-            ]).with_index(index_name)
+            ])
+            .with_index(index_name)
             .with_doc_type("doc_type")
             .send()
             .unwrap();
@@ -1472,7 +1474,8 @@ mod tests {
                 Action::index(TestDocument::new().with_str_field("B").with_int_field(3)),
                 Action::index(TestDocument::new().with_str_field("A").with_int_field(1)),
                 Action::index(TestDocument::new().with_str_field("B").with_int_field(2)),
-            ]).with_index(index_name)
+            ])
+            .with_index(index_name)
             .with_doc_type("doc_type")
             .send()
             .unwrap();
@@ -1547,7 +1550,8 @@ mod tests {
             .bulk(&[
                 Action::index(TestDocument::new().with_int_field(10)),
                 Action::index(TestDocument::new().with_int_field(1)),
-            ]).with_index(index_name)
+            ])
+            .with_index(index_name)
             .with_doc_type("doc_type")
             .send()
             .unwrap();
@@ -1560,7 +1564,8 @@ mod tests {
             .with_aggs(&Aggregations::from((
                 "min_int_field",
                 Min::field("int_field"),
-            ))).send()
+            )))
+            .send()
             .unwrap();
 
         let min = &result
@@ -1589,7 +1594,8 @@ mod tests {
                 Action::index(TestDocument::new().with_str_field("B").with_int_field(10)),
                 Action::index(TestDocument::new().with_str_field("C").with_int_field(4)),
                 Action::index(TestDocument::new().with_str_field("A").with_int_field(99)),
-            ]).with_index(index_name)
+            ])
+            .with_index(index_name)
             .with_doc_type("doc_type")
             .send()
             .unwrap();

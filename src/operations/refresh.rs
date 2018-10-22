@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Ben Ashford
+ * Copyright 2016-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
 
 use hyper::status::StatusCode;
 
-use ::{Client, EsResponse};
-use ::error::EsError;
+use error::EsError;
+use {Client, EsResponse};
 
 use super::{format_multi, ShardCountResult};
 
@@ -29,14 +29,14 @@ pub struct RefreshOperation<'a, 'b> {
     client: &'a mut Client,
 
     /// The indexes being refreshed
-    indexes: &'b [&'b str]
+    indexes: &'b [&'b str],
 }
 
 impl<'a, 'b> RefreshOperation<'a, 'b> {
     pub fn new(client: &'a mut Client) -> RefreshOperation {
         RefreshOperation {
-            client:  client,
-            indexes: &[]
+            client: client,
+            indexes: &[],
         }
     }
 
@@ -46,12 +46,14 @@ impl<'a, 'b> RefreshOperation<'a, 'b> {
     }
 
     pub fn send(&mut self) -> Result<RefreshResult, EsError> {
-        let url = format!("/{}/_refresh",
-                          format_multi(&self.indexes));
+        let url = format!("/{}/_refresh", format_multi(&self.indexes));
         let response = self.client.post_op(&url)?;
         match response.status_code() {
             &StatusCode::Ok => Ok(response.read_response()?),
-            _              => Err(EsError::EsError(format!("Unexpected status: {}", response.status_code())))
+            _ => Err(EsError::EsError(format!(
+                "Unexpected status: {}",
+                response.status_code()
+            ))),
         }
     }
 }
@@ -60,7 +62,7 @@ impl Client {
     /// Refresh
     ///
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/indices-refresh.html
-    pub fn refresh<'a>(&'a mut self) -> RefreshOperation {
+    pub fn refresh(&mut self) -> RefreshOperation {
         RefreshOperation::new(self)
     }
 }
@@ -68,6 +70,6 @@ impl Client {
 /// Result of a refresh request
 #[derive(Deserialize)]
 pub struct RefreshResult {
-    #[serde(rename="_shards")]
-    pub shards: ShardCountResult
+    #[serde(rename = "_shards")]
+    pub shards: ShardCountResult,
 }
