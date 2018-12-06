@@ -23,13 +23,13 @@
 
 use std::collections::HashMap;
 
-use serde_json::{Value, Map};
+use serde_json::{Map, Value};
 
-use hyper::status::StatusCode;
+use reqwest::StatusCode;
 
-use ::{Client, EsResponse};
-use ::error::EsError;
-use ::operations::GenericResult;
+use error::EsError;
+use operations::GenericResult;
+use {Client, EsResponse};
 
 pub type DocType<'a> = HashMap<&'a str, HashMap<&'a str, &'a str>>;
 pub type Mapping<'a> = HashMap<&'a str, DocType<'a>>;
@@ -37,40 +37,39 @@ pub type Mapping<'a> = HashMap<&'a str, DocType<'a>>;
 #[derive(Debug, Serialize)]
 pub struct Settings {
     pub number_of_shards: u32,
-    pub analysis: Analysis
+    pub analysis: Analysis,
 }
 
 #[derive(Debug, Serialize)]
 pub struct Analysis {
-    pub filter:   Map<String, Value>,
-    pub analyzer: Map<String, Value>
+    pub filter: Map<String, Value>,
+    pub analyzer: Map<String, Value>,
 }
 
 /// An indexing operation
 #[derive(Debug)]
 pub struct MappingOperation<'a, 'b> {
     /// The HTTP client that this operation will use
-    client:    &'a mut Client,
+    client: &'a mut Client,
 
     /// The index that will be created and eventually mapped
-    index:     &'b str,
+    index: &'b str,
 
     /// A map containing the doc types and their mapping
     mapping: Option<&'b Mapping<'b>>,
 
     /// A struct reflecting the settings that enable the
     /// customization of analyzers
-    settings: Option<&'b Settings>
+    settings: Option<&'b Settings>,
 }
 
 impl<'a, 'b> MappingOperation<'a, 'b> {
-    pub fn new(client: &'a mut Client,
-               index: &'b str) -> MappingOperation<'a, 'b> {
+    pub fn new(client: &'a mut Client, index: &'b str) -> MappingOperation<'a, 'b> {
         MappingOperation {
-            client:   client,
-            index:    index,
-            mapping:  None,
-            settings: None
+            client: client,
+            index: index,
+            mapping: None,
+            settings: None,
         }
     }
 
@@ -100,7 +99,7 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
         if self.settings.is_some() {
             let body = hashmap! { "settings" => self.settings.unwrap() };
             let url = format!("{}", self.index);
-            let _   = self.client.put_body_op(&url, &body)?;
+            let _ = self.client.put_body_op(&url, &body)?;
 
             let _ = self.client.wait_for_status("yellow", "5s");
         }
@@ -110,8 +109,8 @@ impl<'a, 'b> MappingOperation<'a, 'b> {
 
             for (entity, properties) in self.mapping.unwrap().iter() {
                 let body = hashmap! { "properties" => properties };
-                let url  = format!("{}/_mapping/{}", self.index, entity);
-                let _   = self.client.put_body_op(&url, &body)?;
+                let url = format!("{}/_mapping/{}", self.index, entity);
+                let _ = self.client.put_body_op(&url, &body)?;
             }
 
             let _ = self.client.open_index(self.index);
@@ -127,10 +126,12 @@ impl Client {
         let url = format!("{}/_open", index);
         let response = self.post_op(&url)?;
 
-        match response.status_code() {
-            &StatusCode::Ok => Ok(response.read_response()?),
-            _ => Err(EsError::EsError(format!("Unexpected status: {}",
-                                              response.status_code())))
+        match response.status() {
+            StatusCode::OK => Ok(response.read_response()?),
+            _ => Err(EsError::EsError(format!(
+                "Unexpected status: {}",
+                response.status()
+            ))),
         }
     }
 
@@ -139,23 +140,34 @@ impl Client {
         let url = format!("{}/_close", index);
         let response = self.post_op(&url)?;
 
-        match response.status_code() {
-            &StatusCode::Ok => Ok(response.read_response()?),
-            _ => Err(EsError::EsError(format!("Unexpected status: {}",
-                                              response.status_code())))
+        match response.status() {
+            StatusCode::OK => Ok(response.read_response()?),
+            _ => Err(EsError::EsError(format!(
+                "Unexpected status: {}",
+                response.status()
+            ))),
         }
     }
 
     /// TODO: Return proper health data from
     /// https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html
-    pub fn wait_for_status<'a>(&'a mut self, status: &'a str, timeout: &'a str) -> Result<(), EsError> {
-        let url = format!("_cluster/health?wait_for_status={}&timeout={}", status, timeout);
+    pub fn wait_for_status<'a>(
+        &'a mut self,
+        status: &'a str,
+        timeout: &'a str,
+    ) -> Result<(), EsError> {
+        let url = format!(
+            "_cluster/health?wait_for_status={}&timeout={}",
+            status, timeout
+        );
         let response = self.get_op(&url)?;
 
-        match response.status_code() {
-            &StatusCode::Ok => Ok(()),
-            _ => Err(EsError::EsError(format!("Unexpected status: {}",
-                                              response.status_code())))
+        match response.status() {
+            StatusCode::OK => Ok(()),
+            _ => Err(EsError::EsError(format!(
+                "Unexpected status: {}",
+                response.status()
+            ))),
         }
     }
 }
@@ -172,7 +184,7 @@ pub mod tests {
 
     #[derive(Debug, Serialize)]
     pub struct Author {
-        pub name: String
+        pub name: String,
     }
 
     #[test]
@@ -214,15 +226,19 @@ pub mod tests {
                         "min_gram": 1,
                         "max_gram": 2,
                     }
-                }).as_object().expect("by construction 'autocomplete_filter' should be a map").clone(),
+                }).as_object()
+                .expect("by construction 'autocomplete_filter' should be a map")
+                .clone(),
                 analyzer: json! ({
                     "autocomplete": {
                         "type": "custom",
                         "tokenizer": "standard",
                         "filter": [ "lowercase", "autocomplete_filter"]
                     }
-                }).as_object().expect("by construction 'autocomplete' should be a map").clone()
-            }
+                }).as_object()
+                .expect("by construction 'autocomplete' should be a map")
+                .clone(),
+            },
         };
 
         // TODO add appropriate functions to the `Client` struct
@@ -232,11 +248,12 @@ pub mod tests {
             .send();
         assert!(result.is_ok());
 
-         {
+        {
             let result_wrapped = client
                 .index(index_name, "post")
-                .with_doc(&Author { name: "Homu".to_owned() })
-                .send();
+                .with_doc(&Author {
+                    name: "Homu".to_owned(),
+                }).send();
 
             assert!(result_wrapped.is_ok());
 

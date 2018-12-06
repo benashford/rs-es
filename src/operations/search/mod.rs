@@ -23,7 +23,7 @@ pub mod highlight;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 
-use hyper::status::StatusCode;
+use reqwest::StatusCode;
 
 use serde::de::DeserializeOwned;
 use serde::ser::{Serialize, Serializer};
@@ -67,8 +67,7 @@ impl ToString for SearchType {
             &SearchType::DFSQueryAndFetch => "dfs_query_and_fetch",
             &SearchType::QueryThenFetch => "query_then_fetch",
             &SearchType::QueryAndFetch => "query_and_fetch",
-        }
-        .to_owned()
+        }.to_owned()
     }
 }
 
@@ -84,8 +83,7 @@ impl ToString for Order {
         match self {
             &Order::Asc => "asc",
             &Order::Desc => "desc",
-        }
-        .to_owned()
+        }.to_owned()
     }
 }
 
@@ -117,8 +115,7 @@ impl Serialize for Mode {
             &Mode::Max => "max",
             &Mode::Sum => "sum",
             &Mode::Avg => "avg",
-        }
-        .serialize(serializer)
+        }.serialize(serializer)
     }
 }
 
@@ -467,14 +464,14 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
         );
         info!("Searching with: {}", url);
         let response = self.client.get_op(&url)?;
-        match response.status_code() {
-            &StatusCode::Ok => {
+        match response.status() {
+            StatusCode::OK => {
                 let interim: SearchResultInterim<T> = response.read_response()?;
                 Ok(interim.finalize())
             }
             _ => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                response.status()
             ))),
         }
     }
@@ -728,8 +725,8 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
             self.options
         );
         let response = self.client.post_body_op(&url, &self.body)?;
-        match response.status_code() {
-            &StatusCode::Ok => {
+        match response.status() {
+            StatusCode::OK => {
                 let interim: SearchResultInterim<T> = response.read_response()?;
                 let aggs = match &interim.aggs {
                     &Some(ref raw_aggs) => {
@@ -751,7 +748,7 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
             }
             _ => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                response.status()
             ))),
         }
     }
@@ -769,8 +766,8 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
             self.options
         );
         let response = self.client.post_body_op(&url, &self.body)?;
-        match response.status_code() {
-            &StatusCode::Ok => {
+        match response.status() {
+            StatusCode::OK => {
                 let interim: ScanResultInterim<T> = response.read_response()?;
                 let aggs = match &interim.aggs {
                     &Some(ref raw_aggs) => {
@@ -790,12 +787,12 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
                 result.aggs = aggs;
                 Ok(result)
             }
-            &StatusCode::NotFound => {
+            StatusCode::NOT_FOUND => {
                 Err(EsError::EsServerError(format!("Not found: {:?}", response)))
             }
             _ => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                response.status()
             ))),
         }
     }
@@ -1072,8 +1069,8 @@ where
             client.post_body_op(&url, &body)?
         };
 
-        match response.status_code() {
-            &StatusCode::Ok => {
+        match response.status() {
+            StatusCode::OK => {
                 let search_result: SearchResultInterim<T> = response.read_response()?;
                 self.scroll_id = match search_result.scroll_id {
                     Some(ref id) => id.clone(),
@@ -1084,7 +1081,7 @@ where
             }
             _ => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                response.status()
             ))),
         }
     }
@@ -1093,12 +1090,12 @@ where
     pub fn close(&self, client: &mut Client) -> Result<(), EsError> {
         let url = format!("/_search/scroll?scroll_id={}", self.scroll_id);
         let response = client.delete_op(&url)?;
-        match response.status_code() {
-            &StatusCode::Ok => Ok(()),       // closed
-            &StatusCode::NotFound => Ok(()), // previously closed
+        match response.status() {
+            StatusCode::OK => Ok(()),        // closed
+            StatusCode::NOT_FOUND => Ok(()), // previously closed
             _ => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                response.status()
             ))),
         }
     }
@@ -1220,8 +1217,7 @@ mod tests {
                     .with_gte(2)
                     .with_lte(3)
                     .build(),
-            )
-            .send()
+            ).send()
             .unwrap();
         assert_eq!(2, within_range.hits.total);
         // TODO - add assertion for document content
@@ -1423,8 +1419,7 @@ mod tests {
                 Action::index(TestDocument::new().with_str_field("C++ and Java")),
                 Action::index(TestDocument::new().with_str_field("Rust and Java")),
                 Action::index(TestDocument::new().with_str_field("Rust is nice")),
-            ])
-            .with_index(index_name)
+            ]).with_index(index_name)
             .with_doc_type("doc_type")
             .send()
             .unwrap();
@@ -1474,8 +1469,7 @@ mod tests {
                 Action::index(TestDocument::new().with_str_field("B").with_int_field(3)),
                 Action::index(TestDocument::new().with_str_field("A").with_int_field(1)),
                 Action::index(TestDocument::new().with_str_field("B").with_int_field(2)),
-            ])
-            .with_index(index_name)
+            ]).with_index(index_name)
             .with_doc_type("doc_type")
             .send()
             .unwrap();
@@ -1485,7 +1479,7 @@ mod tests {
         let aggs = Aggregations::from((
             "str",
             (
-                Terms::field("str_field").with_order(Order::asc(OrderKey::Term)),
+                Terms::field("str_field.keyword").with_order(Order::asc(OrderKey::Term)),
                 Aggregations::from(("int", Min::field("int_field"))),
             ),
         ));
@@ -1550,8 +1544,7 @@ mod tests {
             .bulk(&[
                 Action::index(TestDocument::new().with_int_field(10)),
                 Action::index(TestDocument::new().with_int_field(1)),
-            ])
-            .with_index(index_name)
+            ]).with_index(index_name)
             .with_doc_type("doc_type")
             .send()
             .unwrap();
@@ -1564,8 +1557,7 @@ mod tests {
             .with_aggs(&Aggregations::from((
                 "min_int_field",
                 Min::field("int_field"),
-            )))
-            .send()
+            ))).send()
             .unwrap();
 
         let min = &result
@@ -1594,8 +1586,7 @@ mod tests {
                 Action::index(TestDocument::new().with_str_field("B").with_int_field(10)),
                 Action::index(TestDocument::new().with_str_field("C").with_int_field(4)),
                 Action::index(TestDocument::new().with_str_field("A").with_int_field(99)),
-            ])
-            .with_index(index_name)
+            ]).with_index(index_name)
             .with_doc_type("doc_type")
             .send()
             .unwrap();
@@ -1606,7 +1597,7 @@ mod tests {
             let result: SearchResult<TestDocument> = client
                 .search_uri()
                 .with_indexes(&[index_name])
-                .with_sort(&Sort::field("str_field"))
+                .with_sort(&Sort::field("str_field.keyword"))
                 .send()
                 .unwrap();
 
@@ -1629,7 +1620,7 @@ mod tests {
             let result: SearchResult<TestDocument> = client
                 .search_query()
                 .with_indexes(&[index_name])
-                .with_sort(&Sort::field("str_field"))
+                .with_sort(&Sort::field("str_field.keyword"))
                 .send()
                 .unwrap();
 

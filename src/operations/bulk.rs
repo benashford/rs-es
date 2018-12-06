@@ -16,7 +16,7 @@
 
 //! Implementation of the Bulk API
 
-use hyper::status::StatusCode;
+use reqwest::StatusCode;
 
 use serde::de::{Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -57,8 +57,7 @@ impl ToString for ActionType {
             ActionType::Create => "create",
             ActionType::Delete => "delete",
             ActionType::Update => "update",
-        }
-        .to_owned()
+        }.to_owned()
     }
 }
 
@@ -272,21 +271,17 @@ where
         let body = self.format_actions();
         debug!("Sending: {}", body);
         // Doesn't use the standard macros as it's not standard JSON
-        let result = self
-            .client
-            .http_client
-            .post(&full_url)
-            .body(&body)
-            .headers(self.client.headers.clone())
-            .send()?;
+        let mut result = self.client.client.post(&full_url).body(body);
+        if let Some(username) = &self.client.username {
+            result = result.basic_auth(username.clone(), self.client.password.clone());
+        }
+        let response = do_req(result.send()?)?;
 
-        let response = do_req(result)?;
-
-        match response.status_code() {
-            &StatusCode::Ok => Ok(response.read_response()?),
+        match response.status() {
+            StatusCode::OK => Ok(response.read_response()?),
             _ => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                response.status()
             ))),
         }
     }
@@ -395,8 +390,7 @@ pub mod tests {
                     .with_str_field("bulk_doc")
                     .with_int_field(i);
                 Action::index(doc)
-            })
-            .collect();
+            }).collect();
 
         let result = client
             .bulk(&actions)

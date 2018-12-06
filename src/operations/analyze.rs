@@ -17,27 +17,27 @@
 
 //! Implementation of ElasticSearch Analyze operation
 
-use ::do_req;
-use ::{Client, EsResponse};
-use ::error::EsError;
+use do_req;
+use error::EsError;
+use {Client, EsResponse};
 
 #[derive(Debug)]
 pub struct AnalyzeOperation<'a, 'b> {
     /// The HTTP client that this operation will use
-    client:   &'a mut Client,
+    client: &'a mut Client,
 
-    body:     &'b str,
-    index:    Option<&'b str>,
-    analyzer: Option<&'b str>
+    body: &'b str,
+    index: Option<&'b str>,
+    analyzer: Option<&'b str>,
 }
 
 impl<'a, 'b> AnalyzeOperation<'a, 'b> {
     pub fn new(client: &'a mut Client, body: &'b str) -> AnalyzeOperation<'a, 'b> {
         AnalyzeOperation {
-            client:   client,
-            body:     body,
-            index:    None,
-            analyzer: None
+            client: client,
+            body: body,
+            index: None,
+            analyzer: None,
         }
     }
 
@@ -54,21 +54,20 @@ impl<'a, 'b> AnalyzeOperation<'a, 'b> {
     pub fn send(&mut self) -> Result<AnalyzeResult, EsError> {
         let mut url = match self.index {
             None => "/_analyze".to_owned(),
-            Some(index) => format!("{}/_analyze", index)
+            Some(index) => format!("{}/_analyze", index),
         };
         match self.analyzer {
             None => (),
-            Some(analyzer) => {
-                url.push_str(&format!("?analyzer={}", analyzer))
-            }
+            Some(analyzer) => url.push_str(&format!("?analyzer={}", analyzer)),
         }
         let client = &self.client;
         let full_url = client.full_url(&url);
-        let req = client.http_client
-            .post(&full_url)
-            .body(self.body)
-            .send()?;
-        let response = do_req(req)?;
+        let mut req = client.client.post(&full_url).body(self.body.to_string());
+        if let Some(username) = &self.client.username {
+            req = req.basic_auth(username.clone(), self.client.password.clone());
+        }
+
+        let response = do_req(req.send()?)?;
         Ok(response.read_response()?)
     }
 }
@@ -77,8 +76,7 @@ impl Client {
     /// Analyze
     ///
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-analyze.html
-    pub fn analyze<'a>(&'a mut self,
-                       body: &'a str) -> AnalyzeOperation {
+    pub fn analyze<'a>(&'a mut self, body: &'a str) -> AnalyzeOperation {
         AnalyzeOperation::new(self, body)
     }
 }
@@ -86,15 +84,15 @@ impl Client {
 /// The result of an analyze operation
 #[derive(Debug, Deserialize)]
 pub struct AnalyzeResult {
-    pub tokens: Vec<Token>
+    pub tokens: Vec<Token>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Token {
     pub token: String,
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     pub token_type: String,
     pub position: u64,
     pub start_offset: u64,
-    pub end_offset: u64
+    pub end_offset: u64,
 }

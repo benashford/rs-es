@@ -16,10 +16,10 @@
 
 //! Implementation of ElasticSearch Delete Index operation
 
-use hyper::status::StatusCode;
+use reqwest::StatusCode;
 
-use ::{Client, EsResponse};
-use ::error::EsError;
+use error::EsError;
+use {Client, EsResponse};
 
 use super::GenericResult;
 
@@ -34,17 +34,19 @@ impl Client {
         let url = format!("/{}/", index);
         let response = self.delete_op(&url)?;
 
-        match response.status_code() {
-            &StatusCode::Ok => Ok(response.read_response()?),
-            _ => Err(EsError::EsError(format!("Unexpected status: {}",
-                                              response.status_code())))
+        match response.status() {
+            StatusCode::OK => Ok(response.read_response()?),
+            _ => Err(EsError::EsError(format!(
+                "Unexpected status: {}",
+                response.status()
+            ))),
         }
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use ::tests::{clean_db, TestDocument, make_client};
+    use tests::{clean_db, make_client, TestDocument};
 
     #[test]
     fn test_delete_index() {

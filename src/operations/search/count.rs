@@ -16,7 +16,7 @@
 
 //! Implementations of the Count API
 
-use hyper::status::StatusCode;
+use reqwest::StatusCode;
 
 use error::EsError;
 use json::ShouldSkip;
@@ -74,11 +74,11 @@ impl<'a, 'b> CountURIOperation<'a, 'b> {
         );
         info!("Counting with: {}", url);
         let response = self.client.get_op(&url)?;
-        match response.status_code() {
-            &StatusCode::Ok => Ok(response.read_response()?),
+        match response.status() {
+            StatusCode::OK => Ok(response.read_response()?),
             _ => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                response.status()
             ))),
         }
     }
@@ -150,11 +150,11 @@ impl<'a, 'b> CountQueryOperation<'a, 'b> {
             self.options
         );
         let response = self.client.post_body_op(&url, &self.body)?;
-        match response.status_code() {
-            &StatusCode::Ok => Ok(response.read_response()?),
+        match response.status() {
+            StatusCode::OK => Ok(response.read_response()?),
             _ => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                response.status()
             ))),
         }
     }
@@ -252,8 +252,7 @@ mod tests {
                     .with_gte(2)
                     .with_lte(3)
                     .build(),
-            )
-            .send()
+            ).send()
             .unwrap();
         assert_eq!(2, doc_1.count);
 
