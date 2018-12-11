@@ -12,7 +12,7 @@ edition = "2018"
 
 [features]
 default = []
-
+es5 = []
 geo = ["geojson"]
 
 [lib]
