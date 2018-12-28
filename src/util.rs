@@ -37,10 +37,11 @@ pub trait StrJoin {
     fn join(self, join: &str) -> String;
 }
 
-impl<I, S> StrJoin for I where
+impl<I, S> StrJoin for I
+where
     S: AsRef<str>,
-    I: Iterator<Item=S> {
-
+    I: Iterator<Item = S>,
+{
     fn join(self, join: &str) -> String {
         let mut s = String::new();
         for f in self {
@@ -73,7 +74,7 @@ macro_rules! from_exp {
                 $ex
             }
         }
-    }
+    };
 }
 
 macro_rules! from {
