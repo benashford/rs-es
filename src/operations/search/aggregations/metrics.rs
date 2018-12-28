@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,16 @@
 
 use std::collections::HashMap;
 
-use serde::ser::{Serialize, Serializer, SerializeMap};
+use serde::ser::{Serialize, SerializeMap, Serializer};
+use serde_derive::{Deserialize, Serialize};
 use serde_json::{from_value, Value};
 
-use ::error::EsError;
-use ::json::{MergeSerialize, NoOuter, serialize_map_optional_kv, ShouldSkip};
-use ::units::{GeoBox, JsonVal};
+use crate::error::EsError;
+use crate::json::{serialize_map_optional_kv, MergeSerialize, NoOuter, ShouldSkip};
+use crate::units::{GeoBox, JsonVal};
 
-use super::{Aggregation, AggregationResult};
 use super::common::{Agg, Script};
+use super::{Aggregation, AggregationResult};
 
 macro_rules! metrics_agg {
     ($b:ident) => {
@@ -37,7 +38,7 @@ macro_rules! metrics_agg {
                 Aggregation::Metrics(MetricsAggregation::$b(from))
             }
         }
-    }
+    };
 }
 
 /// Min aggregation
@@ -90,8 +91,8 @@ metrics_agg!(Percentiles);
 
 #[derive(Debug, Default)]
 pub struct PercentilesExtra {
-    percents:    Option<Vec<f64>>,
-    compression: Option<u64>
+    percents: Option<Vec<f64>>,
+    compression: Option<u64>,
 }
 
 impl<'a> Percentiles<'a> {
@@ -100,10 +101,10 @@ impl<'a> Percentiles<'a> {
 }
 
 impl MergeSerialize for PercentilesExtra {
-    fn merge_serialize<S>(&self,
-                          serializer: &mut S) -> Result<(), S::Error>
-        where S: SerializeMap {
-
+    fn merge_serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    where
+        S: SerializeMap,
+    {
         serialize_map_optional_kv(serializer, "percents", &self.percents)?;
         serialize_map_optional_kv(serializer, "compression", &self.compression)
     }
@@ -116,22 +117,24 @@ metrics_agg!(PercentileRanks);
 
 #[derive(Debug, Default)]
 pub struct PercentileRanksExtra {
-    values: Vec<f64>
+    values: Vec<f64>,
 }
 
 impl<'a> PercentileRanks<'a> {
     pub fn with_values<A>(mut self, values: A) -> Self
-        where A: Into<Vec<f64>> {
-
+    where
+        A: Into<Vec<f64>>,
+    {
         self.0.extra.values = values.into();
         self
     }
 }
 
 impl MergeSerialize for PercentileRanksExtra {
-    fn merge_serialize<S>(&self,
-                          serializer: &mut S) -> Result<(), S::Error>
-        where S: SerializeMap {
+    fn merge_serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    where
+        S: SerializeMap,
+    {
         serializer.serialize_entry("values", &self.values)
     }
 }
@@ -144,7 +147,7 @@ metrics_agg!(Cardinality);
 #[derive(Debug, Default)]
 pub struct CardinalityExtra {
     precision_threshold: Option<u64>,
-    rehash:              Option<bool>
+    rehash: Option<bool>,
 }
 
 impl<'a> Cardinality<'a> {
@@ -153,13 +156,11 @@ impl<'a> Cardinality<'a> {
 }
 
 impl MergeSerialize for CardinalityExtra {
-    fn merge_serialize<S>(&self,
-                          serializer: &mut S) -> Result<(), S::Error>
-        where S: SerializeMap {
-
-        serialize_map_optional_kv(serializer,
-                                  "precision_threshold",
-                                  &self.precision_threshold)?;
+    fn merge_serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    where
+        S: SerializeMap,
+    {
+        serialize_map_optional_kv(serializer, "precision_threshold", &self.precision_threshold)?;
         serialize_map_optional_kv(serializer, "rehash", &self.rehash)
     }
 }
@@ -167,9 +168,9 @@ impl MergeSerialize for CardinalityExtra {
 /// Geo Bounds aggregation
 #[derive(Debug, Default, Serialize)]
 pub struct GeoBounds<'a> {
-    field:          &'a str,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    wrap_longitude: Option<bool>
+    field: &'a str,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    wrap_longitude: Option<bool>,
 }
 
 impl<'a> GeoBounds<'a> {
@@ -186,35 +187,35 @@ impl<'a> GeoBounds<'a> {
 /// Scripted method aggregation
 #[derive(Debug, Default, Serialize)]
 pub struct ScriptedMetric<'a> {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    init_script:         Option<&'a str>,
-    map_script:          &'a str,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    combine_script:      Option<&'a str>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    reduce_script:       Option<&'a str>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    params:              Option<Value>, // TODO - should this be generified?
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    reduce_params:       Option<Value>, // TODO - should this be generified?
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    lang:                Option<&'a str>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    init_script_file:    Option<&'a str>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    init_script_id:      Option<&'a str>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    map_script_file:     Option<&'a str>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    map_script_id:       Option<&'a str>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    init_script: Option<&'a str>,
+    map_script: &'a str,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    combine_script: Option<&'a str>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    reduce_script: Option<&'a str>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    params: Option<Value>, // TODO - should this be generified?
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    reduce_params: Option<Value>, // TODO - should this be generified?
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    lang: Option<&'a str>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    init_script_file: Option<&'a str>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    init_script_id: Option<&'a str>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    map_script_file: Option<&'a str>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    map_script_id: Option<&'a str>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     combine_script_file: Option<&'a str>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    combine_script_id:   Option<&'a str>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    reduce_script_file:  Option<&'a str>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    reduce_script_id:    Option<&'a str>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    combine_script_id: Option<&'a str>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    reduce_script_file: Option<&'a str>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    reduce_script_id: Option<&'a str>,
 }
 
 impl<'a> ScriptedMetric<'a> {
@@ -255,46 +256,48 @@ pub enum MetricsAggregation<'a> {
     PercentileRanks(PercentileRanks<'a>),
     Cardinality(Cardinality<'a>),
     GeoBounds(GeoBounds<'a>),
-    ScriptedMetric(ScriptedMetric<'a>)
+    ScriptedMetric(Box<ScriptedMetric<'a>>),
 }
 
 impl<'a> MetricsAggregation<'a> {
     pub fn details(&self) -> &'static str {
         use self::MetricsAggregation::*;
         match self {
-            &Min(_) => "min",
-            &Max(_) => "max",
-            &Sum(_) => "sum",
-            &Avg(_) => "avg",
-            &Stats(_) => "stats",
-            &ExtendedStats(_) => "extended_stats",
-            &ValueCount(_) => "value_count",
-            &Percentiles(_) => "percentiles",
-            &PercentileRanks(_) => "percentile_ranks",
-            &Cardinality(_) => "cardinality",
-            &GeoBounds(_) => "geo_bounds",
-            &ScriptedMetric(_) => "scripted_metric"
+            Min(_) => "min",
+            Max(_) => "max",
+            Sum(_) => "sum",
+            Avg(_) => "avg",
+            Stats(_) => "stats",
+            ExtendedStats(_) => "extended_stats",
+            ValueCount(_) => "value_count",
+            Percentiles(_) => "percentiles",
+            PercentileRanks(_) => "percentile_ranks",
+            Cardinality(_) => "cardinality",
+            GeoBounds(_) => "geo_bounds",
+            ScriptedMetric(_) => "scripted_metric",
         }
     }
 }
 
 impl<'a> Serialize for MetricsAggregation<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         use self::MetricsAggregation::*;
         match self {
-            &Min(ref min) => min.serialize(serializer),
-            &Max(ref max) => max.serialize(serializer),
-            &Sum(ref sum) => sum.serialize(serializer),
-            &Avg(ref avg) => avg.serialize(serializer),
-            &Stats(ref stats) => stats.serialize(serializer),
-            &ExtendedStats(ref extended_stats) => extended_stats.serialize(serializer),
-            &ValueCount(ref value_count) => value_count.serialize(serializer),
-            &Percentiles(ref percentiles) => percentiles.serialize(serializer),
-            &PercentileRanks(ref percentile_ranks) => percentile_ranks.serialize(serializer),
-            &Cardinality(ref cardinality) => cardinality.serialize(serializer),
-            &GeoBounds(ref geo_bounds) => geo_bounds.serialize(serializer),
-            &ScriptedMetric(ref scripted_metric) => scripted_metric.serialize(serializer)
+            Min(ref min) => min.serialize(serializer),
+            Max(ref max) => max.serialize(serializer),
+            Sum(ref sum) => sum.serialize(serializer),
+            Avg(ref avg) => avg.serialize(serializer),
+            Stats(ref stats) => stats.serialize(serializer),
+            ExtendedStats(ref extended_stats) => extended_stats.serialize(serializer),
+            ValueCount(ref value_count) => value_count.serialize(serializer),
+            Percentiles(ref percentiles) => percentiles.serialize(serializer),
+            PercentileRanks(ref percentile_ranks) => percentile_ranks.serialize(serializer),
+            Cardinality(ref cardinality) => cardinality.serialize(serializer),
+            GeoBounds(ref geo_bounds) => geo_bounds.serialize(serializer),
+            ScriptedMetric(ref scripted_metric) => scripted_metric.serialize(serializer),
         }
     }
 }
@@ -314,7 +317,7 @@ pub enum MetricsAggregationResult {
     PercentileRanks(PercentileRanksResult),
     Cardinality(CardinalityResult),
     GeoBounds(GeoBoundsResult),
-    ScriptedMetric(ScriptedMetricResult)
+    ScriptedMetric(ScriptedMetricResult),
 }
 
 impl MetricsAggregationResult {
@@ -323,50 +326,26 @@ impl MetricsAggregationResult {
         // TODO - must be a more efficient way to do this
         let json = json.clone();
         Ok(match ma {
-            &Min(_) => {
-                MetricsAggregationResult::Min(from_value(json)?)
-            },
-            &Max(_) => {
-                MetricsAggregationResult::Max(from_value(json)?)
-            },
-            &Sum(_) => {
-                MetricsAggregationResult::Sum(from_value(json)?)
-            },
-            &Avg(_) => {
-                MetricsAggregationResult::Avg(from_value(json)?)
-            },
-            &Stats(_) => {
-                MetricsAggregationResult::Stats(from_value(json)?)
-            },
-            &ExtendedStats(_) => {
-                MetricsAggregationResult::ExtendedStats(from_value(json)?)
-            },
-            &ValueCount(_) => {
-                MetricsAggregationResult::ValueCount(from_value(json)?)
-            }
-            &Percentiles(_) => {
-                MetricsAggregationResult::Percentiles(from_value(json)?)
-            },
-            &PercentileRanks(_) => {
-                MetricsAggregationResult::PercentileRanks(from_value(json)?)
-            },
-            &Cardinality(_) => {
-                MetricsAggregationResult::Cardinality(from_value(json)?)
-            },
-            &GeoBounds(_) => {
-                MetricsAggregationResult::GeoBounds(from_value(json)?)
-            },
-            &ScriptedMetric(_) => {
-                MetricsAggregationResult::ScriptedMetric(from_value(json)?)
-            }
+            Min(_) => MetricsAggregationResult::Min(from_value(json)?),
+            Max(_) => MetricsAggregationResult::Max(from_value(json)?),
+            Sum(_) => MetricsAggregationResult::Sum(from_value(json)?),
+            Avg(_) => MetricsAggregationResult::Avg(from_value(json)?),
+            Stats(_) => MetricsAggregationResult::Stats(from_value(json)?),
+            ExtendedStats(_) => MetricsAggregationResult::ExtendedStats(from_value(json)?),
+            ValueCount(_) => MetricsAggregationResult::ValueCount(from_value(json)?),
+            Percentiles(_) => MetricsAggregationResult::Percentiles(from_value(json)?),
+            PercentileRanks(_) => MetricsAggregationResult::PercentileRanks(from_value(json)?),
+            Cardinality(_) => MetricsAggregationResult::Cardinality(from_value(json)?),
+            GeoBounds(_) => MetricsAggregationResult::GeoBounds(from_value(json)?),
+            ScriptedMetric(_) => MetricsAggregationResult::ScriptedMetric(from_value(json)?),
         })
     }
 }
 
 macro_rules! metrics_agg_as {
     ($n:ident,$t:ident,$rt:ty) => {
-        agg_as!($n,Metrics,MetricsAggregationResult,$t,$rt);
-    }
+        agg_as!($n, Metrics, MetricsAggregationResult, $t, $rt);
+    };
 }
 
 impl AggregationResult {
@@ -389,22 +368,22 @@ impl AggregationResult {
 /// Min Result
 #[derive(Debug, Deserialize)]
 pub struct MinResult {
-    pub value: JsonVal
+    pub value: JsonVal,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct MaxResult {
-    pub value: JsonVal
+    pub value: JsonVal,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct SumResult {
-    pub value: f64
+    pub value: f64,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct AvgResult {
-    pub value: f64
+    pub value: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -413,14 +392,14 @@ pub struct StatsResult {
     pub min: f64,
     pub max: f64,
     pub avg: f64,
-    pub sum: f64
+    pub sum: f64,
 }
 
 /// Used by the `ExtendedStatsResult`
 #[derive(Debug, Deserialize)]
 pub struct Bounds {
     pub upper: f64,
-    pub lower: f64
+    pub lower: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -433,37 +412,37 @@ pub struct ExtendedStatsResult {
     pub sum_of_squares: f64,
     pub variance: f64,
     pub std_deviation: f64,
-    pub std_deviation_bounds: Bounds
+    pub std_deviation_bounds: Bounds,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ValueCountResult {
-    pub value: u64
+    pub value: u64,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct PercentilesResult {
-    pub values: HashMap<String, f64>
+    pub values: HashMap<String, f64>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct PercentileRanksResult {
-    pub values: HashMap<String, f64>
+    pub values: HashMap<String, f64>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct CardinalityResult {
-    pub value: u64
+    pub value: u64,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct GeoBoundsResult {
-    pub bounds: GeoBox
+    pub bounds: GeoBox,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ScriptedMetricResult {
-    pub value: JsonVal
+    pub value: JsonVal,
 }
 
 #[cfg(test)]
@@ -475,9 +454,11 @@ pub mod tests {
 
     #[test]
     fn test_min_aggregation() {
-        let aggs:Aggregations = ("min_test", Min::field("blah")).into();
+        let aggs: Aggregations = ("min_test", Min::field("blah")).into();
 
-        assert_eq!("{\"min_test\":{\"min\":{\"field\":\"blah\"}}}",
-                   serde_json::to_string(&aggs).unwrap());
+        assert_eq!(
+            "{\"min_test\":{\"min\":{\"field\":\"blah\"}}}",
+            serde_json::to_string(&aggs).unwrap()
+        );
     }
 }

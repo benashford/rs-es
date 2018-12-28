@@ -18,9 +18,11 @@
 
 use serde::ser::Serialize;
 
+use serde_derive::Deserialize;
+
+use crate::{error::EsError, Client, EsResponse};
+
 use super::common::{OptionVal, Options};
-use error::EsError;
-use {Client, EsResponse};
 
 /// Values for the op_type option
 pub enum OpType {
@@ -145,9 +147,9 @@ pub struct IndexResult {
 
 #[cfg(test)]
 pub mod tests {
-    use tests::{clean_db, make_client, TestDocument};
+    use crate::tests::{clean_db, make_client, TestDocument};
 
-    use units::Duration;
+    use crate::units::Duration;
 
     use super::OpType;
 

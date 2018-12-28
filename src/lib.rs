@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#![crate_type = "lib"]
-#![crate_name = "rs_es"]
-
 //! A client for ElasticSearch's REST API
 //!
 //! The `Client` itself is used as the central access point, from which numerous
@@ -24,26 +21,6 @@
 //!
 //! Warning: at the time of writing the majority of such APIs are currently
 //! unimplemented.
-
-#[macro_use]
-extern crate serde_derive;
-
-extern crate serde;
-
-#[cfg_attr(test, macro_use)]
-extern crate serde_json;
-
-#[macro_use]
-extern crate log;
-extern crate hyper;
-
-#[cfg(feature = "ssl")]
-extern crate hyper_openssl;
-
-#[macro_use]
-extern crate maplit;
-
-extern crate url;
 
 #[macro_use]
 pub mod util;
@@ -56,17 +33,19 @@ pub mod operations;
 pub mod query;
 pub mod units;
 
-use hyper::client;
-use hyper::header::{Authorization, Basic, ContentType, Headers};
-use hyper::status::StatusCode;
-
-use serde::de::DeserializeOwned;
-use serde::ser::Serialize;
-
-use error::EsError;
-
 use std::time;
+
+use hyper::{
+    client,
+    header::{Authorization, Basic, ContentType, Headers},
+    status::StatusCode,
+};
+
+use serde::{de::DeserializeOwned, ser::Serialize};
+
 use url::Url;
+
+use crate::error::EsError;
 
 pub trait EsResponse {
     fn status_code(&self) -> &StatusCode;
@@ -124,7 +103,7 @@ pub fn do_req(resp: client::response::Response) -> Result<client::response::Resp
 /// ```
 /// use rs_es::Client;
 ///
-/// let mut client = Client::new("http://localhost:9200");
+/// let mut client = Client::init("http://localhost:9200");
 /// ```
 ///
 /// See the specific operations and their builder objects for details.
@@ -139,7 +118,7 @@ pub struct Client {
 macro_rules! es_op {
     ($n:ident,$cn:ident) => {
         fn $n(&mut self, url: &str) -> Result<client::response::Response, EsError> {
-            info!("Doing {} on {}", stringify!($n), url);
+            log::info!("Doing {} on {}", stringify!($n), url);
             let url = self.full_url(url);
             let result = self.http_client
                 .$cn(&url)
@@ -158,9 +137,9 @@ macro_rules! es_body_op {
         fn $n<E>(&mut self, url: &str, body: &E) -> Result<client::response::Response, EsError>
             where E: Serialize {
 
-            info!("Doing {} on {}", stringify!($n), url);
+            log::info!("Doing {} on {}", stringify!($n), url);
             let json_string = serde_json::to_string(body)?;
-            debug!("Body send: {}", &json_string);
+            log::debug!("Body send: {}", &json_string);
 
             let url = self.full_url(url);
             let result = self.http_client
@@ -176,7 +155,7 @@ macro_rules! es_body_op {
 
 impl Client {
     /// Create a new client
-    pub fn new(url_s: &str) -> Result<Client, url::ParseError> {
+    pub fn init(url_s: &str) -> Result<Client, url::ParseError> {
         let url = Url::parse(url_s)?;
 
         Ok(Client {
@@ -249,15 +228,15 @@ pub mod tests {
 
     use std::env;
 
+    use serde_derive::{Deserialize, Serialize};
     use serde_json::Value;
 
-    use super::operations::bulk::Action;
-    use super::operations::search::ScanResult;
-    use super::Client;
-
-    use super::query::Query;
-
-    use super::units::Duration;
+    use super::{
+        operations::{bulk::Action, search::ScanResult},
+        query::Query,
+        units::Duration,
+        Client,
+    };
 
     // test setup
 
@@ -266,7 +245,7 @@ pub mod tests {
             Ok(val) => val,
             Err(_) => "http://localhost:9200".to_owned(),
         };
-        Client::new(&hostname).unwrap()
+        Client::init(&hostname).unwrap()
     }
 
     #[derive(Debug, Serialize, Deserialize)]
@@ -276,6 +255,7 @@ pub mod tests {
         pub bool_field: bool,
     }
 
+    #[allow(clippy::new_without_default_derive)]
     impl TestDocument {
         pub fn new() -> TestDocument {
             TestDocument {
@@ -314,7 +294,7 @@ pub mod tests {
                 .with_str_field("Document 1ABC")
                 .with_int_field(3),
         ];
-        for ref doc in documents {
+        for doc in documents.iter() {
             client
                 .index(index_name, "test_type")
                 .with_doc(doc)
@@ -337,7 +317,7 @@ pub mod tests {
         {
             Ok(scan) => scan,
             Err(e) => {
-                warn!("Scan error: {:?}", e);
+                log::warn!("Scan error: {:?}", e);
                 return; // Ignore not-found errors
             }
         };

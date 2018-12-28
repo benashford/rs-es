@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,19 +25,25 @@ use std::fmt::Debug;
 
 use hyper::status::StatusCode;
 
-use serde::de::DeserializeOwned;
-use serde::ser::{Serialize, Serializer};
+use serde::{
+    de::DeserializeOwned,
+    ser::{Serialize, Serializer},
+};
+use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::common::{OptionVal, Options};
-use super::format_indexes_and_types;
-use super::ShardCountResult;
-use error::EsError;
-use json::{FieldBased, NoOuter, ShouldSkip};
-use query::Query;
-use units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
-use util::StrJoin;
-use {Client, EsResponse};
+use super::{
+    common::{OptionVal, Options},
+    format_indexes_and_types, ShardCountResult,
+};
+use crate::{
+    error::EsError,
+    json::{FieldBased, NoOuter, ShouldSkip},
+    query::Query,
+    units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany},
+    util::StrJoin,
+    Client, EsResponse,
+};
 
 use self::aggregations::AggregationsResult;
 use self::highlight::HighlightResult;
@@ -63,10 +69,10 @@ pub enum SearchType {
 impl ToString for SearchType {
     fn to_string(&self) -> String {
         match self {
-            &SearchType::DFSQueryThenFetch => "dfs_query_then_fetch",
-            &SearchType::DFSQueryAndFetch => "dfs_query_and_fetch",
-            &SearchType::QueryThenFetch => "query_then_fetch",
-            &SearchType::QueryAndFetch => "query_and_fetch",
+            SearchType::DFSQueryThenFetch => "dfs_query_then_fetch",
+            SearchType::DFSQueryAndFetch => "dfs_query_and_fetch",
+            SearchType::QueryThenFetch => "query_then_fetch",
+            SearchType::QueryAndFetch => "query_and_fetch",
         }
         .to_owned()
     }
@@ -82,8 +88,8 @@ pub enum Order {
 impl ToString for Order {
     fn to_string(&self) -> String {
         match self {
-            &Order::Asc => "asc",
-            &Order::Desc => "desc",
+            Order::Asc => "asc",
+            Order::Desc => "desc",
         }
         .to_owned()
     }
@@ -113,10 +119,10 @@ impl Serialize for Mode {
         S: Serializer,
     {
         match self {
-            &Mode::Min => "min",
-            &Mode::Max => "max",
-            &Mode::Sum => "sum",
-            &Mode::Avg => "avg",
+            Mode::Min => "min",
+            Mode::Max => "max",
+            Mode::Sum => "sum",
+            Mode::Avg => "avg",
         }
         .serialize(serializer)
     }
@@ -136,9 +142,9 @@ impl Serialize for Missing {
         S: Serializer,
     {
         match self {
-            &Missing::First => "first".serialize(serializer),
-            &Missing::Last => "last".serialize(serializer),
-            &Missing::Custom(ref s) => s.serialize(serializer),
+            Missing::First => "first".serialize(serializer),
+            Missing::Last => "last".serialize(serializer),
+            Missing::Custom(ref s) => s.serialize(serializer),
         }
     }
 }
@@ -318,9 +324,9 @@ impl Serialize for SortBy {
         S: Serializer,
     {
         match self {
-            &SortBy::Field(ref f) => f.serialize(serializer),
-            &SortBy::Distance(ref d) => d.serialize(serializer),
-            &SortBy::Script(ref s) => s.serialize(serializer),
+            SortBy::Field(ref f) => f.serialize(serializer),
+            SortBy::Distance(ref d) => d.serialize(serializer),
+            SortBy::Script(ref s) => s.serialize(serializer),
         }
     }
 }
@@ -328,7 +334,7 @@ impl Serialize for SortBy {
 impl ToString for SortBy {
     fn to_string(&self) -> String {
         match self {
-            &SortBy::Field(ref field) => field.to_string(),
+            SortBy::Field(ref field) => field.to_string(),
             _ => panic!("Can only convert field sorting ToString"),
         }
     }
@@ -465,16 +471,16 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
             format_indexes_and_types(&self.indexes, &self.doc_types),
             self.options
         );
-        info!("Searching with: {}", url);
+        log::info!("Searching with: {}", url);
         let response = self.client.get_op(&url)?;
         match response.status_code() {
-            &StatusCode::Ok => {
+            StatusCode::Ok => {
                 let interim: SearchResultInterim<T> = response.read_response()?;
                 Ok(interim.finalize())
             }
-            _ => Err(EsError::EsError(format!(
+            status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                status_code
             ))),
         }
     }
@@ -496,8 +502,8 @@ impl<'a> Serialize for Source<'a> {
         S: Serializer,
     {
         match self {
-            &Source::Off => false.serialize(serializer),
-            &Source::Filter(incl, excl) => {
+            Source::Off => false.serialize(serializer),
+            Source::Filter(incl, excl) => {
                 let mut d = BTreeMap::new();
                 match incl {
                     Some(val) => {
@@ -573,10 +579,7 @@ struct SearchQueryOperationBody<'b> {
     track_scores: Option<bool>,
 
     /// Source filtering
-    #[serde(
-        rename = "_source",
-        skip_serializing_if = "ShouldSkip::should_skip"
-    )]
+    #[serde(rename = "_source", skip_serializing_if = "ShouldSkip::should_skip")]
     source: Option<Source<'b>>,
 
     /// Aggregations
@@ -729,13 +732,13 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
         );
         let response = self.client.post_body_op(&url, &self.body)?;
         match response.status_code() {
-            &StatusCode::Ok => {
+            StatusCode::Ok => {
                 let interim: SearchResultInterim<T> = response.read_response()?;
                 let aggs = match &interim.aggs {
-                    &Some(ref raw_aggs) => {
+                    Some(ref raw_aggs) => {
                         let req_aggs = match &self.body.aggs {
-                            &Some(ref aggs) => aggs,
-                            &None => {
+                            Some(ref aggs) => aggs,
+                            None => {
                                 return Err(EsError::EsError(
                                     "No aggs despite being in results".to_owned(),
                                 ))
@@ -743,15 +746,15 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
                         };
                         Some(AggregationsResult::from(req_aggs, raw_aggs)?)
                     }
-                    &None => None,
+                    None => None,
                 };
                 let mut result = interim.finalize();
                 result.aggs = aggs;
                 Ok(result)
             }
-            _ => Err(EsError::EsError(format!(
+            status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                status_code
             ))),
         }
     }
@@ -770,13 +773,13 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
         );
         let response = self.client.post_body_op(&url, &self.body)?;
         match response.status_code() {
-            &StatusCode::Ok => {
+            StatusCode::Ok => {
                 let interim: ScanResultInterim<T> = response.read_response()?;
                 let aggs = match &interim.aggs {
-                    &Some(ref raw_aggs) => {
+                    Some(ref raw_aggs) => {
                         let req_aggs = match &self.body.aggs {
-                            &Some(ref aggs) => aggs,
-                            &None => {
+                            Some(ref aggs) => aggs,
+                            None => {
                                 return Err(EsError::EsError(
                                     "No aggs despite being in results".to_owned(),
                                 ))
@@ -784,18 +787,18 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
                         };
                         Some(AggregationsResult::from(req_aggs, raw_aggs)?)
                     }
-                    &None => None,
+                    None => None,
                 };
                 let mut result = interim.finalize();
                 result.aggs = aggs;
                 Ok(result)
             }
-            &StatusCode::NotFound => {
+            StatusCode::NotFound => {
                 Err(EsError::EsServerError(format!("Not found: {:?}", response)))
             }
-            _ => Err(EsError::EsError(format!(
+            status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                status_code
             ))),
         }
     }
@@ -949,13 +952,13 @@ where
         match self.scan_result.scroll(self.client, &self.scroll) {
             Ok(scroll_page) => {
                 self.page = scroll_page.hits.hits;
-                if self.page.len() > 0 {
+                if !self.page.is_empty() {
                     Some(Ok(self.page.remove(0)))
                 } else {
                     None
                 }
             }
-            Err(err) => Some(Err(EsError::from(err))),
+            Err(err) => Some(Err(err)),
         }
     }
 }
@@ -968,7 +971,7 @@ where
         match self.scan_result.close(self.client) {
             Ok(_) => (),
             Err(e) => {
-                error!("Cannot close scroll: {}", e);
+                log::error!("Cannot close scroll: {}", e);
             }
         }
     }
@@ -981,7 +984,7 @@ where
     type Item = Result<SearchHitsHitsResult<T>, EsError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.page.len() > 0 {
+        if !self.page.is_empty() {
             Some(Ok(self.page.remove(0)))
         } else {
             self.next_page()
@@ -1062,29 +1065,29 @@ where
         client: &mut Client,
         scroll: &Duration,
     ) -> Result<SearchResult<T>, EsError> {
-        let url = format!("/_search/scroll");
+        let url = "/_search/scroll";
 
         let response = {
             let body = ScanBody {
                 scroll: scroll.to_string(),
                 scroll_id: &self.scroll_id,
             };
-            client.post_body_op(&url, &body)?
+            client.post_body_op(url, &body)?
         };
 
         match response.status_code() {
-            &StatusCode::Ok => {
+            StatusCode::Ok => {
                 let search_result: SearchResultInterim<T> = response.read_response()?;
                 self.scroll_id = match search_result.scroll_id {
                     Some(ref id) => id.clone(),
                     None => return Err(EsError::EsError("Expecting scroll_id".to_owned())),
                 };
-                debug!("Scrolled: {:?}", search_result);
+                log::debug!("Scrolled: {:?}", search_result);
                 Ok(search_result.finalize())
             }
-            _ => Err(EsError::EsError(format!(
+            status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                status_code
             ))),
         }
     }
@@ -1094,11 +1097,11 @@ where
         let url = format!("/_search/scroll?scroll_id={}", self.scroll_id);
         let response = client.delete_op(&url)?;
         match response.status_code() {
-            &StatusCode::Ok => Ok(()),       // closed
-            &StatusCode::NotFound => Ok(()), // previously closed
-            _ => Err(EsError::EsError(format!(
+            StatusCode::Ok => Ok(()),       // closed
+            StatusCode::NotFound => Ok(()), // previously closed
+            status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                status_code
             ))),
         }
     }
@@ -1111,13 +1114,13 @@ mod tests {
 
     use serde_json::Value;
 
-    use Client;
+    use crate::Client;
 
-    use tests::{clean_db, make_client, setup_test_data, TestDocument};
+    use crate::tests::{clean_db, make_client, setup_test_data, TestDocument};
 
-    use operations::bulk::Action;
-    use query::Query;
-    use units::{Duration, JsonVal};
+    use crate::operations::bulk::Action;
+    use crate::query::Query;
+    use crate::units::{Duration, JsonVal};
 
     use super::ScanResult;
     use super::SearchHitsHitsResult;
@@ -1231,7 +1234,7 @@ mod tests {
     fn test_close() {
         let mut client = make_client();
         let index_name = "tests_test_close";
-        ::tests::clean_db(&mut client, index_name);
+        crate::tests::clean_db(&mut client, index_name);
         setup_scan_data(&mut client, index_name);
 
         let indexes = [index_name];
@@ -1253,7 +1256,7 @@ mod tests {
     fn test_scan_and_scroll() {
         let mut client = make_client();
         let index_name = "tests_test_scan_and_scroll";
-        ::tests::clean_db(&mut client, index_name);
+        crate::tests::clean_db(&mut client, index_name);
         setup_scan_data(&mut client, index_name);
 
         let indexes = [index_name];
@@ -1286,7 +1289,7 @@ mod tests {
     fn test_with_version() {
         let mut client = make_client();
         let index_name = "test_version";
-        ::tests::clean_db(&mut client, index_name);
+        crate::tests::clean_db(&mut client, index_name);
         setup_test_data(&mut client, index_name);
 
         let indexes = [index_name];
@@ -1359,7 +1362,7 @@ mod tests {
     fn test_scan_and_iterate() {
         let mut client = make_client();
         let index_name = "tests_test_scan_and_iterate";
-        ::tests::clean_db(&mut client, index_name);
+        crate::tests::clean_db(&mut client, index_name);
         setup_scan_data(&mut client, index_name);
 
         let indexes = [index_name];
@@ -1387,7 +1390,7 @@ mod tests {
     fn test_source_filter() {
         let mut client = make_client();
         let index_name = "test_source_filter";
-        ::tests::clean_db(&mut client, index_name);
+        crate::tests::clean_db(&mut client, index_name);
 
         client
             .index(index_name, "test")
@@ -1416,7 +1419,7 @@ mod tests {
     fn test_highlight() {
         let mut client = make_client();
         let index_name = "test_highlight";
-        ::tests::clean_db(&mut client, index_name);
+        crate::tests::clean_db(&mut client, index_name);
 
         client
             .bulk(&[
@@ -1466,7 +1469,7 @@ mod tests {
     fn test_bucket_aggs() {
         let mut client = make_client();
         let index_name = "test_bucket_aggs";
-        ::tests::clean_db(&mut client, index_name);
+        crate::tests::clean_db(&mut client, index_name);
 
         client
             .bulk(&[
@@ -1531,11 +1534,11 @@ mod tests {
             .value;
 
         match min_a {
-            &JsonVal::Number(ref i) => assert_eq!(Some(1.0), i.as_f64()),
+            JsonVal::Number(ref i) => assert_eq!(Some(1.0), i.as_f64()),
             _ => panic!("Not an integer"),
         }
         match min_b {
-            &JsonVal::Number(ref i) => assert_eq!(Some(2.0), i.as_f64()),
+            JsonVal::Number(ref i) => assert_eq!(Some(2.0), i.as_f64()),
             _ => panic!("Not an integer"),
         }
     }
@@ -1544,7 +1547,7 @@ mod tests {
     fn test_aggs() {
         let mut client = make_client();
         let index_name = "test_aggs";
-        ::tests::clean_db(&mut client, index_name);
+        crate::tests::clean_db(&mut client, index_name);
 
         client
             .bulk(&[
@@ -1578,7 +1581,7 @@ mod tests {
             .value;
 
         match min {
-            &JsonVal::Number(ref i) => assert_eq!(Some(1.0), i.as_f64()),
+            JsonVal::Number(ref i) => assert_eq!(Some(1.0), i.as_f64()),
             _ => panic!("Not an integer"),
         }
     }
@@ -1587,7 +1590,7 @@ mod tests {
     fn test_sort() {
         let mut client = make_client();
         let index_name = "test_sort";
-        ::tests::clean_db(&mut client, index_name);
+        crate::tests::clean_db(&mut client, index_name);
 
         client
             .bulk(&[

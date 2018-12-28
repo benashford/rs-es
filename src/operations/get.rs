@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,23 +18,27 @@
 
 use serde::de::DeserializeOwned;
 
-use ::{Client, EsResponse};
-use ::error::EsError;
-use ::util::StrJoin;
-use super::common::{Options, OptionVal};
+use serde_derive::Deserialize;
+
+use super::common::{OptionVal, Options};
+
+use crate::{error::EsError, util::StrJoin, Client, EsResponse};
 
 /// Values for the `preference` query parameter
 pub enum Preference {
     Primary,
-    Local
+    Local,
 }
 
 impl From<Preference> for OptionVal {
     fn from(from: Preference) -> OptionVal {
-        OptionVal(match from {
-            Preference::Primary => "_primary",
-            Preference::Local => "_local"
-        }.to_owned())
+        OptionVal(
+            match from {
+                Preference::Primary => "_primary",
+                Preference::Local => "_local",
+            }
+            .to_owned(),
+        )
     }
 }
 
@@ -42,31 +46,29 @@ impl From<Preference> for OptionVal {
 #[derive(Debug)]
 pub struct GetOperation<'a, 'b> {
     /// The HTTP connection
-    client:   &'a mut Client,
+    client: &'a mut Client,
 
     /// The index to load the document.
-    index:    &'b str,
+    index: &'b str,
 
     /// Optional type
     doc_type: Option<&'b str>,
 
     /// The ID of the document.
-    id:       &'b str,
+    id: &'b str,
 
     /// Optional options
-    options:  Options<'b>
+    options: Options<'b>,
 }
 
 impl<'a, 'b> GetOperation<'a, 'b> {
-    pub fn new(client:   &'a mut Client,
-               index:    &'b str,
-               id:       &'b str) -> Self {
+    pub fn new(client: &'a mut Client, index: &'b str, id: &'b str) -> Self {
         GetOperation {
-            client:   client,
-            index:    index,
+            client: client,
+            index: index,
             doc_type: None,
-            id:       id,
-            options:  Options::new()
+            id: id,
+            options: Options::new(),
         }
     }
 
@@ -94,13 +96,16 @@ impl<'a, 'b> GetOperation<'a, 'b> {
     add_option!(with_version_type, "version_type");
 
     pub fn send<T>(&'b mut self) -> Result<GetResult<T>, EsError>
-        where T: DeserializeOwned {
-
-        let url = format!("/{}/{}/{}{}",
-                          self.index,
-                          self.doc_type.expect("No doc_type specified"),
-                          self.id,
-                          self.options);
+    where
+        T: DeserializeOwned,
+    {
+        let url = format!(
+            "/{}/{}/{}{}",
+            self.index,
+            self.doc_type.expect("No doc_type specified"),
+            self.id,
+            self.options
+        );
         // We're ignoring status_code as all valid codes should return a value,
         // so anything else is an error.
         let response = self.client.get_op(&url)?;
@@ -112,9 +117,7 @@ impl Client {
     /// Implementation of the ES GET API
     ///
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-get.html
-    pub fn get<'a>(&'a mut self,
-                   index: &'a str,
-                   id:    &'a str) -> GetOperation {
+    pub fn get<'a>(&'a mut self, index: &'a str, id: &'a str) -> GetOperation {
         GetOperation::new(self, index, id)
     }
 }
@@ -122,22 +125,22 @@ impl Client {
 /// The result of a GET request
 #[derive(Debug, Deserialize)]
 pub struct GetResult<T> {
-    #[serde(rename="_index")]
-    pub index:    String,
-    #[serde(rename="_type")]
+    #[serde(rename = "_index")]
+    pub index: String,
+    #[serde(rename = "_type")]
     pub doc_type: String,
-    #[serde(rename="_id")]
-    pub id:       String,
-    #[serde(rename="_version")]
-    pub version:  Option<u64>,
-    pub found:    bool,
-    #[serde(rename="_source")]
-    pub source:   Option<T>
+    #[serde(rename = "_id")]
+    pub id: String,
+    #[serde(rename = "_version")]
+    pub version: Option<u64>,
+    pub found: bool,
+    #[serde(rename = "_source")]
+    pub source: Option<T>,
 }
 
 #[cfg(test)]
 pub mod tests {
-    use ::tests::{clean_db, TestDocument, make_client};
+    use crate::tests::{clean_db, make_client, TestDocument};
 
     #[test]
     fn test_get() {
@@ -145,23 +148,21 @@ pub mod tests {
         let mut client = make_client();
         clean_db(&mut client, index_name);
         {
-            let doc = TestDocument::new().with_int_field(3)
-                                         .with_bool_field(false);
+            let doc = TestDocument::new().with_int_field(3).with_bool_field(false);
             client
                 .index(index_name, "test_type")
                 .with_id("TEST_GETTING")
                 .with_doc(&doc)
-                .send().unwrap();
+                .send()
+                .unwrap();
         }
         {
             let mut getter = client.get(index_name, "TEST_GETTING");
-            let result_wrapped = getter
-                .with_doc_type("test_type")
-                .send();
+            let result_wrapped = getter.with_doc_type("test_type").send();
             let result = result_wrapped.unwrap();
             assert_eq!(result.id, "TEST_GETTING");
 
-            let source:TestDocument = result.source.expect("Source document");
+            let source: TestDocument = result.source.expect("Source document");
             assert_eq!(source.str_field, "I am a test");
             assert_eq!(source.int_field, 3);
             assert_eq!(source.bool_field, false);

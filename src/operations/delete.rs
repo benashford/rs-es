@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,39 +18,43 @@
 
 use hyper::status::StatusCode;
 
-use ::{Client, EsResponse};
-use ::error::EsError;
-use super::common::{Options, OptionVal};
+use serde_derive::Deserialize;
+
+use crate::{error::EsError, Client, EsResponse};
+
+use super::common::{OptionVal, Options};
 
 #[derive(Debug)]
 pub struct DeleteOperation<'a, 'b> {
     /// The HTTP client
-    client:   &'a mut Client,
+    client: &'a mut Client,
 
     /// The index
-    index:    &'b str,
+    index: &'b str,
 
     /// The type
     doc_type: &'b str,
 
     /// The ID
-    id:       &'b str,
+    id: &'b str,
 
     /// Optional options
-    options:  Options<'b>
+    options: Options<'b>,
 }
 
 impl<'a, 'b> DeleteOperation<'a, 'b> {
-    pub fn new(client:   &'a mut Client,
-               index:    &'b str,
-               doc_type: &'b str,
-               id:       &'b str) -> DeleteOperation<'a, 'b> {
+    pub fn new(
+        client: &'a mut Client,
+        index: &'b str,
+        doc_type: &'b str,
+        id: &'b str,
+    ) -> DeleteOperation<'a, 'b> {
         DeleteOperation {
-            client:   client,
-            index:    index,
+            client: client,
+            index: index,
             doc_type: doc_type,
-            id:       id,
-            options:  Options::new()
+            id: id,
+            options: Options::new(),
         }
     }
 
@@ -63,18 +67,17 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
     add_option!(with_timeout, "timeout");
 
     pub fn send(&'a mut self) -> Result<DeleteResult, EsError> {
-        let url = format!("/{}/{}/{}{}",
-                          self.index,
-                          self.doc_type,
-                          self.id,
-                          self.options);
+        let url = format!(
+            "/{}/{}/{}{}",
+            self.index, self.doc_type, self.id, self.options
+        );
         let response = self.client.delete_op(&url)?;
         match response.status_code() {
-            &StatusCode::Ok =>
-                Ok(response.read_response()?),
-            _ =>
-                Err(EsError::EsError(format!("Unexpected status: {}",
-                                             response.status_code())))
+            StatusCode::Ok => Ok(response.read_response()?),
+            status_code => Err(EsError::EsError(format!(
+                "Unexpected status: {}",
+                status_code
+            ))),
         }
     }
 }
@@ -83,10 +86,12 @@ impl Client {
     /// Delete by ID
     ///
     /// See: https://www.elastic.co/guide/en/elasticsearch/reference/1.x/docs-delete.html
-    pub fn delete<'a>(&'a mut self,
-                      index:    &'a str,
-                      doc_type: &'a str,
-                      id:       &'a str) -> DeleteOperation {
+    pub fn delete<'a>(
+        &'a mut self,
+        index: &'a str,
+        doc_type: &'a str,
+        id: &'a str,
+    ) -> DeleteOperation {
         DeleteOperation::new(self, index, doc_type, id)
     }
 }
@@ -94,20 +99,20 @@ impl Client {
 /// Result of a DELETE operation
 #[derive(Debug, Deserialize)]
 pub struct DeleteResult {
-    pub found:    bool,
-    #[serde(rename="_index")]
-    pub index:    String,
-    #[serde(rename="_type")]
+    pub found: bool,
+    #[serde(rename = "_index")]
+    pub index: String,
+    #[serde(rename = "_type")]
     pub doc_type: String,
-    #[serde(rename="_id")]
-    pub id:       String,
-    #[serde(rename="_version")]
-    pub version:  u64
+    #[serde(rename = "_id")]
+    pub id: String,
+    #[serde(rename = "_version")]
+    pub version: u64,
 }
 
 #[cfg(test)]
 pub mod tests {
-    use ::tests::{clean_db, TestDocument, make_client};
+    use crate::tests::{clean_db, make_client, TestDocument};
 
     #[test]
     fn test_delete() {
@@ -117,9 +122,11 @@ pub mod tests {
         clean_db(&mut client, index_name);
         let id = {
             let doc = TestDocument::new().with_int_field(4);
-            let result = client.index(index_name, "test_type")
+            let result = client
+                .index(index_name, "test_type")
                 .with_doc(&doc)
-                .send().unwrap();
+                .send()
+                .unwrap();
             result.id
         };
 

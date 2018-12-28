@@ -20,7 +20,7 @@ use std::fmt;
 
 use serde::ser::{Serialize, Serializer};
 
-use util::StrJoin;
+use crate::util::StrJoin;
 
 /// A newtype for the value of a URI option, this is to allow conversion traits
 /// to be implemented for it

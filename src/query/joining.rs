@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Ben Ashford
+ * Copyright 2016-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,27 @@
 
 //! Joining queries
 
-use ::json::ShouldSkip;
+use serde_derive::Serialize;
 
-use super::{ScoreMode, Query};
+use crate::json::ShouldSkip;
+
+use super::{Query, ScoreMode};
 
 /// Nested query
 #[derive(Debug, Default, Serialize)]
 pub struct NestedQuery {
     path: String,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     score_mode: Option<ScoreMode>,
-    query: Query
+    query: Query,
 }
 
 impl Query {
     pub fn build_nested<A, B>(path: A, query: B) -> NestedQuery
-        where A: Into<String>,
-              B: Into<Query> {
+    where
+        A: Into<String>,
+        B: Into<Query>,
+    {
         NestedQuery {
             path: path.into(),
             query: query.into(),
@@ -52,12 +56,12 @@ impl NestedQuery {
 pub struct HasChildQuery {
     doc_type: String,
     query: Query,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     score_mode: Option<ScoreMode>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     min_children: Option<u64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    max_children: Option<u64>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    max_children: Option<u64>,
 }
 
 /// Has Parent query
@@ -65,14 +69,16 @@ pub struct HasChildQuery {
 pub struct HasParentQuery {
     parent_type: String,
     query: Query,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    score_mode: Option<ScoreMode>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    score_mode: Option<ScoreMode>,
 }
 
 impl Query {
     pub fn build_has_child<A, B>(doc_type: A, query: B) -> HasChildQuery
-        where A: Into<String>,
-              B: Into<Query> {
+    where
+        A: Into<String>,
+        B: Into<Query>,
+    {
         HasChildQuery {
             doc_type: doc_type.into(),
             query: query.into(),
@@ -81,8 +87,10 @@ impl Query {
     }
 
     pub fn build_has_parent<A, B>(parent_type: A, query: B) -> HasParentQuery
-        where A: Into<String>,
-              B: Into<Query> {
+    where
+        A: Into<String>,
+        B: Into<Query>,
+    {
         HasParentQuery {
             parent_type: parent_type.into(),
             query: query.into(),

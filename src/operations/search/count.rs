@@ -18,12 +18,18 @@
 
 use hyper::status::StatusCode;
 
-use error::EsError;
-use json::ShouldSkip;
-use operations::common::{OptionVal, Options};
-use operations::{format_indexes_and_types, ShardCountResult};
-use query::Query;
-use {Client, EsResponse};
+use serde_derive::{Deserialize, Serialize};
+
+use crate::{
+    error::EsError,
+    json::ShouldSkip,
+    operations::{
+        common::{OptionVal, Options},
+        format_indexes_and_types, ShardCountResult,
+    },
+    query::Query,
+    Client, EsResponse,
+};
 
 /// Representing a count operation
 #[derive(Debug)]
@@ -72,13 +78,13 @@ impl<'a, 'b> CountURIOperation<'a, 'b> {
             format_indexes_and_types(&self.indexes, &self.doc_types),
             self.options
         );
-        info!("Counting with: {}", url);
+        log::info!("Counting with: {}", url);
         let response = self.client.get_op(&url)?;
         match response.status_code() {
-            &StatusCode::Ok => Ok(response.read_response()?),
-            _ => Err(EsError::EsError(format!(
+            StatusCode::Ok => Ok(response.read_response()?),
+            status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                status_code
             ))),
         }
     }
@@ -151,10 +157,10 @@ impl<'a, 'b> CountQueryOperation<'a, 'b> {
         );
         let response = self.client.post_body_op(&url, &self.body)?;
         match response.status_code() {
-            &StatusCode::Ok => Ok(response.read_response()?),
-            _ => Err(EsError::EsError(format!(
+            StatusCode::Ok => Ok(response.read_response()?),
+            status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                status_code
             ))),
         }
     }
@@ -189,10 +195,10 @@ mod tests {
     extern crate env_logger;
     extern crate regex;
 
-    use tests::setup_test_data;
-    use tests::{clean_db, make_client};
+    use crate::tests::setup_test_data;
+    use crate::tests::{clean_db, make_client};
 
-    use query::Query;
+    use crate::query::Query;
 
     use super::CountResult;
 

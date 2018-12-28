@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Ben Ashford
+ * Copyright 2016-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,18 @@
 
 //! Fetch ElasticSearch version information
 
-use ::{Client, EsResponse};
-use ::error::EsError;
+use serde_derive::Deserialize;
+
+use crate::{error::EsError, Client, EsResponse};
 
 #[derive(Debug)]
 pub struct VersionOperation<'a> {
-    client: &'a mut Client
+    client: &'a mut Client,
 }
 
 impl<'a> VersionOperation<'a> {
     pub fn new(client: &'a mut Client) -> Self {
-        VersionOperation {
-            client: client
-        }
+        VersionOperation { client: client }
     }
 
     pub fn send(&mut self) -> Result<VersionResult, EsError> {
@@ -50,7 +49,7 @@ pub struct Version {
     pub build_hash: String,
     pub build_timestamp: String,
     pub build_snapshot: bool,
-    pub lucene_version: String
+    pub lucene_version: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -63,8 +62,8 @@ pub struct VersionResult {
 
 #[cfg(test)]
 pub mod tests {
-    use ::tests::{make_client};
-    use ::tests::regex::Regex;
+    use crate::tests::make_client;
+    use crate::tests::regex::Regex;
 
     #[test]
     fn it_works() {

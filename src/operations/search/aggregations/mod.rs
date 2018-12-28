@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,12 @@ pub mod metrics;
 use std::collections::HashMap;
 
 use serde::ser::{Serialize, SerializeMap, Serializer};
+use serde_derive::Serialize;
 use serde_json::{Map, Value};
 
-use error::EsError;
+use crate::error::EsError;
 
-use self::bucket::BucketAggregationResult;
-use self::metrics::MetricsAggregationResult;
+use self::{bucket::BucketAggregationResult, metrics::MetricsAggregationResult};
 
 /// Aggregations are either metrics or bucket-based aggregations
 #[derive(Debug)]
@@ -50,25 +50,25 @@ impl<'a> Serialize for Aggregation<'a> {
     {
         use self::Aggregation::*;
         let mut map = (serializer.serialize_map(Some(match self {
-            &Metrics(_) => 1,
-            &Bucket(_, ref opt_aggs) => match opt_aggs {
-                &Some(_) => 2,
-                &None => 1,
+            Metrics(_) => 1,
+            Bucket(_, ref opt_aggs) => match opt_aggs {
+                Some(_) => 2,
+                None => 1,
             },
         })))?;
         match self {
-            &Metrics(ref metric_agg) => {
+            Metrics(ref metric_agg) => {
                 let agg_name = metric_agg.details();
                 map.serialize_entry(agg_name, metric_agg)?;
             }
-            &Bucket(ref bucket_agg, ref opt_aggs) => {
+            Bucket(ref bucket_agg, ref opt_aggs) => {
                 let agg_name = bucket_agg.details();
                 map.serialize_entry(agg_name, bucket_agg)?;
                 match opt_aggs {
-                    &Some(ref other_aggs) => {
+                    Some(ref other_aggs) => {
                         map.serialize_entry("aggregations", other_aggs)?;
                     }
-                    &None => (),
+                    None => (),
                 }
             }
         }
@@ -156,17 +156,17 @@ fn object_to_result(
         ar_map.insert(
             owned_key,
             match val {
-                &Metrics(ref ma) => {
+                Metrics(ref ma) => {
                     AggregationResult::Metrics(MetricsAggregationResult::from(ma, json)?)
                 }
-                &Aggregation::Bucket(ref ba, ref aggs) => {
+                Aggregation::Bucket(ref ba, ref aggs) => {
                     AggregationResult::Bucket(BucketAggregationResult::from(ba, json, aggs)?)
                 }
             },
         );
     }
 
-    info!("Processed aggs - From: {:?}. To: {:?}", object, ar_map);
+    log::info!("Processed aggs - From: {:?}. To: {:?}", object, ar_map);
 
     Ok(AggregationsResult(ar_map))
 }

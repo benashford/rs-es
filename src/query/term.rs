@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Ben Ashford
+ * Copyright 2016-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,14 @@
 //! Specific Term level queries
 
 use serde::{Serialize, Serializer};
+use serde_derive::Serialize;
 
-use ::json::{NoOuter, ShouldSkip};
-use ::units::{JsonPotential, JsonVal, OneOrMany};
+use crate::{
+    json::{NoOuter, ShouldSkip},
+    units::{JsonPotential, JsonVal, OneOrMany},
+};
 
-use super::{Flags, Fuzziness, Query};
-use super::common::FieldBasedQuery;
+use super::{common::FieldBasedQuery, Flags, Fuzziness, Query};
 
 /// Values of the rewrite option used by multi-term queries
 #[derive(Debug)]
@@ -38,16 +40,18 @@ pub enum Rewrite {
 
 impl Serialize for Rewrite {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         use self::Rewrite::*;
         match self {
-            &ConstantScoreAuto => "constant_score_auto".serialize(serializer),
-            &ScoringBoolean => "scoring_boolean".serialize(serializer),
-            &ConstantScoreBoolean => "constant_score_boolean".serialize(serializer),
-            &ConstantScoreFilter => "constant_score_filter".serialize(serializer),
-            &TopTerms(n) => format!("top_terms_{}", n).serialize(serializer),
-            &TopTermsBoost(n) => format!("top_terms_boost_{}", n).serialize(serializer),
-            &TopTermsBlendedFreqs(n) => {
+            ConstantScoreAuto => "constant_score_auto".serialize(serializer),
+            ScoringBoolean => "scoring_boolean".serialize(serializer),
+            ConstantScoreBoolean => "constant_score_boolean".serialize(serializer),
+            ConstantScoreFilter => "constant_score_filter".serialize(serializer),
+            TopTerms(n) => format!("top_terms_{}", n).serialize(serializer),
+            TopTermsBoost(n) => format!("top_terms_boost_{}", n).serialize(serializer),
+            TopTermsBlendedFreqs(n) => {
                 format!("top_terms_blended_freqs_{}", n).serialize(serializer)
             }
         }
@@ -58,8 +62,8 @@ impl Serialize for Rewrite {
 #[derive(Debug, Default, Serialize)]
 pub struct TermQueryInner {
     value: JsonVal,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    boost: Option<f64>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    boost: Option<f64>,
 }
 
 impl TermQueryInner {
@@ -76,9 +80,15 @@ pub struct TermQuery(FieldBasedQuery<TermQueryInner, NoOuter>);
 
 impl Query {
     pub fn build_term<A, B>(field: A, value: B) -> TermQuery
-        where A: Into<String>,
-              B: Into<JsonVal> {
-        TermQuery(FieldBasedQuery::new(field.into(), TermQueryInner::new(value.into()), NoOuter))
+    where
+        A: Into<String>,
+        B: Into<JsonVal>,
+    {
+        TermQuery(FieldBasedQuery::new(
+            field.into(),
+            TermQueryInner::new(value.into()),
+            NoOuter,
+        ))
     }
 }
 
@@ -93,20 +103,21 @@ impl TermQuery {
 #[derive(Debug, Default, Serialize)]
 pub struct TermsQueryLookup {
     id: JsonVal,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     index: Option<String>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     doc_type: Option<String>,
     path: String,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    routing: Option<String>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    routing: Option<String>,
 }
 
 impl<'a> TermsQueryLookup {
     pub fn new<A, B>(id: A, path: B) -> TermsQueryLookup
-        where A: Into<JsonVal>,
-              B: Into<String> {
-
+    where
+        A: Into<JsonVal>,
+        B: Into<String>,
+    {
         TermsQueryLookup {
             id: id.into(),
             path: path.into(),
@@ -126,16 +137,18 @@ pub enum TermsQueryIn {
     Values(Vec<JsonVal>),
 
     /// An indirect reference to another document
-    Lookup(TermsQueryLookup)
+    Lookup(TermsQueryLookup),
 }
 
 // TODO - if this looks useful it can be extracted into a macro
 impl Serialize for TermsQueryIn {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         match self {
-            &TermsQueryIn::Values(ref q) => q.serialize(serializer),
-            &TermsQueryIn::Lookup(ref q) => q.serialize(serializer)
+            TermsQueryIn::Values(ref q) => q.serialize(serializer),
+            TermsQueryIn::Lookup(ref q) => q.serialize(serializer),
         }
     }
 }
@@ -159,16 +172,18 @@ impl From<Vec<JsonVal>> for TermsQueryIn {
 }
 
 impl<'a, A> From<&'a [A]> for TermsQueryIn
-    where A: JsonPotential {
-
+where
+    A: JsonPotential,
+{
     fn from(from: &'a [A]) -> TermsQueryIn {
         TermsQueryIn::Values(from.iter().map(|f| f.to_json_val()).collect())
     }
 }
 
 impl<A> From<Vec<A>> for TermsQueryIn
-    where A: JsonPotential {
-
+where
+    A: JsonPotential,
+{
     fn from(from: Vec<A>) -> TermsQueryIn {
         (&from[..]).into()
     }
@@ -180,16 +195,22 @@ pub struct TermsQuery(FieldBasedQuery<TermsQueryIn, NoOuter>);
 
 impl Query {
     pub fn build_terms<A>(field: A) -> TermsQuery
-        where A: Into<String> {
-
-        TermsQuery(FieldBasedQuery::new(field.into(), Default::default(), NoOuter))
+    where
+        A: Into<String>,
+    {
+        TermsQuery(FieldBasedQuery::new(
+            field.into(),
+            Default::default(),
+            NoOuter,
+        ))
     }
 }
 
 impl TermsQuery {
     pub fn with_values<T>(mut self, values: T) -> Self
-        where T: Into<TermsQueryIn> {
-
+    where
+        T: Into<TermsQueryIn>,
+    {
         self.0.inner = values.into();
         self
     }
@@ -202,20 +223,20 @@ impl TermsQuery {
 /// and share with other range queries
 #[derive(Debug, Default, Serialize)]
 pub struct RangeQueryInner {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     gte: Option<JsonVal>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     gt: Option<JsonVal>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     lte: Option<JsonVal>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     lt: Option<JsonVal>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     boost: Option<f64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     time_zone: Option<String>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    format: Option<String>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    format: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -223,9 +244,14 @@ pub struct RangeQuery(FieldBasedQuery<RangeQueryInner, NoOuter>);
 
 impl Query {
     pub fn build_range<A>(field: A) -> RangeQuery
-        where A: Into<String> {
-
-        RangeQuery(FieldBasedQuery::new(field.into(), Default::default(), NoOuter))
+    where
+        A: Into<String>,
+    {
+        RangeQuery(FieldBasedQuery::new(
+            field.into(),
+            Default::default(),
+            NoOuter,
+        ))
     }
 }
 
@@ -244,14 +270,17 @@ impl RangeQuery {
 /// Exists query
 #[derive(Debug, Serialize)]
 pub struct ExistsQuery {
-    field: String
+    field: String,
 }
 
 impl Query {
     pub fn build_exists<A>(field: A) -> ExistsQuery
-        where A: Into<String> {
-
-        ExistsQuery {field: field.into()}
+    where
+        A: Into<String>,
+    {
+        ExistsQuery {
+            field: field.into(),
+        }
     }
 }
 
@@ -266,22 +295,26 @@ pub struct PrefixQuery(FieldBasedQuery<PrefixQueryInner, NoOuter>);
 #[derive(Debug, Default, Serialize)]
 pub struct PrefixQueryInner {
     value: String,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     boost: Option<f64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    rewrite: Option<Rewrite>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    rewrite: Option<Rewrite>,
 }
 
 impl Query {
     pub fn build_prefix<A, B>(field: A, value: B) -> PrefixQuery
-        where A: Into<String>,
-              B: Into<String> {
-        PrefixQuery(FieldBasedQuery::new(field.into(),
-                                         PrefixQueryInner {
-                                             value: value.into(),
-                                             ..Default::default()
-                                         },
-                                         NoOuter))
+    where
+        A: Into<String>,
+        B: Into<String>,
+    {
+        PrefixQuery(FieldBasedQuery::new(
+            field.into(),
+            PrefixQueryInner {
+                value: value.into(),
+                ..Default::default()
+            },
+            NoOuter,
+        ))
     }
 }
 
@@ -299,22 +332,26 @@ pub struct WildcardQuery(FieldBasedQuery<WildcardQueryInner, NoOuter>);
 #[derive(Debug, Default, Serialize)]
 pub struct WildcardQueryInner {
     value: String,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     boost: Option<f64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    rewrite: Option<Rewrite>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    rewrite: Option<Rewrite>,
 }
 
 impl Query {
     pub fn build_wildcard<A, B>(field: A, value: B) -> WildcardQuery
-        where A: Into<String>,
-              B: Into<String> {
-        WildcardQuery(FieldBasedQuery::new(field.into(),
-                                           WildcardQueryInner {
-                                               value: value.into(),
-                                               ..Default::default()
-                                           },
-                                           NoOuter))
+    where
+        A: Into<String>,
+        B: Into<String>,
+    {
+        WildcardQuery(FieldBasedQuery::new(
+            field.into(),
+            WildcardQueryInner {
+                value: value.into(),
+                ..Default::default()
+            },
+            NoOuter,
+        ))
     }
 }
 
@@ -335,19 +372,19 @@ pub enum RegexpQueryFlags {
     Empty,
     Intersection,
     Interval,
-    None
+    None,
 }
 
 impl AsRef<str> for RegexpQueryFlags {
     fn as_ref(&self) -> &str {
         match self {
-            &RegexpQueryFlags::All => "ALL",
-            &RegexpQueryFlags::Anystring => "ANYSTRING",
-            &RegexpQueryFlags::Complement => "COMPLEMENT",
-            &RegexpQueryFlags::Empty => "EMPTY",
-            &RegexpQueryFlags::Intersection => "INTERSECTION",
-            &RegexpQueryFlags::Interval => "INTERVAL",
-            &RegexpQueryFlags::None => "NONE"
+            RegexpQueryFlags::All => "ALL",
+            RegexpQueryFlags::Anystring => "ANYSTRING",
+            RegexpQueryFlags::Complement => "COMPLEMENT",
+            RegexpQueryFlags::Empty => "EMPTY",
+            RegexpQueryFlags::Intersection => "INTERSECTION",
+            RegexpQueryFlags::Interval => "INTERVAL",
+            RegexpQueryFlags::None => "NONE",
         }
     }
 }
@@ -359,24 +396,28 @@ pub struct RegexpQuery(FieldBasedQuery<RegexpQueryInner, NoOuter>);
 #[derive(Debug, Default, Serialize)]
 pub struct RegexpQueryInner {
     value: String,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     boost: Option<f64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     flags: Option<Flags<RegexpQueryFlags>>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    max_determined_states: Option<u64>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    max_determined_states: Option<u64>,
 }
 
 impl Query {
     pub fn build_query<A, B>(field: A, value: B) -> RegexpQuery
-        where A: Into<String>,
-              B: Into<String> {
-        RegexpQuery(FieldBasedQuery::new(field.into(),
-                                         RegexpQueryInner {
-                                             value: value.into(),
-                                             ..Default::default()
-                                         },
-                                         NoOuter))
+    where
+        A: Into<String>,
+        B: Into<String>,
+    {
+        RegexpQuery(FieldBasedQuery::new(
+            field.into(),
+            RegexpQueryInner {
+                value: value.into(),
+                ..Default::default()
+            },
+            NoOuter,
+        ))
     }
 }
 
@@ -395,26 +436,30 @@ pub struct FuzzyQuery(FieldBasedQuery<FuzzyQueryInner, NoOuter>);
 #[derive(Debug, Default, Serialize)]
 pub struct FuzzyQueryInner {
     value: String,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     boost: Option<f64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     fuzziness: Option<Fuzziness>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     prefix_length: Option<u64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    max_expansions: Option<u64>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    max_expansions: Option<u64>,
 }
 
 impl Query {
     pub fn build_fuzzy<A, B>(field: A, value: B) -> FuzzyQuery
-        where A: Into<String>,
-              B: Into<String> {
-        FuzzyQuery(FieldBasedQuery::new(field.into(),
-                                        FuzzyQueryInner {
-                                            value: value.into(),
-                                            ..Default::default()
-                                        },
-                                        NoOuter))
+    where
+        A: Into<String>,
+        B: Into<String>,
+    {
+        FuzzyQuery(FieldBasedQuery::new(
+            field.into(),
+            FuzzyQueryInner {
+                value: value.into(),
+                ..Default::default()
+            },
+            NoOuter,
+        ))
     }
 }
 
@@ -430,15 +475,16 @@ impl FuzzyQuery {
 /// Type query
 #[derive(Debug, Serialize)]
 pub struct TypeQuery {
-    value: String
+    value: String,
 }
 
 impl Query {
     pub fn build_type<A>(value: A) -> TypeQuery
-        where A: Into<String> {
-
+    where
+        A: Into<String>,
+    {
         TypeQuery {
-            value: value.into()
+            value: value.into(),
         }
     }
 }
@@ -450,15 +496,16 @@ impl TypeQuery {
 /// Ids query
 #[derive(Debug, Default, Serialize)]
 pub struct IdsQuery {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     doc_type: Option<OneOrMany<String>>,
-    values: Vec<JsonVal>
+    values: Vec<JsonVal>,
 }
 
 impl Query {
     pub fn build_ids<A>(values: A) -> IdsQuery
-        where A: Into<Vec<JsonVal>> {
-
+    where
+        A: Into<Vec<JsonVal>>,
+    {
         IdsQuery {
             values: values.into(),
             ..Default::default()

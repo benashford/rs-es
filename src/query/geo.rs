@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 Ben Ashford
+ * Copyright 2016-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,22 @@
 
 //! Geo queries
 
-use serde::ser::{Serialize, Serializer, SerializeMap};
+use serde::ser::{Serialize, SerializeMap, Serializer};
+use serde_derive::Serialize;
 
-use ::json::{MergeSerialize, NoOuter, serialize_map_optional_kv, ShouldSkip};
-use ::units::{Distance, DistanceType, GeoBox, Location};
+use crate::{
+    json::{serialize_map_optional_kv, MergeSerialize, NoOuter, ShouldSkip},
+    units::{Distance, DistanceType, GeoBox, Location},
+};
 
-use super::Query;
-use super::common::FieldBasedQuery;
+use super::{common::FieldBasedQuery, Query};
 
 #[derive(Debug, Serialize)]
 pub enum ShapeOption {
-    #[serde(rename="shape")]
+    #[serde(rename = "shape")]
     Shape(Shape),
-    #[serde(rename="indexed_shape")]
-    IndexedShape(IndexedShape)
+    #[serde(rename = "indexed_shape")]
+    IndexedShape(IndexedShape),
 }
 
 from!(Shape, ShapeOption, Shape);
@@ -41,23 +43,26 @@ pub struct GeoShapeQuery(FieldBasedQuery<Option<ShapeOption>, NoOuter>);
 
 impl Query {
     pub fn build_geo_shape<A>(field: A) -> GeoShapeQuery
-        where A: Into<String> {
-
+    where
+        A: Into<String>,
+    {
         GeoShapeQuery(FieldBasedQuery::new(field.into(), None, NoOuter))
     }
 }
 
 impl GeoShapeQuery {
     pub fn with_shape<A>(mut self, shape: A) -> Self
-        where A: Into<Shape> {
-
+    where
+        A: Into<Shape>,
+    {
         self.0.inner = Some(ShapeOption::Shape(shape.into()));
         self
     }
 
     pub fn with_indexed_shape<A>(mut self, indexed_shape: A) -> Self
-        where A: Into<IndexedShape> {
-
+    where
+        A: Into<IndexedShape>,
+    {
         self.0.inner = Some(ShapeOption::IndexedShape(indexed_shape.into()));
         self
     }
@@ -68,39 +73,41 @@ impl GeoShapeQuery {
 // Required for GeoShape
 #[derive(Debug, Serialize)]
 pub struct Shape {
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     shape_type: String,
-    coordinates: Vec<(f64, f64)>
+    coordinates: Vec<(f64, f64)>,
 }
 
 impl Shape {
     pub fn new<A: Into<String>>(shape_type: A, coordinates: Vec<(f64, f64)>) -> Shape {
         Shape {
-            shape_type:  shape_type.into(),
-            coordinates: coordinates
+            shape_type: shape_type.into(),
+            coordinates: coordinates,
         }
     }
 }
 
 #[derive(Debug, Serialize)]
 pub struct IndexedShape {
-    id:       String,
+    id: String,
     doc_type: String,
-    index:    String,
-    path:     String
+    index: String,
+    path: String,
 }
 
 impl IndexedShape {
     pub fn new<A, B, C, D>(id: A, doc_type: B, index: C, path: D) -> IndexedShape
-        where A: Into<String>,
-              B: Into<String>,
-              C: Into<String>,
-              D: Into<String> {
+    where
+        A: Into<String>,
+        B: Into<String>,
+        C: Into<String>,
+        D: Into<String>,
+    {
         IndexedShape {
             id: id.into(),
             doc_type: doc_type.into(),
             index: index.into(),
-            path: path.into()
+            path: path.into(),
         }
     }
 }
@@ -112,24 +119,28 @@ pub struct GeoBoundingBoxQuery(FieldBasedQuery<GeoBoundingBoxQueryInner, NoOuter
 #[derive(Debug, Default, Serialize)]
 pub struct GeoBoundingBoxQueryInner {
     geo_box: GeoBox,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     coerce: Option<bool>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     ignore_malformed: Option<bool>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip", rename="type")]
-    filter_type: Option<Type>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip", rename = "type")]
+    filter_type: Option<Type>,
 }
 
 impl Query {
     pub fn build_geo_bounding_box<A, B>(field: A, geo_box: B) -> GeoBoundingBoxQuery
-        where A: Into<String>,
-              B: Into<GeoBox> {
-        GeoBoundingBoxQuery(FieldBasedQuery::new(field.into(),
-                                                 GeoBoundingBoxQueryInner {
-                                                     geo_box: geo_box.into(),
-                                                     ..Default::default()
-                                                 },
-                                                 NoOuter))
+    where
+        A: Into<String>,
+        B: Into<GeoBox>,
+    {
+        GeoBoundingBoxQuery(FieldBasedQuery::new(
+            field.into(),
+            GeoBoundingBoxQueryInner {
+                geo_box: geo_box.into(),
+                ..Default::default()
+            },
+            NoOuter,
+        ))
     }
 }
 
@@ -145,17 +156,20 @@ impl GeoBoundingBoxQuery {
 #[derive(Debug)]
 pub enum Type {
     Indexed,
-    Memory
+    Memory,
 }
 
 impl Serialize for Type {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         use self::Type::*;
         match self {
-            &Indexed => "indexed",
-            &Memory => "memory"
-        }.serialize(serializer)
+            Indexed => "indexed",
+            Memory => "memory",
+        }
+        .serialize(serializer)
     }
 }
 
@@ -171,14 +185,14 @@ struct GeoDistanceQueryOuter {
     distance_type: Option<DistanceType>,
     optimize_bbox: Option<OptimizeBbox>,
     coerce: Option<bool>,
-    ignore_malformed: Option<bool>
+    ignore_malformed: Option<bool>,
 }
 
 impl MergeSerialize for GeoDistanceQueryOuter {
-    fn merge_serialize<S>(&self,
-                          serializer: &mut S) -> Result<(), S::Error>
-        where S: SerializeMap {
-
+    fn merge_serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    where
+        S: SerializeMap,
+    {
         serializer.serialize_entry("distance", &self.distance)?;
         serialize_map_optional_kv(serializer, "distance_type", &self.distance_type)?;
         serialize_map_optional_kv(serializer, "optimize_bbox", &self.optimize_bbox)?;
@@ -189,12 +203,12 @@ impl MergeSerialize for GeoDistanceQueryOuter {
 }
 
 impl Query {
-    pub fn build_geo_distance<A, B, C>(field: A,
-                                       location: B,
-                                       distance: C) -> GeoDistanceQuery
-        where A: Into<String>,
-              B: Into<Location>,
-              C: Into<Distance> {
+    pub fn build_geo_distance<A, B, C>(field: A, location: B, distance: C) -> GeoDistanceQuery
+    where
+        A: Into<String>,
+        B: Into<Location>,
+        C: Into<Distance>,
+    {
         let outer = GeoDistanceQueryOuter {
             distance: distance.into(),
             ..Default::default()
@@ -217,17 +231,19 @@ impl GeoDistanceQuery {
 pub enum OptimizeBbox {
     Memory,
     Indexed,
-    None
+    None,
 }
 
 impl Serialize for OptimizeBbox {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         use self::OptimizeBbox::*;
         match self {
-            &Memory => "memory".serialize(serializer),
-            &Indexed => "indexed".serialize(serializer),
-            &None => "none".serialize(serializer)
+            Memory => "memory".serialize(serializer),
+            Indexed => "indexed".serialize(serializer),
+            None => "none".serialize(serializer),
         }
     }
 }
@@ -239,23 +255,26 @@ pub struct GeoPolygonQuery(FieldBasedQuery<GeoPolygonQueryInner, NoOuter>);
 #[derive(Debug, Default, Serialize)]
 pub struct GeoPolygonQueryInner {
     points: Vec<Location>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     coerce: Option<bool>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    ignore_malformed: Option<bool>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    ignore_malformed: Option<bool>,
 }
 
 impl Query {
-    pub fn build_geo_polygon<A, B>(field: A,
-                                   points: B) -> GeoPolygonQuery
-        where A: Into<String>,
-              B: Into<Vec<Location>> {
-        GeoPolygonQuery(FieldBasedQuery::new(field.into(),
-                                             GeoPolygonQueryInner {
-                                                 points: points.into(),
-                                                 ..Default::default()
-                                             },
-                                             NoOuter))
+    pub fn build_geo_polygon<A, B>(field: A, points: B) -> GeoPolygonQuery
+    where
+        A: Into<String>,
+        B: Into<Vec<Location>>,
+    {
+        GeoPolygonQuery(FieldBasedQuery::new(
+            field.into(),
+            GeoPolygonQueryInner {
+                points: points.into(),
+                ..Default::default()
+            },
+            NoOuter,
+        ))
     }
 }
 
@@ -277,10 +296,10 @@ pub struct GeohashCellQueryOuter {
 }
 
 impl MergeSerialize for GeohashCellQueryOuter {
-    fn merge_serialize<S>(&self,
-                          serializer: &mut S) -> Result<(), S::Error>
-        where S: SerializeMap {
-
+    fn merge_serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    where
+        S: SerializeMap,
+    {
         serialize_map_optional_kv(serializer, "precision", &self.precision)?;
         serialize_map_optional_kv(serializer, "neighbors", &self.neighbors)?;
         Ok(())
@@ -289,11 +308,15 @@ impl MergeSerialize for GeohashCellQueryOuter {
 
 impl Query {
     pub fn build_geohash_cell<A, B>(field: A, location: B) -> GeohashCellQuery
-        where A: Into<String>,
-              B: Into<Location> {
-        GeohashCellQuery(FieldBasedQuery::new(field.into(),
-                                              location.into(),
-                                              Default::default()))
+    where
+        A: Into<String>,
+        B: Into<Location>,
+    {
+        GeohashCellQuery(FieldBasedQuery::new(
+            field.into(),
+            location.into(),
+            Default::default(),
+        ))
     }
 }
 
@@ -307,7 +330,7 @@ impl GeohashCellQuery {
 #[derive(Debug)]
 pub enum Precision {
     Geohash(u64),
-    Distance(Distance)
+    Distance(Distance),
 }
 
 impl Default for Precision {
@@ -321,11 +344,13 @@ from!(Distance, Precision, Distance);
 
 impl Serialize for Precision {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         use self::Precision::*;
         match self {
-            &Geohash(precision) => precision.serialize(serializer),
-            &Distance(ref dist) => dist.serialize(serializer)
+            Geohash(precision) => precision.serialize(serializer),
+            Distance(ref dist) => dist.serialize(serializer),
         }
     }
 }

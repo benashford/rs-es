@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 use std::collections::HashMap;
 
 use serde::ser::{Serialize, Serializer};
+use serde_derive::Serialize;
 
 #[derive(Debug, Clone)]
 pub enum Encoders {
@@ -32,8 +33,8 @@ impl Serialize for Encoders {
         S: Serializer,
     {
         match self {
-            &Encoders::Default => "default",
-            &Encoders::HTML => "html",
+            Encoders::Default => "default",
+            Encoders::HTML => "html",
         }
         .serialize(serializer)
     }
@@ -52,9 +53,9 @@ impl Serialize for SettingTypes {
         S: Serializer,
     {
         match self {
-            &SettingTypes::Plain => "plain",
-            &SettingTypes::FVH => "fvh",
-            &SettingTypes::Postings => "postings",
+            SettingTypes::Plain => "plain",
+            SettingTypes::FVH => "fvh",
+            SettingTypes::Postings => "postings",
         }
         .serialize(serializer)
     }
@@ -71,7 +72,7 @@ impl Serialize for IndexOptions {
         S: Serializer,
     {
         match self {
-            &IndexOptions::Offsets => "offsets",
+            IndexOptions::Offsets => "offsets",
         }
         .serialize(serializer)
     }
@@ -90,9 +91,9 @@ impl Serialize for TermVector {
         S: Serializer,
     {
         match self {
-            &TermVector::WithPositionsOffsets => "with_positions_offsets",
-            &TermVector::BoundaryChars => "boundary_chars",
-            &TermVector::BoundaryMaxScan => "boundary_max_scan",
+            TermVector::WithPositionsOffsets => "with_positions_offsets",
+            TermVector::BoundaryChars => "boundary_chars",
+            TermVector::BoundaryMaxScan => "boundary_max_scan",
         }
         .serialize(serializer)
     }
@@ -111,8 +112,8 @@ pub struct Setting {
     pub matched_fields: Option<Vec<String>>,
 }
 
-impl Setting {
-    pub fn new() -> Setting {
+impl Default for Setting {
+    fn default() -> Self {
         Setting {
             setting_type: None,
             index_options: None,
@@ -123,6 +124,12 @@ impl Setting {
             no_match_size: 0,
             matched_fields: None,
         }
+    }
+}
+
+impl Setting {
+    pub fn new() -> Self {
+        Default::default()
     }
 
     pub fn with_type(&mut self, setting_type: SettingTypes) -> &mut Setting {
