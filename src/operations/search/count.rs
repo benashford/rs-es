@@ -16,7 +16,7 @@
 
 //! Implementations of the Count API
 
-use hyper::status::StatusCode;
+use reqwest::StatusCode;
 
 use serde_derive::{Deserialize, Serialize};
 
@@ -81,7 +81,7 @@ impl<'a, 'b> CountURIOperation<'a, 'b> {
         log::info!("Counting with: {}", url);
         let response = self.client.get_op(&url)?;
         match response.status_code() {
-            StatusCode::Ok => Ok(response.read_response()?),
+            StatusCode::OK => Ok(response.read_response()?),
             status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
                 status_code
@@ -157,7 +157,7 @@ impl<'a, 'b> CountQueryOperation<'a, 'b> {
         );
         let response = self.client.post_body_op(&url, &self.body)?;
         match response.status_code() {
-            StatusCode::Ok => Ok(response.read_response()?),
+            StatusCode::OK => Ok(response.read_response()?),
             status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
                 status_code
@@ -192,9 +192,6 @@ pub struct CountResult {
 
 #[cfg(test)]
 mod tests {
-    extern crate env_logger;
-    extern crate regex;
-
     use crate::tests::setup_test_data;
     use crate::tests::{clean_db, make_client};
 

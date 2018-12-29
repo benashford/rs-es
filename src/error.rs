@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,7 @@
 
 use std::error::Error;
 use std::fmt;
-use std::io;
-use std::io::Read;
-
-use hyper;
-use hyper::client::response;
+use std::io::{self, Read};
 
 use serde_json;
 
@@ -39,7 +35,7 @@ pub enum EsError {
     EsServerError(String),
 
     /// Miscellaneous error from the HTTP library
-    HttpError(hyper::error::Error),
+    HttpError(reqwest::Error),
 
     /// Miscellaneous IO error
     IoError(io::Error),
@@ -54,8 +50,8 @@ impl From<io::Error> for EsError {
     }
 }
 
-impl From<hyper::error::Error> for EsError {
-    fn from(err: hyper::error::Error) -> EsError {
+impl From<reqwest::Error> for EsError {
+    fn from(err: reqwest::Error) -> EsError {
         EsError::HttpError(err)
     }
 }
@@ -66,19 +62,20 @@ impl From<serde_json::error::Error> for EsError {
     }
 }
 
-impl<'a> From<&'a mut response::Response> for EsError {
-    fn from(err: &'a mut response::Response) -> EsError {
+impl<'a> From<&'a mut reqwest::Response> for EsError {
+    fn from(err: &'a mut reqwest::Response) -> EsError {
         let mut body = String::new();
         match err.read_to_string(&mut body) {
             Ok(_) => (),
             Err(_) => {
                 return EsError::EsServerError(format!(
                     "{} - cannot read response - {:?}",
-                    err.status, err
+                    err.status(),
+                    err
                 ));
             }
         }
-        EsError::EsServerError(format!("{} - {}", err.status, body))
+        EsError::EsServerError(format!("{} - {}", err.status(), body))
     }
 }
 

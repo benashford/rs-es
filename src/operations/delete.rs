@@ -16,7 +16,7 @@
 
 //! Implementation of delete operations, both Delete-By-Query and Delete-By-Id
 
-use hyper::status::StatusCode;
+use reqwest::StatusCode;
 
 use serde_derive::Deserialize;
 
@@ -73,7 +73,7 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
         );
         let response = self.client.delete_op(&url)?;
         match response.status_code() {
-            StatusCode::Ok => Ok(response.read_response()?),
+            StatusCode::OK => Ok(response.read_response()?),
             status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
                 status_code

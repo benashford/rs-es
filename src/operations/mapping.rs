@@ -24,7 +24,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use hyper::status::StatusCode;
+use reqwest::StatusCode;
 
 use serde_derive::Serialize;
 use serde_json::{Map, Value};
@@ -127,7 +127,7 @@ impl Client {
         let response = self.post_op(&url)?;
 
         match response.status_code() {
-            StatusCode::Ok => Ok(response.read_response()?),
+            StatusCode::OK => Ok(response.read_response()?),
             status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
                 status_code
@@ -141,7 +141,7 @@ impl Client {
         let response = self.post_op(&url)?;
 
         match response.status_code() {
-            StatusCode::Ok => Ok(response.read_response()?),
+            StatusCode::OK => Ok(response.read_response()?),
             status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
                 status_code
@@ -163,7 +163,7 @@ impl Client {
         let response = self.get_op(&url)?;
 
         match response.status_code() {
-            StatusCode::Ok => Ok(()),
+            StatusCode::OK => Ok(()),
             status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
                 status_code
@@ -178,8 +178,6 @@ pub struct MappingResult;
 
 #[cfg(test)]
 pub mod tests {
-    extern crate env_logger;
-
     use super::*;
 
     #[derive(Debug, Serialize)]

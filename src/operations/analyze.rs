@@ -56,19 +56,22 @@ impl<'a, 'b> AnalyzeOperation<'a, 'b> {
     }
 
     pub fn send(&mut self) -> Result<AnalyzeResult, EsError> {
-        let mut url = match self.index {
-            None => "/_analyze".to_owned(),
-            Some(index) => format!("{}/_analyze", index),
-        };
-        match self.analyzer {
-            None => (),
-            Some(analyzer) => url.push_str(&format!("?analyzer={}", analyzer)),
-        }
-        let client = &self.client;
-        let full_url = client.full_url(&url);
-        let req = client.http_client.post(&full_url).body(self.body).send()?;
-        let response = do_req(req)?;
-        Ok(response.read_response()?)
+        // TODO - re-enable
+        //
+        // let mut url = match self.index {
+        //     None => "/_analyze".to_owned(),
+        //     Some(index) => format!("{}/_analyze", index),
+        // };
+        // match self.analyzer {
+        //     None => (),
+        //     Some(analyzer) => url.push_str(&format!("?analyzer={}", analyzer)),
+        // }
+        // let client = &self.client;
+        // let full_url = client.full_url(&url);
+        // let req = client.http_client.post(full_url).body(self.body).send()?;
+        // let response = do_req(req)?;
+        // Ok(response.read_response()?)
+        unimplemented!()
     }
 }
 

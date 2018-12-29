@@ -23,7 +23,7 @@ pub mod highlight;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 
-use hyper::status::StatusCode;
+use reqwest::StatusCode;
 
 use serde::{
     de::DeserializeOwned,
@@ -474,7 +474,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
         log::info!("Searching with: {}", url);
         let response = self.client.get_op(&url)?;
         match response.status_code() {
-            StatusCode::Ok => {
+            StatusCode::OK => {
                 let interim: SearchResultInterim<T> = response.read_response()?;
                 Ok(interim.finalize())
             }
@@ -732,7 +732,7 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
         );
         let response = self.client.post_body_op(&url, &self.body)?;
         match response.status_code() {
-            StatusCode::Ok => {
+            StatusCode::OK => {
                 let interim: SearchResultInterim<T> = response.read_response()?;
                 let aggs = match &interim.aggs {
                     Some(ref raw_aggs) => {
@@ -773,7 +773,7 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
         );
         let response = self.client.post_body_op(&url, &self.body)?;
         match response.status_code() {
-            StatusCode::Ok => {
+            StatusCode::OK => {
                 let interim: ScanResultInterim<T> = response.read_response()?;
                 let aggs = match &interim.aggs {
                     Some(ref raw_aggs) => {
@@ -793,7 +793,7 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
                 result.aggs = aggs;
                 Ok(result)
             }
-            StatusCode::NotFound => {
+            StatusCode::NOT_FOUND => {
                 Err(EsError::EsServerError(format!("Not found: {:?}", response)))
             }
             status_code => Err(EsError::EsError(format!(
@@ -1076,7 +1076,7 @@ where
         };
 
         match response.status_code() {
-            StatusCode::Ok => {
+            StatusCode::OK => {
                 let search_result: SearchResultInterim<T> = response.read_response()?;
                 self.scroll_id = match search_result.scroll_id {
                     Some(ref id) => id.clone(),
@@ -1097,8 +1097,8 @@ where
         let url = format!("/_search/scroll?scroll_id={}", self.scroll_id);
         let response = client.delete_op(&url)?;
         match response.status_code() {
-            StatusCode::Ok => Ok(()),       // closed
-            StatusCode::NotFound => Ok(()), // previously closed
+            StatusCode::OK => Ok(()),        // closed
+            StatusCode::NOT_FOUND => Ok(()), // previously closed
             status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
                 status_code
@@ -1109,9 +1109,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    extern crate env_logger;
-    extern crate regex;
-
     use serde_json::Value;
 
     use crate::Client;

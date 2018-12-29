@@ -16,7 +16,7 @@
 
 //! Refresh an Index
 
-use hyper::status::StatusCode;
+use reqwest::StatusCode;
 
 use serde_derive::Deserialize;
 
@@ -50,7 +50,7 @@ impl<'a, 'b> RefreshOperation<'a, 'b> {
         let url = format!("/{}/_refresh", format_multi(&self.indexes));
         let response = self.client.post_op(&url)?;
         match response.status_code() {
-            StatusCode::Ok => Ok(response.read_response()?),
+            StatusCode::OK => Ok(response.read_response()?),
             status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
                 status_code

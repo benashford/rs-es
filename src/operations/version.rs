@@ -63,7 +63,7 @@ pub struct VersionResult {
 #[cfg(test)]
 pub mod tests {
     use crate::tests::make_client;
-    use crate::tests::regex::Regex;
+    use regex::Regex;
 
     #[test]
     fn it_works() {

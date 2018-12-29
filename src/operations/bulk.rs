@@ -18,7 +18,7 @@
 
 use std::fmt;
 
-use hyper::status::StatusCode;
+use reqwest::StatusCode;
 
 use serde::{
     de::{Error, MapAccess, Visitor},
@@ -249,30 +249,34 @@ where
         //
         // Various parts of the client are reused where it makes sense.
         //
-        let full_url = {
-            let url = self.format_url();
-            self.client.full_url(&url)
-        };
-        let body = self.format_actions();
-        log::debug!("Sending: {}", body);
-        // Doesn't use the standard macros as it's not standard JSON
-        let result = self
-            .client
-            .http_client
-            .post(&full_url)
-            .body(&body)
-            .headers(self.client.headers.clone())
-            .send()?;
 
-        let response = do_req(result)?;
+        // TODO - re-enable
 
-        match response.status_code() {
-            StatusCode::Ok => Ok(response.read_response()?),
-            status_code => Err(EsError::EsError(format!(
-                "Unexpected status: {}",
-                status_code
-            ))),
-        }
+        // let full_url = {
+        //     let url = self.format_url();
+        //     self.client.full_url(&url)
+        // };
+        // let body = self.format_actions();
+        // log::debug!("Sending: {}", body);
+        // // Doesn't use the standard macros as it's not standard JSON
+        // let result = self
+        //     .client
+        //     .http_client
+        //     .post(full_url)
+        //     .body(&body)
+        //     .headers(self.client.headers.clone())
+        //     .send()?;
+
+        // let response = do_req(result)?;
+
+        // match response.status_code() {
+        //     StatusCode::Ok => Ok(response.read_response()?),
+        //     status_code => Err(EsError::EsError(format!(
+        //         "Unexpected status: {}",
+        //         status_code
+        //     ))),
+        // }
+        unimplemented!()
     }
 }
 
