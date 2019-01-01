@@ -20,7 +20,6 @@
 use serde_derive::Deserialize;
 
 use crate::{
-    do_req,
     error::EsError,
     {Client, EsResponse},
 };
@@ -56,22 +55,19 @@ impl<'a, 'b> AnalyzeOperation<'a, 'b> {
     }
 
     pub fn send(&mut self) -> Result<AnalyzeResult, EsError> {
-        // TODO - re-enable
-        //
-        // let mut url = match self.index {
-        //     None => "/_analyze".to_owned(),
-        //     Some(index) => format!("{}/_analyze", index),
-        // };
-        // match self.analyzer {
-        //     None => (),
-        //     Some(analyzer) => url.push_str(&format!("?analyzer={}", analyzer)),
-        // }
-        // let client = &self.client;
-        // let full_url = client.full_url(&url);
-        // let req = client.http_client.post(full_url).body(self.body).send()?;
-        // let response = do_req(req)?;
-        // Ok(response.read_response()?)
-        unimplemented!()
+        let mut url = match self.index {
+            None => "/_analyze".to_owned(),
+            Some(index) => format!("{}/_analyze", index),
+        };
+        match self.analyzer {
+            None => (),
+            Some(analyzer) => url.push_str(&format!("?analyzer={}", analyzer)),
+        }
+        let response = self.client.do_es_op(&url, |url| {
+            self.client.http_client.post(url).body(self.body.to_owned())
+        })?;
+
+        Ok(response.read_response()?)
     }
 }
 

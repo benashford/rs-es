@@ -35,7 +35,7 @@ pub mod units;
 
 use std::time;
 
-use reqwest::{StatusCode, Url};
+use reqwest::{RequestBuilder, StatusCode, Url};
 
 use serde::{de::DeserializeOwned, ser::Serialize};
 
@@ -69,7 +69,7 @@ impl EsResponse for reqwest::Response {
 ///
 /// This function is exposed to allow extensions to certain operations, it is
 /// not expected to be used by consumers of the library
-pub fn do_req(resp: reqwest::Response) -> Result<reqwest::Response, EsError> {
+fn do_req(resp: reqwest::Response) -> Result<reqwest::Response, EsError> {
     let mut resp = resp;
     let status = resp.status();
     match status {
@@ -107,20 +107,29 @@ pub struct Client {
     http_client: reqwest::Client,
 }
 
+impl Client {
+    fn do_es_op(
+        &self,
+        url: &str,
+        action: impl FnOnce(Url) -> RequestBuilder,
+    ) -> Result<reqwest::Response, EsError> {
+        let url = self.full_url(url);
+        let username = self.base_url.username();
+        let mut method = action(url);
+        if !username.is_empty() {
+            method = method.basic_auth(username, self.base_url.password());
+        }
+        let result = method.send()?;
+        do_req(result)
+    }
+}
+
 /// Create a HTTP function for the given method (GET/PUT/POST/DELETE)
 macro_rules! es_op {
     ($n:ident,$cn:ident) => {
-        fn $n(&mut self, url: &str) -> Result<reqwest::Response, EsError> {
+        fn $n(&self, url: &str) -> Result<reqwest::Response, EsError> {
             log::info!("Doing {} on {}", stringify!($n), url);
-            let url = self.full_url(url);
-            let username = self.base_url.username();
-            let mut method = self.http_client
-                .$cn(url.clone());
-            if !username.is_empty() {
-                method = method.basic_auth(username, self.base_url.password());
-            }
-            let result = method.send()?;
-            do_req(result)
+            self.do_es_op(url, |url| self.http_client.$cn(url.clone()))
         }
     }
 }
@@ -135,19 +144,10 @@ macro_rules! es_body_op {
 
             log::info!("Doing {} on {}", stringify!($n), url);
             let json_string = serde_json::to_string(body)?;
-            log::debug!("Body send: {}", &json_string);
 
-            let url = self.full_url(url);
-            let username = self.base_url.username();
-            let mut method = self.http_client.$cn(url);
-            if !username.is_empty() {
-                method = method.basic_auth(username, self.base_url.password());
-            }
-            let result = method
-                .body(json_string)
-                .send()?;
-
-            do_req(result)
+            self.do_es_op(url, |url| {
+                self.http_client.$cn(url.clone()).body(json_string)
+            })
         }
     }
 }

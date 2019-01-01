@@ -28,7 +28,6 @@ use serde::{
 use serde_json;
 
 use crate::{
-    do_req,
     error::EsError,
     json::{FieldBased, NoOuter, ShouldSkip},
     units::Duration,
@@ -241,7 +240,7 @@ where
         actstr
     }
 
-    pub fn send(&'b mut self) -> Result<BulkResult, EsError> {
+    pub fn send(&self) -> Result<BulkResult, EsError> {
         //
         // This function does not use the standard GET/POST/DELETE functions of
         // the client, as they serve the happy path of JSON-in/JSON-out, this
@@ -249,34 +248,20 @@ where
         //
         // Various parts of the client are reused where it makes sense.
         //
+        let response = self.client.do_es_op(&self.format_url(), |url| {
+            self.client
+                .http_client
+                .post(url)
+                .body(self.format_actions())
+        })?;
 
-        // TODO - re-enable
-
-        // let full_url = {
-        //     let url = self.format_url();
-        //     self.client.full_url(&url)
-        // };
-        // let body = self.format_actions();
-        // log::debug!("Sending: {}", body);
-        // // Doesn't use the standard macros as it's not standard JSON
-        // let result = self
-        //     .client
-        //     .http_client
-        //     .post(full_url)
-        //     .body(&body)
-        //     .headers(self.client.headers.clone())
-        //     .send()?;
-
-        // let response = do_req(result)?;
-
-        // match response.status_code() {
-        //     StatusCode::Ok => Ok(response.read_response()?),
-        //     status_code => Err(EsError::EsError(format!(
-        //         "Unexpected status: {}",
-        //         status_code
-        //     ))),
-        // }
-        unimplemented!()
+        match response.status_code() {
+            StatusCode::OK => Ok(response.read_response()?),
+            status_code => Err(EsError::EsError(format!(
+                "Unexpected status: {}",
+                status_code
+            ))),
+        }
     }
 }
 
