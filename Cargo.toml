@@ -7,7 +7,7 @@ repository = "https://github.com/benashford/rs-es"
 description = "Client for the ElasticSearch REST API"
 readme = "README.md"
 keywords = ["elasticsearch", "elastic"]
-exclude = ["docker-dev.yml"]
+exclude = ["docker-compose.yml"]
 edition = "2018"
 
 [lib]
@@ -21,5 +21,5 @@ serde_json = "1.0"
 serde_derive = "1.0"
 
 [dev-dependencies]
-env_logger = "*"
-regex = "*"
+env_logger = "0.6"
+regex = "1.1"
