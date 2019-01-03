@@ -7,7 +7,7 @@ repository = "https://github.com/benashford/rs-es"
 description = "Client for the ElasticSearch REST API"
 readme = "README.md"
 keywords = ["elasticsearch", "elastic"]
-exclude = ["docker-compose.yml"]
+exclude = [".gitignore", ".travis.yml", "docker-compose.yml"]
 edition = "2018"
 
 [lib]
