@@ -1,31 +1,25 @@
 [package]
 name = "rs-es"
-version = "0.10.5"
+version = "0.11.0"
 authors = ["Ben Ashford"]
 license = "Apache-2.0"
 repository = "https://github.com/benashford/rs-es"
 description = "Client for the ElasticSearch REST API"
 readme = "README.md"
 keywords = ["elasticsearch", "elastic"]
-exclude = ["devbox/**/*", "docker-dev.yml"]
+exclude = ["docker-compose.yml"]
+edition = "2018"
 
 [lib]
 name = "rs_es"
 
-[features]
-default = ["ssl"]
-ssl = ["hyper-openssl"]
-
 [dependencies]
-hyper = "^0.10"
-hyper-openssl = { version = "^0.2", optional = true }
-log = "^0.3"
-maplit = "^0.1"
-serde = "^1.0"
-serde_json = "^1.0"
-serde_derive = "^1.0"
-url = "^1.2"
+reqwest = "0.9"
+log = "0.4"
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
 
 [dev-dependencies]
-env_logger = "^0.4"
-regex = "^0.2"
+env_logger = "0.6"
+regex = "1.1"

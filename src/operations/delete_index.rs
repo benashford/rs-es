@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,9 @@
 
 //! Implementation of ElasticSearch Delete Index operation
 
-use hyper::status::StatusCode;
+use reqwest::StatusCode;
 
-use ::{Client, EsResponse};
-use ::error::EsError;
+use crate::{error::EsError, Client, EsResponse};
 
 use super::GenericResult;
 
@@ -35,16 +34,18 @@ impl Client {
         let response = self.delete_op(&url)?;
 
         match response.status_code() {
-            &StatusCode::Ok => Ok(response.read_response()?),
-            _ => Err(EsError::EsError(format!("Unexpected status: {}",
-                                              response.status_code())))
+            StatusCode::OK => Ok(response.read_response()?),
+            status_code => Err(EsError::EsError(format!(
+                "Unexpected status: {}",
+                status_code
+            ))),
         }
     }
 }
 
 #[cfg(test)]
 pub mod tests {
-    use ::tests::{clean_db, TestDocument, make_client};
+    use crate::tests::{clean_db, make_client, TestDocument};
 
     #[test]
     fn test_delete_index() {
@@ -61,7 +62,7 @@ pub mod tests {
         }
         {
             let result = client.delete_index(index_name);
-            info!("DELETE INDEX RESULT: {:?}", result);
+            log::info!("DELETE INDEX RESULT: {:?}", result);
 
             assert!(result.is_ok());
 

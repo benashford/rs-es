@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#![crate_type = "lib"]
-#![crate_name = "rs_es"]
-
 //! A client for ElasticSearch's REST API
 //!
 //! The `Client` itself is used as the central access point, from which numerous
@@ -24,26 +21,6 @@
 //!
 //! Warning: at the time of writing the majority of such APIs are currently
 //! unimplemented.
-
-#[macro_use]
-extern crate serde_derive;
-
-extern crate serde;
-
-#[cfg_attr(test, macro_use)]
-extern crate serde_json;
-
-#[macro_use]
-extern crate log;
-extern crate hyper;
-
-#[cfg(feature = "ssl")]
-extern crate hyper_openssl;
-
-#[macro_use]
-extern crate maplit;
-
-extern crate url;
 
 #[macro_use]
 pub mod util;
@@ -56,28 +33,24 @@ pub mod operations;
 pub mod query;
 pub mod units;
 
-use hyper::client;
-use hyper::header::{Authorization, Basic, ContentType, Headers};
-use hyper::status::StatusCode;
-
-use serde::de::DeserializeOwned;
-use serde::ser::Serialize;
-
-use error::EsError;
-
 use std::time;
-use url::Url;
+
+use reqwest::{RequestBuilder, StatusCode, Url};
+
+use serde::{de::DeserializeOwned, ser::Serialize};
+
+use crate::error::EsError;
 
 pub trait EsResponse {
-    fn status_code(&self) -> &StatusCode;
+    fn status_code(&self) -> StatusCode;
     fn read_response<R>(self) -> Result<R, EsError>
     where
         R: DeserializeOwned;
 }
 
-impl EsResponse for client::response::Response {
-    fn status_code(&self) -> &StatusCode {
-        &self.status
+impl EsResponse for reqwest::Response {
+    fn status_code(&self) -> StatusCode {
+        self.status()
     }
 
     fn read_response<R>(self) -> Result<R, EsError>
@@ -96,11 +69,11 @@ impl EsResponse for client::response::Response {
 ///
 /// This function is exposed to allow extensions to certain operations, it is
 /// not expected to be used by consumers of the library
-pub fn do_req(resp: client::response::Response) -> Result<client::response::Response, EsError> {
+fn do_req(resp: reqwest::Response) -> Result<reqwest::Response, EsError> {
     let mut resp = resp;
-    let status = resp.status;
+    let status = resp.status();
     match status {
-        StatusCode::Ok | StatusCode::Created | StatusCode::NotFound => Ok(resp),
+        StatusCode::OK | StatusCode::CREATED | StatusCode::NOT_FOUND => Ok(resp),
         _ => Err(EsError::from(&mut resp)),
     }
 }
@@ -124,28 +97,39 @@ pub fn do_req(resp: client::response::Response) -> Result<client::response::Resp
 /// ```
 /// use rs_es::Client;
 ///
-/// let mut client = Client::new("http://localhost:9200");
+/// let mut client = Client::init("http://localhost:9200");
 /// ```
 ///
 /// See the specific operations and their builder objects for details.
 #[derive(Debug)]
 pub struct Client {
     base_url: Url,
-    http_client: hyper::Client,
-    headers: Headers,
+    http_client: reqwest::Client,
+}
+
+impl Client {
+    fn do_es_op(
+        &self,
+        url: &str,
+        action: impl FnOnce(Url) -> RequestBuilder,
+    ) -> Result<reqwest::Response, EsError> {
+        let url = self.full_url(url);
+        let username = self.base_url.username();
+        let mut method = action(url);
+        if !username.is_empty() {
+            method = method.basic_auth(username, self.base_url.password());
+        }
+        let result = method.send()?;
+        do_req(result)
+    }
 }
 
 /// Create a HTTP function for the given method (GET/PUT/POST/DELETE)
 macro_rules! es_op {
     ($n:ident,$cn:ident) => {
-        fn $n(&mut self, url: &str) -> Result<client::response::Response, EsError> {
-            info!("Doing {} on {}", stringify!($n), url);
-            let url = self.full_url(url);
-            let result = self.http_client
-                .$cn(&url)
-                .headers(self.headers.clone())
-                .send()?;
-            do_req(result)
+        fn $n(&self, url: &str) -> Result<reqwest::Response, EsError> {
+            log::info!("Doing {} on {}", stringify!($n), url);
+            self.do_es_op(url, |url| self.http_client.$cn(url.clone()))
         }
     }
 }
@@ -155,82 +139,51 @@ macro_rules! es_op {
 ///
 macro_rules! es_body_op {
     ($n:ident,$cn:ident) => {
-        fn $n<E>(&mut self, url: &str, body: &E) -> Result<client::response::Response, EsError>
+        fn $n<E>(&mut self, url: &str, body: &E) -> Result<reqwest::Response, EsError>
             where E: Serialize {
 
-            info!("Doing {} on {}", stringify!($n), url);
+            log::info!("Doing {} on {}", stringify!($n), url);
             let json_string = serde_json::to_string(body)?;
-            debug!("Body send: {}", &json_string);
 
-            let url = self.full_url(url);
-            let result = self.http_client
-                .$cn(&url)
-                .headers(self.headers.clone())
-                .body(&json_string)
-                .send()?;
-
-            do_req(result)
+            self.do_es_op(url, |url| {
+                self.http_client.$cn(url.clone()).body(json_string)
+            })
         }
     }
 }
 
 impl Client {
     /// Create a new client
-    pub fn new(url_s: &str) -> Result<Client, url::ParseError> {
+    pub fn init(url_s: &str) -> Result<Client, reqwest::UrlError> {
         let url = Url::parse(url_s)?;
 
         Ok(Client {
-            http_client: Self::http_client(),
-            headers: Self::basic_auth(&url),
+            http_client: reqwest::Client::new(),
             base_url: url,
         })
     }
 
-    #[cfg(feature = "ssl")]
-    fn http_client() -> hyper::Client {
-        let ssl = hyper_openssl::OpensslClient::new().unwrap();
-        let connector = hyper::net::HttpsConnector::new(ssl);
-        hyper::Client::with_connector(connector)
-    }
+    // TODO - this should be replaced with a builder object, especially if more options are going
+    // to be allowed
+    pub fn init_with_timeout(
+        url_s: &str,
+        timeout: Option<time::Duration>,
+    ) -> Result<Client, reqwest::UrlError> {
+        let url = Url::parse(url_s)?;
 
-    #[cfg(not(feature = "ssl"))]
-    fn http_client() -> hyper::Client {
-        hyper::Client::new()
-    }
-
-    /// Add headers for the basic authentication to every request
-    /// when given host's format is `USER:PASS@HOST`.
-    fn basic_auth(url: &Url) -> Headers {
-        let mut headers = Headers::new();
-
-        let username = url.username();
-
-        if !username.is_empty() {
-            headers.set(Authorization(Basic {
-                username: username.to_owned(),
-                password: url.password().map(|p| p.to_owned()),
-            }))
-        }
-
-        headers.set(ContentType::json());
-
-        headers
-    }
-
-    /// Set the read timeout of the http client
-    pub fn set_read_timeout(&mut self, timeout: Option<time::Duration>) {
-        self.http_client.set_read_timeout(timeout);
-    }
-
-    /// Set the write timeout of the http client
-    pub fn set_write_timeout(&mut self, timeout: Option<time::Duration>) {
-        self.http_client.set_write_timeout(timeout);
+        Ok(Client {
+            http_client: reqwest::Client::builder()
+                .timeout(timeout)
+                .build()
+                .expect("Failed to build client"),
+            base_url: url,
+        })
     }
 
     /// Take a nearly complete ElasticSearch URL, and stick
     /// the URL on the front.
-    pub fn full_url(&self, suffix: &str) -> String {
-        self.base_url.join(suffix).unwrap().into_string()
+    pub fn full_url(&self, suffix: &str) -> Url {
+        self.base_url.join(suffix).expect("Invalid URL created")
     }
 
     es_op!(get_op, get);
@@ -244,20 +197,17 @@ impl Client {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate env_logger;
-    pub extern crate regex;
-
     use std::env;
 
+    use serde_derive::{Deserialize, Serialize};
     use serde_json::Value;
 
-    use super::operations::bulk::Action;
-    use super::operations::search::ScanResult;
-    use super::Client;
-
-    use super::query::Query;
-
-    use super::units::Duration;
+    use super::{
+        operations::{bulk::Action, search::ScanResult},
+        query::Query,
+        units::Duration,
+        Client,
+    };
 
     // test setup
 
@@ -266,7 +216,7 @@ pub mod tests {
             Ok(val) => val,
             Err(_) => "http://localhost:9200".to_owned(),
         };
-        Client::new(&hostname).unwrap()
+        Client::init(&hostname).unwrap()
     }
 
     #[derive(Debug, Serialize, Deserialize)]
@@ -276,6 +226,7 @@ pub mod tests {
         pub bool_field: bool,
     }
 
+    #[allow(clippy::new_without_default_derive)]
     impl TestDocument {
         pub fn new() -> TestDocument {
             TestDocument {
@@ -314,7 +265,7 @@ pub mod tests {
                 .with_str_field("Document 1ABC")
                 .with_int_field(3),
         ];
-        for ref doc in documents {
+        for doc in documents.iter() {
             client
                 .index(index_name, "test_type")
                 .with_doc(doc)
@@ -325,9 +276,6 @@ pub mod tests {
     }
 
     pub fn clean_db(mut client: &mut Client, test_idx: &str) {
-        // let's do some logging
-        let _ = env_logger::init();
-
         let scroll = Duration::minutes(1);
         let mut scan: ScanResult<Value> = match client
             .search_query()
@@ -337,7 +285,7 @@ pub mod tests {
         {
             Ok(scan) => scan,
             Err(e) => {
-                warn!("Scan error: {:?}", e);
+                log::warn!("Scan error: {:?}", e);
                 return; // Ignore not-found errors
             }
         };

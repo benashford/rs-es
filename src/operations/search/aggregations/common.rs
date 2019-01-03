@@ -20,8 +20,8 @@ use std::collections::HashMap;
 
 use serde::ser::{Serialize, SerializeMap, Serializer};
 
-use json::{serialize_map_optional_kv, MergeSerialize};
-use units::JsonVal;
+use crate::json::{serialize_map_optional_kv, MergeSerialize};
+use crate::units::JsonVal;
 
 macro_rules! agg {
     ($b:ident) => {
@@ -122,9 +122,9 @@ macro_rules! agg_as {
     ($n:ident,$st:ident,$tp:ident,$t:ident,$rt:ty) => {
         pub fn $n(&self) -> Result<&$rt, EsError> {
             match self {
-                &AggregationResult::$st(ref res) => {
+                AggregationResult::$st(ref res) => {
                     match res {
-                        &$tp::$t(ref res) => Ok(res),
+                        $tp::$t(ref res) => Ok(res),
                         _ => Err(EsError::EsError(format!("Wrong type: {:?}", self)))
                     }
                 },

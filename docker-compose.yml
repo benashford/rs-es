@@ -1,0 +1,4 @@
+es:
+  image: elasticsearch:2.0
+  ports:
+    - "9200:9200"

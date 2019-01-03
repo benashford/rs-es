@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Ben Ashford
+ * Copyright 2016-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,11 @@
 //! Compound queries
 
 use serde::{Serialize, Serializer};
+use serde_derive::Serialize;
 
-use ::json::ShouldSkip;
-use ::units::OneOrMany;
+use crate::{json::ShouldSkip, units::OneOrMany};
 
-use super::{MinimumShouldMatch, ScoreMode, Query};
-use super::functions::Function;
+use super::{functions::Function, MinimumShouldMatch, Query, ScoreMode};
 
 /// BoostMode
 #[derive(Debug)]
@@ -32,21 +31,23 @@ pub enum BoostMode {
     Sum,
     Avg,
     Max,
-    Min
+    Min,
 }
 
 impl Serialize for BoostMode {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
-
+    where
+        S: Serializer,
+    {
         match self {
-            &BoostMode::Multiply => "multiply",
-            &BoostMode::Replace => "replace",
-            &BoostMode::Sum => "sum",
-            &BoostMode::Avg => "avg",
-            &BoostMode::Max => "max",
-            &BoostMode::Min => "min"
-        }.serialize(serializer)
+            BoostMode::Multiply => "multiply",
+            BoostMode::Replace => "replace",
+            BoostMode::Sum => "sum",
+            BoostMode::Avg => "avg",
+            BoostMode::Max => "max",
+            BoostMode::Min => "min",
+        }
+        .serialize(serializer)
     }
 }
 
@@ -54,14 +55,15 @@ impl Serialize for BoostMode {
 #[derive(Debug, Default, Serialize)]
 pub struct ConstantScoreQuery {
     query: Query,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    boost: Option<f64>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    boost: Option<f64>,
 }
 
 impl Query {
     pub fn build_constant_score<A>(query: A) -> ConstantScoreQuery
-        where A: Into<Query> {
-
+    where
+        A: Into<Query>,
+    {
         ConstantScoreQuery {
             query: query.into(),
             ..Default::default()
@@ -78,20 +80,20 @@ impl ConstantScoreQuery {
 /// Bool query
 #[derive(Debug, Default, Serialize)]
 pub struct BoolQuery {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     must: Option<OneOrMany<Query>>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     filter: Option<Query>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     should: Option<OneOrMany<Query>>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     must_not: Option<OneOrMany<Query>>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     minimum_should_match: Option<MinimumShouldMatch>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     boost: Option<f64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    disable_coord: Option<bool>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    disable_coord: Option<bool>,
 }
 
 impl Query {
@@ -105,7 +107,11 @@ impl BoolQuery {
     add_field!(with_filter, filter, Query);
     add_field!(with_should, should, OneOrMany<Query>);
     add_field!(with_must_not, must_not, OneOrMany<Query>);
-    add_field!(with_minimum_should_match, minimum_should_match, MinimumShouldMatch);
+    add_field!(
+        with_minimum_should_match,
+        minimum_should_match,
+        MinimumShouldMatch
+    );
     add_field!(with_boost, boost, f64);
     add_field!(with_disable_coord, disable_coord, bool);
 
@@ -115,17 +121,18 @@ impl BoolQuery {
 /// DisMax query
 #[derive(Debug, Default, Serialize)]
 pub struct DisMaxQuery {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     tie_breaker: Option<f64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     boost: Option<f64>,
-    queries: Vec<Query>
+    queries: Vec<Query>,
 }
 
 impl Query {
     pub fn build_dis_max<A>(queries: A) -> DisMaxQuery
-        where A: Into<Vec<Query>> {
-
+    where
+        A: Into<Vec<Query>>,
+    {
         DisMaxQuery {
             queries: queries.into(),
             ..Default::default()
@@ -143,19 +150,19 @@ impl DisMaxQuery {
 /// Function Score query
 #[derive(Debug, Default, Serialize)]
 pub struct FunctionScoreQuery {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     query: Option<Query>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     boost: Option<f64>,
     functions: Vec<Function>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     max_boost: Option<f64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     score_mode: Option<ScoreMode>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     boost_mode: Option<BoostMode>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    min_score: Option<f64>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    min_score: Option<f64>,
 }
 
 impl Query {
@@ -188,12 +195,12 @@ impl FunctionScoreQuery {
 /// Boosting query
 #[derive(Debug, Default, Serialize)]
 pub struct BoostingQuery {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     positive: Option<Query>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     negative: Option<Query>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    negative_boost: Option<f64>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    negative_boost: Option<f64>,
 }
 
 impl Query {
@@ -215,14 +222,16 @@ impl BoostingQuery {
 pub struct IndicesQuery {
     indices: OneOrMany<String>,
     query: Query,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    no_match_query: Option<NoMatchQuery>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    no_match_query: Option<NoMatchQuery>,
 }
 
 impl Query {
     pub fn build_indices<A, B>(indices: A, query: B) -> IndicesQuery
-        where A: Into<OneOrMany<String>>,
-              B: Into<Query> {
+    where
+        A: Into<OneOrMany<String>>,
+        B: Into<Query>,
+    {
         IndicesQuery {
             indices: indices.into(),
             query: query.into(),
@@ -242,19 +251,21 @@ impl IndicesQuery {
 pub enum NoMatchQuery {
     None,
     All,
-    Query(Query)
+    Query(Query),
 }
 
 from_exp!(Query, NoMatchQuery, from, NoMatchQuery::Query(from));
 
 impl Serialize for NoMatchQuery {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         use self::NoMatchQuery::*;
         match self {
-            &None => "none".serialize(serializer),
-            &All => "all".serialize(serializer),
-            &Query(ref q) => q.serialize(serializer)
+            None => "none".serialize(serializer),
+            All => "all".serialize(serializer),
+            Query(ref q) => q.serialize(serializer),
         }
     }
 }

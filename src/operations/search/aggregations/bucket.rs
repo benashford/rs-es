@@ -20,12 +20,13 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 
 use serde::ser::{Serialize, SerializeMap, Serializer};
+use serde_derive::Serialize;
 use serde_json::Value;
 
-use error::EsError;
-use json::{serialize_map_optional_kv, MergeSerialize, ShouldSkip};
-use query;
-use units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
+use crate::error::EsError;
+use crate::json::{serialize_map_optional_kv, MergeSerialize, ShouldSkip};
+use crate::query;
+use crate::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
 
 use super::common::{Agg, Script};
 use super::{object_to_result, Aggregation, AggregationResult, Aggregations, AggregationsResult};
@@ -47,10 +48,10 @@ impl Serialize for ExecutionHint {
     {
         use self::ExecutionHint::*;
         match self {
-            &Map => "map",
-            &GlobalOrdinalsLowCardinality => "global_ordinals_low_cardinality",
-            &GlobalOrdinals => "global_ordinals",
-            &GlobalOrdinalsHash => "global_ordinals_hash",
+            Map => "map",
+            GlobalOrdinalsLowCardinality => "global_ordinals_low_cardinality",
+            GlobalOrdinals => "global_ordinals",
+            GlobalOrdinalsHash => "global_ordinals_hash",
         }
         .serialize(serializer)
     }
@@ -62,13 +63,13 @@ macro_rules! bucket_agg {
     ($b:ident) => {
         impl<'a> From<($b<'a>, Aggregations<'a>)> for Aggregation<'a> {
             fn from(from: ($b<'a>, Aggregations<'a>)) -> Aggregation<'a> {
-                Aggregation::Bucket(BucketAggregation::$b(from.0), Some(from.1))
+                Aggregation::Bucket(BucketAggregation::$b(from.0.into()), Some(from.1))
             }
         }
 
         impl<'a> From<$b<'a>> for Aggregation<'a> {
             fn from(from: $b<'a>) -> Aggregation<'a> {
-                Aggregation::Bucket(BucketAggregation::$b(from), None)
+                Aggregation::Bucket(BucketAggregation::$b(from.into()), None)
             }
         }
     };
@@ -222,10 +223,10 @@ impl<'a> AsRef<str> for OrderKey<'a> {
     fn as_ref(&self) -> &str {
         use self::OrderKey::*;
         match self {
-            &Count => "_count",
-            &Key => "_key",
-            &Term => "_term",
-            &Expr(e) => e,
+            Count => "_count",
+            Key => "_key",
+            Term => "_term",
+            Expr(e) => e,
         }
     }
 }
@@ -499,8 +500,8 @@ impl<'a> Serialize for TimeZone<'a> {
     {
         use self::TimeZone::*;
         match self {
-            &Offset(offset) => offset.serialize(serializer),
-            &Str(tz_str) => tz_str.serialize(serializer),
+            Offset(offset) => offset.serialize(serializer),
+            Str(tz_str) => tz_str.serialize(serializer),
         }
     }
 }
@@ -676,7 +677,7 @@ pub enum BucketAggregation<'a> {
     Nested(Nested<'a>),
     ReverseNested(ReverseNested<'a>),
     Children(Children<'a>),
-    Terms(Terms<'a>),
+    Terms(Box<Terms<'a>>),
     Range(Range<'a>),
     DateRange(DateRange<'a>),
     Histogram(Histogram<'a>),
@@ -689,20 +690,20 @@ impl<'a> BucketAggregation<'a> {
     pub fn details(&self) -> &'static str {
         use self::BucketAggregation::*;
         match self {
-            &Global(_) => "global",
-            &Filter(_) => "filter",
-            &Filters(_) => "filters",
-            &Missing(_) => "missing",
-            &Nested(_) => "nested",
-            &ReverseNested(_) => "reverse_nested",
-            &Children(_) => "children",
-            &Terms(_) => "terms",
-            &Range(_) => "range",
-            &DateRange(_) => "date_range",
-            &Histogram(_) => "histogram",
-            &DateHistogram(_) => "date_histogram",
-            &GeoDistance(_) => "geo_distance",
-            &GeohashGrid(_) => "geohash_grid",
+            Global(_) => "global",
+            Filter(_) => "filter",
+            Filters(_) => "filters",
+            Missing(_) => "missing",
+            Nested(_) => "nested",
+            ReverseNested(_) => "reverse_nested",
+            Children(_) => "children",
+            Terms(_) => "terms",
+            Range(_) => "range",
+            DateRange(_) => "date_range",
+            Histogram(_) => "histogram",
+            DateHistogram(_) => "date_histogram",
+            GeoDistance(_) => "geo_distance",
+            GeohashGrid(_) => "geohash_grid",
         }
     }
 }
@@ -714,20 +715,20 @@ impl<'a> Serialize for BucketAggregation<'a> {
     {
         use self::BucketAggregation::*;
         match self {
-            &Global(ref g) => g.serialize(serializer),
-            &Filter(ref f) => f.serialize(serializer),
-            &Filters(ref f) => f.serialize(serializer),
-            &Missing(ref m) => m.serialize(serializer),
-            &Nested(ref n) => n.serialize(serializer),
-            &ReverseNested(ref r) => r.serialize(serializer),
-            &Children(ref c) => c.serialize(serializer),
-            &Terms(ref t) => t.serialize(serializer),
-            &Range(ref r) => r.serialize(serializer),
-            &DateRange(ref d) => d.serialize(serializer),
-            &Histogram(ref h) => h.serialize(serializer),
-            &DateHistogram(ref d) => d.serialize(serializer),
-            &GeoDistance(ref g) => g.serialize(serializer),
-            &GeohashGrid(ref g) => g.serialize(serializer),
+            Global(ref g) => g.serialize(serializer),
+            Filter(ref f) => f.serialize(serializer),
+            Filters(ref f) => f.serialize(serializer),
+            Missing(ref m) => m.serialize(serializer),
+            Nested(ref n) => n.serialize(serializer),
+            ReverseNested(ref r) => r.serialize(serializer),
+            Children(ref c) => c.serialize(serializer),
+            Terms(ref t) => t.serialize(serializer),
+            Range(ref r) => r.serialize(serializer),
+            DateRange(ref d) => d.serialize(serializer),
+            Histogram(ref h) => h.serialize(serializer),
+            DateHistogram(ref d) => d.serialize(serializer),
+            GeoDistance(ref g) => g.serialize(serializer),
+            GeohashGrid(ref g) => g.serialize(serializer),
         }
     }
 }
@@ -759,44 +760,44 @@ impl BucketAggregationResult {
     ) -> Result<Self, EsError> {
         use self::BucketAggregation::*;
         Ok(match ba {
-            &Global(_) => BucketAggregationResult::Global(GlobalResult::from(json, aggs)?),
-            &BucketAggregation::Filter(_) => {
+            Global(_) => BucketAggregationResult::Global(GlobalResult::from(json, aggs)?),
+            BucketAggregation::Filter(_) => {
                 BucketAggregationResult::Filter(FilterResult::from(json, aggs)?)
             }
-            &BucketAggregation::Filters(_) => {
+            BucketAggregation::Filters(_) => {
                 BucketAggregationResult::Filters(FiltersResult::from(json, aggs)?)
             }
-            &BucketAggregation::Missing(_) => {
+            BucketAggregation::Missing(_) => {
                 BucketAggregationResult::Missing(MissingResult::from(json, aggs)?)
             }
-            &BucketAggregation::Nested(_) => {
+            BucketAggregation::Nested(_) => {
                 BucketAggregationResult::Nested(NestedResult::from(json, aggs)?)
             }
-            &BucketAggregation::ReverseNested(_) => {
+            BucketAggregation::ReverseNested(_) => {
                 BucketAggregationResult::ReverseNested(ReverseNestedResult::from(json, aggs)?)
             }
-            &BucketAggregation::Children(_) => {
+            BucketAggregation::Children(_) => {
                 BucketAggregationResult::Children(ChildrenResult::from(json, aggs)?)
             }
-            &BucketAggregation::Terms(_) => {
+            BucketAggregation::Terms(_) => {
                 BucketAggregationResult::Terms(TermsResult::from(json, aggs)?)
             }
-            &BucketAggregation::Range(_) => {
+            BucketAggregation::Range(_) => {
                 BucketAggregationResult::Range(RangeResult::from(json, aggs)?)
             }
-            &BucketAggregation::DateRange(_) => {
+            BucketAggregation::DateRange(_) => {
                 BucketAggregationResult::DateRange(DateRangeResult::from(json, aggs)?)
             }
-            &BucketAggregation::Histogram(_) => {
+            BucketAggregation::Histogram(_) => {
                 BucketAggregationResult::Histogram(HistogramResult::from(json, aggs)?)
             }
-            &BucketAggregation::DateHistogram(_) => {
+            BucketAggregation::DateHistogram(_) => {
                 BucketAggregationResult::DateHistogram(DateHistogramResult::from(json, aggs)?)
             }
-            &BucketAggregation::GeoDistance(_) => {
+            BucketAggregation::GeoDistance(_) => {
                 BucketAggregationResult::GeoDistance(GeoDistanceResult::from(json, aggs)?)
             }
-            &BucketAggregation::GeohashGrid(_) => {
+            BucketAggregation::GeohashGrid(_) => {
                 BucketAggregationResult::GeohashGrid(GeohashGridResult::from(json, aggs)?)
             }
         })
@@ -831,7 +832,7 @@ impl AggregationResult {
 /// Macros for buckets to return a reference to the sub-aggregations
 macro_rules! add_aggs_ref {
     () => {
-        pub fn aggs_ref<'a>(&'a self) -> Option<&'a AggregationsResult> {
+        pub fn aggs_ref(&self) -> Option<&AggregationsResult> {
             self.aggs.as_ref()
         }
     }
@@ -876,14 +877,14 @@ macro_rules! from_json {
 macro_rules! extract_aggs {
     ($j:ident, $a:ident) => {
         match $a {
-            &Some(ref aggs) => {
+            Some(ref aggs) => {
                 let obj = match $j.as_object() {
                     Some(field_val) => field_val,
                     None => return_error!("Not an object".to_owned()),
                 };
                 Some(object_to_result(aggs, obj)?)
             }
-            &None => None,
+            None => None,
         }
     };
 }
@@ -1065,9 +1066,10 @@ pub struct TermsBucketResult {
 
 impl TermsBucketResult {
     fn from(json: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
-        info!(
+        log::info!(
             "Creating TermsBucketResult from: {:?} with {:?}",
-            json, aggs
+            json,
+            aggs
         );
 
         Ok(TermsBucketResult {

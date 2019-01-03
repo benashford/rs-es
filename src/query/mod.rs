@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,10 +42,10 @@
 
 use std::collections::BTreeMap;
 
-use serde::ser::{Serialize, Serializer, SerializeMap};
+use serde::ser::{Serialize, SerializeMap, Serializer};
+use serde_derive::Serialize;
 
-use ::json::ShouldSkip;
-use ::util::StrJoin;
+use crate::{json::ShouldSkip, util::StrJoin};
 
 #[macro_use]
 mod common;
@@ -67,17 +67,18 @@ pub mod term;
 #[derive(Debug)]
 pub struct CombinationMinimumShouldMatch {
     first: MinimumShouldMatch,
-    second: MinimumShouldMatch
+    second: MinimumShouldMatch,
 }
 
 impl CombinationMinimumShouldMatch {
     pub fn new<A, B>(first: A, second: B) -> CombinationMinimumShouldMatch
-        where A: Into<MinimumShouldMatch>,
-              B: Into<MinimumShouldMatch>
+    where
+        A: Into<MinimumShouldMatch>,
+        B: Into<MinimumShouldMatch>,
     {
         CombinationMinimumShouldMatch {
-            first:  first.into(),
-            second: second.into()
+            first: first.into(),
+            second: second.into(),
         }
     }
 }
@@ -90,7 +91,9 @@ impl ToString for CombinationMinimumShouldMatch {
 
 impl Serialize for CombinationMinimumShouldMatch {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         self.to_string().serialize(serializer)
     }
 }
@@ -101,44 +104,54 @@ pub enum MinimumShouldMatch {
     Percentage(f64),
     Combination(Box<CombinationMinimumShouldMatch>),
     MultipleCombination(Vec<CombinationMinimumShouldMatch>),
-    LowHigh(i64, i64)
+    LowHigh(i64, i64),
 }
 
 from!(i64, MinimumShouldMatch, Integer);
 from!(f64, MinimumShouldMatch, Percentage);
-from_exp!(CombinationMinimumShouldMatch,
-          MinimumShouldMatch,
-          from,
-          MinimumShouldMatch::Combination(Box::new(from)));
-from!(Vec<CombinationMinimumShouldMatch>, MinimumShouldMatch, MultipleCombination);
-from_exp!((i64, i64),
-          MinimumShouldMatch,
-          from,
-          MinimumShouldMatch::LowHigh(from.0, from.1));
+from_exp!(
+    CombinationMinimumShouldMatch,
+    MinimumShouldMatch,
+    from,
+    MinimumShouldMatch::Combination(Box::new(from))
+);
+from!(
+    Vec<CombinationMinimumShouldMatch>,
+    MinimumShouldMatch,
+    MultipleCombination
+);
+from_exp!(
+    (i64, i64),
+    MinimumShouldMatch,
+    from,
+    MinimumShouldMatch::LowHigh(from.0, from.1)
+);
 
 impl ToString for MinimumShouldMatch {
     fn to_string(&self) -> String {
         match self {
-            &MinimumShouldMatch::Integer(val) => val.to_string(),
-            &MinimumShouldMatch::Percentage(val) => {
-                format!("{}%", val)
-            },
-            _ => panic!("Can't convert {:?} to String", self)
+            MinimumShouldMatch::Integer(val) => val.to_string(),
+            MinimumShouldMatch::Percentage(val) => format!("{}%", val),
+            _ => panic!("Can't convert {:?} to String", self),
         }
     }
 }
 
 impl Serialize for MinimumShouldMatch {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         match self {
-            &MinimumShouldMatch::Integer(val) => val.serialize(serializer),
-            &MinimumShouldMatch::Percentage(_) => self.to_string().serialize(serializer),
-            &MinimumShouldMatch::Combination(ref comb) => comb.serialize(serializer),
-            &MinimumShouldMatch::MultipleCombination(ref combs) => {
-                combs.iter().map(|c| c.to_string()).join(" ").serialize(serializer)
-            },
-            &MinimumShouldMatch::LowHigh(low, high) => {
+            MinimumShouldMatch::Integer(val) => val.serialize(serializer),
+            MinimumShouldMatch::Percentage(_) => self.to_string().serialize(serializer),
+            MinimumShouldMatch::Combination(ref comb) => comb.serialize(serializer),
+            MinimumShouldMatch::MultipleCombination(ref combs) => combs
+                .iter()
+                .map(|c| c.to_string())
+                .join(" ")
+                .serialize(serializer),
+            MinimumShouldMatch::LowHigh(low, high) => {
                 let mut d = BTreeMap::new();
                 d.insert("low_freq", low);
                 d.insert("high_freq", high);
@@ -153,7 +166,7 @@ impl Serialize for MinimumShouldMatch {
 pub enum Fuzziness {
     Auto,
     LevenshteinDistance(i64),
-    Proportionate(f64)
+    Proportionate(f64),
 }
 
 from!(i64, Fuzziness, LevenshteinDistance);
@@ -161,13 +174,14 @@ from!(f64, Fuzziness, Proportionate);
 
 impl Serialize for Fuzziness {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
-
+    where
+        S: Serializer,
+    {
         use self::Fuzziness::*;
         match self {
-            &Auto => "auto".serialize(serializer),
-            &LevenshteinDistance(dist) => dist.serialize(serializer),
-            &Proportionate(p) => p.serialize(serializer)
+            Auto => "auto".serialize(serializer),
+            LevenshteinDistance(dist) => dist.serialize(serializer),
+            Proportionate(p) => p.serialize(serializer),
         }
     }
 }
@@ -179,21 +193,25 @@ impl Serialize for Fuzziness {
 /// String
 #[derive(Debug)]
 pub struct Flags<A>(Vec<A>)
-    where A: AsRef<str>;
+where
+    A: AsRef<str>;
 
 impl<A> Serialize for Flags<A>
-    where A: AsRef<str> {
-
+where
+    A: AsRef<str>,
+{
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
-
+    where
+        S: Serializer,
+    {
         self.0.iter().join("|").serialize(serializer)
     }
 }
 
 impl<A> From<Vec<A>> for Flags<A>
-    where A: AsRef<str> {
-
+where
+    A: AsRef<str>,
+{
     fn from(from: Vec<A>) -> Self {
         Flags(from)
     }
@@ -207,19 +225,21 @@ pub enum ScoreMode {
     Avg,
     First,
     Max,
-    Min
+    Min,
 }
 
 impl Serialize for ScoreMode {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         match self {
-            &ScoreMode::Multiply => "multiply".serialize(serializer),
-            &ScoreMode::Sum => "sum".serialize(serializer),
-            &ScoreMode::Avg => "avg".serialize(serializer),
-            &ScoreMode::First => "first".serialize(serializer),
-            &ScoreMode::Max => "max".serialize(serializer),
-            &ScoreMode::Min => "min".serialize(serializer)
+            ScoreMode::Multiply => "multiply".serialize(serializer),
+            ScoreMode::Sum => "sum".serialize(serializer),
+            ScoreMode::Avg => "avg".serialize(serializer),
+            ScoreMode::First => "first".serialize(serializer),
+            ScoreMode::Max => "max".serialize(serializer),
+            ScoreMode::Min => "min".serialize(serializer),
         }
     }
 }
@@ -306,55 +326,57 @@ impl Default for Query {
 
 impl Serialize for Query {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         use self::Query::*;
 
         let mut map_ser = serializer.serialize_map(Some(1))?;
         (match self {
             // All
-            &MatchAll(ref q) => map_ser.serialize_entry("match_all", q),
+            MatchAll(ref q) => map_ser.serialize_entry("match_all", q),
 
             // Full-text
-            &Match(ref q) => map_ser.serialize_entry("match", q),
-            &MultiMatch(ref q) => map_ser.serialize_entry("multi_match", q),
-            &Common(ref q) => map_ser.serialize_entry("common", q),
-            &QueryString(ref q) => map_ser.serialize_entry("query_string", q),
-            &SimpleQueryString(ref q) => map_ser.serialize_entry("simple_query_string", q),
+            Match(ref q) => map_ser.serialize_entry("match", q),
+            MultiMatch(ref q) => map_ser.serialize_entry("multi_match", q),
+            Common(ref q) => map_ser.serialize_entry("common", q),
+            QueryString(ref q) => map_ser.serialize_entry("query_string", q),
+            SimpleQueryString(ref q) => map_ser.serialize_entry("simple_query_string", q),
 
             // Term
-            &Term(ref q) => map_ser.serialize_entry("term", q),
-            &Terms(ref q) => map_ser.serialize_entry("terms", q),
-            &Range(ref q) => map_ser.serialize_entry("range", q),
-            &Exists(ref q) => map_ser.serialize_entry("exists", q),
-            &Prefix(ref q) => map_ser.serialize_entry("prefix", q),
-            &Wildcard(ref q) => map_ser.serialize_entry("wildcard", q),
-            &Regexp(ref q) => map_ser.serialize_entry("regexp", q),
-            &Fuzzy(ref q) => map_ser.serialize_entry("fuzzy", q),
-            &Type(ref q) => map_ser.serialize_entry("type", q),
-            &Ids(ref q) => map_ser.serialize_entry("ids", q),
+            Term(ref q) => map_ser.serialize_entry("term", q),
+            Terms(ref q) => map_ser.serialize_entry("terms", q),
+            Range(ref q) => map_ser.serialize_entry("range", q),
+            Exists(ref q) => map_ser.serialize_entry("exists", q),
+            Prefix(ref q) => map_ser.serialize_entry("prefix", q),
+            Wildcard(ref q) => map_ser.serialize_entry("wildcard", q),
+            Regexp(ref q) => map_ser.serialize_entry("regexp", q),
+            Fuzzy(ref q) => map_ser.serialize_entry("fuzzy", q),
+            Type(ref q) => map_ser.serialize_entry("type", q),
+            Ids(ref q) => map_ser.serialize_entry("ids", q),
 
             // Compound
-            &ConstantScore(ref q) => map_ser.serialize_entry("constant_score", q),
-            &Bool(ref q) => map_ser.serialize_entry("bool", q),
-            &DisMax(ref q) => map_ser.serialize_entry("dis_max", q),
-            &FunctionScore(ref q) => map_ser.serialize_entry("function_score", q),
-            &Boosting(ref q) => map_ser.serialize_entry("boosting", q),
-            &Indices(ref q) => map_ser.serialize_entry("indices", q),
+            ConstantScore(ref q) => map_ser.serialize_entry("constant_score", q),
+            Bool(ref q) => map_ser.serialize_entry("bool", q),
+            DisMax(ref q) => map_ser.serialize_entry("dis_max", q),
+            FunctionScore(ref q) => map_ser.serialize_entry("function_score", q),
+            Boosting(ref q) => map_ser.serialize_entry("boosting", q),
+            Indices(ref q) => map_ser.serialize_entry("indices", q),
 
             // Joining
-            &Nested(ref q) => map_ser.serialize_entry("nested", q),
-            &HasChild(ref q) => map_ser.serialize_entry("has_child", q),
-            &HasParent(ref q) => map_ser.serialize_entry("has_parent", q),
+            Nested(ref q) => map_ser.serialize_entry("nested", q),
+            HasChild(ref q) => map_ser.serialize_entry("has_child", q),
+            HasParent(ref q) => map_ser.serialize_entry("has_parent", q),
 
             // Geo
-            &GeoShape(ref q) => map_ser.serialize_entry("geo_shape", q),
-            &GeoBoundingBox(ref q) => map_ser.serialize_entry("geo_bounding_box", q),
-            &GeoDistance(ref q) => map_ser.serialize_entry("geo_distance", q),
-            &GeoPolygon(ref q) => map_ser.serialize_entry("geo_polygon", q),
-            &GeohashCell(ref q) => map_ser.serialize_entry("geohash_cell", q),
+            GeoShape(ref q) => map_ser.serialize_entry("geo_shape", q),
+            GeoBoundingBox(ref q) => map_ser.serialize_entry("geo_bounding_box", q),
+            GeoDistance(ref q) => map_ser.serialize_entry("geo_distance", q),
+            GeoPolygon(ref q) => map_ser.serialize_entry("geo_polygon", q),
+            GeohashCell(ref q) => map_ser.serialize_entry("geohash_cell", q),
 
             // Specialized
-            &MoreLikeThis(ref q) => map_ser.serialize_entry("more_like_this", q)
+            MoreLikeThis(ref q) => map_ser.serialize_entry("more_like_this", q),
         })?;
         map_ser.end()
     }
@@ -366,7 +388,7 @@ impl Serialize for Query {
 
 #[derive(Debug, Default, Serialize)]
 pub struct MatchAllQuery {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     boost: Option<f64>,
 }
 
@@ -386,15 +408,15 @@ impl MatchAllQuery {
 mod tests {
     extern crate serde_json;
 
-    use super::{Flags, Query};
     use super::full_text::SimpleQueryStringFlags;
     use super::functions::Function;
     use super::term::TermsQueryLookup;
+    use super::{Flags, Query};
 
     #[test]
     fn test_simple_query_string_flags() {
         let opts = vec![SimpleQueryStringFlags::And, SimpleQueryStringFlags::Not];
-        let flags:Flags<SimpleQueryStringFlags> = opts.into();
+        let flags: Flags<SimpleQueryStringFlags> = opts.into();
         let json = serde_json::to_string(&flags);
         assert_eq!("\"AND|NOT\"", json.unwrap());
     }
@@ -404,14 +426,18 @@ mod tests {
         let terms_query = Query::build_terms("field_name")
             .with_values(vec!["a", "b", "c"])
             .build();
-        assert_eq!("{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
-                   serde_json::to_string(&terms_query).unwrap());
+        assert_eq!(
+            "{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
+            serde_json::to_string(&terms_query).unwrap()
+        );
 
         let terms_query_2 = Query::build_terms("field_name")
             .with_values(["a", "b", "c"].as_ref())
             .build();
-        assert_eq!("{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
-                   serde_json::to_string(&terms_query_2).unwrap());
+        assert_eq!(
+            "{\"terms\":{\"field_name\":[\"a\",\"b\",\"c\"]}}",
+            serde_json::to_string(&terms_query_2).unwrap()
+        );
 
         let terms_query_3 = Query::build_terms("field_name")
             .with_values(TermsQueryLookup::new(123, "blah.de.blah").with_index("other"))
@@ -423,10 +449,12 @@ mod tests {
     #[test]
     fn test_function_score_query() {
         let function_score_query = Query::build_function_score()
-            .with_function(Function::build_script_score("this_is_a_script")
-                           .with_lang("made_up")
-                           .add_param("A", 12)
-                           .build())
+            .with_function(
+                Function::build_script_score("this_is_a_script")
+                    .with_lang("made_up")
+                    .add_param("A", 12)
+                    .build(),
+            )
             .build();
         assert_eq!("{\"function_score\":{\"functions\":[{\"script_score\":{\"lang\":\"made_up\",\"params\":{\"A\":12},\"inline\":\"this_is_a_script\"}}]}}",
                    serde_json::to_string(&function_score_query).unwrap());
@@ -435,7 +463,9 @@ mod tests {
     #[test]
     fn test_exists_query() {
         let exists_query = Query::build_exists("name").build();
-        assert_eq!("{\"exists\":{\"field\":\"name\"}}",
-                   serde_json::to_string(&exists_query).unwrap());
+        assert_eq!(
+            "{\"exists\":{\"field\":\"name\"}}",
+            serde_json::to_string(&exists_query).unwrap()
+        );
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Ben Ashford
+ * Copyright 2016-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,43 +19,46 @@
 use std::collections::HashMap;
 
 use serde::{Serialize, Serializer};
+use serde_derive::Serialize;
 
-use ::json::{ShouldSkip, FieldBased, NoOuter};
-
-use ::units::{Distance, Duration, JsonVal, Location};
+use crate::{
+    json::{FieldBased, NoOuter, ShouldSkip},
+    units::{Distance, Duration, JsonVal, Location},
+};
 
 /// Function
 #[derive(Debug, Serialize)]
 pub enum Function {
-    #[serde(rename="script_score")]
+    #[serde(rename = "script_score")]
     ScriptScore(ScriptScore),
-    #[serde(rename="weight")]
+    #[serde(rename = "weight")]
     Weight(Weight),
-    #[serde(rename="random_score")]
+    #[serde(rename = "random_score")]
     RandomScore(RandomScore),
-    #[serde(rename="field_value_factor")]
+    #[serde(rename = "field_value_factor")]
     FieldValueFactor(FieldValueFactor),
-    #[serde(rename="linear")]
+    #[serde(rename = "linear")]
     Linear(Decay),
-    #[serde(rename="exp")]
+    #[serde(rename = "exp")]
     Exp(Decay),
-    #[serde(rename="gauss")]
-    Gauss(Decay)
+    #[serde(rename = "gauss")]
+    Gauss(Decay),
 }
 
 /// ScriptScore function
 #[derive(Debug, Default, Serialize)]
 pub struct ScriptScore {
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     lang: Option<String>,
     params: HashMap<String, JsonVal>,
-    inline: String
+    inline: String,
 }
 
 impl Function {
     pub fn build_script_score<A>(script: A) -> ScriptScore
-        where A: Into<String> {
-
+    where
+        A: Into<String>,
+    {
         ScriptScore {
             inline: script.into(),
             ..Default::default()
@@ -67,15 +70,18 @@ impl ScriptScore {
     add_field!(with_lang, lang, String);
 
     pub fn with_params<A>(mut self, params: A) -> Self
-        where A: IntoIterator<Item=(String, JsonVal)> {
-
+    where
+        A: IntoIterator<Item = (String, JsonVal)>,
+    {
         self.params.extend(params);
         self
     }
 
     pub fn add_param<A, B>(mut self, key: A, value: B) -> Self
-        where A: Into<String>,
-              B: Into<JsonVal> {
+    where
+        A: Into<String>,
+        B: Into<JsonVal>,
+    {
         self.params.insert(key.into(), value.into());
         self
     }
@@ -91,8 +97,9 @@ pub struct Weight(f64);
 
 impl Function {
     pub fn build_weight<A>(weight: A) -> Weight
-        where A: Into<f64> {
-
+    where
+        A: Into<f64>,
+    {
         Weight(weight.into())
     }
 }
@@ -109,8 +116,9 @@ pub struct RandomScore(i64);
 
 impl Function {
     pub fn build_random_score<A>(seed: A) -> RandomScore
-        where A: Into<i64> {
-
+    where
+        A: Into<i64>,
+    {
         RandomScore(seed.into())
     }
 }
@@ -125,18 +133,19 @@ impl RandomScore {
 #[derive(Debug, Default, Serialize)]
 pub struct FieldValueFactor {
     field: String,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     factor: Option<f64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     modifier: Option<Modifier>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    missing: Option<JsonVal>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    missing: Option<JsonVal>,
 }
 
 impl Function {
     pub fn build_field_value_factor<A>(field: A) -> FieldValueFactor
-        where A: Into<String> {
-
+    where
+        A: Into<String>,
+    {
         FieldValueFactor {
             field: field.into(),
             ..Default::default()
@@ -171,18 +180,20 @@ pub enum Modifier {
 
 impl Serialize for Modifier {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         match self {
-            &Modifier::None => "none".serialize(serializer),
-            &Modifier::Log => "log".serialize(serializer),
-            &Modifier::Log1p => "log1p".serialize(serializer),
-            &Modifier::Log2p => "log2p".serialize(serializer),
-            &Modifier::Ln => "ln".serialize(serializer),
-            &Modifier::Ln1p => "ln1p".serialize(serializer),
-            &Modifier::Ln2p => "ln2p".serialize(serializer),
-            &Modifier::Square => "square".serialize(serializer),
-            &Modifier::Sqrt => "sqrt".serialize(serializer),
-            &Modifier::Reciprocal => "reciprocal".serialize(serializer),
+            Modifier::None => "none".serialize(serializer),
+            Modifier::Log => "log".serialize(serializer),
+            Modifier::Log1p => "log1p".serialize(serializer),
+            Modifier::Log2p => "log2p".serialize(serializer),
+            Modifier::Ln => "ln".serialize(serializer),
+            Modifier::Ln1p => "ln1p".serialize(serializer),
+            Modifier::Ln2p => "ln2p".serialize(serializer),
+            Modifier::Square => "square".serialize(serializer),
+            Modifier::Sqrt => "sqrt".serialize(serializer),
+            Modifier::Reciprocal => "reciprocal".serialize(serializer),
         }
     }
 }
@@ -191,12 +202,12 @@ impl Serialize for Modifier {
 pub struct DecayOptions {
     origin: Origin,
     scale: Scale,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     offset: Option<Scale>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     decay: Option<f64>,
-    #[serde(skip_serializing_if="ShouldSkip::should_skip")]
-    multi_value_mode: Option<MultiValueMode>
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    multi_value_mode: Option<MultiValueMode>,
 }
 
 impl DecayOptions {
@@ -211,16 +222,20 @@ pub struct Decay(FieldBased<String, DecayOptions, NoOuter>);
 
 impl Function {
     pub fn build_decay<A, B, C>(field: A, origin: B, scale: C) -> Decay
-        where A: Into<String>,
-              B: Into<Origin>,
-              C: Into<Scale> {
-      Decay(FieldBased::new(field.into(),
-                            DecayOptions {
-                                origin: origin.into(),
-                                scale: scale.into(),
-                                ..Default::default()
-                            },
-                            NoOuter))
+    where
+        A: Into<String>,
+        B: Into<Origin>,
+        C: Into<Scale>,
+    {
+        Decay(FieldBased::new(
+            field.into(),
+            DecayOptions {
+                origin: origin.into(),
+                scale: scale.into(),
+                ..Default::default()
+            },
+            NoOuter,
+        ))
     }
 }
 
@@ -247,7 +262,7 @@ pub enum Origin {
     U64(u64),
     F64(f64),
     Location(Location),
-    Date(String)
+    Date(String),
 }
 
 impl Default for Origin {
@@ -264,14 +279,15 @@ from!(String, Origin, Date);
 
 impl Serialize for Origin {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
-
+    where
+        S: Serializer,
+    {
         match self {
-            &Origin::I64(orig)          => orig.serialize(serializer),
-            &Origin::U64(orig)          => orig.serialize(serializer),
-            &Origin::F64(orig)          => orig.serialize(serializer),
-            &Origin::Location(ref orig) => orig.serialize(serializer),
-            &Origin::Date(ref orig)     => orig.serialize(serializer)
+            Origin::I64(orig) => orig.serialize(serializer),
+            Origin::U64(orig) => orig.serialize(serializer),
+            Origin::F64(orig) => orig.serialize(serializer),
+            Origin::Location(ref orig) => orig.serialize(serializer),
+            Origin::Date(ref orig) => orig.serialize(serializer),
         }
     }
 }
@@ -283,7 +299,7 @@ pub enum Scale {
     U64(u64),
     F64(f64),
     Distance(Distance),
-    Duration(Duration)
+    Duration(Duration),
 }
 
 impl Default for Scale {
@@ -300,14 +316,15 @@ from!(Duration, Scale, Duration);
 
 impl Serialize for Scale {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
-
+    where
+        S: Serializer,
+    {
         match self {
-            &Scale::I64(s) => s.serialize(serializer),
-            &Scale::U64(s) => s.serialize(serializer),
-            &Scale::F64(s) => s.serialize(serializer),
-            &Scale::Distance(ref s) => s.serialize(serializer),
-            &Scale::Duration(ref s) => s.serialize(serializer)
+            Scale::I64(s) => s.serialize(serializer),
+            Scale::U64(s) => s.serialize(serializer),
+            Scale::F64(s) => s.serialize(serializer),
+            Scale::Distance(ref s) => s.serialize(serializer),
+            Scale::Duration(ref s) => s.serialize(serializer),
         }
     }
 }
@@ -318,19 +335,22 @@ pub enum MultiValueMode {
     Min,
     Max,
     Avg,
-    Sum
+    Sum,
 }
 
 impl Serialize for MultiValueMode {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         use self::MultiValueMode::*;
         match self {
-            &Min => "min",
-            &Max => "max",
-            &Avg => "avg",
-            &Sum => "sum"
-        }.serialize(serializer)
+            Min => "min",
+            Max => "max",
+            Avg => "avg",
+            Sum => "sum",
+        }
+        .serialize(serializer)
     }
 }
 
@@ -340,13 +360,17 @@ pub mod tests {
 
     #[test]
     fn test_decay_query() {
-        use ::units::*;
-        let gauss_decay_query = super::Function::build_decay("my_field",
-                                   Location::LatLon(42., 24.),
-                                   Distance::new(3., DistanceUnit::Kilometer))
-                           .build_gauss();
+        use crate::units::*;
+        let gauss_decay_query = super::Function::build_decay(
+            "my_field",
+            Location::LatLon(42., 24.),
+            Distance::new(3., DistanceUnit::Kilometer),
+        )
+        .build_gauss();
 
-        assert_eq!(r#"{"gauss":{"my_field":{"origin":{"lat":42.0,"lon":24.0},"scale":"3km"}}}"#,
-                   serde_json::to_string(&gauss_decay_query).unwrap());
+        assert_eq!(
+            r#"{"gauss":{"my_field":{"origin":{"lat":42.0,"lon":24.0},"scale":"3km"}}}"#,
+            serde_json::to_string(&gauss_decay_query).unwrap()
+        );
     }
 }

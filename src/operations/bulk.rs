@@ -16,21 +16,28 @@
 
 //! Implementation of the Bulk API
 
-use hyper::status::StatusCode;
+use std::fmt;
 
-use serde::de::{Error, MapAccess, Visitor};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use reqwest::StatusCode;
+
+use serde::{
+    de::{Error, MapAccess, Visitor},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
+
 use serde_json;
 
-use do_req;
-use error::EsError;
-use json::{FieldBased, NoOuter, ShouldSkip};
-use units::Duration;
-use {Client, EsResponse};
+use crate::{
+    error::EsError,
+    json::{FieldBased, NoOuter, ShouldSkip},
+    units::Duration,
+    Client, EsResponse,
+};
 
-use super::common::{OptionVal, Options, VersionType};
-use super::ShardCountResult;
-use std::fmt;
+use super::{
+    common::{OptionVal, Options, VersionType},
+    ShardCountResult,
+};
 
 #[derive(Debug)]
 pub enum ActionType {
@@ -62,52 +69,28 @@ impl ToString for ActionType {
     }
 }
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default, serde_derive::Serialize)]
 pub struct ActionOptions {
-    #[serde(
-        rename = "_index",
-        skip_serializing_if = "ShouldSkip::should_skip"
-    )]
+    #[serde(rename = "_index", skip_serializing_if = "ShouldSkip::should_skip")]
     index: Option<String>,
-    #[serde(
-        rename = "_type",
-        skip_serializing_if = "ShouldSkip::should_skip"
-    )]
+    #[serde(rename = "_type", skip_serializing_if = "ShouldSkip::should_skip")]
     doc_type: Option<String>,
-    #[serde(
-        rename = "_id",
-        skip_serializing_if = "ShouldSkip::should_skip"
-    )]
+    #[serde(rename = "_id", skip_serializing_if = "ShouldSkip::should_skip")]
     id: Option<String>,
-    #[serde(
-        rename = "_version",
-        skip_serializing_if = "ShouldSkip::should_skip"
-    )]
+    #[serde(rename = "_version", skip_serializing_if = "ShouldSkip::should_skip")]
     version: Option<u64>,
     #[serde(
         rename = "_version_type",
         skip_serializing_if = "ShouldSkip::should_skip"
     )]
     version_type: Option<VersionType>,
-    #[serde(
-        rename = "_routing",
-        skip_serializing_if = "ShouldSkip::should_skip"
-    )]
+    #[serde(rename = "_routing", skip_serializing_if = "ShouldSkip::should_skip")]
     routing: Option<String>,
-    #[serde(
-        rename = "_parent",
-        skip_serializing_if = "ShouldSkip::should_skip"
-    )]
+    #[serde(rename = "_parent", skip_serializing_if = "ShouldSkip::should_skip")]
     parent: Option<String>,
-    #[serde(
-        rename = "_timestamp",
-        skip_serializing_if = "ShouldSkip::should_skip"
-    )]
+    #[serde(rename = "_timestamp", skip_serializing_if = "ShouldSkip::should_skip")]
     timestamp: Option<String>,
-    #[serde(
-        rename = "_ttl",
-        skip_serializing_if = "ShouldSkip::should_skip"
-    )]
+    #[serde(rename = "_ttl", skip_serializing_if = "ShouldSkip::should_skip")]
     ttl: Option<Duration>,
     #[serde(
         rename = "_retry_on_conflict",
@@ -116,7 +99,7 @@ pub struct ActionOptions {
     retry_on_conflict: Option<u64>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, serde_derive::Serialize)]
 pub struct Action<X>(FieldBased<ActionType, ActionOptions, NoOuter>, Option<X>);
 
 impl<S> Action<S>
@@ -257,7 +240,7 @@ where
         actstr
     }
 
-    pub fn send(&'b mut self) -> Result<BulkResult, EsError> {
+    pub fn send(&self) -> Result<BulkResult, EsError> {
         //
         // This function does not use the standard GET/POST/DELETE functions of
         // the client, as they serve the happy path of JSON-in/JSON-out, this
@@ -265,28 +248,18 @@ where
         //
         // Various parts of the client are reused where it makes sense.
         //
-        let full_url = {
-            let url = self.format_url();
-            self.client.full_url(&url)
-        };
-        let body = self.format_actions();
-        debug!("Sending: {}", body);
-        // Doesn't use the standard macros as it's not standard JSON
-        let result = self
-            .client
-            .http_client
-            .post(&full_url)
-            .body(&body)
-            .headers(self.client.headers.clone())
-            .send()?;
-
-        let response = do_req(result)?;
+        let response = self.client.do_es_op(&self.format_url(), |url| {
+            self.client
+                .http_client
+                .post(url)
+                .body(self.format_actions())
+        })?;
 
         match response.status_code() {
-            &StatusCode::Ok => Ok(response.read_response()?),
-            _ => Err(EsError::EsError(format!(
+            StatusCode::OK => Ok(response.read_response()?),
+            status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                status_code
             ))),
         }
     }
@@ -354,7 +327,7 @@ impl<'de> Deserialize<'de> for ActionResult {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde_derive::Deserialize)]
 pub struct ActionResultInner {
     #[serde(rename = "_index")]
     pub index: String,
@@ -369,7 +342,7 @@ pub struct ActionResultInner {
 }
 
 /// The result of a bulk operation
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde_derive::Deserialize)]
 pub struct BulkResult {
     pub errors: bool,
     pub items: Vec<ActionResult>,
@@ -378,7 +351,7 @@ pub struct BulkResult {
 
 #[cfg(test)]
 pub mod tests {
-    use tests::{clean_db, make_client, TestDocument};
+    use crate::tests::{clean_db, make_client, TestDocument};
 
     use super::Action;
 

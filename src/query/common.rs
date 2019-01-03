@@ -16,7 +16,7 @@
 
 //! Common macros, utilities, etc. for the query crate
 
-use ::json::FieldBased;
+use crate::json::FieldBased;
 
 // Helper macros
 

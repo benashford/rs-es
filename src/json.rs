@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 Ben Ashford
+ * Copyright 2016-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 //! Helper for common requirements when producing/parsing JSON
 
-use serde::ser::{Serialize, Serializer, SerializeMap};
+use serde::ser::{Serialize, SerializeMap, Serializer};
 
 /// To tell Serde to skip various fields
 pub trait ShouldSkip {
@@ -31,13 +31,17 @@ impl<T> ShouldSkip for Option<T> {
 }
 
 /// Useful serialization functions
-pub fn serialize_map_optional_kv<S, K, V>(map_ser: &mut S,
-                                          key: K,
-                                          value: &Option<V>) -> Result<(), S::Error>
-    where S: SerializeMap,
-          K: Serialize,
-          V: Serialize {
-    if let &Some(ref x) = value {
+pub fn serialize_map_optional_kv<S, K, V>(
+    map_ser: &mut S,
+    key: K,
+    value: &Option<V>,
+) -> Result<(), S::Error>
+where
+    S: SerializeMap,
+    K: Serialize,
+    V: Serialize,
+{
+    if let Some(ref x) = value {
         map_ser.serialize_entry(&key, x)?;
     }
     Ok(())
@@ -50,10 +54,10 @@ pub fn serialize_map_optional_kv<S, K, V>(map_ser: &mut S,
 pub struct NoOuter;
 
 impl MergeSerialize for NoOuter {
-    fn merge_serialize<S>(&self,
-                          _: &mut S) -> Result<(), S::Error>
-        where S: SerializeMap {
-
+    fn merge_serialize<S>(&self, _: &mut S) -> Result<(), S::Error>
+    where
+        S: SerializeMap,
+    {
         // No-op
         Ok(())
     }
@@ -64,7 +68,7 @@ impl MergeSerialize for NoOuter {
 pub struct FieldBased<F, I, O> {
     pub field: F,
     pub inner: I,
-    pub outer: O
+    pub outer: O,
 }
 
 impl<F, I, O> FieldBased<F, I, O> {
@@ -72,18 +76,21 @@ impl<F, I, O> FieldBased<F, I, O> {
         FieldBased {
             field: field,
             inner: inner,
-            outer: outer
+            outer: outer,
         }
     }
 }
 
 impl<F, I, O> Serialize for FieldBased<F, I, O>
-    where F: Serialize,
-          I: Serialize,
-          O: MergeSerialize {
+where
+    F: Serialize,
+    I: Serialize,
+    O: MergeSerialize,
+{
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
-
+    where
+        S: Serializer,
+    {
         let mut map = serializer.serialize_map(None)?;
 
         map.serialize_entry(&self.field, &self.inner)?;
@@ -95,9 +102,9 @@ impl<F, I, O> Serialize for FieldBased<F, I, O>
 
 /// MergeSerialize, implemented by structs that want to add to an existing struct
 pub trait MergeSerialize {
-    fn merge_serialize<S>(&self,
-                          serializer: &mut S) -> Result<(), S::Error>
-        where S: SerializeMap;
+    fn merge_serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    where
+        S: SerializeMap;
 }
 
 /// Macro to allow access to the inner object, assumes FieldBased is wrapped in a newtype
@@ -124,20 +131,21 @@ pub mod tests {
     use serde_json;
 
     use serde::ser::SerializeMap;
+    use serde_derive::Serialize;
 
     use super::{FieldBased, MergeSerialize, NoOuter};
 
     #[derive(Serialize)]
     struct TestOptions {
         opt_a: i64,
-        opt_b: f64
+        opt_b: f64,
     }
 
     impl MergeSerialize for TestOptions {
-        fn merge_serialize<S>(&self,
-                              serializer: &mut S) -> Result<(), S::Error>
-            where S: SerializeMap {
-
+        fn merge_serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where
+            S: SerializeMap,
+        {
             serializer.serialize_entry("opt_a", &self.opt_a)?;
             serializer.serialize_entry("opt_b", &self.opt_b)
         }
@@ -163,18 +171,34 @@ pub mod tests {
 
     #[test]
     fn test_simple_field_based() {
-        let t = TestStruct::new("key".to_owned(),
-                                TestOptions {opt_a: 4i64, opt_b: 3.5f64});
+        let t = TestStruct::new(
+            "key".to_owned(),
+            TestOptions {
+                opt_a: 4i64,
+                opt_b: 3.5f64,
+            },
+        );
         let s = serde_json::to_string(&t).unwrap();
         assert_eq!("{\"key\":{\"opt_a\":4,\"opt_b\":3.5}}", s);
     }
 
     #[test]
     fn test_outer_field_based() {
-        let t = TestWithOuter::new("key".to_owned(),
-                                   TestOptions {opt_a: 8i64, opt_b: 2.5f64},
-                                   TestOptions {opt_a: 9i64, opt_b: 1.5f64});
+        let t = TestWithOuter::new(
+            "key".to_owned(),
+            TestOptions {
+                opt_a: 8i64,
+                opt_b: 2.5f64,
+            },
+            TestOptions {
+                opt_a: 9i64,
+                opt_b: 1.5f64,
+            },
+        );
         let s = serde_json::to_string(&t).unwrap();
-        assert_eq!("{\"key\":{\"opt_a\":8,\"opt_b\":2.5},\"opt_a\":9,\"opt_b\":1.5}", s);
+        assert_eq!(
+            "{\"key\":{\"opt_a\":8,\"opt_b\":2.5},\"opt_a\":9,\"opt_b\":1.5}",
+            s
+        );
     }
 }

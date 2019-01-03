@@ -16,10 +16,11 @@
 
 //! Refresh an Index
 
-use hyper::status::StatusCode;
+use reqwest::StatusCode;
 
-use error::EsError;
-use {Client, EsResponse};
+use serde_derive::Deserialize;
+
+use crate::{error::EsError, Client, EsResponse};
 
 use super::{format_multi, ShardCountResult};
 
@@ -49,10 +50,10 @@ impl<'a, 'b> RefreshOperation<'a, 'b> {
         let url = format!("/{}/_refresh", format_multi(&self.indexes));
         let response = self.client.post_op(&url)?;
         match response.status_code() {
-            &StatusCode::Ok => Ok(response.read_response()?),
-            _ => Err(EsError::EsError(format!(
+            StatusCode::OK => Ok(response.read_response()?),
+            status_code => Err(EsError::EsError(format!(
                 "Unexpected status: {}",
-                response.status_code()
+                status_code
             ))),
         }
     }

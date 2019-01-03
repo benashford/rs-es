@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,13 @@
 //! appropriate place, e.g. types only used by the Query DSL are in `query.rs`
 
 use std::collections::{BTreeMap, HashMap};
+use std::fmt;
 
-use serde::de;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde_derive::{Deserialize, Serialize};
 use serde_json::{Number, Value};
 
-use error::EsError;
-use operations::common::OptionVal;
-use std::fmt;
+use crate::{error::EsError, operations::common::OptionVal};
 
 /// The units by which duration is measured.
 ///
@@ -165,13 +164,13 @@ impl Serialize for Location {
         S: Serializer,
     {
         match self {
-            &Location::LatLon(lat, lon) => {
+            Location::LatLon(lat, lon) => {
                 let mut d = BTreeMap::new();
                 d.insert("lat", lat);
                 d.insert("lon", lon);
                 d.serialize(serializer)
             }
-            &Location::GeoHash(ref geo_hash) => geo_hash.serialize(serializer),
+            Location::GeoHash(ref geo_hash) => geo_hash.serialize(serializer),
         }
     }
 }
@@ -233,13 +232,13 @@ impl Serialize for GeoBox {
     {
         use self::GeoBox::*;
         match self {
-            &Corners(ref top_left, ref bottom_right) => {
+            Corners(ref top_left, ref bottom_right) => {
                 let mut d = BTreeMap::new();
                 d.insert("top_left", top_left);
                 d.insert("bottom_right", bottom_right);
                 d.serialize(serializer)
             }
-            &Vertices(top, left, bottom, right) => {
+            Vertices(top, left, bottom, right) => {
                 let mut d = BTreeMap::new();
                 d.insert("top", top);
                 d.insert("left", left);
@@ -274,8 +273,8 @@ where
         S: Serializer,
     {
         match self {
-            &OneOrMany::One(ref t) => t.serialize(serializer),
-            &OneOrMany::Many(ref t) => t.serialize(serializer),
+            OneOrMany::One(ref t) => t.serialize(serializer),
+            OneOrMany::Many(ref t) => t.serialize(serializer),
         }
     }
 }
@@ -306,9 +305,9 @@ impl Serialize for DistanceType {
         S: Serializer,
     {
         match self {
-            &DistanceType::SloppyArc => "sloppy_arc",
-            &DistanceType::Arc => "arc",
-            &DistanceType::Plane => "plane",
+            DistanceType::SloppyArc => "sloppy_arc",
+            DistanceType::Arc => "arc",
+            DistanceType::Plane => "plane",
         }
         .serialize(serializer)
     }
@@ -427,9 +426,9 @@ impl JsonVal {
     pub fn from(from: &Value) -> Result<Self, EsError> {
         use serde_json::Value::*;
         Ok(match from {
-            &String(ref string) => JsonVal::String(string.clone()),
-            &Bool(b) => JsonVal::Boolean(b),
-            &Number(ref i) => JsonVal::Number(i.clone()),
+            String(ref string) => JsonVal::String(string.clone()),
+            Bool(b) => JsonVal::Boolean(*b),
+            Number(ref i) => JsonVal::Number(i.clone()),
             _ => return Err(EsError::EsError(format!("Not a JsonVal: {:?}", from))),
         })
     }
@@ -447,9 +446,9 @@ impl Serialize for JsonVal {
         S: Serializer,
     {
         match self {
-            &JsonVal::String(ref s) => s.serialize(serializer),
-            &JsonVal::Number(ref i) => i.serialize(serializer),
-            &JsonVal::Boolean(b) => b.serialize(serializer),
+            JsonVal::String(ref s) => s.serialize(serializer),
+            JsonVal::Number(ref i) => i.serialize(serializer),
+            JsonVal::Boolean(b) => b.serialize(serializer),
         }
     }
 }
@@ -542,6 +541,7 @@ from_exp!(
     f32,
     JsonVal,
     from,
+    #[allow(clippy::cast_lossless)]
     JsonVal::Number(Number::from_f64(from as f64).unwrap())
 );
 from_exp!(
@@ -560,9 +560,9 @@ impl<'a> From<&'a Value> for JsonVal {
     fn from(from: &'a Value) -> Self {
         use serde_json::Value::*;
         match from {
-            &String(ref s) => JsonVal::String(s.clone()),
-            &Number(ref f) => JsonVal::Number(f.clone()),
-            &Bool(b) => JsonVal::Boolean(b),
+            String(ref s) => JsonVal::String(s.clone()),
+            Number(ref f) => JsonVal::Number(f.clone()),
+            Bool(b) => JsonVal::Boolean(*b),
             _ => panic!("Not a String, F64, I64, U64 or Boolean"),
         }
     }

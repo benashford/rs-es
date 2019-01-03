@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,7 @@
 
 use std::error::Error;
 use std::fmt;
-use std::io;
-use std::io::Read;
-
-use hyper;
-use hyper::client::response;
+use std::io::{self, Read};
 
 use serde_json;
 
@@ -39,13 +35,13 @@ pub enum EsError {
     EsServerError(String),
 
     /// Miscellaneous error from the HTTP library
-    HttpError(hyper::error::Error),
+    HttpError(reqwest::Error),
 
     /// Miscellaneous IO error
     IoError(io::Error),
 
     /// JSON error
-    JsonError(serde_json::error::Error)
+    JsonError(serde_json::error::Error),
 }
 
 impl From<io::Error> for EsError {
@@ -54,8 +50,8 @@ impl From<io::Error> for EsError {
     }
 }
 
-impl From<hyper::error::Error> for EsError {
-    fn from(err: hyper::error::Error) -> EsError {
+impl From<reqwest::Error> for EsError {
+    fn from(err: reqwest::Error) -> EsError {
         EsError::HttpError(err)
     }
 }
@@ -66,20 +62,20 @@ impl From<serde_json::error::Error> for EsError {
     }
 }
 
-impl<'a> From<&'a mut response::Response> for EsError {
-    fn from(err: &'a mut response::Response) -> EsError {
+impl<'a> From<&'a mut reqwest::Response> for EsError {
+    fn from(err: &'a mut reqwest::Response) -> EsError {
         let mut body = String::new();
         match err.read_to_string(&mut body) {
-            Ok(_)  => (),
+            Ok(_) => (),
             Err(_) => {
-                return EsError::EsServerError(format!("{} - cannot read response - {:?}",
-                                                      err.status,
-                                                      err));
+                return EsError::EsServerError(format!(
+                    "{} - cannot read response - {:?}",
+                    err.status(),
+                    err
+                ));
             }
         }
-        EsError::EsServerError(format!("{} - {}",
-                                       err.status,
-                                       body))
+        EsError::EsServerError(format!("{} - {}", err.status(), body))
     }
 }
 
@@ -90,17 +86,17 @@ impl Error for EsError {
             EsError::EsServerError(ref err) => err,
             EsError::HttpError(ref err) => err.description(),
             EsError::IoError(ref err) => err.description(),
-            EsError::JsonError(ref err) => err.description()
+            EsError::JsonError(ref err) => err.description(),
         }
     }
 
     fn cause(&self) -> Option<&Error> {
         match *self {
-            EsError::EsError(_)                => None,
-            EsError::EsServerError(_)          => None,
-            EsError::HttpError(ref err)        => Some(err as &Error),
-            EsError::IoError(ref err)          => Some(err as &Error),
-            EsError::JsonError(ref err)        => Some(err as &Error)
+            EsError::EsError(_) => None,
+            EsError::EsServerError(_) => None,
+            EsError::HttpError(ref err) => Some(err as &Error),
+            EsError::IoError(ref err) => Some(err as &Error),
+            EsError::JsonError(ref err) => Some(err as &Error),
         }
     }
 }
@@ -112,7 +108,7 @@ impl fmt::Display for EsError {
             EsError::EsServerError(ref s) => fmt::Display::fmt(s, f),
             EsError::HttpError(ref err) => fmt::Display::fmt(err, f),
             EsError::IoError(ref err) => fmt::Display::fmt(err, f),
-            EsError::JsonError(ref err) => fmt::Display::fmt(err, f)
+            EsError::JsonError(ref err) => fmt::Display::fmt(err, f),
         }
     }
 }

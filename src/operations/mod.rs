@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Ben Ashford
+ * Copyright 2015-2018 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,21 +22,23 @@
 
 use std::borrow::Cow;
 
-use ::util::StrJoin;
+use serde_derive::Deserialize;
+
+use crate::util::StrJoin;
 
 // Specific operations
 #[macro_use]
 pub mod common;
 
+pub mod analyze;
 pub mod bulk;
 pub mod delete;
 pub mod delete_index;
 pub mod get;
 pub mod index;
+pub mod mapping;
 pub mod refresh;
 pub mod search;
-pub mod analyze;
-pub mod mapping;
 pub mod version;
 
 // Common utility functions
@@ -47,7 +49,7 @@ fn format_multi<'a>(parts: &[&'a str]) -> Cow<'a, str> {
     match parts.len() {
         0 => Cow::Borrowed("_all"),
         1 => Cow::Borrowed(parts[0]),
-        _ => Cow::Owned(parts.iter().join(","))
+        _ => Cow::Owned(parts.iter().join(",")),
     }
 }
 
@@ -68,12 +70,12 @@ fn format_indexes_and_types<'a>(indexes: &[&'a str], types: &[&str]) -> Cow<'a, 
 /// This is returned within various other result structs.
 #[derive(Debug, Deserialize)]
 pub struct ShardCountResult {
-    pub total:      u64,
+    pub total: u64,
     pub successful: u64,
-    pub failed:     u64
+    pub failed: u64,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct GenericResult {
-    pub acknowledged: bool
+    pub acknowledged: bool,
 }
