@@ -35,7 +35,7 @@ pub mod units;
 
 use std::time;
 
-use reqwest::{RequestBuilder, StatusCode, Url};
+use reqwest::{header::CONTENT_TYPE, RequestBuilder, StatusCode, Url};
 
 use serde::{de::DeserializeOwned, ser::Serialize};
 
@@ -119,7 +119,7 @@ impl Client {
         if !username.is_empty() {
             method = method.basic_auth(username, self.base_url.password());
         }
-        let result = method.send()?;
+        let result = method.header(CONTENT_TYPE, "application/json").send()?;
         do_req(result)
     }
 }

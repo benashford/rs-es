@@ -741,7 +741,7 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
                             None => {
                                 return Err(EsError::EsError(
                                     "No aggs despite being in results".to_owned(),
-                                ))
+                                ));
                             }
                         };
                         Some(AggregationsResult::from(req_aggs, raw_aggs)?)
@@ -782,7 +782,7 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
                             None => {
                                 return Err(EsError::EsError(
                                     "No aggs despite being in results".to_owned(),
-                                ))
+                                ));
                             }
                         };
                         Some(AggregationsResult::from(req_aggs, raw_aggs)?)
