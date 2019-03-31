@@ -22,7 +22,7 @@ Not every feature and every option is implemented, this README and the documenta
 
 ## Building and installation
 
-Version `0.11.0` requires Rust `0.31.0` or higher.
+Version `0.11.0` requires Rust `1.31.0` or higher.
 
 ### [crates.io](http://crates.io)
 
