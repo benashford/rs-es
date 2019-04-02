@@ -715,6 +715,7 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
     add_option!(with_ignore_unavailable, "ignore_unavailable");
     add_option!(with_allow_no_indices, "allow_no_indices");
     add_option!(with_expand_wildcards, "expand_wildcards");
+    add_option!(with_explain, "explain");
 
     /// Performs the search with the specified query and options
     pub fn send<T>(&'b mut self) -> Result<SearchResult<T>, EsError>
@@ -816,7 +817,7 @@ impl Client {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SearchHitsHitsResult<T> {
     #[serde(rename = "_index")]
     pub index: String,
@@ -830,6 +831,8 @@ pub struct SearchHitsHitsResult<T> {
     pub version: Option<u64>,
     #[serde(rename = "_source")]
     pub source: Option<Box<T>>,
+    #[serde(rename = "_explanation")]
+    pub explanation: Option<Value>,
     #[serde(rename = "_timestamp")]
     pub timestamp: Option<f64>,
     #[serde(rename = "_routing")]
@@ -838,7 +841,7 @@ pub struct SearchHitsHitsResult<T> {
     pub highlight: Option<HighlightResult>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SearchHitsResult<T> {
     pub total: u64,
     pub hits: Vec<SearchHitsHitsResult<T>>,
@@ -871,7 +874,7 @@ where
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SearchResultInterim<T> {
     pub took: u64,
     pub timed_out: bool,
@@ -905,7 +908,7 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct SearchResult<T> {
     pub took: u64,
     pub timed_out: bool,

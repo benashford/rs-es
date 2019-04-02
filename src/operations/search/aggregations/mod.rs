@@ -127,7 +127,7 @@ impl<'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
 /// The result of one specific aggregation
 ///
 /// The data returned varies depending on aggregation type
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum AggregationResult {
     /// Results of metrics aggregations
     Metrics(MetricsAggregationResult),
@@ -136,7 +136,7 @@ pub enum AggregationResult {
     Bucket(BucketAggregationResult),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct AggregationsResult(HashMap<String, AggregationResult>);
 
 /// Loads a Json object of aggregation results into an `AggregationsResult`.
