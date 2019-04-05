@@ -40,10 +40,12 @@ pub struct Settings {
     pub analysis: Analysis,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Default)]
 pub struct Analysis {
     pub filter: Map<String, Value>,
     pub analyzer: Map<String, Value>,
+    pub tokenizer: Map<String, Value>,
+    pub char_filter: Map<String, Value>,
 }
 
 /// An indexing operation
@@ -229,6 +231,21 @@ pub mod tests {
                 })
                 .as_object()
                 .expect("by construction 'autocomplete' should be a map")
+                .clone(),
+                char_filter: serde_json::json! ({
+                    "char_filter": {
+                        "type": "pattern_replace",
+                        "pattern": ",",
+                        "replacement": " "
+                    }
+                })
+                .as_object()
+                .expect("by construction 'char_filter' should be a map")
+                .clone(),
+                tokenizer: serde_json::json! ({
+                })
+                .as_object()
+                .expect("by construction 'empty tokenizer' should be a map")
                 .clone(),
             },
         };
