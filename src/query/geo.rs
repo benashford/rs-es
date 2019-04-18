@@ -32,6 +32,9 @@ pub enum ShapeOption {
     Shape(Shape),
     #[serde(rename = "indexed_shape")]
     IndexedShape(IndexedShape),
+    #[cfg(feature = "geo")]
+    #[serde(rename = "shape")]
+    Geojson(geojson::Geometry),
 }
 
 from!(Shape, ShapeOption, Shape);
@@ -64,6 +67,17 @@ impl GeoShapeQuery {
         A: Into<IndexedShape>,
     {
         self.0.inner = Some(ShapeOption::IndexedShape(indexed_shape.into()));
+        self
+    }
+
+    #[cfg(feature = "geo")]
+    /// Use a geojson object as shape.
+    /// Require to enable the `geo` feature.
+    pub fn with_geojson<A>(mut self, shape: A) -> Self
+    where
+        A: Into<geojson::Geometry>,
+    {
+        self.0.inner = Some(ShapeOption::Geojson(shape.into()));
         self
     }
 
@@ -352,5 +366,141 @@ impl Serialize for Precision {
             Geohash(precision) => precision.serialize(serializer),
             Distance(ref dist) => dist.serialize(serializer),
         }
+    }
+}
+
+#[cfg(test)]
+#[cfg(feature = "geo")]
+pub mod tests {
+    use crate::operations::mapping::{Analysis, MappingOperation, Settings};
+    use crate::operations::search::SearchResult;
+    use crate::query::Query;
+    use crate::tests::{clean_db, make_client};
+    use crate::Client;
+    use serde_derive::{Deserialize, Serialize};
+    use std::collections::HashMap;
+
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct GeoTestDocument {
+        pub str_field: String,
+        pub geojson_field: geojson::Geometry,
+    }
+
+    impl Default for GeoTestDocument {
+        fn default() -> GeoTestDocument {
+            GeoTestDocument {
+                str_field: "null island".to_owned(),
+                geojson_field: geojson::Geometry::new(geojson::Value::Point(vec![0.0, 0.0])),
+            }
+        }
+    }
+
+    impl GeoTestDocument {
+        pub fn with_str_field(mut self, s: &str) -> GeoTestDocument {
+            self.str_field = s.to_owned();
+            self
+        }
+
+        pub fn with_point(mut self, p: Vec<f64>) -> GeoTestDocument {
+            self.geojson_field = geojson::Geometry::new(geojson::Value::Point(p));
+            self
+        }
+    }
+
+    pub fn setup_test_data(mut client: &mut Client, index_name: &str) {
+        let mut mapping = HashMap::new();
+        let mut doc = HashMap::new();
+        let mut geo_field = HashMap::new();
+        let mut str_field = HashMap::new();
+        str_field.insert("type", "string");
+        geo_field.insert("type", "geo_shape");
+        doc.insert("str_field", str_field);
+        doc.insert("geojson_field", geo_field);
+        mapping.insert("geo_test_type", doc);
+
+        let settings = Settings {
+            number_of_shards: 1,
+            analysis: Analysis {
+                filter: serde_json::json!({}).as_object().unwrap().clone(),
+                analyzer: serde_json::json!({}).as_object().unwrap().clone(),
+            },
+        };
+
+        // TODO - this fails in many cases (specifically on TravisCI), but we ignore the
+        // failures anyway
+        let _ = client.delete_index(index_name);
+
+        let result = MappingOperation::new(&mut client, index_name)
+            .with_mapping(&mapping)
+            .with_settings(&settings)
+            .send();
+        result.unwrap();
+        let documents = vec![
+            GeoTestDocument::default(),
+            GeoTestDocument::default()
+                .with_str_field("p1")
+                .with_point(vec![1.0, 1.0]),
+            GeoTestDocument::default()
+                .with_str_field("p2")
+                .with_point(vec![5.0, 1.0]),
+        ];
+        for doc in documents.iter() {
+            client
+                .index(index_name, "geo_test_type")
+                .with_doc(doc)
+                .send()
+                .unwrap();
+        }
+        client.refresh().with_indexes(&[index_name]).send().unwrap();
+    }
+
+    #[test]
+    fn test_geoshape_search_point() {
+        let index_name = "test_geoshape_search_point";
+        let mut client = make_client();
+
+        clean_db(&mut client, index_name);
+        setup_test_data(&mut client, index_name);
+
+        let all_results: SearchResult<GeoTestDocument> = client
+            .search_query()
+            .with_indexes(&[index_name])
+            .with_query(
+                &Query::build_geo_shape("geojson_field")
+                    .with_geojson(geojson::Geometry::new(geojson::Value::Point(vec![
+                        0.0, 0.0,
+                    ])))
+                    .build(),
+            )
+            .send()
+            .unwrap();
+        assert_eq!(1, all_results.hits.total);
+    }
+
+    #[test]
+    fn test_geoshape_search_polygon() {
+        let index_name = "test_geoshape_search_polygon";
+        let mut client = make_client();
+
+        clean_db(&mut client, index_name);
+        setup_test_data(&mut client, index_name);
+
+        let all_results: SearchResult<GeoTestDocument> = client
+            .search_query()
+            .with_indexes(&[index_name])
+            .with_query(
+                &Query::build_geo_shape("geojson_field")
+                    .with_geojson(geojson::Geometry::new(geojson::Value::Polygon(vec![vec![
+                        vec![1.0, 1.0],
+                        vec![1.0, -1.0],
+                        vec![-1.0, -1.0],
+                        vec![-1.0, 1.0],
+                        vec![1.0, 1.0],
+                    ]])))
+                    .build(),
+            )
+            .send()
+            .unwrap();
+        assert_eq!(2, all_results.hits.total);
     }
 }
