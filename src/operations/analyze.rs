@@ -17,7 +17,7 @@
 
 //! Implementation of ElasticSearch Analyze operation
 
-use serde_derive::Deserialize;
+use serde::Deserialize;
 
 use crate::{
     error::EsError,

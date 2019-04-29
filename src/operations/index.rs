@@ -18,7 +18,7 @@
 
 use serde::ser::Serialize;
 
-use serde_derive::Deserialize;
+use serde::Deserialize;
 
 use crate::{error::EsError, Client, EsResponse};
 

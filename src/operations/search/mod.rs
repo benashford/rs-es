@@ -27,9 +27,9 @@ use reqwest::StatusCode;
 
 use serde::{
     de::DeserializeOwned,
-    ser::{Serialize, Serializer},
+    ser::Serializer,
+    Serialize, Deserialize
 };
-use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{

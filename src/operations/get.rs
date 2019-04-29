@@ -18,7 +18,7 @@
 
 use serde::de::DeserializeOwned;
 
-use serde_derive::Deserialize;
+use serde::Deserialize;
 
 use super::common::{OptionVal, Options};
 

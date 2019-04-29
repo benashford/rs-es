@@ -19,7 +19,6 @@
 use std::collections::HashMap;
 
 use serde::{Serialize, Serializer};
-use serde_derive::Serialize;
 
 use crate::{
     json::{FieldBased, NoOuter, ShouldSkip},

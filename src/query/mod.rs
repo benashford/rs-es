@@ -42,8 +42,8 @@
 
 use std::collections::BTreeMap;
 
-use serde::ser::{Serialize, SerializeMap, Serializer};
-use serde_derive::Serialize;
+use serde::ser::{SerializeMap, Serializer};
+use serde::Serialize;
 
 use crate::{json::ShouldSkip, util::StrJoin};
 

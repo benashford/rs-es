@@ -16,7 +16,7 @@
 
 //! Joining queries
 
-use serde_derive::Serialize;
+use serde::Serialize;
 
 use crate::json::ShouldSkip;
 

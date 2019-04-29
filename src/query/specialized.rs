@@ -16,7 +16,7 @@
 
 //! Specialised queries
 
-use serde_derive::Serialize;
+use serde::Serialize;
 use serde_json::Value;
 
 use crate::json::ShouldSkip;

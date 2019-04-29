@@ -131,7 +131,7 @@ pub mod tests {
     use serde_json;
 
     use serde::ser::SerializeMap;
-    use serde_derive::Serialize;
+    use serde::Serialize;
 
     use super::{FieldBased, MergeSerialize, NoOuter};
 
