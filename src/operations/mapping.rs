@@ -26,7 +26,7 @@ use std::hash::Hash;
 
 use reqwest::StatusCode;
 
-use serde_derive::Serialize;
+use serde::Serialize;
 use serde_json::{Map, Value};
 
 use crate::{error::EsError, operations::GenericResult, Client, EsResponse};

@@ -16,7 +16,7 @@
 
 //! Fetch ElasticSearch version information
 
-use serde_derive::Deserialize;
+use serde::Deserialize;
 
 use crate::{error::EsError, Client, EsResponse};
 

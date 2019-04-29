@@ -24,8 +24,8 @@ pub mod metrics;
 
 use std::collections::HashMap;
 
-use serde::ser::{Serialize, SerializeMap, Serializer};
-use serde_derive::Serialize;
+use serde::ser::{SerializeMap, Serializer};
+use serde::Serialize;
 use serde_json::{Map, Value};
 
 use crate::error::EsError;

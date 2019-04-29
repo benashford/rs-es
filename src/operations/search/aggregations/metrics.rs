@@ -18,8 +18,8 @@
 
 use std::collections::HashMap;
 
-use serde::ser::{Serialize, SerializeMap, Serializer};
-use serde_derive::{Deserialize, Serialize};
+use serde::ser::{SerializeMap, Serializer};
+use serde::{Deserialize, Serialize};
 use serde_json::{from_value, Value};
 
 use crate::error::EsError;

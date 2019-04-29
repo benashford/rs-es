@@ -18,8 +18,8 @@
 
 use std::collections::HashMap;
 
-use serde::ser::{Serialize, Serializer};
-use serde_derive::Serialize;
+use serde::ser::{Serializer};
+use serde::Serialize;
 
 #[derive(Debug, Clone)]
 pub enum Encoders {

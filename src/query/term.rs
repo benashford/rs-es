@@ -17,7 +17,6 @@
 //! Specific Term level queries
 
 use serde::{Serialize, Serializer};
-use serde_derive::Serialize;
 
 use crate::{
     json::{NoOuter, ShouldSkip},

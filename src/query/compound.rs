@@ -17,7 +17,6 @@
 //! Compound queries
 
 use serde::{Serialize, Serializer};
-use serde_derive::Serialize;
 
 use crate::{json::ShouldSkip, units::OneOrMany};
 

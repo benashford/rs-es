@@ -25,7 +25,6 @@ use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use serde_derive::{Deserialize, Serialize};
 use serde_json::{Number, Value};
 
 use crate::{error::EsError, operations::common::OptionVal};

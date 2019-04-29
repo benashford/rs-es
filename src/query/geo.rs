@@ -16,8 +16,8 @@
 
 //! Geo queries
 
-use serde::ser::{Serialize, SerializeMap, Serializer};
-use serde_derive::Serialize;
+use serde::ser::{SerializeMap, Serializer};
+use serde::Serialize;
 
 use crate::{
     json::{serialize_map_optional_kv, MergeSerialize, NoOuter, ShouldSkip},
@@ -377,7 +377,7 @@ pub mod tests {
     use crate::query::Query;
     use crate::tests::{clean_db, make_client};
     use crate::Client;
-    use serde_derive::{Deserialize, Serialize};
+    use serde::{Deserialize, Serialize};
     use std::collections::HashMap;
 
     #[derive(Debug, Serialize, Deserialize)]

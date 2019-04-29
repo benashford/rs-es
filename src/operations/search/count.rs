@@ -18,7 +18,7 @@
 
 use reqwest::StatusCode;
 
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     error::EsError,

@@ -22,7 +22,7 @@
 
 use std::borrow::Cow;
 
-use serde_derive::Deserialize;
+use serde::Deserialize;
 
 use crate::util::StrJoin;
 
