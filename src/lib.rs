@@ -144,6 +144,7 @@ macro_rules! es_body_op {
 
             log::info!("Doing {} on {}", stringify!($n), url);
             let json_string = serde_json::to_string(body)?;
+            log::debug!("With body: {}", &json_string);
 
             self.do_es_op(url, |url| {
                 self.http_client.$cn(url.clone()).body(json_string)
