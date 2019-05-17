@@ -46,7 +46,9 @@ The `Client` wraps a single HTTP connection to a specified ElasticSearch host/po
 
 (At present there is no connection pooling, each client has one connection; if you need multiple connections you will need multiple clients.  This may change in the future).
 
-```rust
+```rust,no_run
+use rs_es::Client;
+
 let mut client = Client::init("http://localhost:9200");
 ```
 
@@ -56,9 +58,9 @@ The `Client` provides various operations, which are analogous to the various Ela
 
 In each case the `Client` has a function which returns a builder-pattern object that allows additional options to be set.  The function itself will require mandatory parameters, everything else is on the builder (e.g. operations that require an index to be specified will have index as a parameter on the function itself).
 
-An example of optional parameters is [`routing`](https://www.elastic.co/blog/customizing-your-document-routing).  The routing parameter can be set on operations that support it with:
+An example of optional parameters is [`routing`](https://www.elastic.co/blog/customizing-your-document-routing). The routing parameter can be set on operations that support it with:
 
-```rust
+```rust,ignore
 op.with_routing("user123")
 ```
 
@@ -68,13 +70,13 @@ See the ElasticSearch guide for the full set of options and what they mean.
 
 An implementation of the [Index API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html).
 
-```rust
+```rust,ignore
 let index_op = client.index("index_name", "type_name");
 ```
 
 Returned is an `IndexOperation` to add additional options.  For example, to set an ID and a TTL:
 
-```rust
+```rust,ignore
 index_op.with_id("ID_VALUE").with_ttl("100d");
 ```
 
@@ -82,7 +84,7 @@ The document to be indexed has to implement the `Serialize` trait from the [`ser
 
 Calling `send` submits the index operation and returns an `IndexResult`:
 
-```rust
+```rust,ignore
 index_op.with_doc(&document).send();
 ```
 
@@ -92,7 +94,7 @@ An implementation of the [Get API](https://www.elastic.co/guide/en/elasticsearch
 
 Index and ID are mandatory, but type is optional.  Some examples:
 
-```rust
+```rust,ignore
 // Finds a document of any type with the given ID
 let result_1 = client.get("index_name", "ID_VALUE").send();
 
@@ -106,7 +108,7 @@ An implementation of the [Delete API](https://www.elastic.co/guide/en/elasticsea
 
 Index, type and ID are mandatory.
 
-```rust
+```rust,ignore
 let result = client.delete("index_name", "type_name", "ID_VALUE").send();
 ```
 
@@ -114,7 +116,10 @@ let result = client.delete("index_name", "type_name", "ID_VALUE").send();
 
 Sends a refresh request.
 
-```rust
+```rust,no_run
+use rs_es::Client;
+
+let mut client = Client::init("http://localhost:9200").expect("connection failed");
 // To everything
 let result = client.refresh().send();
 
@@ -128,23 +133,29 @@ An implementation of the [Search API](https://www.elastic.co/guide/en/elasticsea
 
 Example:
 
-```rust
+```rust,no_run
+use rs_es::Client;
+
+let mut client = Client::init("http://localhost:9200").expect("connection failed");
 let result = client.search_uri()
                    .with_indexes(&["index_name"])
                    .with_query("field:value")
-                   .send();
+                   .send::<String>();
 ```
 
 #### `search_query`
 
 An implementation of the [Search API](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html) using the [Query DSL](#the-query-dsl).
 
-```rust
+```rust,no_run
+use rs_es::Client;
 use rs_es::query::Query;
+
+let mut client = Client::init("http://localhost:9200").expect("connection failed");
 let result = client.search_query()
                    .with_indexes(&["index_name"])
-                   .with_query(Query::build_match("field", "value").build())
-                   .send();
+                   .with_query(&Query::build_match("field", "value").build())
+                   .send::<String>();
 ```
 
 A search query also supports [scan and scroll](#scan-and-scroll), [sorting](#sorting), and [aggregations](#aggregations).
@@ -155,7 +166,10 @@ An implementation of the [Count API](https://www.elastic.co/guide/en/elasticsear
 
 Example:
 
-```rust
+```rust,no_run
+use rs_es::Client;
+
+let mut client = Client::init("http://localhost:9200").expect("connection failed");
 let result = client.count_uri()
                    .with_indexes(&["index_name"])
                    .with_query("field:value")
@@ -166,11 +180,14 @@ let result = client.count_uri()
 
 An implementation of the [Count API](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-count.html) using the [Query DSL](#the-query-dsl).
 
-```rust
+```rust,no_run
+use rs_es::Client;
 use rs_es::query::Query;
+
+let mut client = Client::init("http://localhost:9200").expect("connection failed");
 let result = client.count_query()
                    .with_indexes(&["index_name"])
-                   .with_query(Query::build_match("field", "value").build())
+                   .with_query(&Query::build_match("field", "value").build())
                    .send();
 ```
 
@@ -178,8 +195,9 @@ let result = client.count_query()
 
 An implementation of the [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html).  This is the preferred way of indexing (or deleting, when Delete-by-Query is removed) many documents.
 
-```rust
+```rust,ignore
 use rs_es::operations::bulk::Action;
+
 let result = client.bulk(&vec![Action::index(document1),
                                Action::index(document2).with_id("id")]);
 ```
@@ -190,17 +208,23 @@ In this case the document can be anything that implements `ToJson`.
 
 Sorting is supported on all forms of search (by query or by URI), and related operations (e.g. scan and scroll).
 
-```rust
+```rust,no_run
+use rs_es::Client;
 use rs_es::query::Query;
+use rs_es::operations::search::{Order, Sort, SortBy, SortField};
+
+let mut client = Client::init("http://localhost:9200").expect("connection failed");
 let result = client.search_query()
-                   .with_query(Query::build_match_all().build())
-                   .with_sort(&Sort::new(vec![SortField::new("fieldname", Order::Desc)]))
-                   .send();
+                   .with_query(&Query::build_match_all().build())
+                   .with_sort(&Sort::new(vec![
+		       SortBy::Field(SortField::new("fieldname", Some(Order::Desc)))
+		   ]))
+                   .send::<String>();
 ```
 
 This is quite unwieldy for simple cases, although it does support the more [exotic combinations that ElasticSearch supports](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html#_geo_distance_sorting); so there are also a number of convenience functions for the more simple cases, e.g. sorting by a field in ascending order:
 
-```rust
+```rust,ignore
 // Omitted the rest of the query
 .with_sort(&Sort::field("fieldname"))
 ```
@@ -222,6 +246,8 @@ ElasticSearch offers a [rich DSL for searches](https://www.elastic.co/guide/en/e
 For example:
 
 ```rust
+use rs_es::query::Query;
+
 let query = Query::build_bool()
     .with_must(vec![Query::build_term("field_a",
                                       "value").build(),
@@ -242,7 +268,7 @@ When working with large result sets that need to be loaded from an ElasticSearch
 
 To use scan and scroll, begin with a [search query](#search_query) request, but instead of calling `send` call `scan`:
 
-```rust
+```rust,ignore
 let scan = client.search_query()
                  .with_indexes(&["index_name"])
                  .with_query(Query::build_match("field", "value").build())
@@ -254,7 +280,7 @@ let scan = client.search_query()
 
 Then `scroll` can be called multiple times to fetch each page.  Finally `close` will tell ElasticSearch the scan has finished and it can close any open resources.
 
-```rust
+```rust,ignore
 let first_page = scan.scroll(&mut client);
 // omitted - calls of subsequent pages
 scan.close(&mut client).unwrap();
@@ -266,7 +292,7 @@ The result of the call to `scan` does not include a reference to the client, hen
 
 Also supported is an iterator which will scroll through a scan.
 
-```rust
+```rust,ignore
 let scan_iter = scan.iter(&mut client);
 ```
 
@@ -278,7 +304,7 @@ The type of each value returned from the iterator is `Result<SearchHitsHitsResul
 
 Experimental support for aggregations is also supported.
 
-```rust
+```rust,ignore
 client.search_query().with_indexes(&[index_name]).with_aggs(&aggs).send();
 ```
 
@@ -287,16 +313,20 @@ Where `aggs` is a `rs_es::operations::search::aggregations::Aggregations`, for c
 Bucket aggregations (i.e. those that define a bucket that can contain sub-aggregations) can also be specified as a tuple `(Aggregation, Aggregations)`.
 
 ```rust
+use rs_es::operations::search::aggregations::Aggregations;
+use rs_es::operations::search::aggregations::bucket::{Order, OrderKey, Terms};
+use rs_es::operations::search::aggregations::metrics::Min;
+
 let aggs = Aggregations::from(("str",
-                               (Terms::new("str_field").with_order(Order::asc(OrderKey::Term)),
+                               (Terms::field("str_field").with_order(Order::asc(OrderKey::Term)),
                                 Aggregations::from(("int",
-                                                    Min::new("int_field"))))));
+                                                    Min::field("int_field"))))));
 
 ```
 
 The above would, when used within a `search_query` operation, generate a JSON fragment within the search request:
 
-```
+```json
 "str": {
     "terms": {
         "field": "str_field",
@@ -314,7 +344,7 @@ The majority, but not all aggregations are currently supported.  See the [docume
 
 For example, to get the a reference to the result of the Terms aggregation called `str` (see above):
 
-```rust
+```rust,ignore
 let terms_result = result.aggs_ref()
     .unwrap()
     .get("str")
@@ -342,7 +372,7 @@ The ElasticSearch API is made-up of a large number of smaller APIs, the vast maj
 
 ## Licence
 
-```
+```text
    Copyright 2015-2017 Ben Ashford
 
    Licensed under the Apache License, Version 2.0 (the "License");

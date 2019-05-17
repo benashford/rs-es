@@ -22,6 +22,13 @@
 //! Warning: at the time of writing the majority of such APIs are currently
 //! unimplemented.
 
+#[cfg(test)]
+#[macro_use]
+extern crate doc_comment;
+
+#[cfg(test)]
+doctest!("../README.md");
+
 #[macro_use]
 pub mod util;
 
