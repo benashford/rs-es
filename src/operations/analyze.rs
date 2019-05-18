@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 Ben Ashford
+ * Copyright 2015-2019 Ben Ashford
  * Copyright 2015 Astro
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,8 +37,8 @@ pub struct AnalyzeOperation<'a, 'b> {
 impl<'a, 'b> AnalyzeOperation<'a, 'b> {
     pub fn new(client: &'a mut Client, body: &'b str) -> AnalyzeOperation<'a, 'b> {
         AnalyzeOperation {
-            client: client,
-            body: body,
+            client,
+            body,
             index: None,
             analyzer: None,
         }

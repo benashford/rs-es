@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 Ben Ashford
+ * Copyright 2015-2019 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,11 +66,11 @@ impl<'a, 'b, E: Serialize + 'b> IndexOperation<'a, 'b, E> {
         doc_type: &'b str,
     ) -> IndexOperation<'a, 'b, E> {
         IndexOperation {
-            client: client,
-            index: index,
-            doc_type: doc_type,
+            client,
+            index,
+            doc_type,
             id: None,
-            options: Options::new(),
+            options: Options::default(),
             document: None,
         }
     }

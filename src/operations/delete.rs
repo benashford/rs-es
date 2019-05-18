@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 Ben Ashford
+ * Copyright 2015-2019 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,11 +50,11 @@ impl<'a, 'b> DeleteOperation<'a, 'b> {
         id: &'b str,
     ) -> DeleteOperation<'a, 'b> {
         DeleteOperation {
-            client: client,
-            index: index,
-            doc_type: doc_type,
-            id: id,
-            options: Options::new(),
+            client,
+            index,
+            doc_type,
+            id,
+            options: Options::default(),
         }
     }
 

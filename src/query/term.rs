@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Ben Ashford
+ * Copyright 2016-2019 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ pub struct TermQueryInner {
 impl TermQueryInner {
     fn new(value: JsonVal) -> Self {
         TermQueryInner {
-            value: value,
+            value,
             ..Default::default()
         }
     }
@@ -174,8 +174,8 @@ impl<'a, A> From<&'a [A]> for TermsQueryIn
 where
     A: JsonPotential,
 {
-    fn from(from: &'a [A]) -> TermsQueryIn {
-        TermsQueryIn::Values(from.iter().map(|f| f.to_json_val()).collect())
+    fn from(from: &'a [A]) -> Self {
+        TermsQueryIn::Values(from.iter().map(JsonPotential::to_json_val).collect())
     }
 }
 

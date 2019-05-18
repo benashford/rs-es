@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 Ben Ashford
+ * Copyright 2015-2019 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,25 @@
 
 //! Bucket-based aggregations
 
-use std::collections::HashMap;
-use std::marker::PhantomData;
+use std::{borrow::ToOwned, collections::HashMap, marker::PhantomData};
 
-use serde::ser::{SerializeMap, Serializer};
-use serde::Serialize;
+use serde::{
+    ser::{SerializeMap, Serializer},
+    Serialize,
+};
 use serde_json::Value;
 
-use crate::error::EsError;
-use crate::json::{serialize_map_optional_kv, MergeSerialize, ShouldSkip};
-use crate::query;
-use crate::units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany};
+use crate::{
+    error::EsError,
+    json::{serialize_map_optional_kv, MergeSerialize, ShouldSkip},
+    query,
+    units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany},
+};
 
-use super::common::{Agg, Script};
-use super::{object_to_result, Aggregation, AggregationResult, Aggregations, AggregationsResult};
+use super::{
+    common::{Agg, Script},
+    object_to_result, Aggregation, AggregationResult, Aggregations, AggregationsResult,
+};
 
 // Some options
 
@@ -109,8 +114,8 @@ pub struct Filter<'a> {
 }
 
 impl<'a> Filter<'a> {
-    pub fn new(filter: &'a query::Query) -> Filter<'a> {
-        Filter { filter: filter }
+    pub fn new(filter: &'a query::Query) -> Self {
+        Filter { filter }
     }
 }
 
@@ -123,8 +128,8 @@ pub struct Filters<'a> {
 }
 
 impl<'a> Filters<'a> {
-    pub fn new(filters: HashMap<&'a str, &'a query::Query>) -> Filters<'a> {
-        Filters { filters: filters }
+    pub fn new(filters: HashMap<&'a str, &'a query::Query>) -> Self {
+        Filters { filters }
     }
 }
 
@@ -147,8 +152,8 @@ pub struct Missing<'a> {
 }
 
 impl<'a> Missing<'a> {
-    pub fn new(field: &'a str) -> Missing<'a> {
-        Missing { field: field }
+    pub fn new(field: &'a str) -> Self {
+        Missing { field }
     }
 }
 
@@ -161,8 +166,8 @@ pub struct Nested<'a> {
 }
 
 impl<'a> Nested<'a> {
-    pub fn new(path: &'a str) -> Nested<'a> {
-        Nested { path: path }
+    pub fn new(path: &'a str) -> Self {
+        Nested { path }
     }
 }
 
@@ -196,8 +201,8 @@ pub struct Children<'a> {
 }
 
 impl<'a> Children<'a> {
-    pub fn new(doc_type: &'a str) -> Children<'a> {
-        Children { doc_type: doc_type }
+    pub fn new(doc_type: &'a str) -> Self {
+        Children { doc_type }
     }
 }
 
@@ -446,8 +451,8 @@ pub struct ExtendedBounds {
 }
 
 impl ExtendedBounds {
-    pub fn new(min: i64, max: i64) -> ExtendedBounds {
-        ExtendedBounds { min: min, max: max }
+    pub fn new(min: i64, max: i64) -> Self {
+        ExtendedBounds { min, max }
     }
 }
 
@@ -471,9 +476,9 @@ pub struct Histogram<'a> {
 }
 
 impl<'a> Histogram<'a> {
-    pub fn new(field: &'a str) -> Histogram<'a> {
+    pub fn new(field: &'a str) -> Self {
         Histogram {
-            field: field,
+            field,
             ..Default::default()
         }
     }
@@ -569,12 +574,12 @@ pub struct DateHistogram<'a> {
 }
 
 impl<'a> DateHistogram<'a> {
-    pub fn new<I>(field: &'a str, interval: I) -> DateHistogram<'a>
+    pub fn new<I>(field: &'a str, interval: I) -> Self
     where
         I: Into<Interval>,
     {
         DateHistogram {
-            field: field,
+            field,
             interval: interval.into(),
             ..Default::default()
         }
@@ -622,11 +627,11 @@ impl<'a> GeoDistance<'a> {
         ranges: &'a [GeoDistanceInst],
     ) -> GeoDistance<'a> {
         GeoDistance {
-            field: field,
-            origin: origin,
+            field,
+            origin,
             unit: None,
             distance_type: None,
-            ranges: ranges,
+            ranges,
         }
     }
 
@@ -655,7 +660,7 @@ pub struct GeohashGrid<'a> {
 impl<'a> GeohashGrid<'a> {
     pub fn new(field: &'a str) -> Self {
         GeohashGrid {
-            field: field,
+            field,
             ..Default::default()
         }
     }
@@ -1122,7 +1127,7 @@ impl RangeResult {
             buckets.insert(k.clone(), RangeBucketResult::from(v, aggs)?);
         }
 
-        Ok(RangeResult { buckets: buckets })
+        Ok(RangeResult { buckets })
     }
 }
 
@@ -1142,9 +1147,9 @@ impl DateRangeBucketResult {
     fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
         Ok(DateRangeBucketResult {
             from: optional_json!(from, "from", as_f64),
-            from_as_string: optional_json!(from, "from_as_string", as_str).map(|s| s.to_owned()),
+            from_as_string: optional_json!(from, "from_as_string", as_str).map(ToOwned::to_owned),
             to: optional_json!(from, "to", as_f64),
-            to_as_string: optional_json!(from, "to_as_string", as_str).map(|s| s.to_owned()),
+            to_as_string: optional_json!(from, "to_as_string", as_str).map(ToOwned::to_owned),
             doc_count: from_json!(from, "doc_count", as_u64),
             aggs: extract_aggs!(from, aggs),
         })

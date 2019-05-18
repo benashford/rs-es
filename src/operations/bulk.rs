@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 Ben Ashford
+ * Copyright 2015-2019 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,11 +195,11 @@ where
 {
     pub fn new(client: &'a mut Client, actions: &'b [Action<S>]) -> Self {
         BulkOperation {
-            client: client,
+            client,
             index: None,
             doc_type: None,
-            actions: actions,
-            options: Options::new(),
+            actions,
+            options: Options::default(),
         }
     }
 

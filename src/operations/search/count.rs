@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 Ben Ashford
+ * Copyright 2015-2019 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,10 +43,10 @@ pub struct CountURIOperation<'a, 'b> {
 impl<'a, 'b> CountURIOperation<'a, 'b> {
     pub fn new(client: &'a mut Client) -> CountURIOperation<'a, 'b> {
         CountURIOperation {
-            client: client,
+            client,
             indexes: &[],
             doc_types: &[],
-            options: Options::new(),
+            options: Options::default(),
         }
     }
 
@@ -116,9 +116,9 @@ pub struct CountQueryOperation<'a, 'b> {
 }
 
 impl<'a, 'b> CountQueryOperation<'a, 'b> {
-    pub fn new(client: &'a mut Client) -> CountQueryOperation<'a, 'b> {
+    pub fn new(client: &'a mut Client) -> Self {
         CountQueryOperation {
-            client: client,
+            client,
             indexes: &[],
             doc_types: &[],
             options: Options::new(),

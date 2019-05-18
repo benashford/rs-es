@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 Ben Ashford
+ * Copyright 2015-2019 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,7 +176,7 @@ pub struct GeoBounds<'a> {
 impl<'a> GeoBounds<'a> {
     pub fn new(field: &'a str) -> Self {
         GeoBounds {
-            field: field,
+            field,
             ..Default::default()
         }
     }
@@ -219,9 +219,9 @@ pub struct ScriptedMetric<'a> {
 }
 
 impl<'a> ScriptedMetric<'a> {
-    pub fn new(map_script: &'a str) -> ScriptedMetric<'a> {
+    pub fn new(map_script: &'a str) -> Self {
         ScriptedMetric {
-            map_script: map_script,
+            map_script,
             ..Default::default()
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 Ben Ashford
+ * Copyright 2015-2019 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,7 @@ use std::fmt::Debug;
 
 use reqwest::StatusCode;
 
-use serde::{
-    de::DeserializeOwned,
-    ser::Serializer,
-    Serialize, Deserialize
-};
+use serde::{de::DeserializeOwned, ser::Serializer, Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{
@@ -180,11 +176,11 @@ pub struct SortFieldInner {
 
 impl SortField {
     /// Create a `SortField` for a given `field` and `order`
-    pub fn new<S: Into<String>>(field: S, order: Option<Order>) -> SortField {
+    pub fn new<S: Into<String>>(field: S, order: Option<Order>) -> Self {
         SortField(FieldBased::new(
             field.into(),
             SortFieldInner {
-                order: order,
+                order,
                 ..Default::default()
             },
             NoOuter,
@@ -253,7 +249,7 @@ impl GeoDistance {
     }
 
     pub fn with_locations<L: Into<Location>>(mut self, location: Vec<L>) -> Self {
-        self.location = OneOrMany::Many(location.into_iter().map(|l| l.into()).collect());
+        self.location = OneOrMany::Many(location.into_iter().map(Into::into).collect());
         self
     }
 
@@ -357,7 +353,7 @@ impl Serialize for Sort {
 
 impl Sort {
     pub fn new(fields: Vec<SortBy>) -> Self {
-        Sort { fields: fields }
+        Sort { fields }
     }
 
     /// Convenience function for a single field default
@@ -406,17 +402,17 @@ impl<'a> From<&'a Sort> for OptionVal {
     fn from(from: &'a Sort) -> OptionVal {
         // TODO - stop requiring `to_string` if `AsRef<str>` could be implemented
         // instead
-        OptionVal(from.fields.iter().map(|f| f.to_string()).join(","))
+        OptionVal(from.fields.iter().map(ToString::to_string).join(","))
     }
 }
 
 impl<'a, 'b> SearchURIOperation<'a, 'b> {
     pub fn new(client: &'a mut Client) -> SearchURIOperation<'a, 'b> {
         SearchURIOperation {
-            client: client,
+            client,
             indexes: &[],
             doc_types: &[],
-            options: Options::new(),
+            options: Options::default(),
         }
     }
 
@@ -617,9 +613,9 @@ pub struct SearchQueryOperation<'a, 'b> {
 }
 
 impl<'a, 'b> SearchQueryOperation<'a, 'b> {
-    pub fn new(client: &'a mut Client) -> SearchQueryOperation<'a, 'b> {
+    pub fn new(client: &'a mut Client) -> Self {
         SearchQueryOperation {
-            client: client,
+            client,
             indexes: &[],
             doc_types: &[],
             options: Options::new(),
@@ -671,7 +667,7 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
     where
         S: ToString,
     {
-        self.body.stats = Some(stats.iter().map(|s| s.to_string()).collect());
+        self.body.stats = Some(stats.iter().map(ToString::to_string).collect());
         self
     }
 
@@ -1053,8 +1049,8 @@ where
     pub fn iter(self, client: &mut Client, scroll: Duration) -> ScanIterator<T> {
         ScanIterator {
             scan_result: self,
-            scroll: scroll,
-            client: client,
+            scroll,
+            client,
             page: vec![],
         }
     }
@@ -1377,7 +1373,7 @@ mod tests {
         let hits: Vec<SearchHitsHitsResult<TestDocument>> = scan_result
             .iter(&mut client, scroll)
             .take(200)
-            .map(|hit| hit.unwrap())
+            .map(Result::unwrap)
             .collect();
 
         assert_eq!(200, hits.len());
@@ -1620,7 +1616,7 @@ mod tests {
 
             let expected_result_str: Vec<String> = vec!["A", "B", "C"]
                 .into_iter()
-                .map(|x| x.to_owned())
+                .map(ToOwned::to_owned)
                 .collect();
 
             assert_eq!(expected_result_str, result_str);
@@ -1643,7 +1639,7 @@ mod tests {
 
             let expected_result_str: Vec<String> = vec!["A", "B", "C"]
                 .into_iter()
-                .map(|x| x.to_owned())
+                .map(ToOwned::to_owned)
                 .collect();
 
             assert_eq!(expected_result_str, result_str);
@@ -1666,7 +1662,7 @@ mod tests {
 
             let expected_result_str: Vec<String> = vec!["C", "B", "A"]
                 .into_iter()
-                .map(|x| x.to_owned())
+                .map(ToOwned::to_owned)
                 .collect();
 
             assert_eq!(expected_result_str, result_str);

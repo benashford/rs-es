@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Ben Ashford
+ * Copyright 2016-2019 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,9 +74,9 @@ pub struct FieldBased<F, I, O> {
 impl<F, I, O> FieldBased<F, I, O> {
     pub fn new(field: F, inner: I, outer: O) -> Self {
         FieldBased {
-            field: field,
-            inner: inner,
-            outer: outer,
+            field,
+            inner,
+            outer,
         }
     }
 }

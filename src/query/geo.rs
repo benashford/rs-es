@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Ben Ashford
+ * Copyright 2016-2019 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ impl Shape {
     pub fn new<A: Into<String>>(shape_type: A, coordinates: Vec<(f64, f64)>) -> Shape {
         Shape {
             shape_type: shape_type.into(),
-            coordinates: coordinates,
+            coordinates,
         }
     }
 }

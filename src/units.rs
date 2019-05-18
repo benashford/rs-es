@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 Ben Ashford
+ * Copyright 2015-2019 Ben Ashford
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,38 +77,35 @@ pub struct Duration {
 }
 
 impl Duration {
-    pub fn new(amt: i64, unit: DurationUnit) -> Duration {
-        Duration {
-            amt: amt,
-            unit: unit,
-        }
+    pub fn new(amt: i64, unit: DurationUnit) -> Self {
+        Duration { amt, unit }
     }
 
-    pub fn months(amt: i64) -> Duration {
+    pub fn months(amt: i64) -> Self {
         Duration::new(amt, DurationUnit::Month)
     }
 
-    pub fn weeks(amt: i64) -> Duration {
+    pub fn weeks(amt: i64) -> Self {
         Duration::new(amt, DurationUnit::Week)
     }
 
-    pub fn days(amt: i64) -> Duration {
+    pub fn days(amt: i64) -> Self {
         Duration::new(amt, DurationUnit::Day)
     }
 
-    pub fn hours(amt: i64) -> Duration {
+    pub fn hours(amt: i64) -> Self {
         Duration::new(amt, DurationUnit::Hour)
     }
 
-    pub fn minutes(amt: i64) -> Duration {
+    pub fn minutes(amt: i64) -> Self {
         Duration::new(amt, DurationUnit::Minute)
     }
 
-    pub fn seconds(amt: i64) -> Duration {
+    pub fn seconds(amt: i64) -> Self {
         Duration::new(amt, DurationUnit::Second)
     }
 
-    pub fn milliseconds(amt: i64) -> Duration {
+    pub fn milliseconds(amt: i64) -> Self {
         Duration::new(amt, DurationUnit::Millisecond)
     }
 }
@@ -366,11 +363,8 @@ pub struct Distance {
 }
 
 impl Distance {
-    pub fn new(amt: f64, unit: DistanceUnit) -> Distance {
-        Distance {
-            amt: amt,
-            unit: unit,
-        }
+    pub fn new(amt: f64, unit: DistanceUnit) -> Self {
+        Distance { amt, unit }
     }
 }
 
