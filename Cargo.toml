@@ -28,3 +28,4 @@ geojson = { version="0.15", optional=true}
 [dev-dependencies]
 env_logger = "0.6"
 regex = "1.1"
+doc-comment = "0.3"
