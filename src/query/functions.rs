@@ -210,6 +210,20 @@ pub struct DecayOptions {
 }
 
 impl DecayOptions {
+    pub fn new<A, B>(origin: A, scale: B) -> DecayOptions
+    where
+        A: Into<Origin>,
+        B: Into<Scale>,
+    {
+        DecayOptions {
+            origin: origin.into(),
+            scale: scale.into(),
+            offset: None,
+            decay: None,
+            multi_value_mode: None,
+        }
+    }
+
     add_field!(with_offset, offset, Scale);
     add_field!(with_decay, decay, f64);
     add_field!(with_multi_value_mode, multi_value_mode, MultiValueMode);
