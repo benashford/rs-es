@@ -108,7 +108,7 @@ fn do_req(resp: reqwest::Response) -> Result<reqwest::Response, EsError> {
 /// ```
 ///
 /// See the specific operations and their builder objects for details.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Client {
     base_url: Url,
     http_client: reqwest::Client,
