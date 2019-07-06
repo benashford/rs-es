@@ -15,7 +15,7 @@ rust:
   - nightly
 
 before_install:
-  - jdk_switch use openjdk8
+  - which java
   - curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/zip/elasticsearch/2.0.2/elasticsearch-2.0.2.zip && unzip elasticsearch-2.0.2.zip
   - elasticsearch-2.0.2/bin/elasticsearch > /tmp/es.log &
 
