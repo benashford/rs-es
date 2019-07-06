@@ -35,3 +35,4 @@ script:
 env:
   global:
     - RUST_BACKTRACE=1
+    - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre
