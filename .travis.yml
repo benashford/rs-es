@@ -16,6 +16,8 @@ rust:
 
 before_install:
   - echo "Before install, check Java version..."
+  - sudo apt-get remove openjdk*
+  - sudo apt-get install openjdk-8-jre
   - which java
   - curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/zip/elasticsearch/2.0.2/elasticsearch-2.0.2.zip && unzip elasticsearch-2.0.2.zip
   - elasticsearch-2.0.2/bin/elasticsearch > /tmp/es.log &
