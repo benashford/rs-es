@@ -210,9 +210,41 @@ pub struct DecayOptions {
 }
 
 impl DecayOptions {
+    pub fn new<A, B>(origin: A, scale: B) -> DecayOptions
+    where
+        A: Into<Origin>,
+        B: Into<Scale>,
+    {
+        DecayOptions {
+            origin: origin.into(),
+            scale: scale.into(),
+            offset: None,
+            decay: None,
+            multi_value_mode: None,
+        }
+    }
+
     add_field!(with_offset, offset, Scale);
     add_field!(with_decay, decay, f64);
     add_field!(with_multi_value_mode, multi_value_mode, MultiValueMode);
+
+    pub fn with_scale(mut self, val: Scale) -> Self {
+        self.scale = val;
+        self
+    }
+
+    pub fn with_origin(mut self, val: Origin) -> Self {
+        self.origin = val;
+        self
+    }
+
+    pub fn build<A: Into<String>>(self, field: A) -> Decay {
+        Decay(FieldBased::new(
+            field.into(),
+            self,
+            NoOuter,
+        ))
+    }
 }
 
 /// Decay functions
@@ -235,6 +267,10 @@ impl Function {
             },
             NoOuter,
         ))
+    }
+
+    pub fn build_decay_from_options<A: Into<String>>(field: A, options: DecayOptions) -> Decay {
+        options.build(field)
     }
 }
 
