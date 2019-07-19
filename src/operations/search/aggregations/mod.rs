@@ -25,7 +25,7 @@ pub mod metrics;
 use std::collections::HashMap;
 
 use serde::ser::{SerializeMap, Serializer};
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use serde_json::{Map, Value};
 
 use crate::error::EsError;
@@ -127,7 +127,7 @@ impl<'a, A: Into<Aggregation<'a>>> From<(&'a str, A)> for Aggregations<'a> {
 /// The result of one specific aggregation
 ///
 /// The data returned varies depending on aggregation type
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum AggregationResult {
     /// Results of metrics aggregations
     Metrics(MetricsAggregationResult),
@@ -136,7 +136,7 @@ pub enum AggregationResult {
     Bucket(BucketAggregationResult),
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AggregationsResult(HashMap<String, AggregationResult>);
 
 /// Loads a Json object of aggregation results into an `AggregationsResult`.

@@ -304,7 +304,7 @@ impl<'a> Serialize for MetricsAggregation<'a> {
 
 // results
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum MetricsAggregationResult {
     Min(MinResult),
     Max(MaxResult),

@@ -756,7 +756,23 @@ impl<'a, 'b> SearchQueryOperation<'a, 'b> {
         }
     }
 
+    #[cfg(feature = "es5")]
+    pub fn scan<T>(&'b mut self, scroll: &'b Duration) -> Result<ScanResult<T>, EsError>
+    where
+        T: DeserializeOwned + Serialize,
+    {
+        self.options.push("scroll", scroll);
+
+        // FIXME: Raise if already having a sort option
+        // let sort_by_doc = Sort::field("_doc");
+        // self.with_sort(&sort_by_doc);
+
+        let serialized = serde_json::to_string(&self.send::<T>()?)?;
+        Ok(serde_json::from_str(&serialized)?)
+    }
+
     /// Begins a scan with the specified query and options
+    #[cfg(not(feature = "es5"))]
     pub fn scan<T>(&'b mut self, scroll: &'b Duration) -> Result<ScanResult<T>, EsError>
     where
         T: DeserializeOwned,
@@ -1022,6 +1038,7 @@ impl<T> ScanResultInterim<T>
 where
     T: DeserializeOwned,
 {
+    #[cfg(not(feature = "es5"))]
     fn finalize(self) -> ScanResult<T> {
         ScanResult {
             scroll_id: self.scroll_id,
@@ -1034,7 +1051,7 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize )]
 pub struct ScanResult<T> {
     pub scroll_id: String,
     pub took: u64,
@@ -1248,7 +1265,49 @@ mod tests {
         scan_result.close(&mut client).unwrap();
     }
 
+
     #[test]
+    #[cfg(feature = "es5")]
+    fn test_scan_and_scroll() {
+        let mut client = make_client();
+        let index_name = "tests_test_scan_and_scroll";
+        crate::tests::clean_db(&mut client, index_name);
+        setup_scan_data(&mut client, index_name);
+
+        let indexes = [index_name];
+
+        let scroll = Duration::minutes(1);
+        let mut scan_result: ScanResult<TestDocument> = client
+            .search_query()
+            .with_indexes(&indexes)
+            .with_sort(&Sort::field("_doc"))
+            .with_size(100)
+            .scan(&scroll)
+            .unwrap();
+
+        assert_eq!(1000, scan_result.hits.total);
+        let mut total = 0;
+        let mut page_total = scan_result.hits.hits.len();
+
+        loop {
+            assert!(page_total > 0);
+            assert!(total <= 1000);
+
+            total += page_total;
+
+            let page = scan_result.scroll(&mut client, &scroll).unwrap();
+            page_total = page.hits.hits.len();
+
+            if page_total == 0 && total == 1000 {
+                break;
+            }
+        }
+
+        scan_result.close(&mut client).unwrap();
+    }
+
+    #[test]
+    #[cfg(not(feature = "es5"))]
     fn test_scan_and_scroll() {
         let mut client = make_client();
         let index_name = "tests_test_scan_and_scroll";
@@ -1275,6 +1334,8 @@ mod tests {
             if page_total == 0 && total == 1000 {
                 break;
             }
+
+            assert!(page_total > 0);
             assert!(total <= 1000);
         }
 

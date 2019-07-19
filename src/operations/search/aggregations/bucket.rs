@@ -20,7 +20,7 @@ use std::{borrow::ToOwned, collections::HashMap, marker::PhantomData};
 
 use serde::{
     ser::{SerializeMap, Serializer},
-    Serialize,
+    Serialize, Deserialize,
 };
 use serde_json::Value;
 
@@ -523,7 +523,7 @@ impl<'a> From<u64> for TimeZone<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub enum Interval {
     Year,
     Quarter,
@@ -592,7 +592,7 @@ impl<'a> DateHistogram<'a> {
 
 bucket_agg!(DateHistogram);
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct GeoDistanceInst {
     #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     from: Option<f64>,
@@ -646,7 +646,7 @@ impl<'a> GeoDistance<'a> {
 bucket_agg!(GeoDistance);
 
 /// Geohash aggregation
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct GeohashGrid<'a> {
     field: &'a str,
     #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
@@ -739,7 +739,7 @@ impl<'a> Serialize for BucketAggregation<'a> {
 }
 
 // results
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum BucketAggregationResult {
     Global(GlobalResult),
     Filter(FilterResult),
@@ -906,7 +906,7 @@ macro_rules! from_bucket_vector {
 }
 
 /// Global result
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GlobalResult {
     pub doc_count: u64,
     pub aggs: Option<AggregationsResult>,
@@ -924,7 +924,7 @@ impl GlobalResult {
 }
 
 /// Filter result
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FilterResult {
     pub doc_count: u64,
     pub aggs: Option<AggregationsResult>,
@@ -941,7 +941,7 @@ impl FilterResult {
     add_aggs_ref!();
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FiltersBucketResult {
     pub doc_count: u64,
     pub aggs: Option<AggregationsResult>,
@@ -958,7 +958,7 @@ impl FiltersBucketResult {
     add_aggs_ref!();
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FiltersResult {
     pub buckets: HashMap<String, FiltersBucketResult>,
 }
@@ -980,7 +980,7 @@ impl FiltersResult {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MissingResult {
     pub doc_count: u64,
     pub aggs: Option<AggregationsResult>,
@@ -997,7 +997,7 @@ impl MissingResult {
     add_aggs_ref!();
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct NestedResult {
     pub aggs: Option<AggregationsResult>,
 }
@@ -1012,7 +1012,7 @@ impl NestedResult {
     add_aggs_ref!();
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ReverseNestedResult {
     pub aggs: Option<AggregationsResult>,
 }
@@ -1027,7 +1027,7 @@ impl ReverseNestedResult {
     add_aggs_ref!();
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ChildrenResult {
     pub doc_count: u64,
     pub aggs: Option<AggregationsResult>,
@@ -1045,7 +1045,7 @@ impl ChildrenResult {
 }
 
 /// Terms result
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TermsResult {
     pub doc_count_error_upper_bound: u64,
     pub sum_other_doc_count: u64,
@@ -1062,7 +1062,7 @@ impl TermsResult {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TermsBucketResult {
     pub key: JsonVal,
     pub doc_count: u64,
@@ -1092,7 +1092,7 @@ impl TermsBucketResult {
 
 // Range result objects
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RangeBucketResult {
     pub from: Option<JsonVal>,
     pub to: Option<JsonVal>,
@@ -1113,7 +1113,7 @@ impl RangeBucketResult {
     add_aggs_ref!();
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RangeResult {
     pub buckets: HashMap<String, RangeBucketResult>,
 }
@@ -1133,7 +1133,7 @@ impl RangeResult {
 
 // Date range result objects
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DateRangeBucketResult {
     pub from: Option<f64>,
     pub from_as_string: Option<String>,
@@ -1158,7 +1158,7 @@ impl DateRangeBucketResult {
     add_aggs_ref!();
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DateRangeResult {
     pub buckets: Vec<DateRangeBucketResult>,
 }
@@ -1172,7 +1172,7 @@ impl DateRangeResult {
 }
 
 /// Used for histogram results
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct HistogramBucketResult {
     pub key: String,
     pub doc_count: u64,
@@ -1191,7 +1191,7 @@ impl HistogramBucketResult {
     add_aggs_ref!();
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct HistogramResult {
     pub buckets: Vec<HistogramBucketResult>,
 }
@@ -1205,7 +1205,7 @@ impl HistogramResult {
 }
 
 // Date histogram results
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DateHistogramBucketResult {
     pub key_as_string: String,
     pub key: u64,
@@ -1226,7 +1226,7 @@ impl DateHistogramBucketResult {
     add_aggs_ref!();
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DateHistogramResult {
     pub buckets: Vec<DateHistogramBucketResult>,
 }
@@ -1244,7 +1244,7 @@ impl DateHistogramResult {
 }
 
 // GeoDistance results
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GeoDistanceBucketResult {
     pub key: String,
     pub from: Option<f64>,
@@ -1267,7 +1267,7 @@ impl GeoDistanceBucketResult {
     add_aggs_ref!();
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GeoDistanceResult {
     pub buckets: Vec<GeoDistanceBucketResult>,
 }
@@ -1280,7 +1280,7 @@ impl GeoDistanceResult {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GeohashGridBucketResult {
     pub key: String,
     pub doc_count: u64,
@@ -1299,7 +1299,7 @@ impl GeohashGridBucketResult {
     add_aggs_ref!();
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GeohashGridResult {
     pub buckets: Vec<GeohashGridBucketResult>,
 }
