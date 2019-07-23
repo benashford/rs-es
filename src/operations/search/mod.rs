@@ -453,6 +453,7 @@ impl<'a, 'b> SearchURIOperation<'a, 'b> {
     add_option!(with_allow_no_indices, "allow_no_indices");
     add_option!(with_expand_wildcards, "expand_wildcards");
 
+    #[cfg(not(feature = "es5"))]
     pub fn with_fields(&'b mut self, fields: &[&str]) -> &'b mut Self {
         self.options.push("fields", fields.iter().join(","));
         self
@@ -1201,6 +1202,7 @@ mod tests {
         assert_eq!(1, doc_1.hits.total);
         // TODO - add assertion for document contents
 
+        #[cfg(not(feature = "es5"))]
         let limited_fields: SearchResult<Value> = client
             .search_uri()
             .with_indexes(&[index_name])
@@ -1208,8 +1210,11 @@ mod tests {
             .with_fields(&["int_field"])
             .send()
             .unwrap();
+
+        #[cfg(not(feature = "es5"))]
         assert_eq!(1, limited_fields.hits.total);
         // TODO - add assertion for document contents
+
     }
 
     #[test]
