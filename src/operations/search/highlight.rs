@@ -15,6 +15,7 @@
  */
 
 //! Implementation of ElasticSearch [highlight](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html)
+use crate::json::ShouldSkip;
 
 use std::collections::HashMap;
 
@@ -111,6 +112,7 @@ pub struct Setting {
     pub fragment_size: u32,
     pub number_of_fragments: u32,
     pub no_match_size: u32,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     pub matched_fields: Option<Vec<String>>,
 }
 
@@ -184,8 +186,11 @@ impl Setting {
 #[derive(Debug, Default, Serialize, Clone)]
 pub struct Highlight {
     pub fields: HashMap<String, Setting>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     pub pre_tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     pub post_tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     pub encoder: Option<Encoders>,
 }
 
