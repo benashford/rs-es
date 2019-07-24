@@ -20,19 +20,23 @@ before_install:
   - sudo apt-get install openjdk-8-jre
   - which java
   - echo $JAVA_HOME
-  - curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/zip/elasticsearch/2.0.2/elasticsearch-2.0.2.zip && unzip elasticsearch-2.0.2.zip
-  - elasticsearch-2.0.2/bin/elasticsearch > /tmp/es.log &
+  - curl -O ${ES_DOWNLOAD_URL} && unzip elasticsearch-${ES_VERSION}.zip
+  - elasticsearch-${ES_VERSION}/bin/elasticsearch > /tmp/es.log &
 
 # As recommended here: http://docs.travis-ci.com/user/database-setup/#ElasticSearch
 before_script:
   - sleep 10
 
 script:
-   - |
-       cargo build --all-features &&
-       cargo test && cargo test --all-features
+   - cargo build ${FEATURES}
+   - cargo test ${FEATURES}
 
 env:
   global:
     - RUST_BACKTRACE=1
     - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre
+  matrix:
+    - FEATURES="--features es5" ES_VERSION=5.6.14 ES_DOWNLOAD_URL=https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.zip
+    - FEATURES="--features es5,geo" ES_VERSION=5.6.14 ES_DOWNLOAD_URL=https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.zip
+    - FEATURES="" ES_VERSION=2.0.2 ES_DOWNLOAD_URL=https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/zip/elasticsearch/2.0.2/elasticsearch-2.0.2.zip
+    - FEATURES="--features geo" ES_VERSION=2.0.2 ES_DOWNLOAD_URL=https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/zip/elasticsearch/2.0.2/elasticsearch-2.0.2.zip

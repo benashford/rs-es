@@ -423,6 +423,7 @@ pub mod tests {
             analysis: Analysis {
                 filter: serde_json::json!({}).as_object().unwrap().clone(),
                 analyzer: serde_json::json!({}).as_object().unwrap().clone(),
+                .. Default::default()
             },
         };
 

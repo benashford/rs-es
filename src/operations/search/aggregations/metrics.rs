@@ -304,7 +304,7 @@ impl<'a> Serialize for MetricsAggregation<'a> {
 
 // results
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum MetricsAggregationResult {
     Min(MinResult),
     Max(MaxResult),
@@ -366,27 +366,27 @@ impl AggregationResult {
 // specific result objects
 
 /// Min Result
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct MinResult {
     pub value: JsonVal,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct MaxResult {
     pub value: JsonVal,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SumResult {
     pub value: f64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct AvgResult {
     pub value: f64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct StatsResult {
     pub count: u64,
     pub min: f64,
@@ -396,13 +396,13 @@ pub struct StatsResult {
 }
 
 /// Used by the `ExtendedStatsResult`
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Bounds {
     pub upper: f64,
     pub lower: f64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ExtendedStatsResult {
     pub count: u64,
     pub min: f64,
@@ -415,32 +415,32 @@ pub struct ExtendedStatsResult {
     pub std_deviation_bounds: Bounds,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ValueCountResult {
     pub value: u64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct PercentilesResult {
     pub values: HashMap<String, f64>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct PercentileRanksResult {
     pub values: HashMap<String, f64>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CardinalityResult {
     pub value: u64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct GeoBoundsResult {
     pub bounds: GeoBox,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ScriptedMetricResult {
     pub value: JsonVal,
 }

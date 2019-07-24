@@ -15,6 +15,7 @@
  */
 
 //! Implementation of ElasticSearch [highlight](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html)
+use crate::json::ShouldSkip;
 
 use std::collections::HashMap;
 
@@ -103,12 +104,15 @@ impl Serialize for TermVector {
 pub struct Setting {
     #[serde(rename = "type")]
     pub setting_type: Option<SettingTypes>,
+    #[cfg(not(feature = "es5"))]
     pub index_options: Option<IndexOptions>,
+    #[cfg(not(feature = "es5"))]
     pub term_vector: Option<TermVector>,
     pub force_source: bool,
     pub fragment_size: u32,
     pub number_of_fragments: u32,
     pub no_match_size: u32,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     pub matched_fields: Option<Vec<String>>,
 }
 
@@ -116,13 +120,17 @@ impl Default for Setting {
     fn default() -> Self {
         Setting {
             setting_type: None,
-            index_options: None,
-            term_vector: None,
             force_source: false,
             fragment_size: 150,
             number_of_fragments: 5,
             no_match_size: 0,
             matched_fields: None,
+
+            #[cfg(not(feature = "es5"))]
+            index_options: None,
+
+            #[cfg(not(feature = "es5"))]
+            term_vector: None,
         }
     }
 }
@@ -137,11 +145,13 @@ impl Setting {
         self
     }
 
+    #[cfg(not(feature = "es5"))]
     pub fn with_index_options(&mut self, index_options: IndexOptions) -> &mut Setting {
         self.index_options = Some(index_options);
         self
     }
 
+    #[cfg(not(feature = "es5"))]
     pub fn with_term_vector(&mut self, term_vector: TermVector) -> &mut Setting {
         self.term_vector = Some(term_vector);
         self
@@ -176,8 +186,11 @@ impl Setting {
 #[derive(Debug, Default, Serialize, Clone)]
 pub struct Highlight {
     pub fields: HashMap<String, Setting>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     pub pre_tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     pub post_tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     pub encoder: Option<Encoders>,
 }
 

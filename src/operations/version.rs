@@ -47,7 +47,10 @@ impl Client {
 pub struct Version {
     pub number: String,
     pub build_hash: String,
+    #[cfg(not(feature = "es5"))]
     pub build_timestamp: String,
+    #[cfg(feature = "es5")]
+    pub build_date: String,
     pub build_snapshot: bool,
     pub lucene_version: String,
 }
@@ -56,6 +59,8 @@ pub struct Version {
 pub struct VersionResult {
     pub name: String,
     pub cluster_name: String,
+    #[cfg(feature = "es5")]
+    pub cluster_uuid: String,
     pub version: Version,
     pub tagline: String,
 }
@@ -70,7 +75,7 @@ pub mod tests {
         let mut client = make_client();
         let result = client.version().send().unwrap();
 
-        let expected_regex = Regex::new(r"^\d\.\d\.\d$").unwrap();
+        let expected_regex = Regex::new(r"^\d\.\d\.\d+$").unwrap();
         assert_eq!(expected_regex.is_match(&result.version.number), true);
     }
 }

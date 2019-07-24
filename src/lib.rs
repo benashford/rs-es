@@ -208,13 +208,10 @@ pub mod tests {
     use std::env;
 
     use serde::{Deserialize, Serialize};
-    use serde_json::Value;
 
     use super::{
-        operations::{bulk::Action, search::ScanResult},
-        query::Query,
-        units::Duration,
         Client,
+        error::EsError,
     };
 
     // test setup
@@ -283,38 +280,12 @@ pub mod tests {
         client.refresh().with_indexes(&[index_name]).send().unwrap();
     }
 
-    pub fn clean_db(mut client: &mut Client, test_idx: &str) {
-        let scroll = Duration::minutes(1);
-        let mut scan: ScanResult<Value> = match client
-            .search_query()
-            .with_indexes(&[test_idx])
-            .with_query(&Query::build_match_all().build())
-            .scan(&scroll)
-        {
-            Ok(scan) => scan,
-            Err(e) => {
-                log::warn!("Scan error: {:?}", e);
-                return; // Ignore not-found errors
-            }
+    pub fn clean_db(client: &mut Client, test_idx: &str) {
+        match client.delete_index(test_idx) {
+            // Ignore indices which don't exist yet
+            Err(EsError::EsError(ref msg)) if msg == "Unexpected status: 404 Not Found" => {},
+            Ok(_) => {},
+            e => { e.expect(&format!("Failed to clean db for index {:?}", test_idx)); },
         };
-
-        loop {
-            let page = scan.scroll(&mut client, &scroll).unwrap();
-            let hits = page.hits.hits;
-            if hits.is_empty() {
-                break;
-            }
-            let actions: Vec<Action<()>> = hits
-                .into_iter()
-                .map(|hit| {
-                    Action::delete(hit.id)
-                        .with_index(test_idx)
-                        .with_doc_type(hit.doc_type)
-                })
-                .collect();
-            client.bulk(&actions).send().unwrap();
-        }
-
-        scan.close(&mut client).unwrap();
     }
 }

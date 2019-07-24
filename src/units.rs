@@ -248,7 +248,7 @@ impl Serialize for GeoBox {
 
 /// A non-specific holder for an option which can either be a single thing, or
 /// multiple instances of that thing.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub enum OneOrMany<T> {
     One(T),
     Many(Vec<T>),
@@ -288,7 +288,7 @@ impl<T> From<Vec<T>> for OneOrMany<T> {
 }
 
 /// DistanceType
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub enum DistanceType {
     SloppyArc,
     Arc,
@@ -310,7 +310,7 @@ impl Serialize for DistanceType {
 }
 
 /// DistanceUnit
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub enum DistanceUnit {
     Mile,
     Yard,
@@ -356,7 +356,7 @@ impl Serialize for DistanceUnit {
 }
 
 /// Distance, both an amount and a unit
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Deserialize)]
 pub struct Distance {
     amt: f64,
     unit: DistanceUnit,
