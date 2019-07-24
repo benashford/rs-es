@@ -1,6 +1,6 @@
 [package]
 name = "rs-es"
-version = "0.12.1"
+version = "0.12.2"
 authors = ["Ben Ashford"]
 license = "Apache-2.0"
 repository = "https://github.com/benashford/rs-es"
@@ -19,8 +19,8 @@ geo = ["geojson"]
 name = "rs_es"
 
 [dependencies]
-reqwest = "0.9.18"
-log = "0.4.4"
+reqwest = "0.9"
+log = "0.4"
 serde_json = "1.0"
 serde = {version = "1", features = ["derive"]}
 geojson = { version="0.16", optional=true}
