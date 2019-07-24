@@ -27,6 +27,14 @@ Version `0.11.0` requires Rust `1.31.0` or higher.
 
 Available from [crates.io](https://crates.io/crates/rs-es).
 
+## ElasticSearch compatibility
+
+The default version of ElasticSearch supported is 2.0. Higher versions will also work as long as the particular part of the ES API is compatible with the version 2 spec.
+
+Newer versions of ElasticSearch do have some incompatibilities in some areas, therefore these are not supported by this library.
+
+However, starting with version `0.12.1` there is experimental support for ES 5 using the `es5` feature flag. The intention is this support will become more complete over time and will become the new baseline supported compatible version.
+
 ## Design goals
 
 There are two primary goals: 1) to be a full implementation of the ElasticSearch REST API, and 2) to be idiomatic both with ElasticSearch and Rust conventions.

@@ -1,6 +1,6 @@
 [package]
 name = "rs-es"
-version = "0.12.0"
+version = "0.12.1"
 authors = ["Ben Ashford"]
 license = "Apache-2.0"
 repository = "https://github.com/benashford/rs-es"
@@ -27,5 +27,5 @@ geojson = { version="0.16", optional=true}
 
 [dev-dependencies]
 env_logger = "0.6"
-regex = "1.1"
+regex = "1.2"
 doc-comment = "0.3"
