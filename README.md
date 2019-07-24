@@ -21,7 +21,7 @@ Not every feature and every option is implemented, this README and the documenta
 
 ## Building and installation
 
-Version `0.11.0` requires Rust `1.31.0` or higher.
+Version `0.12.0` and higher have been tested with the prevailing "stable", "beta" and "nightly" versions of rustc at the time of their release. It should also work correctly with earlier versions, however some dependencies may use or require language features that are only available in recent versions of rustc.
 
 ### [crates.io](http://crates.io)
 
