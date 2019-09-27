@@ -20,7 +20,9 @@ use serde::{Serialize, Serializer};
 
 use crate::{json::ShouldSkip, units::OneOrMany};
 
-use super::{functions::Function, MinimumShouldMatch, Query, ScoreMode};
+use super::{
+    functions::FilteredFunction, functions::Function, MinimumShouldMatch, Query, ScoreMode,
+};
 
 /// BoostMode
 #[derive(Debug, Copy, Clone)]
@@ -153,7 +155,7 @@ pub struct FunctionScoreQuery {
     query: Option<Query>,
     #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     boost: Option<f64>,
-    functions: Vec<Function>,
+    functions: Vec<FilteredFunction>,
     #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     max_boost: Option<f64>,
     #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
@@ -178,12 +180,12 @@ impl FunctionScoreQuery {
     add_field!(with_boost_mode, boost_mode, BoostMode);
     add_field!(with_min_score, min_score, f64);
 
-    pub fn with_functions<A: Into<Vec<Function>>>(mut self, functions: A) -> Self {
+    pub fn with_functions<A: Into<Vec<FilteredFunction>>>(mut self, functions: A) -> Self {
         self.functions = functions.into();
         self
     }
 
-    pub fn with_function<A: Into<Function>>(mut self, function: A) -> Self {
+    pub fn with_function<A: Into<FilteredFunction>>(mut self, function: A) -> Self {
         self.functions = vec![function.into()];
         self
     }

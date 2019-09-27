@@ -25,6 +25,29 @@ use crate::{
     units::{Distance, Duration, JsonVal, Location},
 };
 
+use super::Query;
+
+/// FilteredFunction
+#[derive(Debug, Serialize)]
+pub struct FilteredFunction {
+    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
+    pub filter: Option<Query>,
+    #[serde(flatten)]
+    pub function: Function,
+}
+
+impl FilteredFunction {
+    pub fn build_filtered_function<A: Into<Option<Query>>>(
+        filter: A,
+        function: Function,
+    ) -> FilteredFunction {
+        FilteredFunction {
+            filter: filter.into(),
+            function,
+        }
+    }
+}
+
 /// Function
 #[derive(Debug, Serialize)]
 pub enum Function {
@@ -239,11 +262,7 @@ impl DecayOptions {
     }
 
     pub fn build<A: Into<String>>(self, field: A) -> Decay {
-        Decay(FieldBased::new(
-            field.into(),
-            self,
-            NoOuter,
-        ))
+        Decay(FieldBased::new(field.into(), self, NoOuter))
     }
 }
 
