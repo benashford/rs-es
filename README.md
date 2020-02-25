@@ -10,9 +10,9 @@
 
 An ElasticSearch client for Rust via the REST API.  Targetting ElasticSearch 2.0 and higher.
 
-Development is ongoing, and is experimental, as such breaking changes are likely at any time.  Also, large parts of the ElasticSearch API are currently unimplemented.
+### Other clients
 
-Not every feature and every option is implemented, this README and the documentation describe what is available.  For any errors, omissions, etc., issues and pull requests are welcome.
+For later versions of ElasticSearch you probably want the [official client](https://github.com/elastic/elasticsearch-rs).
 
 ## Documentation
 
@@ -39,10 +39,6 @@ However, starting with version `0.12.1` there is experimental support for ES 5 u
 There are two primary goals: 1) to be a full implementation of the ElasticSearch REST API, and 2) to be idiomatic both with ElasticSearch and Rust conventions.
 
 The second goal is more difficult to achieve than the first as there are some areas which conflict.  A small example of this is the word `type`, this is a word that refers to the type of an ElasticSearch document but it also a reserved word for definining types in Rust.  This means we cannot name a field `type` for instance, so in this library the document type is always referred to as `doc_type` instead.
-
-### Alternatives
-
-For an ElasticSearch client for Rust that takes a different approach, allowing free-form query creation, take a look at [`elasticsearch-rs`](https://github.com/KodrAus/elasticsearch-rs).
 
 ## Usage guide
 

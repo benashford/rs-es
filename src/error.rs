@@ -90,13 +90,13 @@ impl Error for EsError {
         }
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         match *self {
             EsError::EsError(_) => None,
             EsError::EsServerError(_) => None,
-            EsError::HttpError(ref err) => Some(err as &Error),
-            EsError::IoError(ref err) => Some(err as &Error),
-            EsError::JsonError(ref err) => Some(err as &Error),
+            EsError::HttpError(ref err) => Some(err as &dyn Error),
+            EsError::IoError(ref err) => Some(err as &dyn Error),
+            EsError::JsonError(ref err) => Some(err as &dyn Error),
         }
     }
 }

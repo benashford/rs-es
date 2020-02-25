@@ -1,6 +1,6 @@
 [package]
 name = "rs-es"
-version = "0.12.2"
+version = "0.12.3"
 authors = ["Ben Ashford"]
 license = "Apache-2.0"
 repository = "https://github.com/benashford/rs-es"

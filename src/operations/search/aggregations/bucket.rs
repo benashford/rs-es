@@ -20,7 +20,7 @@ use std::{borrow::ToOwned, collections::HashMap, marker::PhantomData};
 
 use serde::{
     ser::{SerializeMap, Serializer},
-    Serialize, Deserialize,
+    Deserialize, Serialize,
 };
 use serde_json::Value;
 
@@ -1103,8 +1103,8 @@ pub struct RangeBucketResult {
 impl RangeBucketResult {
     fn from(from: &Value, aggs: &Option<Aggregations>) -> Result<Self, EsError> {
         Ok(RangeBucketResult {
-            from: from.get("from").and_then(|from| Some(from.into())),
-            to: from.get("to").and_then(|to| Some(to.into())),
+            from: from.get("from").map(|from| from.into()),
+            to: from.get("to").map(|to| to.into()),
             doc_count: from_json!(from, "doc_count", as_u64),
             aggs: extract_aggs!(from, aggs),
         })

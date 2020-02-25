@@ -209,10 +209,7 @@ pub mod tests {
 
     use serde::{Deserialize, Serialize};
 
-    use super::{
-        Client,
-        error::EsError,
-    };
+    use super::{error::EsError, Client};
 
     // test setup
 
@@ -283,9 +280,11 @@ pub mod tests {
     pub fn clean_db(client: &mut Client, test_idx: &str) {
         match client.delete_index(test_idx) {
             // Ignore indices which don't exist yet
-            Err(EsError::EsError(ref msg)) if msg == "Unexpected status: 404 Not Found" => {},
-            Ok(_) => {},
-            e => { e.expect(&format!("Failed to clean db for index {:?}", test_idx)); },
+            Err(EsError::EsError(ref msg)) if msg == "Unexpected status: 404 Not Found" => {}
+            Ok(_) => {}
+            e => {
+                e.unwrap_or_else(|_| panic!("Failed to clean db for index {:?}", test_idx));
+            }
         };
     }
 }

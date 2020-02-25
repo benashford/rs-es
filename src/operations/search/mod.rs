@@ -1052,7 +1052,7 @@ where
     }
 }
 
-#[derive(Debug, Deserialize )]
+#[derive(Debug, Deserialize)]
 pub struct ScanResult<T> {
     pub scroll_id: String,
     pub took: u64,
@@ -1214,7 +1214,6 @@ mod tests {
         #[cfg(not(feature = "es5"))]
         assert_eq!(1, limited_fields.hits.total);
         // TODO - add assertion for document contents
-
     }
 
     #[test]
@@ -1269,7 +1268,6 @@ mod tests {
 
         scan_result.close(&mut client).unwrap();
     }
-
 
     #[test]
     #[cfg(feature = "es5")]
@@ -1478,7 +1476,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(feature = "es5", ignore(message = "need to fix mappings to not be text fields"))]
+    #[cfg_attr(feature = "es5", ignore = "need to fix mappings to not be text fields")]
     fn test_highlight() {
         let mut client = make_client();
         let index_name = "test_highlight";
@@ -1529,7 +1527,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(feature = "es5", ignore(message = "need to fix mappings to not be text fields"))]
+    #[cfg_attr(feature = "es5", ignore = "need to fix mappings to not be text fields")]
     fn test_bucket_aggs() {
         let mut client = make_client();
         let index_name = "test_bucket_aggs";
@@ -1651,7 +1649,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(feature = "es5", ignore(message = "need to fix mappings to not be text fields"))]
+    #[cfg_attr(feature = "es5", ignore = "need to fix mappings to not be text fields")]
     fn test_sort() {
         let mut client = make_client();
         let index_name = "test_sort";
