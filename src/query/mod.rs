@@ -409,7 +409,7 @@ mod tests {
     extern crate serde_json;
 
     use super::full_text::SimpleQueryStringFlags;
-    use super::functions::Function;
+    use super::functions::{FilteredFunction, Function};
     use super::term::TermsQueryLookup;
     use super::{Flags, Query};
 
@@ -449,12 +449,13 @@ mod tests {
     #[test]
     fn test_function_score_query() {
         let function_score_query = Query::build_function_score()
-            .with_function(
-                Function::build_script_score("this_is_a_script")
+            .with_function(FilteredFunction {
+                filter: None,
+                function: Function::build_script_score("this_is_a_script")
                     .with_lang("made_up")
                     .add_param("A", 12)
                     .build(),
-            )
+            })
             .build();
         assert_eq!("{\"function_score\":{\"functions\":[{\"script_score\":{\"lang\":\"made_up\",\"params\":{\"A\":12},\"inline\":\"this_is_a_script\"}}]}}",
                    serde_json::to_string(&function_score_query).unwrap());
