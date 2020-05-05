@@ -128,18 +128,7 @@ impl IndexedShape {
 
 /// Geo Bounding Box Query
 #[derive(Debug, Serialize)]
-pub struct GeoBoundingBoxQuery(FieldBasedQuery<GeoBoundingBoxQueryInner, NoOuter>);
-
-#[derive(Debug, Default, Serialize)]
-pub struct GeoBoundingBoxQueryInner {
-    geo_box: GeoBox,
-    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
-    coerce: Option<bool>,
-    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
-    ignore_malformed: Option<bool>,
-    #[serde(skip_serializing_if = "ShouldSkip::should_skip", rename = "type")]
-    filter_type: Option<Type>,
-}
+pub struct GeoBoundingBoxQuery(FieldBasedQuery<GeoBox, NoOuter>);
 
 impl Query {
     pub fn build_geo_bounding_box<A, B>(field: A, geo_box: B) -> GeoBoundingBoxQuery
@@ -149,19 +138,16 @@ impl Query {
     {
         GeoBoundingBoxQuery(FieldBasedQuery::new(
             field.into(),
-            GeoBoundingBoxQueryInner {
-                geo_box: geo_box.into(),
-                ..Default::default()
-            },
+            geo_box.into(),
             NoOuter,
         ))
     }
 }
 
 impl GeoBoundingBoxQuery {
-    add_inner_field!(with_coerce, coerce, bool);
-    add_inner_field!(with_ignore_malformed, ignore_malformed, bool);
-    add_inner_field!(with_type, filter_type, Type);
+    //add_inner_field!(with_coerce, coerce, bool);
+    //add_inner_field!(with_ignore_malformed, ignore_malformed, bool);
+    //add_inner_field!(with_type, filter_type, Type);
 
     build!(GeoBoundingBox);
 }
