@@ -128,18 +128,7 @@ impl IndexedShape {
 
 /// Geo Bounding Box Query
 #[derive(Debug, Serialize)]
-pub struct GeoBoundingBoxQuery(FieldBasedQuery<GeoBoundingBoxQueryInner, NoOuter>);
-
-#[derive(Debug, Default, Serialize)]
-pub struct GeoBoundingBoxQueryInner {
-    geo_box: GeoBox,
-    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
-    coerce: Option<bool>,
-    #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
-    ignore_malformed: Option<bool>,
-    #[serde(skip_serializing_if = "ShouldSkip::should_skip", rename = "type")]
-    filter_type: Option<Type>,
-}
+pub struct GeoBoundingBoxQuery(FieldBasedQuery<GeoBox, NoOuter>);
 
 impl Query {
     pub fn build_geo_bounding_box<A, B>(field: A, geo_box: B) -> GeoBoundingBoxQuery
@@ -149,19 +138,16 @@ impl Query {
     {
         GeoBoundingBoxQuery(FieldBasedQuery::new(
             field.into(),
-            GeoBoundingBoxQueryInner {
-                geo_box: geo_box.into(),
-                ..Default::default()
-            },
+            geo_box.into(),
             NoOuter,
         ))
     }
 }
 
 impl GeoBoundingBoxQuery {
-    add_inner_field!(with_coerce, coerce, bool);
-    add_inner_field!(with_ignore_malformed, ignore_malformed, bool);
-    add_inner_field!(with_type, filter_type, Type);
+    //add_inner_field!(with_coerce, coerce, bool);
+    //add_inner_field!(with_ignore_malformed, ignore_malformed, bool);
+    //add_inner_field!(with_type, filter_type, Type);
 
     build!(GeoBoundingBox);
 }
@@ -453,6 +439,27 @@ pub mod tests {
                 .unwrap();
         }
         client.refresh().with_indexes(&[index_name]).send().unwrap();
+    }
+
+    #[test]
+    fn test_geobbox_query() {
+        let index_name = "test_geobbox_query";
+        let mut client = make_client();
+
+        clean_db(&mut client, index_name);
+        setup_test_data(&mut client, index_name);
+
+        let all_results: SearchResult<GeoTestDocument> = client
+            .search_query()
+            .with_indexes(&[index_name])
+            .with_query(
+                &Query::build_geo_bounding_box("geojson_field", ((1.1, 1.1), (0.9, 0.9)))
+                .build(),
+            )
+            .send()
+            .unwrap();
+        // Only p1 should be returned
+        assert_eq!(1, all_results.hits.total);
     }
 
     #[test]
