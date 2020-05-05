@@ -456,6 +456,27 @@ pub mod tests {
     }
 
     #[test]
+    fn test_geobbox_query() {
+        let index_name = "test_geobbox_query";
+        let mut client = make_client();
+
+        clean_db(&mut client, index_name);
+        setup_test_data(&mut client, index_name);
+
+        let all_results: SearchResult<GeoTestDocument> = client
+            .search_query()
+            .with_indexes(&[index_name])
+            .with_query(
+                &Query::build_geo_bounding_box("geojson_field", ((1.1, 1.1), (0.9, 0.9)))
+                .build(),
+            )
+            .send()
+            .unwrap();
+        // Only p1 should be returned
+        assert_eq!(1, all_results.hits.total);
+    }
+
+    #[test]
     fn test_geoshape_search_point() {
         let index_name = "test_geoshape_search_point";
         let mut client = make_client();
