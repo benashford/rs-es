@@ -334,11 +334,22 @@ pub struct ActionResultInner {
     #[serde(rename = "_type")]
     pub doc_type: String,
     #[serde(rename = "_version")]
-    pub version: u64,
+    pub version: Option<u64>,
     pub status: u64,
     #[serde(rename = "_shards")]
-    pub shards: ShardCountResult,
+    pub shards: Option<ShardCountResult>,
     pub found: Option<bool>,
+    pub error: Option<BulkError>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct BulkError {
+    #[serde(rename = "type")]
+    pub kind: String,
+    pub reason: String,
+    pub index_uuid: Option<String>,
+    pub shard: Option<String>,
+    pub index: Option<String>,
 }
 
 /// The result of a bulk operation
