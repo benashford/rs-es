@@ -431,6 +431,7 @@ pub mod tests {
         // failures anyway
         let _ = client.delete_index(index_name);
 
+        #[allow(deprecated)]
         let result = MappingOperation::new(&mut client, index_name)
             .with_mapping(&mapping)
             .with_settings(&settings)
