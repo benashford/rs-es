@@ -25,7 +25,7 @@ use std::fmt::Debug;
 
 use reqwest::StatusCode;
 
-use serde::{de::DeserializeOwned, ser::Serializer, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, ser::SerializeMap, ser::Serializer, Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{
@@ -34,7 +34,7 @@ use super::{
 };
 use crate::{
     error::EsError,
-    json::{FieldBased, NoOuter, ShouldSkip},
+    json::{serialize_map_optional_kv, FieldBased, MergeSerialize, NoOuter, ShouldSkip},
     query::Query,
     units::{DistanceType, DistanceUnit, Duration, JsonVal, Location, OneOrMany},
     util::StrJoin,
@@ -215,9 +215,11 @@ impl ToString for SortField {
 /// Representing sort options for sort by geodistance
 // TODO - fix structure to represent reality
 #[derive(Debug, Serialize)]
-pub struct GeoDistance {
-    field: String,
-    location: OneOrMany<Location>,
+pub struct GeoDistance(FieldBased<String, GeoDistanceInner, NoOuter>);
+#[derive(Debug, Serialize)]
+struct GeoDistanceInner(FieldBased<String, OneOrMany<Location>, GeoDistanceOuter>);
+#[derive(Debug, Serialize)]
+struct GeoDistanceOuter {
     #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
     order: Option<Order>,
     #[serde(skip_serializing_if = "ShouldSkip::should_skip")]
@@ -233,33 +235,66 @@ impl GeoDistance {
     where
         S: Into<String>,
     {
-        GeoDistance {
-            field: field.into(),
-            location: OneOrMany::Many(vec![]),
-            order: None,
-            unit: None,
-            mode: None,
-            distance_type: None,
-        }
+        GeoDistance(FieldBased::new(
+            String::from("_geo_distance"),
+            GeoDistanceInner(FieldBased::new(
+                field.into(),
+                OneOrMany::Many(vec![]),
+                GeoDistanceOuter {
+                    order: None,
+                    unit: None,
+                    mode: None,
+                    distance_type: None,
+                },
+            )),
+            NoOuter,
+        ))
+    }
+
+    pub fn with_distance_type(mut self, distance_type: DistanceType) -> Self {
+        self.0.inner.0.outer.distance_type = distance_type.into();
+        self
     }
 
     pub fn with_location<L: Into<Location>>(mut self, location: L) -> Self {
-        self.location = OneOrMany::One(location.into());
+        self.0.inner.0.inner = OneOrMany::One(location.into());
         self
     }
 
     pub fn with_locations<L: Into<Location>>(mut self, location: Vec<L>) -> Self {
-        self.location = OneOrMany::Many(location.into_iter().map(Into::into).collect());
+        self.0.inner.0.inner = OneOrMany::Many(location.into_iter().map(Into::into).collect());
         self
     }
 
-    add_field!(with_order, order, Order);
-    add_field!(with_unit, unit, DistanceUnit);
-    add_field!(with_mode, mode, Mode);
-    add_field!(with_distance_type, distance_type, DistanceType);
+    pub fn with_mode(mut self, mode: Mode) -> Self {
+        self.0.inner.0.outer.mode = mode.into();
+        self
+    }
+
+    pub fn with_order(mut self, order: Order) -> Self {
+        self.0.inner.0.outer.order = order.into();
+        self
+    }
+
+    pub fn with_unit(mut self, unit: DistanceUnit) -> Self {
+        self.0.inner.0.outer.unit = unit.into();
+        self
+    }
 
     pub fn build(self) -> SortBy {
         SortBy::Distance(self)
+    }
+}
+
+impl MergeSerialize for GeoDistanceOuter {
+    fn merge_serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    where
+        S: SerializeMap,
+    {
+        serialize_map_optional_kv(serializer, "unit", &self.unit)?;
+        serialize_map_optional_kv(serializer, "mode", &self.mode)?;
+        serialize_map_optional_kv(serializer, "distance_type", &self.distance_type)?;
+        serialize_map_optional_kv(serializer, "order", &self.order)
     }
 }
 
