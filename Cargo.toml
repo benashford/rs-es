@@ -11,15 +11,17 @@ exclude = [".gitignore", ".travis.yml", "docker-compose.yml"]
 edition = "2018"
 
 [features]
-default = []
+default = ["tls"]
 es5 = []
 geo = ["geojson"]
+tls = ["reqwest/default-tls"]
+rustls = ["reqwest/rustls-tls"]
 
 [lib]
 name = "rs_es"
 
 [dependencies]
-reqwest = "0.9"
+reqwest = {version = "0.9", default-features=false}
 log = "0.4"
 serde_json = "1.0"
 serde = {version = "1", features = ["derive"]}
